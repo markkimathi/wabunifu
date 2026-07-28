@@ -77,6 +77,14 @@
     transition:color .3s var(--ease-expo)}
   .postlink:hover{color:var(--brand)}
 
+  .promo{background:var(--tag-bg);border-bottom:1px solid var(--hairline)}
+  .promo-inner{position:relative;display:flex;align-items:center;justify-content:center;
+    padding:10px 44px;font-size:13.5px;color:var(--muted);text-align:center}
+  .promo-text a{color:var(--brand);font-weight:700;text-decoration:underline;text-underline-offset:2px}
+  .promo-close{position:absolute;right:24px;top:50%;transform:translateY(-50%);background:none;border:0;
+    font-size:19px;line-height:1;cursor:pointer;color:var(--faint);padding:4px;transition:color .2s var(--ease-expo)}
+  .promo-close:hover{color:var(--ink)}
+
   @keyframes dotblink{0%,100%{opacity:1}50%{opacity:.25}}
 
   /* ---- hero ---- */
@@ -152,7 +160,9 @@
   .fgroup{border-top:1px solid var(--hairline);padding:16px 0}
   .fgroup:first-of-type{padding-top:14px}
   .fgroup h3{margin:0 0 12px;font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:600}
-  .opt{display:flex;align-items:center;gap:10px;padding:5px 0;cursor:pointer;font-size:14px;color:var(--ink);user-select:none}
+  .opt{display:flex;align-items:center;gap:10px;padding:6px 8px;margin:0 -8px;border-radius:8px;
+    cursor:pointer;font-size:14px;color:var(--ink);user-select:none;transition:background .25s var(--ease-expo)}
+  .opt:has(input:checked){background:var(--tag-bg)}
   .opt input{position:absolute;opacity:0;pointer-events:none}
   .box{width:17px;height:17px;border:1.5px solid var(--hairline-strong);border-radius:5px;flex:none;
     display:grid;place-items:center;transition:.12s;background:var(--surface)}
@@ -165,8 +175,8 @@
   .list{display:flex;flex-direction:column;gap:14px}
 
   /* ---- job card ---- */
-  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);
-    padding:20px 22px;
+  .card{background:var(--surface);border:1px solid transparent;border-radius:var(--radius);
+    padding:20px 22px;box-shadow:var(--shadow);
     transition:border-color .4s var(--ease-expo), transform .4s var(--ease-expo), box-shadow .4s var(--ease-expo)}
   @media (pointer:fine){
     .card:hover{border-color:var(--hairline-strong);box-shadow:var(--shadow-lift);transform:translateY(-3px)}
@@ -190,6 +200,7 @@
   .c-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
   .tag{font-size:12px;font-weight:500;color:var(--muted);border:1px solid var(--hairline-strong);
     padding:4px 10px;border-radius:999px;background:var(--tag-bg)}
+  .tag-pro{border-color:var(--ink);background:var(--ink);color:#fff;font-weight:700;letter-spacing:.01em}
 
   /* eligibility — the signature */
   .elig{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
@@ -270,6 +281,13 @@
     <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
   </div>
 </header>
+
+<div class="promo" id="promo">
+  <div class="wrap promo-inner">
+    <span class="promo-text">🎨 Hiring designers in or open to Africa? <a href="post.html">Post a role free</a> — reviewed and live within a day.</span>
+    <button class="promo-close" onclick="document.getElementById('promo').remove()" aria-label="Dismiss">×</button>
+  </div>
+</div>
 
 <a id="top"></a>
 <section class="hero">
@@ -533,7 +551,7 @@ function render(){
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
           ${e.l}
         </span>
-        <span class="tag">${j.level}</span>
+        <span class="tag${(j.level==='Senior'||j.level==='Lead')?' tag-pro':''}">${j.level}</span>
         <span class="tag">${j.cat}</span>
         <span class="tag">${j.work}</span>
       </div>
