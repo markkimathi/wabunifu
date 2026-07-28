@@ -11,5 +11,6 @@ COPY scraper scraper
 
 # api/kazi_submissions.db lives here — mount a persistent volume at /app/api
 # in production or every deploy wipes employer submissions.
-EXPOSE 8000
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Port 8080 to match what Fly's GitHub-connected deploy expects by default.
+EXPOSE 8080
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8080"]

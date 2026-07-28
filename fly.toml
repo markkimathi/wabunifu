@@ -1,6 +1,5 @@
-# Fly.io config. Rename `app` below before first deploy — `fly launch` will
-# also offer to do this and pick a region for you.
-app = "kazi-jobs"
+# Fly.io config.
+app = "wabunifu"
 primary_region = "jnb"   # Johannesburg — closest Fly region to East Africa
 
 [build]
@@ -13,7 +12,7 @@ primary_region = "jnb"   # Johannesburg — closest Fly region to East Africa
   destination = "/data"
 
 [http_service]
-  internal_port = 8000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = false   # keep it running — SQLite + a stopped/cold-started
   auto_start_machines = true   # machine is fine, but this avoids cold-start latency
