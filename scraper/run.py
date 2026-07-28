@@ -67,26 +67,30 @@ def gather_sample() -> list[dict]:
 
 
 def gather_live() -> list[dict]:
-    from sources import greenhouse, lever, ashby, breezy
+    from sources import greenhouse, lever, ashby, breezy, hibob, pinpoint, chippercash
     from sources.companies import COMPANIES
+
+    # ats value -> module. Adding a new ATS is just: write sources/<x>.py with
+    # fetch(token) and to_common(raw, company, token), then add one line here.
+    FETCHERS = {
+        "greenhouse": greenhouse,
+        "lever": lever,
+        "ashby": ashby,
+        "breezy": breezy,
+        "hibob": hibob,
+        "pinpoint": pinpoint,
+        "chippercash": chippercash,
+    }
+
     out: list[dict] = []
     for c in COMPANIES:
+        mod = FETCHERS.get(c["ats"])
+        if mod is None:
+            print(f"  ! no fetcher for ats={c['ats']} ({c['name']}) — skipping", file=sys.stderr)
+            continue
         try:
-            if c["ats"] == "greenhouse":
-                raw = greenhouse.fetch(c["token"])
-                out += [greenhouse.to_common(r, c["name"], c["token"]) for r in raw]
-            elif c["ats"] == "lever":
-                raw = lever.fetch(c["token"])
-                out += [lever.to_common(r, c["name"], c["token"]) for r in raw]
-            elif c["ats"] == "ashby":
-                raw = ashby.fetch(c["token"])
-                out += [ashby.to_common(r, c["name"], c["token"]) for r in raw]
-            elif c["ats"] == "breezy":
-                raw = breezy.fetch(c["token"])
-                out += [breezy.to_common(r, c["name"], c["token"]) for r in raw]
-            else:
-                print(f"  ! no fetcher for ats={c['ats']} ({c['name']}) — skipping", file=sys.stderr)
-                continue
+            raw = mod.fetch(c["token"])
+            out += [mod.to_common(r, c["name"], c["token"]) for r in raw]
             print(f"  ok  {c['name']}: {len(raw)} listings")
         except Exception as e:
             print(f"  !! {c['name']} failed: {e}", file=sys.stderr)

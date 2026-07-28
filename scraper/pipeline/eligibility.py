@@ -16,11 +16,42 @@ from __future__ import annotations
 import re
 
 KENYA = [r"\bkenya\b", r"\bnairobi\b", r"\bmombasa\b", r"\bkisumu\b"]
+
+# All 54 African countries, plus major business-hub cities for the ones most
+# likely to show up in a location string without the country name attached
+# (e.g. a listing that just says "Lagos" or "Cape Town"). Found via real
+# scraped data that a short hand-picked list was missing common countries
+# (Zambia, Malawi, Zimbabwe, ...) — a design role genuinely based in Lusaka
+# was getting the honest-but-wrong "check" badge instead of "africa" simply
+# because Zambia wasn't in the list. Err toward completeness here: a false
+# "check" (undersells a role someone could actually take) is worse than a
+# rare false "africa" match on an ambiguous city name.
 AFRICA_COUNTRIES = [
-    r"\bnigeria\b", r"\blagos\b", r"\bghana\b", r"\baccra\b", r"\bsouth africa\b",
-    r"\bcape town\b", r"\bjohannesburg\b", r"\begypt\b", r"\bcairo\b", r"\brwanda\b",
-    r"\bkigali\b", r"\btanzania\b", r"\buganda\b", r"\bethiopia\b", r"\bmorocco\b",
-    r"\bsenegal\b", r"\bafrica\b", r"\bpan[- ]african\b",
+    r"\balgeria\b", r"\bangola\b", r"\bbenin\b", r"\bbotswana\b", r"\bburkina faso\b",
+    r"\bburundi\b", r"\bcabo verde\b", r"\bcape verde\b", r"\bcameroon\b",
+    r"\bcentral african republic\b", r"\bchad\b", r"\bcomoros\b",
+    r"\b(dr |democratic republic of the? )?congo\b", r"\bdjibouti\b", r"\begypt\b",
+    r"\bequatorial guinea\b", r"\beritrea\b", r"\beswatini\b", r"\bswaziland\b",
+    r"\bethiopia\b", r"\bgabon\b", r"\bgambia\b", r"\bghana\b", r"\bguinea[- ]bissau\b",
+    r"\bguinea\b", r"\bivory coast\b", r"\bc[oô]te d.ivoire\b", r"\blesotho\b",
+    r"\bliberia\b", r"\blibya\b", r"\bmadagascar\b", r"\bmalawi\b", r"\bmali\b",
+    r"\bmauritania\b", r"\bmauritius\b", r"\bmorocco\b", r"\bmozambique\b",
+    r"\bnamibia\b", r"\bniger\b", r"\bnigeria\b", r"\brwanda\b",
+    r"\bs[aã]o tom[eé]( and pr[ií]ncipe)?\b", r"\bsenegal\b", r"\bseychelles\b",
+    r"\bsierra leone\b", r"\bsomalia\b", r"\bsouth africa\b", r"\bsouth sudan\b",
+    r"\bsudan\b", r"\btanzania\b", r"\btogo\b", r"\btunisia\b", r"\buganda\b",
+    r"\bzambia\b", r"\bzimbabwe\b",
+    # major cities, for listings that drop the country name
+    r"\blagos\b", r"\babuja\b", r"\baccra\b", r"\bcape town\b", r"\bjohannesburg\b",
+    r"\bpretoria\b", r"\bdurban\b", r"\bcairo\b", r"\balexandria\b", r"\bkigali\b",
+    r"\bkampala\b", r"\bdar es salaam\b", r"\bdodoma\b", r"\baddis ababa\b",
+    r"\bcasablanca\b", r"\brabat\b", r"\bdakar\b", r"\blusaka\b", r"\bharare\b",
+    r"\bgaborone\b", r"\bwindhoek\b", r"\bmaputo\b", r"\bluanda\b", r"\bkinshasa\b",
+    r"\bdouala\b", r"\byaound[eé]\b", r"\bam[aâ]n\b", r"\bfreetown\b", r"\bmonrovia\b",
+    r"\bconakry\b", r"\bbamako\b", r"\bniamey\b", r"\bouagadougou\b", r"\bntoum\b",
+    r"\bkhartoum\b", r"\bjuba\b", r"\btunis\b", r"\btripoli\b", r"\blom[eé]\b",
+    r"\bcotonou\b", r"\bantananarivo\b", r"\bport louis\b",
+    r"\bafrica\b", r"\bpan[- ]african\b", r"\bafrican union\b",
 ]
 WORLDWIDE = [r"\bworldwide\b", r"\banywhere\b", r"\bglobal(ly)?\b", r"\bany country\b",
              r"\bfully remote\b.*\bany", r"\bremote[- ]first\b"]
