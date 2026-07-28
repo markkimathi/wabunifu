@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Post a design role — Kazi</title>
+<link rel="icon" type="image/png" href="logo.png">
 <style>
   @font-face{font-family:Averta;src:url("fonts/Averta Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Averta;src:url("fonts/Averta Semibold.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -11,10 +12,11 @@
   @font-face{font-family:Averta;src:url("fonts/Averta Extra Bold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
 
   :root{
-    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#17150F; --muted:#6B655C; --faint:#9A938999;
-    --hairline:#E7E2D9; --hairline-strong:#D8D2C6; --green:#12513A; --green-soft:#E3EEE7;
-    --green-ink:#0C3D2B; --amber:#8A5A16; --amber-soft:#F6EAD5;
-    --shadow:0 1px 2px rgba(23,21,15,.04), 0 8px 24px -12px rgba(23,21,15,.10);
+    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
+    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1;
+    --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
+    --amber:#F25C05; --amber-soft:#FDE6D8;
+    --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
     --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1);
   }
   *{box-sizing:border-box}
@@ -27,17 +29,14 @@
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   .bar-inner{display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
-  .logomark{display:inline-grid;grid-template-columns:1fr 1fr;gap:3px;width:16px;height:16px}
-  .logomark i{border-radius:3px;display:block}
-  .logomark i:nth-child(1){background:#12513A} .logomark i:nth-child(2){background:#8A5A16}
-  .logomark i:nth-child(3){background:#B65C38} .logomark i:nth-child(4){background:#2F5D8A}
+  .logomark{height:20px;width:auto;flex:none;display:block}
   .brand .mark{font-weight:800;font-size:19px;letter-spacing:-.02em}
   .bar-spacer{flex:1}
   .back{font-size:13.5px;color:var(--muted);text-decoration:none;font-weight:500}
   .back:hover{color:var(--ink)}
 
   .head{padding:48px 0 8px}
-  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:600;margin:0 0 14px}
+  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:600;margin:0 0 14px}
   h1{font-weight:800;font-size:clamp(26px,4vw,36px);letter-spacing:-.02em;margin:0 0 10px;line-height:1.1}
   .lede{color:var(--muted);font-size:15.5px;margin:0 0 8px;max-width:56ch}
 
@@ -48,7 +47,7 @@
   input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
     border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
     transition:border-color .2s var(--ease-expo)}
-  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--green)}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand)}
   textarea{resize:vertical;min-height:90px;font-family:inherit}
   select{cursor:pointer}
 
@@ -58,7 +57,7 @@
   .submit{margin-top:6px;align-self:flex-start;background:var(--ink);color:#fff;border:0;
     font:inherit;font-weight:700;font-size:14.5px;padding:13px 24px;border-radius:999px;cursor:pointer;
     transition:background .3s var(--ease-expo),transform .3s var(--ease-expo)}
-  .submit:hover{background:var(--green)}
+  .submit:hover{background:var(--brand)}
   .submit:disabled{opacity:.6;cursor:not-allowed}
   .submit:active{transform:scale(.97)}
 
@@ -78,7 +77,7 @@
 <header class="bar">
   <div class="bar-inner">
     <a class="brand" href="index.html">
-      <span class="logomark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <img class="logomark" src="logo.png" alt="" aria-hidden="true">
       <span class="mark">Kazi</span>
     </a>
     <div class="bar-spacer"></div>
