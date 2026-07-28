@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "kazi-web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/markkimathi/Desktop/kaskazini/web && python3 -m http.server 8000"],
+      "port": 8000
+    }
+  ]
+}

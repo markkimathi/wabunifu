@@ -1,0 +1,9 @@
+sample/
+screenshots/
+.git/
+.claude/
+.DS_Store
+**/__pycache__/
+**/*.pyc
+api/kazi_submissions.db
+scraper/kazi.db

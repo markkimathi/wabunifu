@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Review queue — Kazi</title>
+<style>
+  @font-face{font-family:Averta;src:url("fonts/Averta Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Semibold.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Extra Bold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+
+  :root{
+    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#17150F; --muted:#6B655C; --faint:#9A938999;
+    --hairline:#E7E2D9; --hairline-strong:#D8D2C6; --green:#12513A; --green-soft:#E3EEE7;
+    --green-ink:#0C3D2B; --amber:#8A5A16; --amber-soft:#F6EAD5;
+    --shadow:0 1px 2px rgba(23,21,15,.04), 0 8px 24px -12px rgba(23,21,15,.10);
+    --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--canvas);color:var(--ink);font-family:"Averta",system-ui,sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+
+  header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
+  .bar-inner{display:flex;align-items:center;gap:20px;height:64px;max-width:860px;margin:0 auto;padding:0 24px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .logomark{display:inline-grid;grid-template-columns:1fr 1fr;gap:3px;width:16px;height:16px}
+  .logomark i{border-radius:3px;display:block}
+  .logomark i:nth-child(1){background:#12513A} .logomark i:nth-child(2){background:#8A5A16}
+  .logomark i:nth-child(3){background:#B65C38} .logomark i:nth-child(4){background:#2F5D8A}
+  .brand .mark{font-weight:800;font-size:19px;letter-spacing:-.02em}
+  .bar-spacer{flex:1}
+  .tag{font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);
+    border:1px solid var(--hairline-strong);padding:4px 10px;border-radius:999px}
+
+  h1{font-weight:800;font-size:24px;letter-spacing:-.02em;margin:32px 0 4px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
+
+  .gate{max-width:380px;margin:80px auto;text-align:center}
+  .gate input{width:100%;font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
+    border-radius:10px;padding:12px 14px;margin-top:14px}
+  .gate button{margin-top:12px;width:100%;background:var(--ink);color:#fff;border:0;font:inherit;
+    font-weight:700;font-size:14.5px;padding:12px;border-radius:999px;cursor:pointer}
+  .gate button:hover{background:var(--green)}
+  .gate .err{color:#a5341f;font-size:13px;margin-top:10px}
+
+  .tabs{display:flex;gap:8px;margin-bottom:18px}
+  .tabs button{font:inherit;font-size:13.5px;font-weight:600;padding:8px 14px;border-radius:999px;
+    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
+  .tabs button.active{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+  .item{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;margin-bottom:12px;
+    display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .item h3{margin:0 0 4px;font-size:16.5px;font-weight:700}
+  .item .meta{font-size:13px;color:var(--muted);margin:0 0 8px}
+  .item .meta b{color:var(--ink)}
+  .item .badges{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
+  .item .badges span{background:var(--green-soft);color:var(--green-ink);padding:3px 9px;border-radius:999px;font-weight:600}
+  .item a.applylink{font-size:12.5px;color:var(--green);word-break:break-all}
+  .actions{display:flex;gap:8px;flex:none}
+  .actions button{font:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px;border:0;cursor:pointer}
+  .approve{background:var(--green);color:#fff}
+  .reject{background:var(--amber-soft);color:var(--amber)}
+  .status{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
+  .status.approved{background:var(--green-soft);color:var(--green-ink)}
+  .status.rejected{background:var(--amber-soft);color:var(--amber)}
+
+  .empty{text-align:center;padding:60px 20px;color:var(--muted);border:1px dashed var(--hairline-strong);border-radius:var(--radius)}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="index.html">
+      <span class="logomark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="mark">Kazi</span>
+    </a>
+    <div class="bar-spacer"></div>
+    <span class="tag">Review queue</span>
+  </div>
+</header>
+
+<div class="wrap" id="gateWrap">
+  <div class="gate">
+    <h1 style="margin-top:0">Admin sign-in</h1>
+    <p class="sub">Enter the admin token to review employer submissions.</p>
+    <input type="password" id="tokenInput" placeholder="Admin token" autocomplete="off">
+    <button id="tokenSubmit">Continue</button>
+    <p class="err" id="gateErr" style="display:none"></p>
+  </div>
+</div>
+
+<div class="wrap" id="appWrap" style="display:none">
+  <h1>Review queue</h1>
+  <p class="sub">Approve a listing and it appears on the board within seconds. Nothing goes live without a click here.</p>
+
+  <div class="tabs">
+    <button data-status="pending" class="active">Pending</button>
+    <button data-status="approved">Approved</button>
+    <button data-status="rejected">Rejected</button>
+    <button data-status="all">All</button>
+  </div>
+
+  <div id="list"></div>
+</div>
+
+<script>
+const TOKEN_KEY = "kazi_admin_token";
+let token = localStorage.getItem(TOKEN_KEY) || "";
+
+const gateWrap = document.getElementById("gateWrap");
+const appWrap = document.getElementById("appWrap");
+const gateErr = document.getElementById("gateErr");
+const list = document.getElementById("list");
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: {...(opts.headers||{}), "Authorization": `Bearer ${token}`},
+  });
+  if (res.status === 401) throw new Error("unauthorized");
+  if (!res.ok) throw new Error(`request failed (${res.status})`);
+  return res.json();
+}
+
+async function tryEnter() {
+  try {
+    await api("/api/admin/submissions?status=pending");
+    localStorage.setItem(TOKEN_KEY, token);
+    gateWrap.style.display = "none";
+    appWrap.style.display = "block";
+    loadTab("pending");
+  } catch (e) {
+    gateErr.textContent = "That token didn't work.";
+    gateErr.style.display = "block";
+  }
+}
+
+document.getElementById("tokenSubmit").addEventListener("click", () => {
+  token = document.getElementById("tokenInput").value.trim();
+  tryEnter();
+});
+document.getElementById("tokenInput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") document.getElementById("tokenSubmit").click();
+});
+
+document.querySelectorAll(".tabs button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    loadTab(b.dataset.status);
+  });
+});
+
+async function loadTab(status) {
+  list.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const rows = await api(`/api/admin/submissions?status=${status}`);
+    render(rows, status);
+  } catch (e) {
+    list.innerHTML = `<div class="empty">Couldn't load — ${e.message}</div>`;
+  }
+}
+
+function render(rows, status) {
+  if (!rows.length) {
+    list.innerHTML = `<div class="empty">Nothing here.</div>`;
+    return;
+  }
+  list.innerHTML = rows.map(r => `
+    <div class="item" data-id="${r.id}">
+      <div>
+        <h3>${escapeHtml(r.title)}</h3>
+        <p class="meta"><b>${escapeHtml(r.company)}</b> · ${escapeHtml(r.location || "Remote")} · ${escapeHtml(r.work_type)} · ${escapeHtml(r.level)}</p>
+        <div class="badges">
+          <span>${escapeHtml(r.discipline)}</span>
+          <span>${eligLabel(r.eligibility)}</span>
+          ${r.salary ? `<span>${escapeHtml(r.salary)}</span>` : ""}
+        </div>
+        <p class="meta" style="margin-top:8px">Submitted by ${escapeHtml(r.contact_email)} · ${new Date(r.created_at).toLocaleDateString()}</p>
+        <a class="applylink" href="${escapeAttr(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>
+      </div>
+      <div class="actions">
+        ${r.status === "pending" ? `
+          <button class="approve" data-action="approve">Approve</button>
+          <button class="reject" data-action="reject">Reject</button>
+        ` : `<span class="status ${r.status}">${r.status}</span>`}
+      </div>
+    </div>
+  `).join("");
+
+  list.querySelectorAll("[data-action]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.closest(".item").dataset.id;
+      const action = btn.dataset.action;
+      btn.disabled = true;
+      try {
+        await api(`/api/admin/submissions/${id}/${action}`, { method: "POST" });
+        const activeTab = document.querySelector(".tabs button.active").dataset.status;
+        loadTab(activeTab);
+      } catch (e) {
+        alert("Failed: " + e.message);
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+function eligLabel(v) {
+  return {kenya:"Open to Kenya", africa:"Open to Africa", world:"Worldwide remote", check:"Check restrictions"}[v] || v;
+}
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+if (token) tryEnter();
+</script>
+</body>
+</html>

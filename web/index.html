@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kazi — Design jobs, open to Africa</title>
+<style>
+  /* ---- Averta (local) ---- */
+  @font-face{font-family:Averta;src:url("fonts/Averta Extra Thin.woff") format("woff");font-weight:100;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Extra Thin Italic.woff") format("woff");font-weight:100;font-style:italic;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Thin.woff") format("woff");font-weight:200;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Thin Italic.woff") format("woff");font-weight:200;font-style:italic;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Light.woff") format("woff");font-weight:300;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Light Italic.woff") format("woff");font-weight:300;font-style:italic;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Regular Italic.woff") format("woff");font-weight:400;font-style:italic;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Semibold.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Semibold Italic.woff") format("woff");font-weight:500;font-style:italic;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Bold Italic.woff") format("woff");font-weight:700;font-style:italic;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Extra Bold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Extra Bold italic.woff") format("woff");font-weight:800;font-style:italic;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Black.woff") format("woff");font-weight:900;font-style:normal;font-display:swap}
+  @font-face{font-family:Averta;src:url("fonts/Averta Black Italic.woff") format("woff");font-weight:900;font-style:italic;font-display:swap}
+
+  :root{
+    --canvas:#FFFFFF;
+    --surface:#FFFFFF;
+    --tag-bg:#F5F3EF;
+    --ink:#17150F;
+    --muted:#6B655C;
+    --faint:#9A938999;
+    --hairline:#E7E2D9;
+    --hairline-strong:#D8D2C6;
+    --green:#12513A;
+    --green-soft:#E3EEE7;
+    --green-ink:#0C3D2B;
+    --amber:#8A5A16;
+    --amber-soft:#F6EAD5;
+    --stone:#EFEBE3;
+    --clay:#B65C38;
+    --slate:#2F5D8A;
+    --shadow:0 1px 2px rgba(23,21,15,.04), 0 8px 24px -12px rgba(23,21,15,.10);
+    --shadow-lift:0 4px 10px rgba(23,21,15,.06), 0 18px 34px -14px rgba(23,21,15,.16);
+    --radius:20px;
+    --ease-expo:cubic-bezier(.19,1,.22,1);
+    --ease-pop:cubic-bezier(.34,1.56,.64,1);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--canvas);color:var(--ink);
+    font-family:"Averta",system-ui,sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  }
+  a{color:inherit}
+  ::selection{background:var(--green);color:#fff}
+  :focus-visible{outline:2.5px solid var(--green);outline-offset:2px;border-radius:6px}
+
+  .wrap{max-width:1200px;margin:0 auto;padding:0 24px}
+
+  /* ---- top bar ---- */
+  header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.82);
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
+  .bar-inner{display:flex;align-items:center;gap:20px;height:68px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .logomark{display:inline-grid;grid-template-columns:1fr 1fr;gap:3px;width:18px;height:18px;flex:none}
+  .logomark i{border-radius:3px;display:block;animation:dotblink 3.2s ease-in-out infinite}
+  .logomark i:nth-child(1){background:var(--green)}
+  .logomark i:nth-child(2){background:var(--amber);animation-delay:.3s}
+  .logomark i:nth-child(3){background:var(--clay);animation-delay:.6s}
+  .logomark i:nth-child(4){background:var(--slate);animation-delay:.9s}
+  .brand .mark{font-weight:800;font-size:21px;letter-spacing:-.02em}
+  .bar-spacer{flex:1}
+  .bar-stat{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);
+    background:var(--surface);border:1px solid var(--hairline);border-radius:999px;padding:7px 14px;
+    font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
+  .bar-stat b{color:var(--ink);font-weight:700}
+  .bar-stat .livedot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotblink 2.6s ease-in-out infinite}
+  .postlink{font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none;padding:8px 4px;
+    transition:color .3s var(--ease-expo)}
+  .postlink:hover{color:var(--green)}
+
+  @keyframes dotblink{0%,100%{opacity:1}50%{opacity:.25}}
+
+  /* ---- hero ---- */
+  .hero{position:relative;padding:76px 0 44px;overflow:hidden;text-align:center}
+  .hero-bg{position:absolute;inset:-15% -5% -25%;z-index:-1;filter:blur(60px);
+    background:
+      radial-gradient(38% 46% at 18% 28%, rgba(18,81,58,.30), transparent 70%),
+      radial-gradient(34% 42% at 82% 18%, rgba(138,90,22,.26), transparent 70%),
+      radial-gradient(42% 50% at 65% 78%, rgba(182,92,56,.24), transparent 70%),
+      radial-gradient(30% 40% at 8% 82%, rgba(47,93,138,.20), transparent 70%),
+      var(--canvas)}
+  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:600;margin:0 0 16px}
+  .hero h1{font-weight:800;margin:0 auto;max-width:16ch;
+    font-size:clamp(30px,4.6vw,52px);line-height:1.04;letter-spacing:-.025em}
+  .hero h1 em{font-style:normal;color:var(--green);position:relative}
+  .hero p.lede{margin:16px auto 0;max-width:52ch;color:var(--muted);font-size:16.5px}
+
+  /* ---- search pill ---- */
+  .searchpill{display:flex;align-items:stretch;gap:2px;margin:30px auto 0;max-width:660px;
+    background:var(--surface);border-radius:999px;padding:6px;box-shadow:var(--shadow-lift);
+    transition:transform .3s var(--ease-expo);}
+  .searchpill:focus-within{transform:translateY(-1px)}
+  .seg{display:flex;align-items:center;gap:8px;padding:0 14px;min-width:0}
+  .seg svg{flex:none;color:var(--muted)}
+  .seg-main{flex:1;min-width:0}
+  .seg-main input{border:0;outline:0;background:none;font:inherit;font-size:15px;width:100%;color:var(--ink)}
+  .seg-main input::placeholder{color:var(--faint)}
+  .seg-elig{flex:none;color:var(--muted)}
+  .seg-elig select{border:0;outline:0;background:none;font:inherit;font-size:14px;color:var(--ink);cursor:pointer;max-width:150px}
+  .seg-divider{width:1px;flex:none;background:var(--hairline-strong);margin:9px 0}
+  .searchbtn{flex:none;background:var(--ink);color:#fff;border:0;border-radius:999px;padding:0 24px;
+    font:inherit;font-weight:700;font-size:14.5px;cursor:pointer;transition:background .35s var(--ease-expo),transform .3s var(--ease-pop)}
+  @media (pointer:fine){.searchbtn:hover{background:var(--green)}}
+  .searchbtn:active{transform:scale(.96)}
+
+  .quickchips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:20px}
+  .qchip{position:relative;isolation:isolate;overflow:hidden;border:1px solid var(--hairline-strong);
+    background:var(--surface);color:var(--ink);
+    font:inherit;font-size:13px;font-weight:500;padding:7px 13px;border-radius:999px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:7px;
+    transition:color .4s var(--ease-expo),border-color .4s var(--ease-expo)}
+  .qchip::before{content:"";position:absolute;inset:0;z-index:-1;background:var(--green);
+    transform:translateY(102%);transition:transform .45s var(--ease-expo);border-radius:inherit}
+  .qchip .lead{width:6px;height:6px;border-radius:50%;background:var(--green);transition:background .4s var(--ease-expo)}
+  @media (pointer:fine){
+    .qchip:hover{border-color:var(--green);color:#fff}
+    .qchip:hover::before{transform:translateY(0)}
+    .qchip:hover .lead{background:#fff}
+  }
+  .qchip:active{transform:scale(.96);transition:transform .15s var(--ease-pop)}
+
+  /* ---- layout ---- */
+  .board{display:grid;grid-template-columns:280px 1fr;gap:28px;padding-top:36px;padding-bottom:90px;align-items:start}
+
+  /* ---- results head ---- */
+  .results-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;gap:16px}
+  .results-head .n{font-size:14.5px;color:var(--muted)}
+  .results-head .n b{color:var(--ink);font-weight:700}
+  .rh-right{display:flex;align-items:center;gap:10px}
+  .sort{display:flex;align-items:center;gap:7px;font-size:13.5px;color:var(--muted)}
+  .sort select{font:inherit;font-size:13.5px;border:1px solid var(--hairline-strong);background:var(--surface);
+    border-radius:8px;padding:7px 9px;color:var(--ink);cursor:pointer}
+  .filtbtn{display:none}
+
+  /* ---- filter rail ---- */
+  .rail{position:sticky;top:88px;background:var(--surface);border:1px solid var(--hairline);
+    border-radius:var(--radius);padding:20px 20px 18px;box-shadow:var(--shadow)}
+  .rail-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+  .rail-top h2{margin:0;font-size:16.5px;font-weight:800}
+  .reset{font-size:13px;color:var(--green);background:none;border:0;cursor:pointer;font-family:inherit;font-weight:600;padding:0}
+  .reset:hover{text-decoration:underline}
+  .rail-close-x{display:none}
+  .fgroup{border-top:1px solid var(--hairline);padding:16px 0}
+  .fgroup:first-of-type{padding-top:14px}
+  .fgroup h3{margin:0 0 12px;font-size:11.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .opt{display:flex;align-items:center;gap:10px;padding:5px 0;cursor:pointer;font-size:14px;color:var(--ink);user-select:none}
+  .opt input{position:absolute;opacity:0;pointer-events:none}
+  .box{width:17px;height:17px;border:1.5px solid var(--hairline-strong);border-radius:5px;flex:none;
+    display:grid;place-items:center;transition:.12s;background:var(--surface)}
+  .opt:hover .box{border-color:var(--green)}
+  .opt input:checked + .box{background:var(--green);border-color:var(--green)}
+  .box svg{opacity:0;transform:scale(.6);transition:.12s;color:#fff}
+  .opt input:checked + .box svg{opacity:1;transform:scale(1)}
+  .opt .cnt{margin-left:auto;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
+
+  .list{display:flex;flex-direction:column;gap:14px}
+
+  /* ---- job card ---- */
+  .card{background:var(--surface);border:1px solid var(--hairline);border-radius:var(--radius);
+    padding:20px 22px;
+    transition:border-color .4s var(--ease-expo), transform .4s var(--ease-expo), box-shadow .4s var(--ease-expo)}
+  @media (pointer:fine){
+    .card:hover{border-color:var(--hairline-strong);box-shadow:var(--shadow-lift);transform:translateY(-3px)}
+  }
+  .c-head{display:flex;align-items:flex-start;gap:13px}
+  .c-logo{flex:none;width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+    color:#fff;font-weight:800;font-size:17px;letter-spacing:0}
+  .c-head-text{min-width:0;flex:1}
+  .c-title{font-weight:700;font-size:18.5px;letter-spacing:-.015em;line-height:1.25;margin:0 0 4px}
+  .c-sub{display:flex;flex-wrap:wrap;align-items:center;gap:6px;color:var(--muted);font-size:13.5px}
+  .c-sub .co{color:var(--ink);font-weight:600}
+  .c-sub .sep{width:3px;height:3px;border-radius:50%;background:var(--faint);flex:none}
+  .c-sub .loc{display:inline-flex;align-items:center;gap:4px}
+  .c-sub .loc svg{opacity:.7}
+  .srcpill{font-size:11.5px;font-weight:600;color:var(--muted);background:var(--stone);
+    padding:3px 9px;border-radius:999px;white-space:nowrap}
+
+  .c-desc{margin:12px 0 0;color:var(--muted);font-size:13.5px;line-height:1.55;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  .c-tags{display:flex;flex-wrap:wrap;gap:7px;margin-top:14px}
+  .tag{font-size:12px;font-weight:500;color:var(--muted);border:1px solid var(--hairline-strong);
+    padding:4px 10px;border-radius:999px;background:var(--tag-bg)}
+
+  /* eligibility — the signature */
+  .elig{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+    padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .elig svg{flex:none}
+  .elig.open{background:var(--green-soft);color:var(--green-ink)}
+  .elig.world{background:#E7EDF5;color:#1E3A5F}
+  .elig.check{background:var(--amber-soft);color:var(--amber)}
+
+  .c-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}
+  .c-foot-meta{display:flex;align-items:center;gap:9px;color:var(--ink);font-size:13.5px}
+  .c-foot-meta .pay{font-weight:700;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:5px}
+  .c-foot-meta .pay.none{color:var(--faint);font-weight:500}
+  .c-foot-meta .sep{width:3px;height:3px;border-radius:50%;background:var(--faint);flex:none}
+  .c-foot-meta .posted{color:var(--faint);display:inline-flex;align-items:center;gap:5px}
+  .c-foot-meta svg{opacity:.75}
+
+  .apply{position:relative;isolation:isolate;display:inline-flex;align-items:center;gap:7px;
+    background:var(--ink);color:#fff;text-decoration:none;
+    font-size:13.5px;font-weight:700;padding:11px 18px;border-radius:999px;white-space:nowrap;
+    transition:background .35s var(--ease-expo),transform .35s var(--ease-expo)}
+  .apply-label{position:relative;display:inline-block;overflow:hidden;height:1.15em;line-height:1.15em}
+  .apply-label span{display:block;transition:transform .4s var(--ease-expo)}
+  .apply-label span:last-child{position:absolute;top:100%;left:0}
+  .apply svg{position:relative;transition:transform .35s var(--ease-expo)}
+  @media (pointer:fine){
+    .apply:hover{background:var(--green);transform:translateY(-1px)}
+    .apply:hover .apply-label span{transform:translateY(-100%)}
+    .apply:hover svg{transform:translate(2px,-2px)}
+  }
+
+  /* empty */
+  .empty{text-align:center;padding:70px 20px;border:1px dashed var(--hairline-strong);border-radius:var(--radius);color:var(--muted);background:var(--surface)}
+  .empty h4{font-size:19px;color:var(--ink);margin:0 0 6px;font-weight:700}
+  .empty button{margin-top:14px;background:var(--green);color:#fff;border:0;font:inherit;font-weight:700;
+    font-size:14px;padding:9px 18px;border-radius:999px;cursor:pointer;transition:transform .3s var(--ease-pop)}
+  .empty button:active{transform:scale(.95)}
+
+  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
+  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  .demo-note{font-size:12px;color:var(--amber);background:var(--amber-soft);padding:3px 9px;border-radius:6px;font-weight:500}
+
+  @media(max-width:860px){
+    .board{grid-template-columns:1fr;gap:0;padding-top:24px}
+    .rail{position:fixed;inset:0;top:0;z-index:60;background:var(--canvas);padding:20px 22px 40px;
+      overflow:auto;transform:translateX(-100%);transition:transform .22s ease;box-shadow:none;border:0;border-radius:0}
+    .rail.show{transform:none}
+    .rail-close-x{display:flex;align-items:center;justify-content:center;width:34px;height:34px;
+      border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
+      font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}
+    .filtbtn{display:flex;position:relative;align-items:center;justify-content:center;width:38px;height:38px;
+      flex:none;background:var(--surface);border:1px solid var(--hairline-strong);
+      border-radius:50%;cursor:pointer;color:var(--ink)}
+    .filtbtn .badge{position:absolute;top:-4px;right:-4px;background:var(--green);color:#fff;font-size:10px;
+      border-radius:999px;min-width:16px;height:16px;padding:0 4px;font-weight:700;display:none;
+      align-items:center;justify-content:center;line-height:1}
+    .seg-elig,.seg-divider{display:none}
+    .searchpill{max-width:none}
+    .c-foot{align-items:flex-start}
+    .bar-inner{gap:10px}
+    .bar-stat{padding:6px 10px;font-size:12px;gap:5px}
+    .bar-stat .stattext{display:none}
+    .postlink{font-size:13px;white-space:nowrap}
+  }
+  @media(min-width:861px){.rail-close-x{display:none}}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap bar-inner">
+    <a class="brand" href="#top">
+      <span class="logomark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+      <span class="mark">Kazi</span>
+    </a>
+    <div class="bar-spacer"></div>
+    <a class="postlink" href="post.html">Post a job</a>
+    <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
+  </div>
+</header>
+
+<a id="top"></a>
+<section class="hero">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="wrap">
+    <p class="kicker">Nairobi-built · Pan-African</p>
+    <h1>Design roles across Africa, and remote jobs <em>open to you</em>.</h1>
+    <p class="lede">One board for product, UX, UI, brand and motion design work — filtered so you only see roles a designer in Kenya can actually apply to. No sign-up. Apply straight at the source.</p>
+
+    <div class="searchpill">
+      <label class="seg seg-main">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="q" type="search" placeholder="Search title, company or city — e.g. product designer, Nairobi" autocomplete="off">
+      </label>
+      <span class="seg-divider"></span>
+      <label class="seg seg-elig">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+        <select id="heroElig" aria-label="Can I apply?">
+          <option value="">Can I apply?</option>
+        </select>
+      </label>
+      <button class="searchbtn" id="searchBtn">Search</button>
+    </div>
+
+    <div class="quickchips" id="quickchips">
+      <button class="qchip" data-quick="remote-kenya"><span class="lead"></span>Remote · open to Kenya</button>
+      <button class="qchip" data-quick="Product Design">Product Design</button>
+      <button class="qchip" data-quick="junior">Junior-friendly</button>
+      <button class="qchip" data-quick="nairobi">In Nairobi</button>
+    </div>
+  </div>
+</section>
+
+<div class="wrap board">
+  <!-- FILTER RAIL -->
+  <aside class="rail" id="rail" aria-label="Filters">
+    <div class="rail-top">
+      <h2>Filter</h2>
+      <button class="reset" id="clearAll">Reset</button>
+      <button class="rail-close-x" aria-label="Close filters" onclick="toggleRail(false)">×</button>
+    </div>
+
+    <div class="fgroup">
+      <h3>Discipline</h3>
+      <div id="f-cat"></div>
+    </div>
+    <div class="fgroup">
+      <h3>Can I apply?</h3>
+      <div id="f-elig"></div>
+    </div>
+    <div class="fgroup">
+      <h3>Work type</h3>
+      <div id="f-work"></div>
+    </div>
+    <div class="fgroup">
+      <h3>Level</h3>
+      <div id="f-level"></div>
+    </div>
+  </aside>
+
+  <!-- RESULTS -->
+  <main>
+    <div class="results-head">
+      <div class="n"><b id="resCount">0</b> roles found</div>
+      <div class="rh-right">
+        <div class="sort">
+          Sort
+          <select id="sort">
+            <option value="new">Newest first</option>
+            <option value="pay">Salary disclosed first</option>
+          </select>
+        </div>
+        <button class="filtbtn" onclick="toggleRail(true)" aria-label="Open filters">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+          <span class="badge" id="filtBadge">0</span>
+        </button>
+      </div>
+    </div>
+    <div class="list" id="list"></div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>Kazi — a centralized board for African design talent. Aggregated from company career pages and job boards; Kazi never hosts applications.</span>
+    <span class="demo-note">Prototype · mock data · Apply links open example career pages</span>
+  </div>
+</footer>
+
+<script>
+/* ---------- motion ----------
+   Reveal/hover motion mirrors the reference blueprint: expo-out easing,
+   staggered entrances, reduced-motion respected throughout. ---------- */
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const gsapReady = typeof window.gsap !== "undefined" && !reduceMotion;
+if(gsapReady && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+
+/* ---------- data ----------
+   JOBS is loaded from jobs.json (produced by the scraper pipeline).
+   FALLBACK is used only when the page is opened as a loose file with no
+   server, so the board still renders something to look at. ---------- */
+let JOBS = [];
+const FALLBACK = [
+  {t:"Senior Product Designer",co:"Flutterwave",city:"Lagos, Nigeria",work:"Hybrid",cat:"Product Design",level:"Senior",elig:"africa",pay:"$—",src:"Greenhouse",days:1,url:"https://flutterwave.com/careers",desc:"Own end-to-end product design for Flutterwave's merchant payments dashboard, from flows to design-system components."},
+  {t:"Product Designer",co:"M-KOPA",city:"Nairobi, Kenya",work:"Hybrid",cat:"Product Design",level:"Mid",elig:"kenya",pay:"Not disclosed",src:"Ashby",days:2,url:"https://m-kopa.com/careers",desc:"Design the in-app experience for M-KOPA customers financing solar and smartphones across East Africa."},
+  {t:"UX Designer (Remote, Africa)",co:"Andela",city:"Remote",work:"Remote",cat:"UX Design",level:"Mid",elig:"africa",pay:"$45k–$70k",src:"Lever",days:1,url:"https://andela.com/careers",desc:"Research and design talent-marketplace flows connecting African engineers with global companies."},
+  {t:"Staff Product Designer",co:"GitLab",city:"Remote",work:"Remote",cat:"Product Design",level:"Lead",elig:"world",pay:"$120k–$160k",src:"Greenhouse",days:3,url:"https://about.gitlab.com/jobs",desc:"Lead design for GitLab's CI/CD workflows, partnering with PM and engineering across a fully remote org."},
+  {t:"Brand & Visual Designer",co:"Chipper Cash",city:"Remote",work:"Remote",cat:"Brand Design",level:"Mid",elig:"africa",pay:"Not disclosed",src:"company site",days:4,url:"https://chippercash.com/careers",desc:"Shape brand identity and campaign visuals for a cross-border payments app used across the continent."},
+  {t:"UI Designer",co:"Cellulant",city:"Nairobi, Kenya",work:"On-site",cat:"UI Design",level:"Mid",elig:"kenya",pay:"KES 220k–320k",src:"BrighterMonday",days:2,url:"https://cellulant.io/careers",desc:"Craft polished interfaces for Cellulant's banking and payments products used by partner banks."},
+  {t:"Junior Product Designer",co:"Wasoko",city:"Nairobi, Kenya",work:"Hybrid",cat:"Product Design",level:"Junior",elig:"kenya",pay:"Not disclosed",src:"Fuzu",days:5,url:"https://wasoko.com/careers",desc:"Support senior designers building ordering and logistics tools for informal retailers across Africa."},
+  {t:"Product Designer, Payments",co:"Paystack",city:"Lagos, Nigeria",work:"Hybrid",cat:"Product Design",level:"Mid",elig:"africa",pay:"$—",src:"Greenhouse",days:3,url:"https://paystack.com/careers",desc:"Design checkout and dashboard experiences trusted by thousands of merchants across West Africa."},
+  {t:"Motion Designer",co:"Yoco",city:"Cape Town, South Africa",work:"Hybrid",cat:"Motion Design",level:"Mid",elig:"africa",pay:"Not disclosed",src:"Ashby",days:6,url:"https://yoco.com/za/careers",desc:"Produce motion assets and micro-interactions for Yoco's card-reader app and marketing campaigns."},
+  {t:"Senior UX Designer",co:"Canonical",city:"Remote",work:"Remote",cat:"UX Design",level:"Senior",elig:"world",pay:"$70k–$110k",src:"Greenhouse",days:2,url:"https://canonical.com/careers",desc:"Lead UX research and flows for Ubuntu and Canonical's enterprise cloud tooling, fully remote."},
+  {t:"Product Designer",co:"Apollo Agriculture",city:"Nairobi, Kenya",work:"Hybrid",cat:"Product Design",level:"Mid",elig:"kenya",pay:"Not disclosed",src:"Lever",days:1,url:"https://apolloagriculture.com/careers",desc:"Design farmer-facing tools that make financing and farm inputs accessible across rural Kenya."},
+  {t:"Design Systems Engineer",co:"Moniepoint",city:"Remote",work:"Remote",cat:"Design Systems",level:"Senior",elig:"africa",pay:"$—",src:"company site",days:4,url:"https://moniepoint.com/careers",desc:"Build and maintain the component library powering Moniepoint's banking products at scale."},
+  {t:"UX Researcher",co:"Sun King",city:"Nairobi, Kenya",work:"Hybrid",cat:"UX Research",level:"Mid",elig:"kenya",pay:"Not disclosed",src:"Greenhouse",days:7,url:"https://sunking.com/careers",desc:"Run field research with off-grid solar customers to guide product decisions across East Africa."},
+  {t:"Product Designer (Contract)",co:"Toptal",city:"Remote",work:"Remote",cat:"Product Design",level:"Senior",elig:"world",pay:"$30–$60/hr",src:"company site",days:2,url:"https://toptal.com/careers",desc:"Take on contract product design engagements for Toptal's global roster of client companies."},
+  {t:"Visual Designer",co:"mPharma",city:"Accra, Ghana",work:"On-site",cat:"Brand Design",level:"Mid",elig:"africa",pay:"Not disclosed",src:"BrighterMonday",days:8,url:"https://mpharma.com/careers",desc:"Design patient-facing materials and brand assets for mPharma's pharmacy network across Africa."},
+  {t:"Senior Product Designer",co:"Deel",city:"Remote",work:"Remote",cat:"Product Design",level:"Senior",elig:"world",pay:"$90k–$130k",src:"Ashby",days:1,url:"https://deel.com/careers",desc:"Design global payroll and compliance flows for Deel's remote-work platform, remote-first team."},
+  {t:"UI/UX Designer",co:"Kyosk Digital",city:"Nairobi, Kenya",work:"On-site",cat:"UI Design",level:"Mid",elig:"kenya",pay:"KES 250k–350k",src:"Fuzu",days:3,url:"https://kyosk.app/careers",desc:"Design ordering and delivery flows for retailers using Kyosk's B2B marketplace app."},
+  {t:"Product Designer",co:"Zapier",city:"Remote",work:"Remote",cat:"Product Design",level:"Mid",elig:"check",pay:"$95k–$130k",src:"Greenhouse",days:2,url:"https://zapier.com/jobs",desc:"Design automation-building flows for Zapier's no-code platform; check regional hiring restrictions."},
+  {t:"Junior UX/UI Designer",co:"BURN Manufacturing",city:"Nairobi, Kenya",work:"On-site",cat:"UI Design",level:"Junior",elig:"kenya",pay:"Not disclosed",src:"BrighterMonday",days:5,url:"https://burnstoves.com/careers",desc:"Support UI work for BURN's e-commerce and IoT stove-monitoring products."},
+  {t:"Lead Product Designer",co:"Sendy",city:"Nairobi, Kenya",work:"Hybrid",cat:"Product Design",level:"Lead",elig:"kenya",pay:"Not disclosed",src:"LinkedIn",days:9,url:"https://sendy.co.ke/careers",desc:"Lead a small design team building logistics and fleet tools for Sendy's delivery network."},
+  {t:"Brand Designer (Remote)",co:"Automattic",city:"Remote",work:"Remote",cat:"Brand Design",level:"Senior",elig:"world",pay:"$80k–$120k",src:"company site",days:3,url:"https://automattic.com/work-with-us",desc:"Shape brand and marketing design across Automattic's family of products, distributed team."},
+  {t:"Product Designer",co:"Sun King",city:"Remote",work:"Remote",cat:"Product Design",level:"Mid",elig:"africa",pay:"$—",src:"Greenhouse",days:6,url:"https://sunking.com/careers",desc:"Design mobile experiences for pay-as-you-go solar customers across multiple African markets."},
+];
+
+const CATS = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research"];
+const ELIG = [{k:"kenya",l:"Open to Kenya"},{k:"africa",l:"Open to Africa"},{k:"world",l:"Worldwide remote"},{k:"check",l:"Check restrictions"}];
+const WORK = ["Remote","Hybrid","On-site"];
+const LEVEL = ["Junior","Mid","Senior","Lead"];
+const LOGO_COLORS = ["#12513A","#8A5A16","#B65C38","#2F5D8A","#6B4A8A"];
+
+const ELIG_META = {
+  kenya:{cls:"open",l:"Open to Kenya"},
+  africa:{cls:"open",l:"Open to Africa"},
+  world:{cls:"world",l:"Worldwide remote"},
+  check:{cls:"check",l:"Check restrictions"},
+};
+
+const state = {q:"", cat:new Set(), elig:new Set(), work:new Set(), level:new Set(), sort:"new"};
+
+/* ---------- hero "can I apply?" select ---------- */
+const heroElig = document.getElementById("heroElig");
+ELIG.forEach(e=>{
+  const opt = document.createElement("option");
+  opt.value = e.k; opt.textContent = e.l;
+  heroElig.appendChild(opt);
+});
+heroElig.addEventListener("change",()=>{
+  state.elig.clear();
+  document.querySelectorAll('input[data-field="elig"]').forEach(c=>c.checked=false);
+  if(heroElig.value){
+    state.elig.add(heroElig.value);
+    const cb = document.querySelector(`input[data-field="elig"][value="${heroElig.value}"]`);
+    if(cb) cb.checked = true;
+  }
+  render();
+});
+
+/* ---------- build filter checkboxes ---------- */
+function countFor(field,val){
+  return JOBS.filter(j=>j[field]===val).length;
+}
+function makeOpts(containerId, items, field){
+  const box = document.getElementById(containerId);
+  box.innerHTML = items.map(it=>{
+    const val = typeof it==="string"?it:it.k;
+    const lab = typeof it==="string"?it:it.l;
+    return `<label class="opt">
+      <input type="checkbox" data-field="${field}" value="${val}">
+      <span class="box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+      <span>${lab}</span><span class="cnt">${countFor(field,val)}</span>
+    </label>`;
+  }).join("");
+}
+function bindCheckboxes(){
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener("change",()=>{
+      const f=cb.dataset.field;
+      cb.checked ? state[f].add(cb.value) : state[f].delete(cb.value);
+      if(f==="elig") heroElig.value = state.elig.size===1 ? [...state.elig][0] : "";
+      render();
+    });
+  });
+}
+makeOpts("f-cat",CATS,"cat");
+makeOpts("f-elig",ELIG,"elig");
+makeOpts("f-work",WORK,"work");
+makeOpts("f-level",LEVEL,"level");
+bindCheckboxes();
+
+/* ---------- filtering ---------- */
+function passes(j){
+  if(state.cat.size && !state.cat.has(j.cat)) return false;
+  if(state.elig.size && !state.elig.has(j.elig)) return false;
+  if(state.work.size && !state.work.has(j.work)) return false;
+  if(state.level.size && !state.level.has(j.level)) return false;
+  if(state.q){
+    const hay = (j.t+" "+j.co+" "+j.city+" "+j.cat).toLowerCase();
+    if(!hay.includes(state.q.toLowerCase())) return false;
+  }
+  return true;
+}
+function hasPay(j){ return j.pay!=="Not disclosed" && j.pay!=="$—"; }
+function initials(name){ return ((name||"?").trim()[0]||"?").toUpperCase(); }
+function logoColor(name){
+  let h=0; for(const c of (name||"")) h = (h*31 + c.charCodeAt(0))>>>0;
+  return LOGO_COLORS[h % LOGO_COLORS.length];
+}
+function fallbackDesc(j){
+  return `${j.level} ${j.cat.toLowerCase()} role at ${j.co}, ${j.work.toLowerCase()}.`;
+}
+
+function render(){
+  let rows = JOBS.filter(passes);
+  rows.sort((a,b)=> state.sort==="pay" ? (hasPay(b)-hasPay(a))||(a.days-b.days) : a.days-b.days );
+
+  document.getElementById("resCount").textContent = rows.length;
+  document.getElementById("liveCount").textContent = JOBS.length;
+
+  const active = state.cat.size+state.elig.size+state.work.size+state.level.size;
+  const badge = document.getElementById("filtBadge");
+  badge.style.display = active? "flex":"none";
+  badge.textContent = active;
+
+  const list = document.getElementById("list");
+  if(!rows.length){
+    list.innerHTML = `<div class="empty">
+      <h4>No roles match these filters</h4>
+      <div>Try widening “Can I apply?” or clearing your search — new roles land daily.</div>
+      <button onclick="clearAll()">Clear filters</button>
+    </div>`;
+    return;
+  }
+  list.innerHTML = rows.map(j=>{
+    const e = ELIG_META[j.elig];
+    const payCls = hasPay(j)?"pay":"pay none";
+    const payTxt = j.pay==="$—" ? "Not disclosed" : j.pay;
+    const posted = j.days===1?"Today":(j.days<7?j.days+"d ago":Math.round(j.days/7)+"w ago");
+    return `<article class="card">
+      <div class="c-head">
+        <span class="c-logo" style="background:${logoColor(j.co)}">${initials(j.co)}</span>
+        <div class="c-head-text">
+          <h2 class="c-title">${j.t}</h2>
+          <div class="c-sub">
+            <span class="co">${j.co}</span>
+            <span class="sep"></span>
+            <span class="loc"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>${j.city}</span>
+            <span class="sep"></span>
+            <span class="srcpill">via ${j.src}</span>
+          </div>
+        </div>
+      </div>
+      <p class="c-desc">${j.desc || fallbackDesc(j)}</p>
+      <div class="c-tags">
+        <span class="elig ${e.cls}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          ${e.l}
+        </span>
+        <span class="tag">${j.level}</span>
+        <span class="tag">${j.cat}</span>
+        <span class="tag">${j.work}</span>
+      </div>
+      <div class="c-foot">
+        <div class="c-foot-meta">
+          <span class="${payCls}">${payTxt}</span>
+          <span class="sep"></span>
+          <span class="posted"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>${posted}</span>
+        </div>
+        <a class="apply" href="${j.url}" target="_blank" rel="noopener">
+          <span class="apply-label"><span>Apply now</span><span aria-hidden="true">Apply now</span></span>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
+        </a>
+      </div>
+    </article>`;
+  }).join("");
+
+  revealCards();
+}
+
+function revealCards(){
+  const cards = document.querySelectorAll("#list .card");
+  if(!gsapReady || !cards.length) return;
+  gsap.set(cards, {opacity:0, y:16});
+  gsap.to(cards, {opacity:1, y:0, duration:.6, ease:"expo.out", stagger:.045});
+}
+
+/* ---------- events ---------- */
+document.getElementById("q").addEventListener("input",e=>{state.q=e.target.value;render()});
+document.getElementById("sort").addEventListener("change",e=>{state.sort=e.target.value;render()});
+document.getElementById("clearAll").addEventListener("click",clearAll);
+document.getElementById("searchBtn").addEventListener("click",()=>{
+  render();
+  document.querySelector('.board').scrollIntoView({behavior:'smooth',block:'start'});
+});
+
+function clearAll(){
+  state.q="";state.cat.clear();state.elig.clear();state.work.clear();state.level.clear();
+  document.getElementById("q").value="";
+  heroElig.value="";
+  document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
+  render();
+}
+
+/* quick chips */
+document.getElementById("quickchips").addEventListener("click",e=>{
+  const b=e.target.closest("[data-quick]"); if(!b) return;
+  const q=b.dataset.quick;
+  clearAll();
+  if(q==="remote-kenya"){ setCb("work","Remote"); setCb("elig","kenya"); setCb("elig","africa"); }
+  else if(q==="junior"){ setCb("level","Junior"); }
+  else if(q==="nairobi"){ document.getElementById("q").value="Nairobi"; state.q="Nairobi"; }
+  else { setCb("cat",q); }
+  render();
+  window.scrollTo({top:document.querySelector('.board').offsetTop-70,behavior:'smooth'});
+});
+function setCb(field,val){
+  const cb=document.querySelector(`input[data-field="${field}"][value="${val}"]`);
+  if(cb){cb.checked=true;state[field].add(val);}
+}
+
+function toggleRail(show){ document.getElementById("rail").classList.toggle("show",show); }
+
+/* ---------- boot: load the scraped feed, rebuild filter counts, render ---------- */
+async function boot(){
+  try{
+    // /api/jobs (when the FastAPI server is running) merges scraped listings
+    // with admin-approved employer submissions. Fall back to the static
+    // scraper output, then to FALLBACK if neither is reachable.
+    let res = await fetch("/api/jobs", {cache:"no-store"});
+    if(!res.ok) res = await fetch("jobs.json", {cache:"no-store"});
+    if(!res.ok) throw new Error("no jobs feed reachable");
+    const data = await res.json();
+    JOBS = data.jobs || [];
+    if(data.generated_at){
+      const d = new Date(data.generated_at);
+      document.querySelector(".bar-stat").innerHTML =
+        `<span class="livedot"></span><b id="liveCount">${JOBS.length}</b><span class="stattext"> roles · updated ${d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>`;
+    }
+  }catch(e){
+    JOBS = FALLBACK;  // opened as a loose file, or neither feed is reachable
+  }
+  // rebuild filter counts now that JOBS is populated
+  makeOpts("f-cat",CATS,"cat");
+  makeOpts("f-elig",ELIG,"elig");
+  makeOpts("f-work",WORK,"work");
+  makeOpts("f-level",LEVEL,"level");
+  bindCheckboxes();
+  render();
+}
+function revealHero(){
+  if(!gsapReady) return;
+  gsap.timeline({defaults:{ease:"expo.out"}})
+    .from(".kicker", {opacity:0, y:14, duration:.5})
+    .from(".hero h1", {opacity:0, y:14, duration:.7}, "-=.35")
+    .from(".hero p.lede", {opacity:0, y:14, duration:.6}, "-=.45")
+    .from(".searchpill", {opacity:0, y:14, duration:.6}, "-=.4")
+    .from(".quickchips .qchip", {opacity:0, y:14, duration:.5, stagger:.06}, "-=.35");
+}
+revealHero();
+boot();
+</script>
+</body>
+</html>
