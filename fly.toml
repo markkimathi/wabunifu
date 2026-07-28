@@ -1,20 +1,29 @@
-# Fly.io config. Rename `app` below before first deploy — `fly launch` will
-# also offer to do this and pick a region for you.
-app = "kazi-jobs"
-primary_region = "jnb"   # Johannesburg — closest Fly region to East Africa
+# fly.toml app configuration file generated for wabunifu on 2026-07-28T21:39:33Z
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'wabunifu'
+primary_region = 'jnb'
 
 [build]
 
 [env]
-  KAZI_DB_PATH = "/data/kazi_submissions.db"
+  KAZI_DB_PATH = '/data/kazi_submissions.db'
 
 [[mounts]]
-  source = "kazi_data"
-  destination = "/data"
+  source = 'kazi_data'
+  destination = '/data'
 
 [http_service]
-  internal_port = 8000
+  internal_port = 8080
   force_https = true
-  auto_stop_machines = false   # keep it running — SQLite + a stopped/cold-started
-  auto_start_machines = true   # machine is fine, but this avoids cold-start latency
+  auto_stop_machines = 'off'
+  auto_start_machines = true
   min_machines_running = 1
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
