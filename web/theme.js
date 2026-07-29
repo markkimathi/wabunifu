@@ -22,40 +22,16 @@
     syncToggles(theme);
   }
 
-  // Lets the default UA cross-fade get out of the way so only our own
-  // clip-path reveal plays, and makes sure the new snapshot draws on
-  // top of the old one so its growing circle is what's visible.
-  var vtStyle = document.createElement("style");
-  vtStyle.textContent =
-    "::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}" +
-    "::view-transition-old(root){z-index:1}::view-transition-new(root){z-index:2}";
-  document.head.appendChild(vtStyle);
+  // A plain colored disc, fixed to the viewport, that shrinks away from
+  // the toggle button's own position (getBoundingClientRect), so it's
+  // correct regardless of scroll position.
+  function wipe(next, x, y){
+    var reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(reduceMotion || typeof Element === "undefined" || !Element.prototype.animate){
+      applyTheme(next);
+      return;
+    }
 
-  // Real "content wipes in" reveal: the View Transitions API snapshots
-  // the actual before/after page (not just a flat color) so growing a
-  // clip-path circle on the new snapshot shows real content sweeping
-  // in from the toggle, with the old page staying visible underneath
-  // until the circle covers it.
-  function viewTransitionWipe(next, x, y){
-    var maxR = Math.hypot(
-      Math.max(x, window.innerWidth - x),
-      Math.max(y, window.innerHeight - y)
-    );
-    var transition = document.startViewTransition(function(){ applyTheme(next); });
-    transition.ready.then(function(){
-      root.animate(
-        { clipPath: [
-          "circle(0px at " + x + "px " + y + "px)",
-          "circle(" + maxR + "px at " + x + "px " + y + "px)"
-        ] },
-        { duration: 900, easing: "cubic-bezier(.65,0,.35,1)", pseudoElement: "::view-transition-new(root)" }
-      );
-    }).catch(function(){});
-  }
-
-  // Fallback for browsers without View Transitions: a plain colored
-  // disc that shrinks away, shown only until it can be replaced.
-  function fallbackWipe(next, x, y){
     var oldCanvas = getComputedStyle(root).getPropertyValue("--canvas").trim();
 
     var maxR = Math.hypot(
@@ -93,19 +69,6 @@
     );
     anim.onfinish = function(){ clip.remove(); };
     anim.oncancel = function(){ clip.remove(); };
-  }
-
-  function wipe(next, x, y){
-    var reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if(reduceMotion){
-      applyTheme(next);
-    } else if(typeof document.startViewTransition === "function"){
-      viewTransitionWipe(next, x, y);
-    } else if(typeof Element !== "undefined" && Element.prototype.animate){
-      fallbackWipe(next, x, y);
-    } else {
-      applyTheme(next);
-    }
   }
 
   window.kaziToggleTheme = function(evt){

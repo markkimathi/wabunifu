@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Review queue · Kazi</title>
 <link rel="icon" type="image/png" href="logo.png">
-<script src="theme.js"></script>
+<script src="theme.js?v=6"></script>
 <style>
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -29,20 +29,36 @@
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;
+    background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
     font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  body > .wrap{flex:1}
   a{color:inherit}
   .wrap{max-width:860px;margin:0 auto;padding:0 24px}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
-  .bar-inner{display:flex;align-items:center;gap:20px;height:64px;max-width:860px;margin:0 auto;padding:0 24px}
+  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:860px;margin:0 auto;padding:0 24px}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
   .logomark{height:20px;width:auto;flex:none;display:block}
   .bar-spacer{flex:1}
   .tag{font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);
     border:1px solid var(--hairline-strong);padding:4px 10px;border-radius:999px}
+
+  .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    display:flex;align-items:center;gap:20px;white-space:nowrap}
+  .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
+    transition:color .3s var(--ease-expo)}
+  .nav-links a:hover{color:var(--ink)}
+
+  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
+  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;max-width:860px}
+  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
+  .foot-links a{color:var(--muted);text-decoration:none}
+  .foot-links a:hover{color:var(--ink)}
+
+  @media(max-width:480px){.nav-jobs{display:none}}
 
   .theme-toggle{position:relative;flex:none;width:36px;height:36px;padding:0;border-radius:50%;
     background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
@@ -100,6 +116,10 @@
       <img class="logomark" src="logo.png" alt="Kazi">
     </a>
     <div class="bar-spacer"></div>
+    <nav class="nav-links">
+      <a class="nav-jobs" href="index.html">Jobs</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
     <span class="tag">Review queue</span>
     <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
       <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -131,6 +151,18 @@
 
   <div id="list"></div>
 </div>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© Kazi</span>
+    <nav class="foot-links">
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="cookies.html">Cookies</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
+  </div>
+</footer>
 
 <script>
 const TOKEN_KEY = "kazi_admin_token";

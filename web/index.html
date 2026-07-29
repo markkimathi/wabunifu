@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kazi · Design jobs, open to Africa</title>
 <link rel="icon" type="image/png" href="logo.png">
-<script src="theme.js"></script>
+<script src="theme.js?v=6"></script>
 <style>
   /* ---- Grift (local) ---- */
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Thin.woff2") format("woff2"),url("fonts/grift/Grift-Thin.woff") format("woff");font-weight:100;font-style:normal;font-display:swap}
@@ -91,7 +91,7 @@
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.82);
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.78)}
-  .bar-inner{display:flex;align-items:center;gap:20px;height:68px}
+  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:68px}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
   .logomark{height:22px;width:auto;flex:none;display:block}
   .bar-spacer{flex:1}
@@ -100,9 +100,11 @@
     font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
   .bar-stat b{color:var(--ink);font-weight:700}
   .bar-stat .livedot{width:6px;height:6px;border-radius:50%;background:var(--brand);animation:dotblink 2.6s ease-in-out infinite}
-  .postlink{font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none;padding:8px 4px;
+  .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    display:flex;align-items:center;gap:22px;white-space:nowrap}
+  .nav-links a{font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none;
     transition:color .3s var(--ease-expo)}
-  .postlink:hover{color:var(--brand)}
+  .nav-links a:hover{color:var(--brand)}
 
   .theme-toggle{position:relative;flex:none;width:38px;height:38px;padding:0;border-radius:50%;
     background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
@@ -215,9 +217,20 @@
   .opt input:checked + .box svg{opacity:1;transform:scale(1)}
   .opt .cnt{margin-left:auto;font-size:12px;color:var(--faint);font-variant-numeric:tabular-nums}
 
-  .list{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;align-items:start}
+  .list{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;align-items:stretch}
+  .list.list-1col{grid-template-columns:1fr}
   .list .empty{grid-column:1/-1}
   @media(max-width:600px){.list{grid-template-columns:1fr}}
+
+  /* ---- grid/list view toggle ---- */
+  .view-toggle{display:flex;align-items:center;border:1px solid var(--hairline-strong);border-radius:8px;overflow:hidden}
+  .view-btn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;
+    background:var(--surface);border:0;color:var(--muted);cursor:pointer;
+    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
+  .view-btn + .view-btn{border-left:1px solid var(--hairline-strong)}
+  .view-btn.active{background:var(--brand);color:#fff}
+  .view-btn:hover:not(.active){color:var(--ink)}
+  @media(max-width:600px){.view-toggle{display:none}}
 
   /* ---- pagination ---- */
   .pagination{display:flex;align-items:center;justify-content:center;gap:6px;margin-top:32px;flex-wrap:wrap}
@@ -231,7 +244,7 @@
 
   /* ---- job card ---- */
   .card{background:var(--surface);border:1px solid #E6E6E6;border-radius:var(--radius);
-    padding:20px 22px;
+    padding:20px 22px;display:flex;flex-direction:column;
     transition:border-color .4s var(--ease-expo), transform .4s var(--ease-expo), background .3s var(--ease-expo)}
   [data-theme="dark"] .card{border-color:#263340}
   @media (pointer:fine){
@@ -264,7 +277,7 @@
   .elig.world{background:var(--tag-bg);color:var(--muted)}
   .elig.check{background:var(--tag-bg);color:var(--muted)}
 
-  .c-foot{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:16px}
+  .c-foot{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:auto;padding-top:16px}
   .c-foot-meta{display:flex;align-items:center;gap:9px;color:var(--ink);font-size:13.5px}
   .c-foot-meta .pay{font-weight:700;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:5px}
   .c-foot-meta .pay.none{color:var(--faint);font-weight:500}
@@ -295,7 +308,9 @@
 
   footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
   footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
-  .demo-note{font-size:12px;color:var(--amber);background:var(--amber-soft);padding:3px 9px;border-radius:6px;font-weight:500}
+  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
+  .foot-links a{color:var(--muted);text-decoration:none}
+  .foot-links a:hover{color:var(--ink)}
 
   @media(max-width:860px){
     .board{grid-template-columns:1fr;gap:0;padding-top:24px}
@@ -317,8 +332,10 @@
     .bar-inner{gap:10px}
     .bar-stat{padding:6px 10px;font-size:12px;gap:5px}
     .bar-stat .stattext{display:none}
-    .postlink{font-size:13px;white-space:nowrap}
+    .nav-links{gap:14px}
+    .nav-links a{font-size:12.5px;white-space:nowrap}
   }
+  @media(max-width:480px){.nav-jobs{display:none}}
   @media(min-width:861px){.rail-close-x{display:none}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
@@ -327,11 +344,15 @@
 
 <header class="bar">
   <div class="wrap bar-inner">
-    <a class="brand" href="#top">
+    <a class="brand" href="index.html">
       <img class="logomark" src="logo.png" alt="Kazi">
     </a>
     <div class="bar-spacer"></div>
-    <a class="postlink" href="post.html">Post a job</a>
+    <nav class="nav-links">
+      <a class="nav-jobs" href="index.html">Jobs</a>
+      <a href="post.html">Post a job</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
     <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
     <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
       <svg class="i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -410,6 +431,14 @@
     <div class="results-head">
       <div class="n"><b id="resCount">0</b> roles found</div>
       <div class="rh-right">
+        <div class="view-toggle" role="group" aria-label="Layout">
+          <button class="view-btn active" id="viewBtn2" data-view="2" aria-label="Two per row" aria-pressed="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="18" rx="1.5"/><rect x="13" y="3" width="8" height="18" rx="1.5"/></svg>
+          </button>
+          <button class="view-btn" id="viewBtn1" data-view="1" aria-label="One per row" aria-pressed="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1.5"/></svg>
+          </button>
+        </div>
         <div class="sort">
           Sort
           <select id="sort">
@@ -434,7 +463,12 @@
 <footer class="foot">
   <div class="wrap">
     <span>Kazi is a centralized board for African design talent. Aggregated from company career pages and job boards; Kazi never hosts applications.</span>
-    <span class="demo-note">Prototype · mock data · Apply links open example career pages</span>
+    <nav class="foot-links">
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="cookies.html">Cookies</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
   </div>
 </footer>
 
@@ -701,6 +735,22 @@ function setCb(field,val){
 }
 
 function toggleRail(show){ document.getElementById("rail").classList.toggle("show",show); }
+
+/* ---------- grid/list view toggle (2 per row vs 1 per row) ---------- */
+const VIEW_KEY = "kazi_view";
+function applyView(view){
+  document.getElementById("list").classList.toggle("list-1col", view === "1");
+  document.querySelectorAll(".view-btn").forEach(b=>{
+    const active = b.dataset.view === view;
+    b.classList.toggle("active", active);
+    b.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+  localStorage.setItem(VIEW_KEY, view);
+}
+document.querySelectorAll(".view-btn").forEach(b=>{
+  b.addEventListener("click", ()=>applyView(b.dataset.view));
+});
+applyView(localStorage.getItem(VIEW_KEY) || "2");
 
 /* ---------- boot: load the scraped feed, rebuild filter counts, render ---------- */
 async function boot(){

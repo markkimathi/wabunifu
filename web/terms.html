@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Terms and Conditions · Kazi</title>
+<link rel="icon" type="image/png" href="logo.png">
+<script src="theme.js?v=6"></script>
+<style>
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Bold.woff2") format("woff2"),url("fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+
+  :root{
+    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
+    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1;
+    --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
+    --amber:#F25C05; --amber-soft:#FDE6D8;
+    --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
+    --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1);
+  }
+  :root[data-theme="dark"]{
+    --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
+    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8;
+    --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
+    --amber:#FF9B57; --amber-soft:#3A2412;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;
+    background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
+    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  body > .wrap{flex:1}
+  a{color:inherit}
+  .wrap{max-width:720px;margin:0 auto;padding:0 24px}
+
+  header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
+  [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
+  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .logomark{height:20px;width:auto;flex:none;display:block}
+  .bar-spacer{flex:1}
+
+  .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    display:flex;align-items:center;gap:20px;white-space:nowrap}
+  .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
+    transition:color .3s var(--ease-expo)}
+  .nav-links a:hover{color:var(--ink)}
+  @media(max-width:480px){.nav-jobs{display:none}}
+
+  .theme-toggle{position:relative;flex:none;width:36px;height:36px;padding:0;border-radius:50%;
+    background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
+    display:grid;place-items:center;color:var(--ink);
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .theme-toggle:hover{border-color:var(--brand);color:var(--brand)}
+  .theme-toggle svg{position:absolute;transition:transform .5s var(--ease-expo),opacity .35s var(--ease-expo)}
+  .theme-toggle .i-moon{opacity:0;transform:rotate(-90deg) scale(.4)}
+  [data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
+  [data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:rotate(0deg) scale(1)}
+
+  .legal{padding:48px 0 80px}
+  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:600;margin:0 0 14px}
+  .legal h1{font-weight:800;font-size:clamp(28px,4vw,38px);letter-spacing:-.02em;margin:0 0 8px;line-height:1.1}
+  .legal .updated{color:var(--faint);font-size:13px;margin:0 0 36px}
+  .legal h2{font-weight:700;font-size:19px;margin:36px 0 12px;letter-spacing:-.01em}
+  .legal p{color:var(--muted);margin:0 0 14px;line-height:1.65}
+  .legal ul{color:var(--muted);margin:0 0 14px;padding-left:20px;line-height:1.65}
+  .legal li{margin-bottom:6px}
+  .legal a{color:var(--brand);text-decoration:underline;text-underline-offset:2px}
+
+  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
+  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
+  .foot-links a{color:var(--muted);text-decoration:none}
+  .foot-links a:hover{color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="index.html">
+      <img class="logomark" src="logo.png" alt="Kazi">
+    </a>
+    <div class="bar-spacer"></div>
+    <nav class="nav-links">
+      <a class="nav-jobs" href="index.html">Jobs</a>
+      <a href="post.html">Post a job</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
+    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
+      <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    </button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="legal">
+    <p class="kicker">Legal</p>
+    <h1>Terms and Conditions</h1>
+    <p class="updated">Last updated 29 July 2026</p>
+
+    <h2>1. About Kazi</h2>
+    <p>Kazi is a job board for design roles open to designers in Kenya and across Africa. It works two ways: we aggregate publicly listed roles from company career pages and job boards, and employers can submit roles directly for review. Kazi is not a recruitment agency, staffing firm, or employer of record, and never hosts job applications — every "Apply" link sends you straight to the employer's own site.</p>
+
+    <h2>2. Using the board</h2>
+    <p>Kazi is free to browse. We do our best to keep listings current and to classify each one's eligibility (who can genuinely apply) accurately, but we can't guarantee that every aggregated listing is accurate, still open, or correctly classified. Always confirm the details on the employer's own site before applying.</p>
+
+    <h2>3. Eligibility badges</h2>
+    <p>The "Open to Kenya," "Open to Africa," "Worldwide remote," and "Check restrictions" badges are a best-effort classification based on the listing's stated location and text, or on what an employer told us directly. They are not a legal or contractual guarantee that you're eligible to work in any given location — visa, work-permit, and immigration questions are between you and the employer.</p>
+
+    <h2>4. Posting a job (for employers)</h2>
+    <p>By submitting a role through "Post a job," you confirm that the role and company are real, the application link goes straight to it, and the eligibility you select genuinely reflects who can apply. We review every submission before it appears on the board and may reject or remove a listing at our discretion, including after it's published, without notice. We don't guarantee placement, how long a listing stays visible, or applicant volume.</p>
+
+    <h2>5. No warranty</h2>
+    <p>Kazi is provided "as is," without warranties of any kind. We don't guarantee that the board, any listing, or any employer's information is accurate, complete, or current. To the extent permitted by law, Kazi isn't liable for loss or damage arising from your use of the site or from your interactions with any employer or applicant.</p>
+
+    <h2>6. Prohibited use</h2>
+    <ul>
+      <li>Submitting fake, misleading, or non-genuine job listings.</li>
+      <li>Scraping or systematically extracting data from Kazi without permission.</li>
+      <li>Using the site to harass, spam, or defraud anyone.</li>
+    </ul>
+
+    <h2>7. Changes to these terms</h2>
+    <p>We may update these terms as the site evolves. Continuing to use Kazi after a change means you accept the update.</p>
+
+    <h2>8. Contact</h2>
+    <p>Questions about these terms: <a href="mailto:hello@odana.design">hello@odana.design</a></p>
+  </div>
+</div>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© Kazi</span>
+    <nav class="foot-links">
+      <a href="terms.html">Terms</a>
+      <a href="privacy.html">Privacy</a>
+      <a href="cookies.html">Cookies</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
