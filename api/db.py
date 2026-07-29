@@ -1,5 +1,5 @@
 """
-SQLite storage for employer-submitted job postings — the "post a job" journey.
+SQLite storage for employer-submitted job postings: the "post a job" journey.
 Raw sqlite3, no ORM, matching scraper/store.py's style.
 
 Every submission starts as 'pending' and is invisible to the public feed until
@@ -12,7 +12,7 @@ import sqlite3
 from pathlib import Path
 from datetime import datetime, timezone
 
-# Override with KAZI_DB_PATH in production to point at a mounted volume —
+# Override with KAZI_DB_PATH in production to point at a mounted volume:
 # e.g. a host that wipes the container filesystem on every deploy needs this
 # database living outside the app's own source directory, or a redeploy
 # silently erases every employer submission.

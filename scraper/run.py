@@ -86,7 +86,7 @@ def gather_live() -> list[dict]:
     for c in COMPANIES:
         mod = FETCHERS.get(c["ats"])
         if mod is None:
-            print(f"  ! no fetcher for ats={c['ats']} ({c['name']}) — skipping", file=sys.stderr)
+            print(f"  ! no fetcher for ats={c['ats']} ({c['name']}), skipping", file=sys.stderr)
             continue
         try:
             raw = mod.fetch(c["token"])
@@ -102,7 +102,7 @@ def main():
     ap.add_argument("--sample", action="store_true", help="use offline fixtures instead of live fetch")
     args = ap.parse_args()
 
-    print("Kazi pipeline —", "SAMPLE mode" if args.sample else "LIVE mode")
+    print("Kazi pipeline:", "SAMPLE mode" if args.sample else "LIVE mode")
     common = gather_sample() if args.sample else gather_live()
     print(f"fetched {len(common)} raw listings")
 
@@ -123,7 +123,7 @@ def main():
     OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False))
     print(f"wrote {OUT} ({len(jobs)} jobs)")
 
-    # quick eligibility breakdown — useful sanity check
+    # quick eligibility breakdown: useful sanity check
     from collections import Counter
     breakdown = Counter(j.eligibility for j in jobs)
     print("eligibility:", dict(breakdown))

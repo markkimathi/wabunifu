@@ -21,7 +21,7 @@ KENYA = [r"\bkenya\b", r"\bnairobi\b", r"\bmombasa\b", r"\bkisumu\b"]
 # likely to show up in a location string without the country name attached
 # (e.g. a listing that just says "Lagos" or "Cape Town"). Found via real
 # scraped data that a short hand-picked list was missing common countries
-# (Zambia, Malawi, Zimbabwe, ...) — a design role genuinely based in Lusaka
+# (Zambia, Malawi, Zimbabwe, ...): a design role genuinely based in Lusaka
 # was getting the honest-but-wrong "check" badge instead of "africa" simply
 # because Zambia wasn't in the list. Err toward completeness here: a false
 # "check" (undersells a role someone could actually take) is worse than a
@@ -87,8 +87,8 @@ def infer_eligibility(location: str, work_type: str, region_text: str = "") -> s
     reg = (region_text or "").lower()
     remote = work_type.lower() == "remote"
 
-    # On-site / hybrid: eligibility is just where the office is. Location only
-    # — a job description's general "we operate across Africa" marketing copy
+    # On-site / hybrid: eligibility is just where the office is. Location only:
+    # a job description's general "we operate across Africa" marketing copy
     # says nothing about where THIS office actually sits.
     if not remote:
         if _any(KENYA, loc):
@@ -100,15 +100,15 @@ def infer_eligibility(location: str, work_type: str, region_text: str = "") -> s
     # Remote: the location field is what the ATS itself says this role is
     # scoped to (e.g. "Remote, Nigeria", "North America", "Worldwide"), so it
     # is authoritative and checked first. Body text is a fallback ONLY when
-    # location itself is uninformative (blank, or bare "Remote") — otherwise
+    # location itself is uninformative (blank, or bare "Remote"); otherwise
     # a company's boilerplate "we hire across Africa" copy in the description
     # could override an explicit location restriction (seen in the wild: an
     # Andela role scoped to "North America" whose about-us paragraph mentions
-    # Africa repeatedly — that must not flip it to "africa").
+    # Africa repeatedly, which must not flip it to "africa").
     verdict = _classify(loc)
     if verdict:
         return verdict
     verdict = _classify(reg)
     if verdict:
         return verdict
-    return "check"  # remote, no region stated anywhere — the honest default
+    return "check"  # remote, no region stated anywhere: the honest default

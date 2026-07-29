@@ -4,7 +4,7 @@ discipline and seniority. This is the layer that stops the board filling up with
 "design engineer" (usually SWE) or "designer of database schemas" noise.
 
 Everything here is rule-based and fast. When you outgrow rules, this is the clean
-seam to drop in an embedding classifier — the interface (classify -> Discipline?)
+seam to drop in an embedding classifier: the interface (classify -> Discipline?)
 stays the same.
 """
 from __future__ import annotations

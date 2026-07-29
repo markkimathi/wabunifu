@@ -4,7 +4,7 @@ Endpoint:  https://{token}.breezy.hr/json?verbose=true
 
 `token` is the subdomain in a company's Breezy careers URL, e.g.
   wasoko.breezy.hr   -> token "wasoko"
-Find it by visiting a company's careers page — Breezy boards are usually
+Find it by visiting a company's careers page; Breezy boards are usually
 embedded or linked from there.
 """
 from __future__ import annotations

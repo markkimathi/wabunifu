@@ -10,7 +10,7 @@ DISCIPLINES = [
     "Motion Design", "Design Systems", "UX Research", "Graphic Design",
 ]
 
-# Eligibility badges. This is Kazi's signature feature — see pipeline/eligibility.py
+# Eligibility badges. This is Kazi's signature feature; see pipeline/eligibility.py
 ELIGIBILITY = {"kenya", "africa", "world", "check"}
 
 
@@ -18,7 +18,7 @@ ELIGIBILITY = {"kenya", "africa", "world", "check"}
 class Job:
     title: str
     company: str
-    url: str                 # deep link to the ORIGINAL post — Kazi never hosts applications
+    url: str                 # deep link to the ORIGINAL post; Kazi never hosts applications
     source: str              # "Greenhouse", "Lever", "BrighterMonday", ...
     location: str = ""       # human string, e.g. "Nairobi, Kenya" or "Remote"
     country: str = ""        # best-effort ISO-ish country name, "" if unknown

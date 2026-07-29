@@ -1,12 +1,12 @@
 # Kazi
 
-A centralized board for **design jobs open to African designers** — product, UX, UI,
+A centralized board for **design jobs open to African designers**: product, UX, UI,
 brand, motion. Aggregates from company career pages (via ATS APIs) and job boards,
 tags each role with an honest **"can I apply from Kenya?"** badge, and links straight
-to the original post. No candidate accounts. Kazi never hosts applications — every
+to the original post. No candidate accounts. Kazi never hosts applications; every
 role, scraped or employer-submitted, links out to the real apply page.
 
-*(“Kazi” = work/job in Swahili — placeholder name, rename freely.)*
+*("Kazi" = work/job in Swahili, a placeholder name, rename freely.)*
 
 ## How it works
 
@@ -24,7 +24,7 @@ employer "Post a job" ──▶ api/main.py ──▶ SQLite ──▶  GET /api
 Two feeds merge into one board: the **scraper** (companies you add to
 `sources/companies.py`) and **employer self-service submissions** (anyone can submit
 via `web/post.html`, but nothing goes live until reviewed in `web/admin.html`). The
-scraper side can still run standalone and static — `web/jobs.json` alone is enough to
+scraper side can still run standalone and static: `web/jobs.json` alone is enough to
 serve the board with `python -m http.server`. The API is what adds the employer
 journey and admin review on top; run it when you want that piece.
 
@@ -53,7 +53,7 @@ pip install -r requirements.txt
 KAZI_ADMIN_TOKEN=choose-something-long uvicorn main:app --reload --port 8000
 ```
 
-Open `http://localhost:8000` — the board, `/post.html` (employer submission form),
+Open `http://localhost:8000`: the board, `/post.html` (employer submission form),
 and `/admin.html` (review queue, needs `KAZI_ADMIN_TOKEN`) all come from this one
 process. `GET /api/jobs` merges `web/jobs.json` with admin-approved submissions;
 the frontend tries that endpoint first and falls back to the static file when the
@@ -64,7 +64,7 @@ API isn't running, so both modes work against the same `web/` folder.
 | File | Does |
 |---|---|
 | `scraper/sources/greenhouse.py`, `lever.py`, `ashby.py`, `breezy.py` | Fetch listings from ATS public JSON APIs |
-| `scraper/sources/companies.py` | **The seed list — edit this to add companies** (tokens verified live; see the file's own notes before trusting one) |
+| `scraper/sources/companies.py` | **The seed list: edit this to add companies** (tokens verified live; see the file's own notes before trusting one) |
 | `scraper/pipeline/classify.py` | Is it a design role? Which discipline + level? |
 | `scraper/pipeline/eligibility.py` | The signature layer: kenya / africa / world / check |
 | `scraper/pipeline/normalize.py` | Clean location, work type, salary |
@@ -73,19 +73,19 @@ API isn't running, so both modes work against the same `web/` folder.
 | `api/main.py` | FastAPI app: `POST /api/submissions`, `GET /api/jobs`, admin approve/reject, serves `web/` |
 | `api/db.py` | SQLite storage for employer submissions (`pending` until an admin approves) |
 | `web/index.html` | The board designers use |
-| `web/post.html` | "Post a job" — the employer submission form |
-| `web/admin.html` | Review queue — approve/reject submissions (token-gated) |
+| `web/post.html` | "Post a job": the employer submission form |
+| `web/admin.html` | Review queue: approve/reject submissions (token-gated) |
 | `.github/workflows/scrape.yml` | Refreshes the feed daily, commits the JSON |
 
 ## Extending it
 
-- **More companies:** add entries to `sources/companies.py` (instructions in the file)
-  — verify the token against the real API before adding it; a 404 on every run is
+- **More companies:** add entries to `sources/companies.py` (instructions in the file).
+  Verify the token against the real API before adding it; a 404 on every run is
   worse than leaving a company out.
-- **More ATS platforms:** Workday and SmartRecruiters are common too — add a fetcher
+- **More ATS platforms:** Workday and SmartRecruiters are common too. Add a fetcher
   under `sources/` following `greenhouse.py`'s shape, plus a new `ats` value in
   `run.py`'s dispatch.
-- **Kenyan boards (BrighterMonday, Fuzu):** deliberately **not** scraped —
+- **Kenyan boards (BrighterMonday, Fuzu):** deliberately **not** scraped.
   BrighterMonday's `robots.txt` disallows crawling job pages and search results, and
   Fuzu explicitly blocks a known job-aggregator bot sitewide. Worth asking either
   for direct API/feed access rather than scraping around those signals.
@@ -100,7 +100,7 @@ API isn't running, so both modes work against the same `web/` folder.
   `web/`, and the GitHub Action refreshes `jobs.json` daily. No always-on
   infrastructure needed.
 - **With the employer journey:** the API needs a host that keeps a process (and
-  `api/kazi_submissions.db`) running — Render, Railway, Fly.io, or a small VPS all
+  `api/kazi_submissions.db`) running. Render, Railway, Fly.io, or a small VPS all
   work. Set `KAZI_ADMIN_TOKEN` to a real secret in that environment; the code
   falls back to a dev-only default if it's unset, which is fine locally and unsafe
   anywhere public.
@@ -108,5 +108,5 @@ API isn't running, so both modes work against the same `web/` folder.
 ## Legal note
 
 Prefer ATS APIs and boards whose terms permit aggregation. LinkedIn and Indeed
-prohibit scraping — don't. Linking out to a source you're allowed to read is the
+prohibit scraping, so don't. Linking out to a source you're allowed to read is the
 model here.

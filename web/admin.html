@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Review queue — Kazi</title>
+<title>Review queue · Kazi</title>
 <link rel="icon" type="image/png" href="logo.png">
 <style>
-  @font-face{font-family:Averta;src:url("fonts/Averta Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-  @font-face{font-family:Averta;src:url("fonts/Averta Semibold.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-  @font-face{font-family:Averta;src:url("fonts/Averta Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-  @font-face{font-family:Averta;src:url("fonts/Averta Extra Bold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Bold.woff2") format("woff2"),url("fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
 
   :root{
     --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
@@ -20,7 +21,7 @@
     --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--canvas);color:var(--ink);font-family:"Averta",system-ui,sans-serif;
+  body{margin:0;background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
     font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
   a{color:inherit}
   .wrap{max-width:860px;margin:0 auto;padding:0 24px}
@@ -159,7 +160,7 @@ async function loadTab(status) {
     const rows = await api(`/api/admin/submissions?status=${status}`);
     render(rows, status);
   } catch (e) {
-    list.innerHTML = `<div class="empty">Couldn't load — ${e.message}</div>`;
+    list.innerHTML = `<div class="empty">Couldn't load: ${e.message}</div>`;
   }
 }
 

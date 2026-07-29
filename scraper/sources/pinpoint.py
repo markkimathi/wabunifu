@@ -1,5 +1,5 @@
 """
-Pinpoint ATS RSS feed. Public, no key, XML — an RSS feed is explicitly meant
+Pinpoint ATS RSS feed. Public, no key, XML: an RSS feed is explicitly meant
 for external consumption, so this is the cleanest-conscience source in the
 whole pipeline.
 Endpoint:  https://{token}.pinpointhq.com/jobs.rss

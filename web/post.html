@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Post a design role — Kazi</title>
+<title>Post a design role · Kazi</title>
 <link rel="icon" type="image/png" href="logo.png">
 <style>
-  @font-face{font-family:Averta;src:url("fonts/Averta Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-  @font-face{font-family:Averta;src:url("fonts/Averta Semibold.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-  @font-face{font-family:Averta;src:url("fonts/Averta Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-  @font-face{font-family:Averta;src:url("fonts/Averta Extra Bold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Bold.woff2") format("woff2"),url("fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
 
   :root{
     --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
@@ -20,7 +21,7 @@
     --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--canvas);color:var(--ink);font-family:"Averta",system-ui,sans-serif;
+  body{margin:0;background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
     font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
   a{color:inherit}
   .wrap{max-width:640px;margin:0 auto;padding:0 24px}
@@ -48,7 +49,9 @@
     transition:border-color .2s var(--ease-expo)}
   input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand)}
   textarea{resize:vertical;min-height:90px;font-family:inherit}
-  select{cursor:pointer}
+  select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:38px;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+    background-repeat:no-repeat;background-position:right 14px center;background-size:14px}
 
   .elig-note{background:var(--green-soft);color:var(--green-ink);border-radius:10px;padding:12px 14px;
     font-size:13px;line-height:1.5}
@@ -87,9 +90,9 @@
   <div class="head">
     <p class="kicker">For employers</p>
     <h1>Post a design role to Kazi</h1>
-    <p class="lede">Free to list. Every submission is reviewed before it goes live — we check the basics
+    <p class="lede">Free to list. Every submission is reviewed before it goes live: we check the basics
       (real apply link, honest eligibility) so the board stays trustworthy. Kazi never hosts
-      applications: candidates apply straight at your link.</p>
+      applications; candidates apply straight at your link.</p>
   </div>
 
   <form id="jobForm" novalidate>
@@ -103,7 +106,7 @@
       <label class="field">Company
         <input name="company" required placeholder="e.g. Flutterwave">
       </label>
-      <label class="field">Location <span class="hint">— city, or "Remote"</span>
+      <label class="field">Location <span class="hint">(city, or "Remote")</span>
         <input name="location" placeholder="e.g. Nairobi, Kenya">
       </label>
     </div>
@@ -130,22 +133,22 @@
       <select name="discipline" id="discipline" required></select>
     </label>
 
-    <label class="field">Who can actually apply? <span class="hint">— be honest, this is the whole point of Kazi</span>
+    <label class="field">Who can actually apply? <span class="hint">(be honest, this is the whole point of Kazi)</span>
       <select name="eligibility" id="eligibility" required></select>
     </label>
     <p class="elig-note">This badge is the first thing candidates see. "Open to Kenya" means someone
-      based in Kenya can genuinely take this role today — not "we're a global company" fine print
+      based in Kenya can genuinely take this role today, not "we're a global company" fine print
       that turns out to require a work visa. If you're not sure, pick "Check restrictions."</p>
 
-    <label class="field">Salary <span class="hint">— optional, but listings with pay convert better</span>
+    <label class="field">Salary <span class="hint">(optional, but listings with pay convert better)</span>
       <input name="salary" placeholder="e.g. KES 250k–350k or $70k–$100k">
     </label>
 
-    <label class="field">Application link <span class="hint">— where candidates actually apply</span>
+    <label class="field">Application link <span class="hint">(where candidates actually apply)</span>
       <input name="url" type="url" required placeholder="https://yourcompany.com/careers/role">
     </label>
 
-    <label class="field">Your email <span class="hint">— for our review only, never shown publicly</span>
+    <label class="field">Your email <span class="hint">(for our review only, never shown publicly)</span>
       <input name="contact_email" type="email" required placeholder="hiring@yourcompany.com">
     </label>
 
@@ -153,7 +156,7 @@
   </form>
 
   <div class="done" id="done">
-    <h2>Thanks — it's in review</h2>
+    <h2>Thanks! It's in review</h2>
     <p>We check every listing before it goes live. If it looks good, it'll appear on the board shortly.</p>
   </div>
 </div>
@@ -198,7 +201,7 @@ form.addEventListener("submit", async (e) => {
     form.style.display = "none";
     document.getElementById("done").style.display = "block";
   } catch (err) {
-    errEl.textContent = "Couldn't submit — " + err.message + ". Please check the fields and try again.";
+    errEl.textContent = "Couldn't submit: " + err.message + ". Please check the fields and try again.";
     errEl.style.display = "block";
     btn.disabled = false;
     btn.textContent = "Submit for review";

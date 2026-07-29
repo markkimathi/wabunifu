@@ -2,10 +2,11 @@
   "version": "0.0.1",
   "configurations": [
     {
-      "name": "kazi-web",
+      "name": "kazi-api",
       "runtimeExecutable": "bash",
-      "runtimeArgs": ["-c", "cd /Users/markkimathi/Desktop/kaskazini/web && python3 -m http.server 8000"],
-      "port": 8000
+      "runtimeArgs": ["-c", "cd /Users/markkimathi/Desktop/kaskazini && KAZI_ADMIN_TOKEN=dev-local-token PATH=\"$HOME/Library/Python/3.9/bin:$PATH\" python3 -m uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"],
+      "port": 8000,
+      "autoPort": true
     }
   ]
 }

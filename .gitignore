@@ -1,4 +1,5 @@
 __pycache__/
 *.pyc
 scraper/kazi.db
+api/kazi_submissions.db
 .DS_Store

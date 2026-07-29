@@ -1,5 +1,5 @@
 """
-HiBob careers-site API. Public, no key, structured JSON — but requires a
+HiBob careers-site API. Public, no key, structured JSON, but requires a
 Referer header matching the career site's own origin, or it 401s.
 Endpoint:  https://{token}.careers.hibob.com/api/job-ad
 

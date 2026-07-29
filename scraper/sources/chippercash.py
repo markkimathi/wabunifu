@@ -1,9 +1,9 @@
 """
-Chipper Cash's careers page — plain server-rendered Webflow HTML, no public
+Chipper Cash's careers page: plain server-rendered Webflow HTML, no public
 API. Their robots.txt has no Disallow rules at all (just a sitemap), and this
 is the company's own careers page (not a third-party aggregator), so reading
-it is uncontroversial — unlike the Kenyan boards this project deliberately
-skips. This is company-specific (tied to Chipper's exact Webflow markup) —
+it is uncontroversial, unlike the Kenyan boards this project deliberately
+skips. This is company-specific (tied to Chipper's exact Webflow markup),
 not a reusable ATS fetcher like the others in sources/.
 """
 from __future__ import annotations
@@ -15,7 +15,7 @@ TIMEOUT = 20
 
 
 def fetch(_token: str = "") -> list[dict]:
-    """Return raw job dicts. `_token` is unused — kept so run.py's dispatch
+    """Return raw job dicts. `_token` is unused, kept so run.py's dispatch
     (which always calls fetch(c["token"])) doesn't need a special case."""
     r = requests.get(URL, timeout=TIMEOUT,
                      headers={"User-Agent": "Mozilla/5.0 (KaziBot/0.1; +https://kazi.africa)"})

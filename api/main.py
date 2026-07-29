@@ -1,5 +1,5 @@
 """
-Kazi API — serves the job feed and the "post a job" employer journey.
+Kazi API: serves the job feed and the "post a job" employer journey.
 
 Runs the whole site: mounts web/ as static files AND exposes /api/* on the
 same origin, so there's one process to run and no CORS to configure.
@@ -7,13 +7,13 @@ same origin, so there's one process to run and no CORS to configure.
   pip install -r api/requirements.txt
   KAZI_ADMIN_TOKEN=choose-something-long uvicorn api.main:app --reload --port 8000
 
-Then open http://localhost:8000 — the board, /post.html (submit a job), and
+Then open http://localhost:8000: the board, /post.html (submit a job), and
 /admin.html (review queue, needs the admin token) all come from this one server.
 
 The public board (GET /api/jobs) merges two sources:
   - scraped listings already written to web/jobs.json by scraper/run.py
   - employer submissions that an admin has approved (see db.py)
-Nothing an employer submits goes live until it's approved — see db.py's note.
+Nothing an employer submits goes live until it's approved; see db.py's note.
 """
 from __future__ import annotations
 import json
@@ -39,7 +39,7 @@ WORK_TYPES = {"Remote", "Hybrid", "On-site"}
 LEVELS = {"Junior", "Mid", "Senior", "Lead"}
 
 # Dev default so `uvicorn api.main:app` works out of the box. Set a real
-# KAZI_ADMIN_TOKEN env var before deploying anywhere reachable — anyone with
+# KAZI_ADMIN_TOKEN env var before deploying anywhere reachable; anyone with
 # this token can approve/reject submissions.
 ADMIN_TOKEN = os.environ.get("KAZI_ADMIN_TOKEN", "dev-only-change-me")
 
@@ -50,7 +50,7 @@ init_db()
 class JobSubmission(BaseModel):
     title: str
     company: str
-    url: str                 # where candidates actually apply — Kazi never hosts applications
+    url: str                 # where candidates actually apply; Kazi never hosts applications
     contact_email: str       # ours only, never shown on the public board
     location: str = ""
     work_type: str = "On-site"
@@ -157,6 +157,6 @@ def admin_reject(sub_id: int, _: None = Depends(require_admin)):
     return {"ok": True}
 
 
-# Static site last — /api/* above takes priority, everything else falls
+# Static site last: /api/* above takes priority, everything else falls
 # through to web/ (index.html, post.html, admin.html, jobs.json, ...).
 app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")
