@@ -52,14 +52,16 @@ class JobSubmission(BaseModel):
     company: str
     url: str                 # where candidates actually apply; Kazi never hosts applications
     contact_email: str       # ours only, never shown on the public board
+    description: str
     location: str = ""
     work_type: str = "On-site"
     discipline: str
     level: str = "Mid"
     eligibility: str
     salary: Optional[str] = None
+    agreed_to_terms: bool = False
 
-    @field_validator("title", "company", "url", "contact_email", "discipline", "eligibility")
+    @field_validator("title", "company", "url", "contact_email", "discipline", "eligibility", "description")
     @classmethod
     def _not_blank(cls, v: str) -> str:
         if not v or not v.strip():
@@ -94,6 +96,13 @@ class JobSubmission(BaseModel):
             raise ValueError(f"eligibility must be one of {sorted(ELIGIBILITY)}")
         return v
 
+    @field_validator("agreed_to_terms")
+    @classmethod
+    def _must_agree(cls, v: bool) -> bool:
+        if not v:
+            raise ValueError("must agree to the posting guidelines")
+        return v
+
 
 def require_admin(authorization: str = Header(default="")) -> None:
     token = authorization.removeprefix("Bearer ").strip()
@@ -122,7 +131,7 @@ def get_jobs():
             title=s["title"], company=s["company"], url=s["url"], source="Direct",
             location=s["location"], work_type=s["work_type"], discipline=s["discipline"],
             level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
-            posted_at=s["created_at"][:10],
+            desc=s.get("description"), posted_at=s["created_at"][:10],
         ).to_web()
         for s in approved
     ]

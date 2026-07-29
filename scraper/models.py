@@ -27,6 +27,7 @@ class Job:
     level: str = "Mid"       # Junior | Mid | Senior | Lead
     eligibility: str = "check"   # one of ELIGIBILITY
     salary: str | None = None    # raw string if disclosed, else None
+    desc: str | None = None      # role description, if the source provides one
     posted_at: str = ""      # ISO date "YYYY-MM-DD"
     id: str = field(default="")
 
@@ -65,6 +66,7 @@ class Job:
             "src": self.source,
             "days": self.days_ago(),
             "url": self.url,
+            "desc": self.desc,
         }
 
     def to_dict(self) -> dict:

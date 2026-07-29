@@ -15,7 +15,7 @@
 
   :root{
     --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
-    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1;
+    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-light:#AA52ED;
     --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
     --amber:#F25C05; --amber-soft:#FDE6D8;
     --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
@@ -23,7 +23,7 @@
   }
   :root[data-theme="dark"]{
     --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
-    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8;
+    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8; --brand-light:#C79AF2;
     --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
     --amber:#FF9B57; --amber-soft:#3A2412;
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
@@ -60,27 +60,54 @@
   .lede{color:var(--muted);font-size:15.5px;margin:0 0 8px;max-width:56ch}
 
   form{padding:28px 0 90px;display:flex;flex-direction:column;gap:18px}
+  fieldset{border:0;padding:0;margin:0;min-width:0}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
   label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
   .hint{font-weight:400;color:var(--faint);font-size:12.5px}
+  .req{color:var(--brand);font-weight:700}
   input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
     border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
     transition:border-color .2s var(--ease-expo)}
   input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand)}
-  textarea{resize:vertical;min-height:90px;font-family:inherit}
+  textarea{resize:vertical;min-height:110px;font-family:inherit}
   select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:38px;
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
     background-repeat:no-repeat;background-position:right 14px center;background-size:14px}
 
+  /* ---- step progress ---- */
+  .steps-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .step-label{font-size:13px;color:var(--muted);font-weight:600}
+  .step-label b{color:var(--ink)}
+  .step-bar{display:flex;gap:6px;flex:none}
+  .step-dot{width:28px;height:4px;border-radius:999px;background:var(--hairline-strong);transition:background .3s var(--ease-expo)}
+  .step-dot.active,.step-dot.done{background:var(--brand)}
+  .req-note{font-size:12.5px;color:var(--faint);margin:-10px 0 0}
+
+  .step{display:none;flex-direction:column;gap:18px}
+  .step.active{display:flex}
+
   .elig-note{background:var(--green-soft);color:var(--green-ink);border-radius:10px;padding:12px 14px;
     font-size:13px;line-height:1.5}
 
-  .submit{margin-top:6px;align-self:flex-start;background:var(--ink);color:var(--canvas);border:0;
+  .terms{background:var(--hairline);border-radius:10px;padding:14px 16px}
+  .terms-title{margin:0 0 8px;font-weight:700;font-size:13.5px}
+  .terms ul{margin:0 0 12px;padding-left:18px;font-size:13px;color:var(--muted);line-height:1.6}
+  .terms ul li{margin-bottom:4px}
+  .check-row{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;font-weight:500;cursor:pointer}
+  .check-row input{margin-top:3px;flex:none;width:16px;height:16px;cursor:pointer;accent-color:var(--brand)}
+
+  .step-nav{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .btn-back{background:none;border:1px solid var(--hairline-strong);color:var(--ink);font:inherit;
+    font-weight:700;font-size:14.5px;padding:13px 22px;border-radius:999px;cursor:pointer;
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .btn-back:hover{border-color:var(--brand);color:var(--brand)}
+
+  .submit{margin-left:auto;background:var(--brand);color:#fff;border:0;
     font:inherit;font-weight:700;font-size:14.5px;padding:13px 24px;border-radius:999px;cursor:pointer;
     transition:background .3s var(--ease-expo),transform .3s var(--ease-expo)}
-  .submit:hover{background:var(--brand)}
-  .submit:disabled{opacity:.6;cursor:not-allowed}
-  .submit:active{transform:scale(.97)}
+  .submit:hover:not(:disabled){background:var(--brand-light)}
+  .submit:disabled{background:var(--hairline-strong);color:var(--faint);cursor:not-allowed}
+  .submit:active:not(:disabled){transform:scale(.97)}
 
   .err{color:#a5341f;font-size:13px;margin:0}
   .fielderr{color:#a5341f;font-size:12.5px}
@@ -120,63 +147,109 @@
   </div>
 
   <form id="jobForm" novalidate>
+    <div class="steps-head">
+      <div class="step-label">Step <b id="stepNum">1</b> of 3 · <span id="stepName">The role</span></div>
+      <div class="step-bar">
+        <span class="step-dot active" data-dot="1"></span>
+        <span class="step-dot" data-dot="2"></span>
+        <span class="step-dot" data-dot="3"></span>
+      </div>
+    </div>
+    <p class="req-note"><span class="req">*</span> Required fields</p>
+
     <p class="err" id="formErr" style="display:none"></p>
 
-    <label class="field">Job title
-      <input name="title" required placeholder="e.g. Senior Product Designer">
-    </label>
-
-    <div class="row2">
-      <label class="field">Company
-        <input name="company" required placeholder="e.g. Flutterwave">
+    <fieldset class="step active" data-step="1">
+      <label class="field"><span class="field-label">Job title <span class="req">*</span></span>
+        <input name="title" required placeholder="e.g. Senior Product Designer">
       </label>
-      <label class="field">Location <span class="hint">(city, or "Remote")</span>
-        <input name="location" placeholder="e.g. Nairobi, Kenya">
+
+      <div class="row2">
+        <label class="field"><span class="field-label">Company <span class="req">*</span></span>
+          <input name="company" required placeholder="e.g. Flutterwave">
+        </label>
+        <label class="field"><span class="field-label">Location <span class="hint">(city, or "Remote")</span></span>
+          <input name="location" placeholder="e.g. Nairobi, Kenya">
+        </label>
+      </div>
+
+      <div class="row2">
+        <label class="field"><span class="field-label">Work type <span class="req">*</span></span>
+          <select name="work_type" required>
+            <option value="Remote">Remote</option>
+            <option value="Hybrid">Hybrid</option>
+            <option value="On-site">On-site</option>
+          </select>
+        </label>
+        <label class="field"><span class="field-label">Level <span class="req">*</span></span>
+          <select name="level" required>
+            <option value="Junior">Junior</option>
+            <option value="Mid" selected>Mid</option>
+            <option value="Senior">Senior</option>
+            <option value="Lead">Lead</option>
+          </select>
+        </label>
+      </div>
+
+      <label class="field"><span class="field-label">Discipline <span class="req">*</span></span>
+        <select name="discipline" id="discipline" required></select>
       </label>
-    </div>
 
-    <div class="row2">
-      <label class="field">Work type
-        <select name="work_type">
-          <option value="Remote">Remote</option>
-          <option value="Hybrid">Hybrid</option>
-          <option value="On-site">On-site</option>
-        </select>
+      <div class="step-nav">
+        <span></span>
+        <button type="button" class="submit" data-next>Next</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="step" data-step="2">
+      <label class="field"><span class="field-label">Job description <span class="req">*</span> <span class="hint">(what will they actually be doing?)</span></span>
+        <textarea name="description" required placeholder="What the role involves, what they'll own, what makes it worth applying to..."></textarea>
       </label>
-      <label class="field">Level
-        <select name="level">
-          <option value="Junior">Junior</option>
-          <option value="Mid" selected>Mid</option>
-          <option value="Senior">Senior</option>
-          <option value="Lead">Lead</option>
-        </select>
+
+      <label class="field"><span class="field-label">Who can actually apply? <span class="req">*</span> <span class="hint">(be honest, this is the whole point of Kazi)</span></span>
+        <select name="eligibility" id="eligibility" required></select>
       </label>
-    </div>
+      <p class="elig-note">This badge is the first thing candidates see. "Open to Kenya" means someone
+        based in Kenya can genuinely take this role today, not "we're a global company" fine print
+        that turns out to require a work visa. If you're not sure, pick "Check restrictions."</p>
 
-    <label class="field">Discipline
-      <select name="discipline" id="discipline" required></select>
-    </label>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back>Back</button>
+        <button type="button" class="submit" data-next>Next</button>
+      </div>
+    </fieldset>
 
-    <label class="field">Who can actually apply? <span class="hint">(be honest, this is the whole point of Kazi)</span>
-      <select name="eligibility" id="eligibility" required></select>
-    </label>
-    <p class="elig-note">This badge is the first thing candidates see. "Open to Kenya" means someone
-      based in Kenya can genuinely take this role today, not "we're a global company" fine print
-      that turns out to require a work visa. If you're not sure, pick "Check restrictions."</p>
+    <fieldset class="step" data-step="3">
+      <label class="field"><span class="field-label">Salary <span class="hint">(optional, but listings with pay convert better)</span></span>
+        <input name="salary" placeholder="e.g. KES 250k–350k or $70k–$100k">
+      </label>
 
-    <label class="field">Salary <span class="hint">(optional, but listings with pay convert better)</span>
-      <input name="salary" placeholder="e.g. KES 250k–350k or $70k–$100k">
-    </label>
+      <label class="field"><span class="field-label">Application link <span class="req">*</span> <span class="hint">(where candidates actually apply)</span></span>
+        <input name="url" type="url" required placeholder="https://yourcompany.com/careers/role">
+      </label>
 
-    <label class="field">Application link <span class="hint">(where candidates actually apply)</span>
-      <input name="url" type="url" required placeholder="https://yourcompany.com/careers/role">
-    </label>
+      <label class="field"><span class="field-label">Your email <span class="req">*</span> <span class="hint">(for our review only, never shown publicly)</span></span>
+        <input name="contact_email" type="email" required placeholder="hiring@yourcompany.com">
+      </label>
 
-    <label class="field">Your email <span class="hint">(for our review only, never shown publicly)</span>
-      <input name="contact_email" type="email" required placeholder="hiring@yourcompany.com">
-    </label>
+      <div class="terms">
+        <p class="terms-title">Posting guidelines</p>
+        <ul>
+          <li>The role and company are real, and the application link goes straight to it.</li>
+          <li>The eligibility badge is accurate, not optimistic marketing.</li>
+          <li>Kazi reviews every submission and can reject or remove listings that don't hold up.</li>
+        </ul>
+        <label class="check-row">
+          <input type="checkbox" name="agreed_to_terms" id="agreeCheck" required>
+          <span>I confirm the above and agree to Kazi's posting guidelines <span class="req">*</span></span>
+        </label>
+      </div>
 
-    <button class="submit" type="submit" id="submitBtn">Submit for review</button>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back>Back</button>
+        <button class="submit" type="submit" id="submitBtn" disabled>Submit for review</button>
+      </div>
+    </fieldset>
   </form>
 
   <div class="done" id="done">
@@ -203,12 +276,65 @@ eligSel.innerHTML = ELIGIBILITY.map(e => `<option value="${e.v}">${e.l}</option>
 const form = document.getElementById("jobForm");
 const errEl = document.getElementById("formErr");
 const btn = document.getElementById("submitBtn");
+const steps = Array.from(document.querySelectorAll(".step"));
+const dots = Array.from(document.querySelectorAll(".step-dot"));
+const stepNames = ["The role", "Description & eligibility", "Pay, contact & submit"];
+let current = 1;
+
+// fieldset.checkValidity() only checks the fieldset's own constraints
+// (it has none), it does NOT cascade to descendant controls, so
+// validity has to be checked per-control instead.
+function stepControls(stepEl){
+  return Array.from(stepEl.querySelectorAll("input, select, textarea"));
+}
+function stepIsValid(stepEl){
+  return stepControls(stepEl).every(el => el.checkValidity());
+}
+function reportStepValidity(stepEl){
+  const invalid = stepControls(stepEl).find(el => !el.checkValidity());
+  if(invalid){ invalid.reportValidity(); invalid.focus(); return false; }
+  return true;
+}
+
+function updateSubmitState(){
+  const lastStep = steps[steps.length - 1];
+  btn.disabled = !stepIsValid(lastStep);
+}
+
+function showStep(n){
+  current = n;
+  steps.forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
+  dots.forEach((d, i) => {
+    d.classList.toggle("active", i + 1 === n);
+    d.classList.toggle("done", i + 1 < n);
+  });
+  document.getElementById("stepNum").textContent = n;
+  document.getElementById("stepName").textContent = stepNames[n - 1];
+  updateSubmitState();
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+document.querySelectorAll("[data-next]").forEach(b => {
+  b.addEventListener("click", () => {
+    const stepEl = b.closest(".step");
+    if(!reportStepValidity(stepEl)) return;
+    showStep(current + 1);
+  });
+});
+document.querySelectorAll("[data-back]").forEach(b => {
+  b.addEventListener("click", () => showStep(current - 1));
+});
+
+form.addEventListener("input", updateSubmitState);
+form.addEventListener("change", updateSubmitState);
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
+  if(current !== steps.length || btn.disabled) return;
   errEl.style.display = "none";
   const fd = new FormData(form);
   const payload = Object.fromEntries(fd.entries());
+  payload.agreed_to_terms = document.getElementById("agreeCheck").checked;
 
   btn.disabled = true;
   btn.textContent = "Submitting…";
@@ -229,8 +355,11 @@ form.addEventListener("submit", async (e) => {
     errEl.style.display = "block";
     btn.disabled = false;
     btn.textContent = "Submit for review";
+    updateSubmitState();
   }
 });
+
+showStep(1);
 </script>
 </body>
 </html>

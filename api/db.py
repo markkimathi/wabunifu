@@ -31,10 +31,21 @@ CREATE TABLE IF NOT EXISTS submissions (
   level TEXT NOT NULL DEFAULT 'Mid',
   eligibility TEXT NOT NULL,
   salary TEXT,
+  description TEXT NOT NULL DEFAULT '',
+  agreed_to_terms INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
 );
 """
+
+# Columns added after the table first shipped. A fresh database gets them
+# via SCHEMA above; an existing one (e.g. the persistent volume already
+# running in production) needs them backfilled here instead, or every
+# insert/select against the new columns breaks.
+_MIGRATIONS = [
+    "ALTER TABLE submissions ADD COLUMN description TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE submissions ADD COLUMN agreed_to_terms INTEGER NOT NULL DEFAULT 0",
+]
 
 
 def _conn() -> sqlite3.Connection:
@@ -42,6 +53,12 @@ def _conn() -> sqlite3.Connection:
     c = sqlite3.connect(DB)
     c.row_factory = sqlite3.Row
     c.execute(SCHEMA)
+    for stmt in _MIGRATIONS:
+        try:
+            c.execute(stmt)
+        except sqlite3.OperationalError:
+            pass  # column already exists
+    c.commit()
     return c
 
 
@@ -55,10 +72,12 @@ def insert_submission(data: dict) -> int:
     cur = c.execute("""
         INSERT INTO submissions
           (title, company, url, contact_email, location, work_type,
-           discipline, level, eligibility, salary, status, created_at)
+           discipline, level, eligibility, salary, description, agreed_to_terms,
+           status, created_at)
         VALUES
           (:title, :company, :url, :contact_email, :location, :work_type,
-           :discipline, :level, :eligibility, :salary, 'pending', :created_at)
+           :discipline, :level, :eligibility, :salary, :description, :agreed_to_terms,
+           'pending', :created_at)
     """, row)
     c.commit()
     sub_id = cur.lastrowid
