@@ -1,7 +1,23 @@
 {
-  "generated_at": "2026-07-29T09:57:56",
-  "count": 14,
+  "generated_at": "2026-07-30T07:31:10",
+  "count": 15,
   "jobs": [
+    {
+      "id": "3e4ff0fcfac8",
+      "t": "Senior Product Designer - Design System",
+      "co": "Moniepoint",
+      "city": "Lagos, Nigeria; Remote, Nigeria",
+      "country": "Nigeria",
+      "work": "Remote",
+      "cat": "Design Systems",
+      "level": "Senior",
+      "elig": "africa",
+      "pay": "$250",
+      "src": "Greenhouse",
+      "days": 1,
+      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4612208101",
+      "desc": null
+    },
     {
       "id": "058c2f46525b",
       "t": "Motion Designer",
@@ -14,8 +30,9 @@
       "elig": "africa",
       "pay": "$250",
       "src": "Greenhouse",
-      "days": 2,
-      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4686507101"
+      "days": 3,
+      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4686507101",
+      "desc": null
     },
     {
       "id": "1095ff7415e5",
@@ -29,8 +46,9 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 13,
-      "url": "https://job-boards.greenhouse.io/canonical/jobs/7528950"
+      "days": 14,
+      "url": "https://job-boards.greenhouse.io/canonical/jobs/7528950",
+      "desc": null
     },
     {
       "id": "4ffe35e9c8e6",
@@ -44,8 +62,9 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 13,
-      "url": "https://job-boards.greenhouse.io/canonical/jobs/7043028"
+      "days": 14,
+      "url": "https://job-boards.greenhouse.io/canonical/jobs/7043028",
+      "desc": null
     },
     {
       "id": "ea63556ba702",
@@ -59,8 +78,9 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 13,
-      "url": "https://job-boards.greenhouse.io/canonical/jobs/7043026"
+      "days": 14,
+      "url": "https://job-boards.greenhouse.io/canonical/jobs/7043026",
+      "desc": null
     },
     {
       "id": "3f735c119efe",
@@ -74,8 +94,9 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 13,
-      "url": "https://job-boards.greenhouse.io/canonical/jobs/6072086"
+      "days": 14,
+      "url": "https://job-boards.greenhouse.io/canonical/jobs/6072086",
+      "desc": null
     },
     {
       "id": "8b5b299a3d5e",
@@ -89,8 +110,9 @@
       "elig": "check",
       "pay": "USD 2,000",
       "src": "Greenhouse",
-      "days": 13,
-      "url": "https://job-boards.greenhouse.io/canonical/jobs/5326986"
+      "days": 14,
+      "url": "https://job-boards.greenhouse.io/canonical/jobs/5326986",
+      "desc": null
     },
     {
       "id": "ebe102cfbf09",
@@ -104,8 +126,9 @@
       "elig": "africa",
       "pay": "$22",
       "src": "Greenhouse",
-      "days": 14,
-      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4629880101"
+      "days": 15,
+      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4629880101",
+      "desc": null
     },
     {
       "id": "b8d4bf8d621c",
@@ -119,8 +142,9 @@
       "elig": "africa",
       "pay": "$22",
       "src": "Greenhouse",
-      "days": 14,
-      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4629921101"
+      "days": 15,
+      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4629921101",
+      "desc": null
     },
     {
       "id": "bbf817847c77",
@@ -134,8 +158,9 @@
       "elig": "africa",
       "pay": "$250",
       "src": "Greenhouse",
-      "days": 14,
-      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4612209101"
+      "days": 15,
+      "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4612209101",
+      "desc": null
     },
     {
       "id": "8dff96b8bc54",
@@ -149,8 +174,9 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 15,
-      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8475077002"
+      "days": 16,
+      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8475077002",
+      "desc": null
     },
     {
       "id": "bc96ffa79c8f",
@@ -164,8 +190,9 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 34,
-      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8464608002"
+      "days": 35,
+      "url": "https://job-boards.greenhouse.io/gitlab/jobs/8464608002",
+      "desc": null
     },
     {
       "id": "aaf75a13fc79",
@@ -179,8 +206,9 @@
       "elig": "kenya",
       "pay": "Not disclosed",
       "src": "Pinpoint",
-      "days": 36,
-      "url": "https://sunking.pinpointhq.com/jobs/535377"
+      "days": 37,
+      "url": "https://sunking.pinpointhq.com/jobs/535377",
+      "desc": null
     },
     {
       "id": "5f73d7d9e43c",
@@ -194,8 +222,9 @@
       "elig": "africa",
       "pay": "Not disclosed",
       "src": "Pinpoint",
-      "days": 72,
-      "url": "https://sunking.pinpointhq.com/jobs/516478"
+      "days": 73,
+      "url": "https://sunking.pinpointhq.com/jobs/516478",
+      "desc": null
     },
     {
       "id": "0aed148f3037",
@@ -209,8 +238,9 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Ashby",
-      "days": 139,
-      "url": "https://jobs.ashbyhq.com/andela/aec096bd-de6f-46ed-9705-5ee811ce4941"
+      "days": 140,
+      "url": "https://jobs.ashbyhq.com/andela/aec096bd-de6f-46ed-9705-5ee811ce4941",
+      "desc": null
     }
   ]
 }
