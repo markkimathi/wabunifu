@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-30T07:31:10",
+  "generated_at": "2026-07-31T07:47:15",
   "count": 15,
   "jobs": [
     {
@@ -14,7 +14,7 @@
       "elig": "africa",
       "pay": "$250",
       "src": "Greenhouse",
-      "days": 1,
+      "days": 2,
       "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4612208101",
       "desc": null
     },
@@ -30,7 +30,7 @@
       "elig": "africa",
       "pay": "$250",
       "src": "Greenhouse",
-      "days": 3,
+      "days": 4,
       "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4686507101",
       "desc": null
     },
@@ -46,7 +46,7 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 14,
+      "days": 15,
       "url": "https://job-boards.greenhouse.io/canonical/jobs/7528950",
       "desc": null
     },
@@ -62,7 +62,7 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 14,
+      "days": 15,
       "url": "https://job-boards.greenhouse.io/canonical/jobs/7043028",
       "desc": null
     },
@@ -78,7 +78,7 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 14,
+      "days": 15,
       "url": "https://job-boards.greenhouse.io/canonical/jobs/7043026",
       "desc": null
     },
@@ -94,7 +94,7 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 14,
+      "days": 15,
       "url": "https://job-boards.greenhouse.io/canonical/jobs/6072086",
       "desc": null
     },
@@ -110,7 +110,7 @@
       "elig": "check",
       "pay": "USD 2,000",
       "src": "Greenhouse",
-      "days": 14,
+      "days": 15,
       "url": "https://job-boards.greenhouse.io/canonical/jobs/5326986",
       "desc": null
     },
@@ -126,7 +126,7 @@
       "elig": "africa",
       "pay": "$22",
       "src": "Greenhouse",
-      "days": 15,
+      "days": 16,
       "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4629880101",
       "desc": null
     },
@@ -142,7 +142,7 @@
       "elig": "africa",
       "pay": "$22",
       "src": "Greenhouse",
-      "days": 15,
+      "days": 16,
       "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4629921101",
       "desc": null
     },
@@ -158,7 +158,7 @@
       "elig": "africa",
       "pay": "$250",
       "src": "Greenhouse",
-      "days": 15,
+      "days": 16,
       "url": "https://job-boards.eu.greenhouse.io/moniepoint/jobs/4612209101",
       "desc": null
     },
@@ -174,7 +174,7 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 16,
+      "days": 17,
       "url": "https://job-boards.greenhouse.io/gitlab/jobs/8475077002",
       "desc": null
     },
@@ -190,7 +190,7 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Greenhouse",
-      "days": 35,
+      "days": 36,
       "url": "https://job-boards.greenhouse.io/gitlab/jobs/8464608002",
       "desc": null
     },
@@ -206,7 +206,7 @@
       "elig": "kenya",
       "pay": "Not disclosed",
       "src": "Pinpoint",
-      "days": 37,
+      "days": 38,
       "url": "https://sunking.pinpointhq.com/jobs/535377",
       "desc": null
     },
@@ -222,7 +222,7 @@
       "elig": "africa",
       "pay": "Not disclosed",
       "src": "Pinpoint",
-      "days": 73,
+      "days": 74,
       "url": "https://sunking.pinpointhq.com/jobs/516478",
       "desc": null
     },
@@ -238,7 +238,7 @@
       "elig": "check",
       "pay": "Not disclosed",
       "src": "Ashby",
-      "days": 140,
+      "days": 141,
       "url": "https://jobs.ashbyhq.com/andela/aec096bd-de6f-46ed-9705-5ee811ce4941",
       "desc": null
     }
