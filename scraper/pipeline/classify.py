@@ -15,6 +15,11 @@ DISCIPLINE_RULES = [
     ("UX Research",     [r"\buser research", r"\buxr\b", r"\bux research", r"\bresearcher\b.*design", r"\bdesign research"]),
     ("Design Systems",  [r"design system", r"\bdesign systems\b"]),
     ("Motion Design",   [r"\bmotion\b", r"\banimation\b", r"\bmotion design"]),
+    ("Game Design",     [r"\bgame design", r"\bgame designer\b"]),
+    ("Sound Design",    [r"\bsound design", r"\baudio design"]),
+    ("Instructional Design", [r"\binstructional design", r"\blearning design", r"\bcurriculum design"]),
+    ("Fashion Design",  [r"\bfashion design"]),
+    ("Interior Design", [r"\binterior design"]),
     ("Brand Design",    [r"\bbrand\b", r"\bvisual designer", r"\bvisual design\b", r"\bart director", r"\bcreative director"]),
     ("UX Design",       [r"\bux\b", r"\buser experience", r"\binteraction design", r"\bixd\b"]),
     ("UI Design",       [r"\bui\b", r"\buser interface", r"\bui/ux", r"\bux/ui"]),
@@ -23,13 +28,13 @@ DISCIPLINE_RULES = [
 ]
 
 # If the title matches design keywords BUT also one of these, it's almost certainly
-# not the kind of role Kazi lists. Reject.
+# not a design role at all (an engineering discipline that happens to use the
+# word "design") rather than a design role Kazi has simply chosen to exclude.
 EXCLUDE = [
     r"\bdesign engineer\b", r"\bsolutions? design", r"\bcircuit\b", r"\bchip design",
     r"\bmechanical\b", r"\belectrical\b", r"\bstructural\b", r"\bhardware\b",
-    r"\binstructional design", r"\bcurriculum\b", r"\bgame designer\b",
-    r"\bsound design", r"\bsystem designer\b", r"\bnetwork design", r"\bfashion design",
-    r"\binterior design", r"\bsales\b", r"\bmanager, design\b.*\bengineering\b",
+    r"\bsystem designer\b", r"\bnetwork design",
+    r"\bsales\b", r"\bmanager, design\b.*\bengineering\b",
 ]
 
 LEVEL_RULES = [

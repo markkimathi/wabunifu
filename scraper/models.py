@@ -8,6 +8,8 @@ import hashlib
 DISCIPLINES = [
     "Product Design", "UX Design", "UI Design", "Brand Design",
     "Motion Design", "Design Systems", "UX Research", "Graphic Design",
+    "Game Design", "Sound Design", "Instructional Design",
+    "Fashion Design", "Interior Design",
 ]
 
 # Eligibility badges. This is Kazi's signature feature; see pipeline/eligibility.py
