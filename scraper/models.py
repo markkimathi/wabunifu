@@ -15,6 +15,12 @@ DISCIPLINES = [
 # Eligibility badges. This is Kazi's signature feature; see pipeline/eligibility.py
 ELIGIBILITY = {"kenya", "africa", "world", "check"}
 
+# Listings older than this never show up, scraped or employer-submitted.
+# Enforced both when the scraper writes web/jobs.json (run.py) and again on
+# every /api/jobs request (api/main.py), so the cutoff holds live even if a
+# scrape run is skipped or stale.
+MAX_AGE_DAYS = 60
+
 
 @dataclass
 class Job:

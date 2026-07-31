@@ -30,7 +30,7 @@ from pydantic import BaseModel, field_validator
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "scraper"))
-from models import Job, DISCIPLINES, ELIGIBILITY  # noqa: E402  (reuse the canonical schema)
+from models import Job, DISCIPLINES, ELIGIBILITY, MAX_AGE_DAYS  # noqa: E402  (reuse the canonical schema)
 
 from .db import init_db, insert_submission, list_submissions, get_submission, set_status  # noqa: E402
 
@@ -137,7 +137,10 @@ def get_jobs():
         for s in approved
     ]
 
-    combined = employer_jobs + scraped
+    # Enforced again here (not just at scrape time) so the cutoff holds live
+    # even if a scrape run is skipped, and so it also applies to employer
+    # submissions, which run.py never sees.
+    combined = [j for j in employer_jobs + scraped if j["days"] <= MAX_AGE_DAYS]
     combined.sort(key=lambda j: j["days"])
     return {
         "generated_at": generated_at or datetime.now().isoformat(timespec="seconds"),
