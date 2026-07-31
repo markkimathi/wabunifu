@@ -109,11 +109,28 @@
     font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
   .bar-stat b{color:var(--ink);font-weight:700}
   .bar-stat .livedot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotblink 2.6s ease-in-out infinite}
-  .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    display:flex;align-items:center;gap:22px;white-space:nowrap}
+  .header-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    display:flex;align-items:center;gap:18px}
+  .nav-links{display:flex;align-items:center;gap:22px;white-space:nowrap}
   .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
     transition:color .3s var(--ease-expo)}
   .nav-links a:hover{color:var(--ink)}
+
+  /* ---- compact search that grows in next to the nav-links (to their
+     left) once the hero search bar scrolls out of view. Desktop/tablet
+     only — hidden on mobile along with the rest of .header-center. ---- */
+  .header-search{display:flex;align-items:center;gap:0;width:0;overflow:hidden;
+    background:var(--surface);border:1px solid transparent;border-radius:999px;
+    padding:8px 0;opacity:0;pointer-events:none;
+    transition:width .35s var(--ease-io),opacity .25s var(--ease-io),
+      padding .35s var(--ease-io),border-color .35s var(--ease-io)}
+  .header-search svg{flex:none;color:var(--muted);margin-left:16px}
+  .header-search input{border:0;outline:0;background:none;font:inherit;font-size:13.5px;width:100%;color:var(--ink);
+    min-width:0;margin:0 16px 0 9px}
+  .header-search input::placeholder{color:var(--faint)}
+  @media(min-width:601px){
+    header.bar.scrolled .header-search{width:230px;opacity:1;pointer-events:auto;border-color:var(--hairline-strong)}
+  }
 
   .theme-toggle{position:relative;flex:none;width:38px;height:38px;padding:0;border-radius:50%;
     background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
@@ -144,7 +161,7 @@
       radial-gradient(42% 50% at 65% 78%, rgba(8,145,17,.20), transparent 70%),
       radial-gradient(30% 40% at 8% 82%, rgba(1,0,84,.16), transparent 70%),
       var(--canvas)}
-  .hero-inner{display:grid;grid-template-columns:1fr 400px;gap:56px;align-items:center}
+  .hero-inner{display:grid;grid-template-columns:1fr 480px;gap:56px;align-items:center}
   .hero-content{text-align:left}
   .hero h1{font-weight:800;margin:0;max-width:20ch;
     font-size:clamp(32px,5vw,56px);line-height:1.15;letter-spacing:-.02em}
@@ -158,7 +175,7 @@
   .hero-vslide video{width:100%;height:100%;object-fit:cover;display:block}
   @media(max-width:960px){
     .hero-inner{grid-template-columns:1fr;gap:36px}
-    .hero-videos{max-width:360px;margin:0 auto}
+    .hero-videos{max-width:432px;margin:0 auto}
   }
 
   /* ---- search pill ---- */
@@ -171,12 +188,6 @@
   .seg-main{flex:1;min-width:0}
   .seg-main input{border:0;outline:0;background:none;font:inherit;font-size:16px;width:100%;color:var(--ink)}
   .seg-main input::placeholder{color:var(--faint)}
-  .seg-elig{flex:none;color:var(--muted)}
-  .seg-elig select{border:0;outline:0;background:none;font:inherit;font-size:15px;color:var(--ink);cursor:pointer;max-width:150px;
-    appearance:none;-webkit-appearance:none;padding-right:22px;
-    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
-    background-repeat:no-repeat;background-position:right center;background-size:13px}
-  .seg-divider{width:1px;flex:none;background:var(--hairline-strong);margin:10px 0}
   .searchbtn{flex:none;background:var(--ink);color:var(--canvas);border:0;border-radius:999px;padding:0 28px;
     font:inherit;font-weight:700;font-size:15px;cursor:pointer;transition:background .35s var(--ease-expo),transform .3s var(--ease-pop)}
   @media (pointer:fine){.searchbtn:hover{background:var(--brand)}}
@@ -347,7 +358,6 @@
     .filtbtn .badge{position:absolute;top:-4px;right:-4px;background:var(--brand);color:#fff;font-size:10px;
       border-radius:999px;min-width:16px;height:16px;padding:0 4px;font-weight:700;display:none;
       align-items:center;justify-content:center;line-height:1}
-    .seg-elig,.seg-divider{display:none}
     .searchpill{max-width:none}
     .quickchips{margin-top:32px}
     .c-foot{align-items:flex-start}
@@ -367,33 +377,31 @@
   .menu-toggle.-active span:last-child{top:10px;transform:rotate(-45deg)}
 
   html.menu-open{overflow:hidden}
-  .mobile-menu{position:fixed;inset:0;z-index:300;visibility:hidden;pointer-events:none}
-  .mobile-menu.-open{visibility:visible;pointer-events:auto}
-  .mm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .45s var(--ease-io)}
-  .mobile-menu.-open .mm-backdrop{opacity:1}
-  .mm-panel{position:absolute;top:0;right:0;bottom:0;width:min(320px,84vw);background:var(--canvas);
-    box-shadow:-16px 0 40px rgba(11,22,35,.18);transform:translateX(100%);
-    transition:transform .5s var(--ease-io);display:flex;flex-direction:column;padding:100px 32px 40px}
-  .mobile-menu.-open .mm-panel{transform:translateX(0)}
-  .mm-close{position:absolute;top:24px;right:24px;width:32px;height:32px;padding:0;border:0;
-    background:none;cursor:pointer;color:var(--muted);transition:color .25s var(--ease-io)}
-  .mm-close:hover{color:var(--ink)}
-  .mm-nav{display:flex;flex-direction:column;gap:4px}
-  .mm-nav a{font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--ink);text-decoration:none;
-    padding:12px 0;border-bottom:1px solid var(--hairline);opacity:0;transform:translateY(14px);
-    transition:opacity .4s var(--ease-io),transform .4s var(--ease-io),color .3s var(--ease-expo)}
-  .mm-nav a:hover{color:var(--brand)}
+  /* ---- mobile nav menu: same design language as the filter rail
+     (full-bleed canvas panel, fast simple slide, plain list rows) but
+     pulling in from the right instead of the left ---- */
+  .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
+    padding:20px 22px 40px;overflow:auto;
+    transform:translateX(100%);transition:transform .22s ease}
+  .mobile-menu.-open{transform:translateX(0)}
+  .mm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+  .mm-top h2{margin:0;font-size:16.5px;font-weight:800;color:var(--ink)}
+  .mm-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;
+    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
+    font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}
+  .mm-nav{display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--hairline);padding-top:6px}
+  .mm-nav a{display:block;padding:14px 8px;margin:0 -8px;border-radius:8px;
+    font-size:16px;font-weight:600;color:var(--ink);text-decoration:none;
+    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
+  .mm-nav a:hover{background:var(--hairline)}
   .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
   .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
-  .mobile-menu.-open .mm-nav a{opacity:1;transform:translateY(0)}
-  .mm-nav a:nth-child(1){transition-delay:.05s}
-  .mm-nav a:nth-child(2){transition-delay:.12s}
-  .mm-nav a:nth-child(3){transition-delay:.19s}
 
   @media(max-width:600px){
     body{font-size:14px}
-    .nav-links{display:none}
+    .header-center{display:none}
     .menu-toggle{display:block}
+    .hero-videos{display:none}
   }
   @media(min-width:861px){.rail-close-x{display:none}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -408,11 +416,17 @@
       <img class="logomark" src="logo.png" alt="Kazi">
     </a>
     <div class="bar-spacer"></div>
-    <nav class="nav-links">
-      <a class="nav-jobs" href="/">Jobs</a>
-      <a href="/post">Post a job</a>
-      <a href="mailto:hello@odana.design">Contact us</a>
-    </nav>
+    <div class="header-center">
+      <div class="header-search" id="headerSearch">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        <input id="qHeader" type="search" placeholder="Find your next role" autocomplete="off">
+      </div>
+      <nav class="nav-links">
+        <a class="nav-jobs" href="/">Jobs</a>
+        <a href="/post">Post a job</a>
+        <a href="mailto:hello@odana.design">Contact us</a>
+      </nav>
+    </div>
     <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
     <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
       <svg class="i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
@@ -424,18 +438,16 @@
   </div>
 </header>
 
-<div class="mobile-menu">
-  <div class="mm-backdrop"></div>
-  <div class="mm-panel">
-    <button class="mm-close" aria-label="Close menu" type="button">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-    </button>
-    <nav class="mm-nav">
+<div class="mobile-menu" aria-label="Menu">
+  <div class="mm-top">
+    <h2>Menu</h2>
+    <button class="mm-close" aria-label="Close menu" type="button">&times;</button>
+  </div>
+  <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
       <a href="mailto:hello@odana.design">Contact us</a>
-    </nav>
-  </div>
+  </nav>
 </div>
 
 <div class="promo" id="promo">
@@ -450,20 +462,13 @@
   <div class="hero-bg" aria-hidden="true"></div>
   <div class="wrap hero-inner">
     <div class="hero-content">
-      <h1><span class="rotword" id="rotWord">Product Design</span> roles across Africa, and remote jobs open to you.</h1>
+      <h1><span class="rotword" id="rotWord">Product Design</span><br>roles for you.</h1>
       <p class="lede">One board for product, UX, UI, brand and motion design work, filtered so you only see roles a designer in Kenya can actually apply to. No sign-up. Apply straight at the source.</p>
 
       <div class="searchpill">
         <label class="seg seg-main">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
-          <input id="q" type="search" placeholder="What type of role are you interested in?" autocomplete="off">
-        </label>
-        <span class="seg-divider"></span>
-        <label class="seg seg-elig">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>
-          <select id="heroElig" aria-label="Can I apply?">
-            <option value="">Can I apply?</option>
-          </select>
+          <input id="q" type="search" placeholder="Find your next role" autocomplete="off">
         </label>
         <button class="searchbtn" id="searchBtn">Search</button>
       </div>
@@ -497,7 +502,7 @@
     </div>
 
     <div class="fgroup">
-      <h3>Discipline</h3>
+      <h3>Job function</h3>
       <div id="f-cat"></div>
     </div>
     <div class="fgroup">
@@ -613,25 +618,6 @@ const ELIG_META = {
 const state = {q:"", cat:new Set(), elig:new Set(), work:new Set(), level:new Set(), sort:"new", page:1};
 const PAGE_SIZE = 12;
 
-/* ---------- hero "can I apply?" select ---------- */
-const heroElig = document.getElementById("heroElig");
-ELIG.forEach(e=>{
-  const opt = document.createElement("option");
-  opt.value = e.k; opt.textContent = e.l;
-  heroElig.appendChild(opt);
-});
-heroElig.addEventListener("change",()=>{
-  state.elig.clear();
-  document.querySelectorAll('input[data-field="elig"]').forEach(c=>c.checked=false);
-  if(heroElig.value){
-    state.elig.add(heroElig.value);
-    const cb = document.querySelector(`input[data-field="elig"][value="${heroElig.value}"]`);
-    if(cb) cb.checked = true;
-  }
-  state.page = 1;
-  render();
-});
-
 /* ---------- build filter checkboxes ---------- */
 function countFor(field,val){
   return JOBS.filter(j=>j[field]===val).length;
@@ -653,7 +639,6 @@ function bindCheckboxes(){
     cb.addEventListener("change",()=>{
       const f=cb.dataset.field;
       cb.checked ? state[f].add(cb.value) : state[f].delete(cb.value);
-      if(f==="elig") heroElig.value = state.elig.size===1 ? [...state.elig][0] : "";
       state.page = 1;
       render();
     });
@@ -787,7 +772,21 @@ function revealCards(){
 }
 
 /* ---------- events ---------- */
-document.getElementById("q").addEventListener("input",e=>{state.q=e.target.value;state.page=1;render()});
+/* q lives in two places (hero search pill + the compact header search that
+   appears next to the nav-links once the hero pill scrolls out of view on
+   desktop) — keep them mirrored so whichever one is visible always
+   reflects state.q. */
+const qHero = document.getElementById("q");
+const qHeader = document.getElementById("qHeader");
+function setQuery(val){
+  state.q = val; state.page = 1;
+  if(qHero.value !== val) qHero.value = val;
+  if(qHeader.value !== val) qHeader.value = val;
+  render();
+}
+qHero.addEventListener("input", e => setQuery(e.target.value));
+qHeader.addEventListener("input", e => setQuery(e.target.value));
+
 document.getElementById("sort").addEventListener("change",e=>{state.sort=e.target.value;state.page=1;render()});
 document.getElementById("clearAll").addEventListener("click",clearAll);
 document.getElementById("searchBtn").addEventListener("click",()=>{
@@ -795,10 +794,21 @@ document.getElementById("searchBtn").addEventListener("click",()=>{
   document.querySelector('.board').scrollIntoView({behavior:'smooth',block:'start'});
 });
 
+/* ---------- swap nav-links for the compact search once the hero search
+   pill scrolls behind the sticky header (desktop/tablet only; hidden on
+   mobile along with the rest of .header-center) ---------- */
+const header = document.querySelector("header.bar");
+const heroPill = document.querySelector(".searchpill");
+function checkHeaderSearch(){
+  const past = heroPill.getBoundingClientRect().bottom < header.getBoundingClientRect().height;
+  header.classList.toggle("scrolled", past);
+}
+window.addEventListener("scroll", checkHeaderSearch, {passive:true});
+window.addEventListener("resize", checkHeaderSearch);
+
 function clearAll(){
   state.q="";state.cat.clear();state.elig.clear();state.work.clear();state.level.clear();state.page=1;
-  document.getElementById("q").value="";
-  heroElig.value="";
+  qHero.value=""; qHeader.value="";
   document.querySelectorAll('input[type=checkbox]').forEach(c=>c.checked=false);
   render();
 }
@@ -810,7 +820,7 @@ document.getElementById("quickchips").addEventListener("click",e=>{
   clearAll();
   if(q==="remote-kenya"){ setCb("work","Remote"); setCb("elig","kenya"); setCb("elig","africa"); }
   else if(q==="junior"){ setCb("level","Junior"); }
-  else if(q==="nairobi"){ document.getElementById("q").value="Nairobi"; state.q="Nairobi"; }
+  else if(q==="nairobi"){ setQuery("Nairobi"); }
   else { setCb("cat",q); }
   render();
   window.scrollTo({top:document.querySelector('.board').offsetTop-70,behavior:'smooth'});
@@ -915,6 +925,7 @@ function startHeroVideos(){
 revealHero();
 startRotator();
 startHeroVideos();
+checkHeaderSearch();
 boot();
 </script>
 </body>

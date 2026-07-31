@@ -68,28 +68,25 @@
   .menu-toggle.-active span:last-child{top:10px;transform:rotate(-45deg)}
 
   html.menu-open{overflow:hidden}
-  .mobile-menu{position:fixed;inset:0;z-index:300;visibility:hidden;pointer-events:none}
-  .mobile-menu.-open{visibility:visible;pointer-events:auto}
-  .mm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .45s var(--ease-io)}
-  .mobile-menu.-open .mm-backdrop{opacity:1}
-  .mm-panel{position:absolute;top:0;right:0;bottom:0;width:min(320px,84vw);background:var(--canvas);
-    box-shadow:-16px 0 40px rgba(11,22,35,.18);transform:translateX(100%);
-    transition:transform .5s var(--ease-io);display:flex;flex-direction:column;padding:100px 32px 40px}
-  .mobile-menu.-open .mm-panel{transform:translateX(0)}
-  .mm-close{position:absolute;top:24px;right:24px;width:32px;height:32px;padding:0;border:0;
-    background:none;cursor:pointer;color:var(--muted);transition:color .25s var(--ease-io)}
-  .mm-close:hover{color:var(--ink)}
-  .mm-nav{display:flex;flex-direction:column;gap:4px}
-  .mm-nav a{font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--ink);text-decoration:none;
-    padding:12px 0;border-bottom:1px solid var(--hairline);opacity:0;transform:translateY(14px);
-    transition:opacity .4s var(--ease-io),transform .4s var(--ease-io),color .3s var(--ease-expo)}
-  .mm-nav a:hover{color:var(--brand)}
+  /* ---- mobile nav menu: same design language as the filter rail
+     (full-bleed canvas panel, fast simple slide, plain list rows) but
+     pulling in from the right instead of the left ---- */
+  .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
+    padding:20px 22px 40px;overflow:auto;
+    transform:translateX(100%);transition:transform .22s ease}
+  .mobile-menu.-open{transform:translateX(0)}
+  .mm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+  .mm-top h2{margin:0;font-size:16.5px;font-weight:800;color:var(--ink)}
+  .mm-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;
+    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
+    font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}
+  .mm-nav{display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--hairline);padding-top:6px}
+  .mm-nav a{display:block;padding:14px 8px;margin:0 -8px;border-radius:8px;
+    font-size:16px;font-weight:600;color:var(--ink);text-decoration:none;
+    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
+  .mm-nav a:hover{background:var(--hairline)}
   .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
   .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
-  .mobile-menu.-open .mm-nav a{opacity:1;transform:translateY(0)}
-  .mm-nav a:nth-child(1){transition-delay:.05s}
-  .mm-nav a:nth-child(2){transition-delay:.12s}
-  .mm-nav a:nth-child(3){transition-delay:.19s}
 
   @media(max-width:860px){
     body{font-size:15px}
@@ -150,18 +147,16 @@
   </div>
 </header>
 
-<div class="mobile-menu">
-  <div class="mm-backdrop"></div>
-  <div class="mm-panel">
-    <button class="mm-close" aria-label="Close menu" type="button">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
-    </button>
-    <nav class="mm-nav">
+<div class="mobile-menu" aria-label="Menu">
+  <div class="mm-top">
+    <h2>Menu</h2>
+    <button class="mm-close" aria-label="Close menu" type="button">&times;</button>
+  </div>
+  <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
       <a href="mailto:hello@odana.design">Contact us</a>
-    </nav>
-  </div>
+  </nav>
 </div>
 
 <div class="wrap">
