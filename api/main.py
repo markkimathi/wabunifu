@@ -24,6 +24,7 @@ from pathlib import Path
 from datetime import datetime
 
 from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
 
@@ -166,6 +167,24 @@ def admin_reject(sub_id: int, _: None = Depends(require_admin)):
     return {"ok": True}
 
 
-# Static site last: /api/* above takes priority, everything else falls
-# through to web/ (index.html, post.html, admin.html, jobs.json, ...).
+# Clean URLs: serve the .html files without the extension...
+CLEAN_PAGES = ["post", "admin", "terms", "privacy", "cookies"]
+for _page in CLEAN_PAGES:
+    def _make_page_route(page: str):
+        def _serve():
+            return FileResponse(WEB_DIR / f"{page}.html")
+        return _serve
+    app.get(f"/{_page}", include_in_schema=False)(_make_page_route(_page))
+
+# ...and 301 old .html links (bookmarks, external links) to the clean path.
+_HTML_REDIRECTS = {"index": "/", **{p: f"/{p}" for p in CLEAN_PAGES}}
+for _name, _target in _HTML_REDIRECTS.items():
+    def _make_redirect_route(target: str):
+        def _redirect():
+            return RedirectResponse(url=target, status_code=301)
+        return _redirect
+    app.get(f"/{_name}.html", include_in_schema=False)(_make_redirect_route(_target))
+
+# Static site last: /api/* and the routes above take priority, everything
+# else falls through to web/ (jobs.json, css, js, images, ...).
 app.mount("/", StaticFiles(directory=str(WEB_DIR), html=True), name="web")

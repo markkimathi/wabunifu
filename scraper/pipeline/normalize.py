@@ -39,17 +39,26 @@ def guess_country(location: str) -> str:
     return ""
 
 
-SALARY_RE = re.compile(
-    r"(\$|€|£|KES|USD|NGN|ZAR|GHS)\s?[\d][\d,\.]*\s?(k)?\s?(–|-|to)?\s?(\$|€|£|KES|USD)?\s?[\d,\.]*\s?(k)?",
+# A bare currency symbol followed by a small number ("$22", "$250") matches
+# all kinds of incidental dollar amounts in a job description that have
+# nothing to do with pay — a fintech's product pricing, a stipend, a
+# conference budget. Real salary disclosures are almost always either a
+# range ("$45k-$70k", "KES 220,000 - 320,000") or use "k" shorthand
+# ("$70k"), so require one of those two as a condition of a match,
+# instead of accepting any lone currency+number pair.
+CCY = r"(?:\$|€|£|KES|USD|NGN|ZAR|GHS)"
+SALARY_RANGE_RE = re.compile(
+    rf"{CCY}\s?[\d][\d,\.]*\s?k?\s?(?:–|-|to)\s?{CCY}?\s?[\d][\d,\.]*\s?k?",
     re.IGNORECASE,
 )
+SALARY_K_RE = re.compile(rf"{CCY}\s?[\d][\d,\.]*\s?k\b", re.IGNORECASE)
 
 
 def extract_salary(*texts: str) -> str | None:
     for t in texts:
         if not t:
             continue
-        m = SALARY_RE.search(t)
+        m = SALARY_RANGE_RE.search(t) or SALARY_K_RE.search(t)
         if m:
             return re.sub(r"\s+", " ", m.group(0)).strip()
     return None

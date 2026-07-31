@@ -6,6 +6,7 @@
 <title>Post a design role · Kazi</title>
 <link rel="icon" type="image/png" href="logo.png">
 <script src="theme.js?v=6"></script>
+<script src="nav.js?v=3"></script>
 <style>
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -19,7 +20,7 @@
     --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
     --amber:#F25C05; --amber-soft:#FDE6D8;
     --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
-    --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1);
+    --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1); --ease-io:cubic-bezier(.65,0,.35,1);
   }
   :root[data-theme="dark"]{
     --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
@@ -29,9 +30,17 @@
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
+  #pageLoader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+    background:var(--canvas);transition:opacity .35s var(--ease-io),visibility .35s var(--ease-io)}
+  #pageLoader.-hide{opacity:0;visibility:hidden;pointer-events:none}
+  #pageLoader .pl-spinner{width:32px;height:32px;border-radius:50%;
+    border:3px solid var(--hairline-strong);border-top-color:var(--brand);
+    animation:pl-spin .7s linear infinite}
+  @keyframes pl-spin{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){#pageLoader .pl-spinner{animation:none}}
   body{margin:0;min-height:100vh;display:flex;flex-direction:column;
     background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
-    font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+    font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
   body > .wrap{flex:1}
   a{color:inherit}
   .wrap{max-width:640px;margin:0 auto;padding:0 24px}
@@ -55,7 +64,47 @@
   .foot-links a{color:var(--muted);text-decoration:none}
   .foot-links a:hover{color:var(--ink)}
 
-  @media(max-width:480px){.nav-jobs{display:none}}
+  .menu-toggle{display:none;position:relative;flex:none;width:30px;height:22px;padding:0;border:0;
+    background:none;cursor:pointer;color:var(--ink)}
+  .menu-toggle span{display:block;position:absolute;left:0;right:0;height:2px;border-radius:2px;
+    background:currentColor;transition:transform .4s var(--ease-io),top .4s var(--ease-io)}
+  .menu-toggle span:first-child{top:4px}
+  .menu-toggle span:last-child{top:16px}
+  .menu-toggle.-active span:first-child{top:10px;transform:rotate(45deg)}
+  .menu-toggle.-active span:last-child{top:10px;transform:rotate(-45deg)}
+
+  html.menu-open{overflow:hidden}
+  .mobile-menu{position:fixed;inset:0;z-index:300;visibility:hidden;pointer-events:none}
+  .mobile-menu.-open{visibility:visible;pointer-events:auto}
+  .mm-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.5);opacity:0;transition:opacity .45s var(--ease-io)}
+  .mobile-menu.-open .mm-backdrop{opacity:1}
+  .mm-panel{position:absolute;top:0;right:0;bottom:0;width:min(320px,84vw);background:var(--canvas);
+    box-shadow:-16px 0 40px rgba(11,22,35,.18);transform:translateX(100%);
+    transition:transform .5s var(--ease-io);display:flex;flex-direction:column;padding:100px 32px 40px}
+  .mobile-menu.-open .mm-panel{transform:translateX(0)}
+  .mm-close{position:absolute;top:24px;right:24px;width:32px;height:32px;padding:0;border:0;
+    background:none;cursor:pointer;color:var(--muted);transition:color .25s var(--ease-io)}
+  .mm-close:hover{color:var(--ink)}
+  .mm-nav{display:flex;flex-direction:column;gap:4px}
+  .mm-nav a{font-size:26px;font-weight:700;letter-spacing:-.02em;color:var(--ink);text-decoration:none;
+    padding:12px 0;border-bottom:1px solid var(--hairline);opacity:0;transform:translateY(14px);
+    transition:opacity .4s var(--ease-io),transform .4s var(--ease-io),color .3s var(--ease-expo)}
+  .mm-nav a:hover{color:var(--brand)}
+  .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
+  .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
+  .mobile-menu.-open .mm-nav a{opacity:1;transform:translateY(0)}
+  .mm-nav a:nth-child(1){transition-delay:.05s}
+  .mm-nav a:nth-child(2){transition-delay:.12s}
+  .mm-nav a:nth-child(3){transition-delay:.19s}
+
+  @media(max-width:860px){
+    body{font-size:15px}
+  }
+  @media(max-width:600px){
+    body{font-size:14px}
+    .nav-links{display:none}
+    .menu-toggle{display:block}
+  }
 
   .theme-toggle{position:relative;flex:none;width:36px;height:36px;padding:0;border-radius:50%;
     background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
@@ -123,35 +172,58 @@
   .submit:active:not(:disabled){transform:scale(.97)}
 
   .err{color:#a5341f;font-size:13px;margin:0}
-  .fielderr{color:#a5341f;font-size:12.5px}
+  .fielderr{display:block;color:#a5341f;font-size:12.5px;min-height:0}
   [data-theme="dark"] .err,[data-theme="dark"] .fielderr{color:#FF6B5B}
+  .field.--invalid input,.field.--invalid select,.field.--invalid textarea{border-color:#a5341f}
+  [data-theme="dark"] .field.--invalid input,[data-theme="dark"] .field.--invalid select,[data-theme="dark"] .field.--invalid textarea{border-color:#FF6B5B}
+  .check-row.--invalid{outline:1.5px solid #a5341f;outline-offset:6px;border-radius:8px}
+  [data-theme="dark"] .check-row.--invalid{outline-color:#FF6B5B}
 
   .done{display:none;text-align:center;padding:60px 20px;border:1px solid var(--hairline);
     border-radius:var(--radius);background:var(--green-soft);margin:28px 0 90px}
   .done h2{font-weight:800;font-size:22px;color:var(--green-ink);margin:0 0 8px}
   .done p{color:var(--green-ink);margin:0;opacity:.85}
+  .done .submit{display:inline-block;text-decoration:none;margin-top:22px}
 
   @media(max-width:600px){.row2{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
+<div id="pageLoader"><span class="pl-spinner"></span></div>
 
 <header class="bar">
   <div class="bar-inner">
-    <a class="brand" href="index.html">
+    <a class="brand" href="/">
       <img class="logomark" src="logo.png" alt="Kazi">
     </a>
     <div class="bar-spacer"></div>
     <nav class="nav-links">
-      <a class="nav-jobs" href="index.html">Jobs</a>
+      <a class="nav-jobs" href="/">Jobs</a>
+      <a href="/post">Post a job</a>
       <a href="mailto:hello@odana.design">Contact us</a>
-    </nav>
-    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
+    </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
       <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
       <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
     </button>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
+      <span></span><span></span>
+    </button>
   </div>
 </header>
+
+<div class="mobile-menu">
+  <div class="mm-backdrop"></div>
+  <div class="mm-panel">
+    <button class="mm-close" aria-label="Close menu" type="button">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+    <nav class="mm-nav">
+      <a href="/">Jobs</a>
+      <a href="/post">Post a job</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
+  </div>
+</div>
 
 <div class="wrap">
   <div class="head">
@@ -244,7 +316,7 @@
         <input name="url" type="url" required placeholder="https://yourcompany.com/careers/role">
       </label>
 
-      <label class="field"><span class="field-label">Your email <span class="req">*</span> <span class="hint">(for our review only, never shown publicly)</span></span>
+      <label class="field"><span class="field-label">Your email <span class="req">*</span> <span class="hint">(never shown publicly — we'll email you here when your listing is approved or rejected)</span></span>
         <input name="contact_email" type="email" required placeholder="hiring@yourcompany.com">
       </label>
 
@@ -259,6 +331,7 @@
           <input type="checkbox" name="agreed_to_terms" id="agreeCheck" required>
           <span>I confirm the above and agree to Kazi's posting guidelines <span class="req">*</span></span>
         </label>
+        <span class="fielderr" id="agreeErr"></span>
       </div>
 
       <div class="step-nav">
@@ -270,7 +343,8 @@
 
   <div class="done" id="done">
     <h2>Thanks! It's in review</h2>
-    <p>We check every listing before it goes live. If it looks good, it'll appear on the board shortly.</p>
+    <p>We check every listing before it goes live. We'll email you at the address you gave us once it's approved or rejected.</p>
+    <a class="submit" href="/">Back to homepage</a>
   </div>
 </div>
 
@@ -278,9 +352,9 @@
   <div class="wrap">
     <span>© Kazi</span>
     <nav class="foot-links">
-      <a href="terms.html">Terms</a>
-      <a href="privacy.html">Privacy</a>
-      <a href="cookies.html">Cookies</a>
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/cookies">Cookies</a>
       <a href="mailto:hello@odana.design">Contact us</a>
     </nav>
   </div>
@@ -318,9 +392,56 @@ function stepControls(stepEl){
 function stepIsValid(stepEl){
   return stepControls(stepEl).every(el => el.checkValidity());
 }
+
+// Custom, plain-language messages instead of the browser's native
+// validation bubble (wording and placement vary by browser, and it
+// only ever points at one field at a time).
+const FIELD_MESSAGES = {
+  title: "Enter the job title",
+  company: "Enter the company name",
+  description: "Describe the role — a few sentences is enough",
+  url: {valueMissing: "Enter the application link", typeMismatch: "Enter a valid URL, e.g. https://company.com/careers/role"},
+  contact_email: {valueMissing: "Enter your email", typeMismatch: "Enter a valid email address"},
+  agreed_to_terms: "You need to agree to the posting guidelines to continue",
+};
+function messageFor(el){
+  const spec = FIELD_MESSAGES[el.name];
+  if(el.validity.valueMissing){
+    if(spec && typeof spec === "object") return spec.valueMissing;
+    if(typeof spec === "string") return spec;
+    return "This field is required";
+  }
+  if(el.validity.typeMismatch && spec && typeof spec === "object" && spec.typeMismatch){
+    return spec.typeMismatch;
+  }
+  return el.validationMessage || "Please check this field";
+}
+function fieldWrap(el){
+  return el.name === "agreed_to_terms" ? el.closest(".check-row") : el.closest(".field");
+}
+function errSpanFor(el){
+  if(el.name === "agreed_to_terms") return document.getElementById("agreeErr");
+  const wrap = fieldWrap(el);
+  return wrap ? wrap.querySelector(".fielderr") : null;
+}
+function validateField(el){
+  const wrap = fieldWrap(el);
+  const errSpan = errSpanFor(el);
+  const ok = el.checkValidity();
+  if(wrap) wrap.classList.toggle("--invalid", !ok);
+  if(errSpan) errSpan.textContent = ok ? "" : messageFor(el);
+  return ok;
+}
+
+const touched = new WeakSet();
+
 function reportStepValidity(stepEl){
-  const invalid = stepControls(stepEl).find(el => !el.checkValidity());
-  if(invalid){ invalid.reportValidity(); invalid.focus(); return false; }
+  let firstInvalid = null;
+  stepControls(stepEl).forEach(el => {
+    touched.add(el);
+    if(!validateField(el) && !firstInvalid) firstInvalid = el;
+  });
+  if(firstInvalid){ firstInvalid.focus(); return false; }
   return true;
 }
 
@@ -353,8 +474,33 @@ document.querySelectorAll("[data-back]").forEach(b => {
   b.addEventListener("click", () => showStep(current - 1));
 });
 
-form.addEventListener("input", updateSubmitState);
-form.addEventListener("change", updateSubmitState);
+// One error slot per field, appended after the control so it lands
+// below it (label.field is a column flexbox).
+document.querySelectorAll(".field input, .field select, .field textarea").forEach(el => {
+  const wrap = fieldWrap(el);
+  if(wrap && !wrap.querySelector(".fielderr")){
+    const span = document.createElement("span");
+    span.className = "fielderr";
+    wrap.appendChild(span);
+  }
+});
+
+form.addEventListener("blur", (e) => {
+  const el = e.target;
+  if(el.matches("input, select, textarea")){
+    touched.add(el);
+    validateField(el);
+  }
+}, true);
+
+form.addEventListener("input", (e) => {
+  updateSubmitState();
+  if(touched.has(e.target)) validateField(e.target);
+});
+form.addEventListener("change", (e) => {
+  updateSubmitState();
+  if(touched.has(e.target)) validateField(e.target);
+});
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
