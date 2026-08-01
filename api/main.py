@@ -24,7 +24,7 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Header, Depends, Request
+from fastapi import FastAPI, HTTPException, Header, Depends, Request, UploadFile, File, Form
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
@@ -38,6 +38,7 @@ from .db import (  # noqa: E402
     log_pageview, log_search, log_apply_click, get_analytics_summary,
 )
 from . import geoip  # noqa: E402
+from . import ats_check  # noqa: E402
 
 WEB_DIR = ROOT / "web"
 JOBS_JSON = WEB_DIR / "jobs.json"
@@ -257,8 +258,20 @@ def admin_analytics(days: int = 30, _: None = Depends(require_admin)):
     return get_analytics_summary(days=max(1, min(days, 365)))
 
 
+@app.post("/api/ats/check")
+async def ats_check_endpoint(file: UploadFile = File(...), job_description: str = Form("")):
+    # Parsed entirely in memory and never persisted — see ats_check.py's
+    # module docstring. `data` goes out of scope (and is garbage collected)
+    # once this request finishes.
+    data = await file.read()
+    try:
+        return ats_check.analyze(file.filename or "", data, job_description)
+    except ats_check.UnsupportedFile as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 # Clean URLs: serve the .html files without the extension...
-CLEAN_PAGES = ["post", "admin", "terms", "privacy", "cookies"]
+CLEAN_PAGES = ["post", "cv-check", "admin", "terms", "privacy", "cookies"]
 for _page in CLEAN_PAGES:
     def _make_page_route(page: str):
         def _serve():

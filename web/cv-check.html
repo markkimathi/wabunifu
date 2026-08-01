@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CV Checker · Kazi</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<script src="theme.js?v=6"></script>
+<script src="nav.js?v=4"></script>
+<style>
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Bold.woff2") format("woff2"),url("fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+
+  :root{
+    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
+    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-light:#AA52ED; --brand-soft:#F1E7FA;
+    --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
+    --amber:#F25C05; --amber-soft:#FDE6D8;
+    --red:#D3322A; --red-soft:#FBE4E2;
+    --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
+    --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1); --ease-io:cubic-bezier(.65,0,.35,1);
+  }
+  :root[data-theme="dark"]{
+    --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
+    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8; --brand-light:#C79AF2; --brand-soft:#251A38;
+    --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
+    --amber:#FF9B57; --amber-soft:#3A2412;
+    --red:#FF6B5B; --red-soft:#3A1712;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box}
+  #pageLoader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+    background:var(--canvas);transition:opacity .35s var(--ease-io),visibility .35s var(--ease-io)}
+  #pageLoader.-hide{opacity:0;visibility:hidden;pointer-events:none}
+  #pageLoader .pl-spinner{width:32px;height:32px;border-radius:50%;
+    border:3px solid var(--hairline-strong);border-top-color:var(--brand);
+    animation:pl-spin .7s linear infinite}
+  @keyframes pl-spin{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){#pageLoader .pl-spinner{animation:none}}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;
+    background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
+    font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  body > .wrap{flex:1}
+  a{color:inherit}
+  .wrap{max-width:680px;margin:0 auto;padding:0 24px}
+
+  header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
+  [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
+  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .logomark{height:20px;width:auto;flex:none;display:block}
+  .bar-spacer{flex:1}
+  .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    display:flex;align-items:center;gap:20px;white-space:nowrap}
+  .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
+    transition:color .3s var(--ease-expo)}
+  .nav-links a:hover{color:var(--ink)}
+
+  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px;margin-top:auto}
+  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
+  .foot-links a{color:var(--muted);text-decoration:none}
+  .foot-links a:hover{color:var(--ink)}
+
+  .menu-toggle{display:none;position:relative;flex:none;width:38px;height:38px;padding:0;
+    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
+    cursor:pointer;color:var(--ink);
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .menu-toggle:hover{border-color:var(--brand);color:var(--brand)}
+  .menu-toggle span{display:block;position:absolute;left:50%;top:50%;width:16px;height:2px;
+    border-radius:2px;background:currentColor;transition:transform .4s var(--ease-io)}
+  .menu-toggle span:first-child{transform:translate(-50%,-50%) translateY(-3px)}
+  .menu-toggle span:last-child{transform:translate(-50%,-50%) translateY(3px)}
+  .menu-toggle.-active span:first-child{transform:translate(-50%,-50%) rotate(45deg)}
+  .menu-toggle.-active span:last-child{transform:translate(-50%,-50%) rotate(-45deg)}
+
+  html.menu-open{overflow:hidden}
+  .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
+    padding:20px 22px 40px;overflow:auto;
+    transform:translateX(100%);transition:transform .22s ease}
+  .mobile-menu.-open{transform:translateX(0)}
+  .mm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+  .mm-top h2{margin:0;font-size:16.5px;font-weight:800;color:var(--ink)}
+  .mm-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;
+    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
+    font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}
+  .mm-nav{display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--hairline);padding-top:6px}
+  .mm-nav a{display:block;padding:14px 8px;margin:0 -8px;border-radius:8px;
+    font-size:16px;font-weight:600;color:var(--ink);text-decoration:none;
+    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
+  .mm-nav a:hover{background:var(--hairline)}
+  .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
+  .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
+
+  @media(max-width:860px){
+    body{font-size:15px}
+  }
+  @media(max-width:600px){
+    body{font-size:14px}
+    .nav-links{display:none}
+    .menu-toggle{display:block}
+  }
+
+  .theme-toggle{position:relative;flex:none;width:36px;height:36px;padding:0;border-radius:50%;
+    background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
+    display:grid;place-items:center;color:var(--ink);
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .theme-toggle:hover{border-color:var(--brand);color:var(--brand)}
+  .theme-toggle svg{position:absolute;transition:transform .5s var(--ease-expo),opacity .35s var(--ease-expo)}
+  .theme-toggle .i-moon{opacity:0;transform:rotate(-90deg) scale(.4)}
+  [data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
+  [data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:rotate(0deg) scale(1)}
+
+  .head{padding:48px 0 8px}
+  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:600;margin:0 0 14px}
+  h1{font-weight:800;font-size:clamp(26px,4vw,36px);letter-spacing:-.02em;margin:0 0 10px;line-height:1.1}
+  .lede{color:var(--muted);font-size:15.5px;margin:0 0 8px;max-width:56ch}
+  .privacy-note{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);margin:14px 0 0}
+  .privacy-note svg{flex:none;color:var(--green)}
+
+  main.tool{padding:28px 0 90px}
+
+  .dropzone{border:2px dashed var(--hairline-strong);border-radius:var(--radius);padding:36px 24px;
+    text-align:center;cursor:pointer;transition:border-color .25s var(--ease-expo),background .25s var(--ease-expo)}
+  .dropzone:hover,.dropzone.-drag{border-color:var(--brand);background:var(--brand-soft)}
+  .dropzone svg{color:var(--muted);margin-bottom:10px}
+  .dropzone .dz-title{font-weight:700;font-size:15px;margin:0 0 4px}
+  .dropzone .dz-sub{font-size:12.5px;color:var(--muted);margin:0}
+  .dropzone input[type=file]{display:none}
+
+  .file-chip{display:flex;align-items:center;gap:12px;border:1px solid var(--hairline-strong);
+    border-radius:var(--radius);padding:14px 16px}
+  .file-chip .f-icon{flex:none;width:38px;height:38px;border-radius:10px;background:var(--brand-soft);
+    color:var(--brand);display:grid;place-items:center}
+  .file-chip .f-name{font-weight:700;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .file-chip .f-size{font-size:12px;color:var(--muted)}
+  .file-chip .f-remove{flex:none;margin-left:auto;background:none;border:0;color:var(--muted);
+    cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px}
+  .file-chip .f-remove:hover{background:var(--hairline);color:var(--ink)}
+
+  .jd-toggle{background:none;border:0;color:var(--brand);font:inherit;font-size:13.5px;font-weight:700;
+    cursor:pointer;padding:14px 0 0;text-align:left}
+  .jd-wrap{display:none;margin-top:12px}
+  .jd-wrap.-open{display:block}
+  label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .hint{font-weight:400;color:var(--faint);font-size:12.5px}
+  textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
+    border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
+    resize:vertical;min-height:100px;font-family:inherit;transition:border-color .2s var(--ease-expo)}
+  textarea:focus{outline:0;border-color:var(--brand)}
+  @media(max-width:600px){textarea{font-size:16px}}
+
+  .submit{background:var(--brand);color:#fff;border:0;
+    font:inherit;font-weight:700;font-size:14.5px;padding:13px 24px;border-radius:999px;cursor:pointer;
+    transition:background .3s var(--ease-expo),transform .3s var(--ease-expo)}
+  .submit:hover:not(:disabled){background:var(--brand-light)}
+  .submit:disabled{background:var(--hairline-strong);color:var(--faint);cursor:not-allowed}
+  .submit:active:not(:disabled){transform:scale(.97)}
+  .submit-row{margin-top:20px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+
+  .err{color:#a5341f;font-size:13px;margin:14px 0 0}
+  [data-theme="dark"] .err{color:#FF6B5B}
+
+  .results{display:none;margin-top:36px}
+  .results.-open{display:block}
+
+  .score-panel{display:flex;align-items:center;gap:22px;border:1px solid var(--hairline);
+    border-radius:var(--radius);padding:22px 24px;background:var(--surface);box-shadow:var(--shadow);
+    margin-bottom:22px;flex-wrap:wrap}
+  .score-ring{flex:none;width:88px;height:88px}
+  .score-ring text{font-family:"Grift",system-ui,sans-serif;font-weight:800;font-size:22px;fill:var(--ink)}
+  .score-info{flex:1;min-width:180px}
+  .score-label{font-weight:800;font-size:18px;margin:0 0 4px}
+  .score-desc{color:var(--muted);font-size:13.5px;margin:0}
+
+  .check-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
+  .check-row{display:flex;gap:12px;border:1px solid var(--hairline);border-radius:12px;padding:14px 16px;background:var(--surface)}
+  .check-row .c-icon{flex:none;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;margin-top:1px}
+  .check-row.-pass .c-icon{background:var(--green-soft);color:var(--green-ink)}
+  .check-row.-warning .c-icon{background:var(--amber-soft);color:var(--amber)}
+  .check-row.-critical .c-icon{background:var(--red-soft);color:var(--red)}
+  .check-row .c-title{font-weight:700;font-size:14px;margin:0 0 3px}
+  .check-row .c-detail{font-size:13px;color:var(--muted);margin:0}
+  .check-row .c-fix{font-size:12.5px;color:var(--ink);margin:8px 0 0;padding:9px 11px;
+    background:var(--hairline);border-radius:8px}
+  .check-row .c-fix b{color:var(--brand)}
+
+  .panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:20px 22px;background:var(--surface);
+    box-shadow:var(--shadow);margin-bottom:24px}
+  .panel h3{margin:0 0 4px;font-size:15px;font-weight:800}
+  .panel .kw-sub{font-size:13px;color:var(--muted);margin:0 0 14px}
+  .kw-pills{display:flex;flex-wrap:wrap;gap:8px}
+  .kw-pill{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--red-soft);color:var(--red)}
+
+  .reset-row{text-align:center}
+  .btn-ghost{background:none;border:1px solid var(--hairline-strong);color:var(--ink);font:inherit;
+    font-weight:700;font-size:14px;padding:11px 22px;border-radius:999px;cursor:pointer;
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+
+  .spinner-inline{display:inline-block;width:14px;height:14px;border-radius:50%;
+    border:2px solid rgba(255,255,255,.4);border-top-color:#fff;animation:pl-spin .7s linear infinite;
+    vertical-align:-2px;margin-right:7px}
+</style>
+</head>
+<body>
+<div id="pageLoader"><span class="pl-spinner"></span></div>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="/">
+      <img class="logomark" src="logo.png" alt="Kazi">
+    </a>
+    <div class="bar-spacer"></div>
+    <nav class="nav-links">
+      <a class="nav-jobs" href="/">Jobs</a>
+      <a href="/post">Post a job</a>
+      <a href="/cv-check">Check your CV</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
+      <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    </button>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
+      <span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" aria-label="Menu">
+  <div class="mm-top">
+    <h2>Menu</h2>
+    <button class="mm-close" aria-label="Close menu" type="button">&times;</button>
+  </div>
+  <nav class="mm-nav">
+      <a href="/">Jobs</a>
+      <a href="/post">Post a job</a>
+      <a href="/cv-check">Check your CV</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+  </nav>
+</div>
+
+<div class="wrap">
+  <div class="head">
+    <p class="kicker">For job seekers</p>
+    <h1>Will your CV pass the robots?</h1>
+    <p class="lede">Upload your CV and get an instant ATS-compatibility score, plus exactly what to fix.
+      Optionally paste a job description to see how well your CV matches it.</p>
+    <p class="privacy-note">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+      Your CV is analyzed in memory and never stored — nothing is saved to our servers.
+    </p>
+  </div>
+
+  <main class="tool">
+    <div id="uploadStage">
+      <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload your CV">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <p class="dz-title">Drag &amp; drop your CV here, or click to browse</p>
+        <p class="dz-sub">PDF or DOCX, up to 5MB</p>
+        <input type="file" id="fileInput" accept=".pdf,.docx">
+      </div>
+
+      <div class="file-chip" id="fileChip" style="display:none">
+        <span class="f-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg>
+        </span>
+        <span>
+          <div class="f-name" id="fileName"></div>
+          <div class="f-size" id="fileSize"></div>
+        </span>
+        <button type="button" class="f-remove" id="fileRemove" aria-label="Remove file">&times;</button>
+      </div>
+
+      <button type="button" class="jd-toggle" id="jdToggle">+ Paste a job description (optional)</button>
+      <div class="jd-wrap" id="jdWrap">
+        <label class="field">
+          <span class="field-label">Job description <span class="hint">(for a keyword match score)</span></span>
+          <textarea id="jdInput" placeholder="Paste the job description you're applying to..."></textarea>
+        </label>
+      </div>
+
+      <p class="err" id="formErr" style="display:none"></p>
+
+      <div class="submit-row">
+        <button type="button" class="submit" id="checkBtn" disabled>Check my CV</button>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="score-panel">
+        <svg class="score-ring" id="scoreRing" viewBox="0 0 100 100"></svg>
+        <div class="score-info">
+          <p class="score-label" id="scoreLabel"></p>
+          <p class="score-desc" id="scoreDesc"></p>
+        </div>
+      </div>
+
+      <div class="check-list" id="checkList"></div>
+
+      <div class="panel" id="kwPanel" style="display:none">
+        <h3>Keyword match</h3>
+        <p class="kw-sub" id="kwSub"></p>
+        <div class="kw-pills" id="kwPills"></div>
+      </div>
+
+      <div class="reset-row">
+        <button type="button" class="btn-ghost" id="resetBtn">Check another CV</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© Kazi</span>
+    <nav class="foot-links">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/cookies">Cookies</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+const dropzone = document.getElementById("dropzone");
+const fileInput = document.getElementById("fileInput");
+const fileChip = document.getElementById("fileChip");
+const fileName = document.getElementById("fileName");
+const fileSize = document.getElementById("fileSize");
+const fileRemove = document.getElementById("fileRemove");
+const jdToggle = document.getElementById("jdToggle");
+const jdWrap = document.getElementById("jdWrap");
+const jdInput = document.getElementById("jdInput");
+const checkBtn = document.getElementById("checkBtn");
+const formErr = document.getElementById("formErr");
+const uploadStage = document.getElementById("uploadStage");
+const results = document.getElementById("results");
+const resetBtn = document.getElementById("resetBtn");
+
+const MAX_BYTES = 5 * 1024 * 1024;
+let selectedFile = null;
+
+function humanSize(bytes){
+  if(bytes < 1024) return `${bytes} B`;
+  if(bytes < 1024*1024) return `${(bytes/1024).toFixed(0)} KB`;
+  return `${(bytes/(1024*1024)).toFixed(1)} MB`;
+}
+
+function showError(msg){
+  formErr.textContent = msg;
+  formErr.style.display = "block";
+}
+function clearError(){
+  formErr.style.display = "none";
+}
+
+function setFile(file){
+  clearError();
+  if(!file) return;
+  const ext = file.name.split(".").pop().toLowerCase();
+  if(!["pdf","docx"].includes(ext)){
+    showError("Please choose a .pdf or .docx file.");
+    return;
+  }
+  if(file.size > MAX_BYTES){
+    showError("That file is larger than 5MB — please choose a smaller one.");
+    return;
+  }
+  selectedFile = file;
+  fileName.textContent = file.name;
+  fileSize.textContent = humanSize(file.size);
+  fileChip.style.display = "flex";
+  dropzone.style.display = "none";
+  checkBtn.disabled = false;
+}
+
+function clearFile(){
+  selectedFile = null;
+  fileInput.value = "";
+  fileChip.style.display = "none";
+  dropzone.style.display = "block";
+  checkBtn.disabled = true;
+}
+
+dropzone.addEventListener("click", () => fileInput.click());
+dropzone.addEventListener("keydown", e => { if(e.key === "Enter" || e.key === " "){ e.preventDefault(); fileInput.click(); } });
+fileInput.addEventListener("change", () => setFile(fileInput.files[0]));
+fileRemove.addEventListener("click", clearFile);
+
+["dragenter","dragover"].forEach(evt => {
+  dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.add("-drag"); });
+});
+["dragleave","drop"].forEach(evt => {
+  dropzone.addEventListener(evt, e => { e.preventDefault(); dropzone.classList.remove("-drag"); });
+});
+dropzone.addEventListener("drop", e => {
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(file) setFile(file);
+});
+
+jdToggle.addEventListener("click", () => {
+  const open = jdWrap.classList.toggle("-open");
+  jdToggle.textContent = open ? "− Paste a job description (optional)" : "+ Paste a job description (optional)";
+});
+
+function scoreColor(score){
+  if(score >= 85) return "var(--green)";
+  if(score >= 65) return "var(--brand)";
+  if(score >= 45) return "var(--amber)";
+  return "var(--red)";
+}
+function scoreLabelText(score){
+  if(score >= 85) return "Excellent";
+  if(score >= 65) return "Good";
+  if(score >= 45) return "Needs work";
+  return "Poor";
+}
+function scoreDescText(score){
+  if(score >= 85) return "Your CV is in great shape for ATS software to read correctly.";
+  if(score >= 65) return "Solid, but a few fixes below would make it more reliably parsed.";
+  if(score >= 45) return "Several issues below could cause an ATS to misread or drop parts of your CV.";
+  return "Multiple issues below are likely causing ATS software to misread your CV.";
+}
+
+function renderScoreRing(score){
+  const r = 40, c = 2 * Math.PI * r;
+  const offset = c - (score / 100) * c;
+  const color = scoreColor(score);
+  document.getElementById("scoreRing").innerHTML = `
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="var(--hairline)" stroke-width="9"/>
+    <circle cx="50" cy="50" r="${r}" fill="none" stroke="${color}" stroke-width="9"
+      stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${offset}"
+      transform="rotate(-90 50 50)"/>
+    <text x="50" y="56" text-anchor="middle">${score}</text>
+  `;
+}
+
+const ICON_PASS = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+const ICON_WARN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>';
+
+function renderChecks(checks){
+  const list = document.getElementById("checkList");
+  list.innerHTML = checks.map(c => {
+    const cls = c.passed ? "-pass" : (c.severity === "critical" ? "-critical" : "-warning");
+    const icon = c.passed ? ICON_PASS : ICON_WARN;
+    return `
+      <div class="check-row ${cls}">
+        <span class="c-icon">${icon}</span>
+        <div>
+          <p class="c-title">${escapeHtml(c.title)}</p>
+          <p class="c-detail">${escapeHtml(c.detail)}</p>
+          ${!c.passed ? `<p class="c-fix"><b>How to fix:</b> ${escapeHtml(c.fix)}</p>` : ""}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderKeywordMatch(km){
+  const panel = document.getElementById("kwPanel");
+  if(!km){ panel.style.display = "none"; return; }
+  panel.style.display = "block";
+  document.getElementById("kwSub").textContent =
+    `${km.score}% of the job description's key terms appear in your CV.`;
+  const pills = document.getElementById("kwPills");
+  if(km.missing.length){
+    pills.innerHTML = km.missing.map(w => `<span class="kw-pill">${escapeHtml(w)}</span>`).join("");
+  } else {
+    pills.innerHTML = `<span class="kw-pill" style="background:var(--green-soft);color:var(--green-ink)">Nothing major missing</span>`;
+  }
+}
+
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+checkBtn.addEventListener("click", async () => {
+  if(!selectedFile) return;
+  clearError();
+  checkBtn.disabled = true;
+  checkBtn.innerHTML = '<span class="spinner-inline"></span>Analyzing…';
+
+  const fd = new FormData();
+  fd.append("file", selectedFile);
+  fd.append("job_description", jdInput.value.trim());
+
+  try {
+    const res = await fetch("/api/ats/check", { method: "POST", body: fd });
+    if(!res.ok){
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.detail || `Request failed (${res.status})`);
+    }
+    const data = await res.json();
+    renderScoreRing(data.score);
+    document.getElementById("scoreLabel").textContent = `${scoreLabelText(data.score)} — ${data.score}/100`;
+    document.getElementById("scoreLabel").style.color = scoreColor(data.score);
+    document.getElementById("scoreDesc").textContent = scoreDescText(data.score);
+    renderChecks(data.checks);
+    renderKeywordMatch(data.keyword_match);
+    uploadStage.style.display = "none";
+    results.classList.add("-open");
+    window.scrollTo({top: 0, behavior: "smooth"});
+  } catch(err) {
+    showError("Couldn't analyze that file: " + err.message);
+  } finally {
+    checkBtn.disabled = false;
+    checkBtn.textContent = "Check my CV";
+  }
+});
+
+resetBtn.addEventListener("click", () => {
+  clearFile();
+  jdInput.value = "";
+  jdWrap.classList.remove("-open");
+  jdToggle.textContent = "+ Paste a job description (optional)";
+  results.classList.remove("-open");
+  uploadStage.style.display = "block";
+  window.scrollTo({top: 0, behavior: "smooth"});
+});
+</script>
+</body>
+</html>

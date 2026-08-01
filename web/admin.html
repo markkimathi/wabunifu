@@ -257,6 +257,7 @@
     <nav class="nav-links">
       <a class="nav-jobs" href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/cv-check">Check your CV</a>
       <a href="mailto:hello@odana.design">Contact us</a>
     </nav>    <span class="tag">Admin</span>
     <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
@@ -277,6 +278,7 @@
   <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/cv-check">Check your CV</a>
       <a href="mailto:hello@odana.design">Contact us</a>
   </nav>
 </div>
@@ -422,7 +424,7 @@ document.querySelectorAll(".view-switch button").forEach(b => {
 
 /* ---------- dashboard ---------- */
 const PAGE_LABELS = {
-  "/": "Jobs (home)", "/post": "Post a job", "/admin": "Admin",
+  "/": "Jobs (home)", "/post": "Post a job", "/cv-check": "CV Checker", "/admin": "Admin",
   "/terms": "Terms", "/privacy": "Privacy", "/cookies": "Cookies",
 };
 function pageLabel(path) { return PAGE_LABELS[path] || path; }
