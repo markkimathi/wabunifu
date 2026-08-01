@@ -216,8 +216,8 @@ class ResetPasswordIn(BaseModel):
         return v
 
 
-class VerifyEmailIn(BaseModel):
-    token: str
+class VerifyCodeIn(BaseModel):
+    code: str
 
 
 class ProfileUpdate(BaseModel):
@@ -225,6 +225,8 @@ class ProfileUpdate(BaseModel):
     bio: str = ""
     discipline: str = ""
     location: str = ""
+    phone: str = ""
+    contact_email: str = ""
 
     @field_validator("display_name")
     @classmethod
@@ -405,13 +407,17 @@ async def ats_check_endpoint(file: UploadFile = File(...), job_description: str 
 # ---------------------------------------------------------------------------
 
 def _designer_public(d: dict) -> dict:
-    """Strip private fields (email, password_hash) before this ever reaches
-    a public response — used for both the directory and single-profile
-    endpoints so there's exactly one place that decides what's public."""
+    """Strip private fields (login email, password_hash) before this ever
+    reaches a public response — used for both the directory and
+    single-profile endpoints so there's exactly one place that decides
+    what's public. phone/contact_email ARE included here on purpose: unlike
+    the login email, they're an opt-in field a designer fills in specifically
+    so employers can reach them, same as the rest of the profile."""
     return {
         "id": d["id"], "display_name": d["display_name"], "bio": d["bio"],
         "discipline": d["discipline"], "location": d["location"],
         "photo_path": d["photo_path"], "created_at": d["created_at"],
+        "phone": d.get("phone", ""), "contact_email": d.get("contact_email", ""),
         "links": list_designer_links(d["id"]),
     }
 
@@ -448,11 +454,16 @@ def designer_logout(authorization: str = Header(default="")):
     return {"ok": True}
 
 
-@app.post("/api/designers/verify-email")
-def designer_verify_email(payload: VerifyEmailIn):
-    designer_id = consume_email_token(payload.token, "verify")
-    if not designer_id:
-        raise HTTPException(400, "This verification link is invalid or has expired.")
+@app.post("/api/designers/me/verify-email")
+def designer_verify_email(payload: VerifyCodeIn, designer: dict = Depends(require_designer)):
+    # Scoped to the logged-in session (rather than a bare anonymous token
+    # lookup) since a 6-digit code has a much smaller guess-space than the
+    # 256-bit link tokens used elsewhere — this closes off anonymous
+    # brute-forcing: an attacker needs their own valid session first, and
+    # can only guess against the one account it belongs to.
+    designer_id = consume_email_token(payload.code.strip(), "verify")
+    if not designer_id or designer_id != designer["id"]:
+        raise HTTPException(400, "That code is incorrect or has expired.")
     set_designer_email_verified(designer_id)
     return {"ok": True}
 
@@ -502,6 +513,7 @@ def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_
     update_designer_profile(
         designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
         discipline=payload.discipline, location=payload.location.strip()[:200],
+        phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
     )
     return {"ok": True}
 

@@ -60,15 +60,14 @@ def send_email(to: str, subject: str, html: str) -> bool:
         return False
 
 
-def send_verification_email(email: str, token: str) -> None:
-    link = f"{SITE_URL}/account?verify={token}"
+def send_verification_email(email: str, code: str) -> None:
     send_email(
         email,
-        "Verify your email for Kazi",
+        "Your Kazi verification code",
         f"""
-        <p>Confirm your email to finish setting up your Kazi designer profile.</p>
-        <p><a href="{link}">Verify your email</a></p>
-        <p>This link expires in 24 hours. If you didn't create a Kazi account, you can ignore this email.</p>
+        <p>Enter this code to verify your email and finish setting up your Kazi designer profile:</p>
+        <p style="font-size:32px;font-weight:700;letter-spacing:.14em;margin:20px 0">{code}</p>
+        <p>This code expires in 15 minutes. If you didn't create a Kazi account, you can ignore this email.</p>
         """,
     )
 

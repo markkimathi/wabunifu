@@ -33,7 +33,7 @@ from datetime import datetime, timedelta, timezone
 
 ANALYTICS_RETENTION_DAYS = 90
 SESSION_DAYS = 30
-VERIFY_TOKEN_HOURS = 24
+VERIFY_CODE_MINUTES = 15
 RESET_TOKEN_HOURS = 1
 
 # Override with KAZI_DB_PATH in production to point at a mounted volume:
@@ -99,6 +99,8 @@ CREATE TABLE IF NOT EXISTS designers (
   discipline TEXT NOT NULL DEFAULT '',
   location TEXT NOT NULL DEFAULT '',
   photo_path TEXT NOT NULL DEFAULT '',
+  phone TEXT NOT NULL DEFAULT '',
+  contact_email TEXT NOT NULL DEFAULT '',
   email_verified INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
@@ -138,6 +140,8 @@ CREATE TABLE IF NOT EXISTS designer_email_tokens (
 _MIGRATIONS = [
     "ALTER TABLE submissions ADD COLUMN description TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE submissions ADD COLUMN agreed_to_terms INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE designers ADD COLUMN phone TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN contact_email TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -239,7 +243,10 @@ def get_designer_by_email(email: str) -> dict | None:
     return dict(row) if row else None
 
 
-def update_designer_profile(designer_id: int, *, display_name: str, bio: str, discipline: str, location: str) -> None:
+def update_designer_profile(
+    designer_id: int, *, display_name: str, bio: str, discipline: str, location: str,
+    phone: str = "", contact_email: str = "",
+) -> None:
     c = _conn()
     # Editing an approved profile sends it back for re-review, same as a job
     # listing would if it were editable — never let a live public profile
@@ -247,8 +254,9 @@ def update_designer_profile(designer_id: int, *, display_name: str, bio: str, di
     row = c.execute("SELECT status FROM designers WHERE id = ?", (designer_id,)).fetchone()
     new_status = "pending" if row and row["status"] == "approved" else (row["status"] if row else "pending")
     c.execute(
-        "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, status = ? WHERE id = ?",
-        (display_name, bio, discipline, location, new_status, designer_id),
+        "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, "
+        "phone = ?, contact_email = ?, status = ? WHERE id = ?",
+        (display_name, bio, discipline, location, phone, contact_email, new_status, designer_id),
     )
     c.commit()
     c.close()
@@ -391,14 +399,22 @@ def delete_sessions_for_designer(designer_id: int) -> None:
 
 
 def create_email_token(designer_id: int, purpose: str) -> str:
-    token = secrets.token_urlsafe(32)
     now = datetime.now(timezone.utc)
-    hours = VERIFY_TOKEN_HOURS if purpose == "verify" else RESET_TOKEN_HOURS
+    if purpose == "verify":
+        # A short numeric code (typed in by hand, not clicked) needs a much
+        # smaller guess-space to stay valid for than a 256-bit link token —
+        # 15 minutes, plus the endpoint that checks it is auth-scoped (see
+        # api/main.py's designer_verify_email), not a bare anonymous lookup.
+        token = f"{secrets.randbelow(1_000_000):06d}"
+        expires_at = now + timedelta(minutes=VERIFY_CODE_MINUTES)
+    else:
+        token = secrets.token_urlsafe(32)
+        expires_at = now + timedelta(hours=RESET_TOKEN_HOURS)
     c = _conn()
     c.execute(
         "INSERT INTO designer_email_tokens (token, designer_id, purpose, expires_at, created_at) "
         "VALUES (?, ?, ?, ?, ?)",
-        (token, designer_id, purpose, (now + timedelta(hours=hours)).isoformat(timespec="seconds"),
+        (token, designer_id, purpose, expires_at.isoformat(timespec="seconds"),
          now.isoformat(timespec="seconds")),
     )
     c.commit()

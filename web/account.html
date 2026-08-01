@@ -126,14 +126,7 @@
   h1{font-weight:800;font-size:26px;letter-spacing:-.02em;margin:32px 0 4px}
   .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
 
-  /* ---- gate: log in / sign up / forgot password ---- */
-  .gate{max-width:420px;margin:48px auto}
-  .gate-tabs{display:flex;gap:8px;margin-bottom:22px}
-  .gate-tabs button{flex:1;font:inherit;font-size:13.5px;font-weight:700;padding:10px;border-radius:999px;
-    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
-  .gate-tabs button.active{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
-  .gate-panel{display:none;flex-direction:column;gap:14px}
-  .gate-panel.active{display:flex}
+  /* ---- shared form bits (gate + wizard) ---- */
   label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
   .hint{font-weight:400;color:var(--faint);font-size:12.5px}
   input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
@@ -141,13 +134,26 @@
     transition:border-color .2s var(--ease-expo)}
   @media(max-width:600px){input,select,textarea{font-size:16px}}
   input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand)}
-  textarea{resize:vertical;min-height:100px;font-family:inherit}
+  textarea{resize:vertical;min-height:110px;font-family:inherit}
   select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:38px;
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
     background-repeat:no-repeat;background-position:right 14px center;background-size:14px}
   .honeypot{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+  /* ---- location autocomplete (same pattern as post.html) ---- */
+  .loc-wrap{position:relative}
+  .loc-wrap input{width:100%}
+  .loc-suggest{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
+    background:var(--surface);border:1px solid var(--hairline-strong);border-radius:12px;
+    box-shadow:var(--shadow);max-height:260px;overflow-y:auto;padding:6px;
+    display:none}
+  .loc-suggest.-open{display:block}
+  .loc-opt{display:block;width:100%;text-align:left;padding:11px 12px;border-radius:8px;
+    border:0;background:none;font:inherit;font-size:14.5px;color:var(--ink);cursor:pointer}
+  .loc-opt:hover,.loc-opt.-active{background:var(--hairline)}
   .link-inline{background:none;border:0;color:var(--brand);font:inherit;font-size:13px;font-weight:700;
     cursor:pointer;padding:0;text-align:left}
+  .link-inline:disabled{color:var(--faint);cursor:default}
   .submit{background:var(--brand);color:#fff;border:0;font:inherit;font-weight:700;font-size:14.5px;
     padding:13px 22px;border-radius:999px;cursor:pointer;width:100%;
     transition:background .3s var(--ease-expo),transform .3s var(--ease-expo)}
@@ -158,30 +164,107 @@
   .ok-msg{color:var(--green-ink);font-size:13px;margin:0;background:var(--green-soft);padding:10px 12px;border-radius:8px}
   [data-theme="dark"] .err{color:#FF6B5B}
 
-  /* ---- app: profile editor ---- */
-  #appWrap{display:none}
+  /* ---- gate: log in / sign up / forgot password ---- */
+  .gate{max-width:420px;margin:48px auto}
+  .gate-tabs{display:flex;gap:8px;margin-bottom:22px}
+  .gate-tabs button{flex:1;font:inherit;font-size:13.5px;font-weight:700;padding:10px;border-radius:999px;
+    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
+  .gate-tabs button.active{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+  .gate-panel{display:none;flex-direction:column;gap:14px}
+  .gate-panel.active{display:flex}
+
+  /* ---- verify: OTP code entry ---- */
+  #verifyWrap{display:none}
+  .verify-box{max-width:400px;margin:56px auto;text-align:center}
+  .verify-icon{width:56px;height:56px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+    display:grid;place-items:center;margin:0 auto 18px}
+  .verify-box h1{margin:0 0 6px}
+  .verify-box .sub{margin:0 0 26px}
+  .otp-row{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+  .otp-box{width:46px;height:56px;text-align:center;font-size:24px;font-weight:800;padding:0;
+    border-radius:12px}
+  .otp-box.-error{border-color:var(--red)}
+  .verify-box .err{margin-bottom:14px}
+  .verify-box .submit{margin-bottom:16px}
+  .verify-foot{display:flex;flex-direction:column;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+
+  /* ---- dashboard: empty + filled states ---- */
+  #dashboardWrap{display:none}
+  .empty-state{max-width:420px;margin:56px auto;text-align:center}
+  .empty-avatar{width:96px;height:96px;border-radius:50%;border:2px dashed var(--hairline-strong);
+    display:grid;place-items:center;margin:0 auto 20px;color:var(--faint)}
+  .empty-state h1{margin:0 0 8px}
+  .empty-state .sub{margin:0 0 26px;max-width:40ch;margin-left:auto;margin-right:auto}
+
+  .dash-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:32px;margin-bottom:20px}
+  .dash-head h1{margin:0}
   .status-banner{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;
-    font-size:13.5px;font-weight:600;margin-bottom:22px}
+    font-size:13.5px;font-weight:600;margin-bottom:22px;flex-wrap:wrap}
   .status-banner.pending{background:var(--amber-soft);color:var(--amber)}
   .status-banner.approved{background:var(--green-soft);color:var(--green-ink)}
   .status-banner.rejected{background:var(--red-soft);color:var(--red)}
   .status-banner.unverified{background:var(--hairline);color:var(--muted)}
   .status-banner a,.status-banner button.link-inline{color:inherit;text-decoration:underline}
 
-  .panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:22px;background:var(--surface);
-    box-shadow:var(--shadow);margin-bottom:20px}
-  .panel h3{margin:0 0 16px;font-size:14.5px;font-weight:800}
-  .panel-form{display:flex;flex-direction:column;gap:16px}
+  .profile-card{border:1px solid var(--hairline);border-radius:var(--radius);
+    background:var(--surface);box-shadow:var(--shadow);margin-bottom:22px;overflow:hidden}
+  .pc-banner{height:84px;background:linear-gradient(135deg,var(--brand),var(--brand-light))}
+  .pc-body{padding:0 26px 26px}
+  .pc-head{display:flex;align-items:flex-end;gap:16px;margin-top:-42px;margin-bottom:16px}
+  .pc-avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;flex:none;
+    background:var(--hairline);border:4px solid var(--surface);box-shadow:var(--shadow)}
+  .pc-name{font-size:19px;font-weight:800;margin:0}
+  .pc-meta{font-size:13px;color:var(--muted);margin:3px 0 0}
+  .pc-discipline{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;
+    background:var(--brand-soft);color:var(--brand);margin-top:8px}
+  .pc-contact{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
+  .pc-contact a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
+    padding:8px 14px;border-radius:999px;border:1px solid var(--hairline-strong);color:var(--ink);
+    text-decoration:none;transition:border-color .25s var(--ease-expo),color .25s var(--ease-expo)}
+  .pc-contact a:hover{border-color:var(--brand);color:var(--brand)}
+  .pc-bio{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 6px;white-space:pre-wrap}
+  .pc-bio.-clamped{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .pc-bio-toggle{background:none;border:0;color:var(--brand);font:inherit;font-size:13px;font-weight:700;
+    cursor:pointer;padding:0;margin:0 0 16px;display:none}
+  .pc-bio-toggle.-show{display:block}
+  .pc-links{display:flex;flex-wrap:wrap;gap:8px}
+  .pc-links span{font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;
+    background:var(--brand-soft);color:var(--brand)}
 
-  .avatar-row{display:flex;align-items:center;gap:16px}
-  .avatar-preview{width:76px;height:76px;border-radius:50%;background:var(--hairline);flex:none;
-    object-fit:cover;border:1px solid var(--hairline-strong)}
-  .avatar-actions{display:flex;flex-direction:column;gap:6px}
+  .dash-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:36px}
   .btn-ghost{background:none;border:1px solid var(--hairline-strong);color:var(--ink);font:inherit;
-    font-weight:700;font-size:13px;padding:9px 16px;border-radius:999px;cursor:pointer;
+    font-weight:700;font-size:13px;padding:11px 18px;border-radius:999px;cursor:pointer;
     transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
   .btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
   .btn-ghost.-danger:hover{border-color:var(--red);color:var(--red)}
+  .btn-primary{background:var(--brand);color:#fff;border:0;font:inherit;font-weight:700;font-size:14px;
+    padding:12px 22px;border-radius:999px;cursor:pointer;transition:background .3s var(--ease-expo)}
+  .btn-primary:hover{background:var(--brand-light)}
+
+  .danger-zone{border:1px solid var(--red-soft);border-radius:var(--radius);padding:18px 20px;margin-bottom:40px}
+  .danger-zone h3{margin:0 0 6px;font-size:13.5px;font-weight:800}
+  .danger-zone p{margin:0 0 12px}
+
+  /* ---- wizard: step progress (ported from post.html) ---- */
+  #wizardWrap{display:none}
+  .wizard-inner{max-width:520px;margin:0 auto}
+  .steps-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:32px}
+  .step-label{font-size:13px;color:var(--muted);font-weight:600}
+  .step-label b{color:var(--ink)}
+  .step-bar{display:flex;gap:6px;flex:none}
+  .step-dot{width:28px;height:4px;border-radius:999px;background:var(--hairline-strong);transition:background .3s var(--ease-expo)}
+  .step-dot.active{background:linear-gradient(90deg,var(--green),var(--brand))}
+  .step-dot.complete{background:var(--green)}
+
+  fieldset{border:0;padding:0;margin:0;min-width:0}
+  .step{display:none;flex-direction:column;gap:18px;padding:26px 0 10px}
+  .step.active{display:flex}
+  .step-title{font-size:18px;font-weight:800;margin:0}
+  .step-sub{font-size:13.5px;color:var(--muted);margin:-10px 0 0}
+
+  .wizard-photo{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
+  .wizard-avatar{width:112px;height:112px;border-radius:50%;object-fit:cover;
+    background:var(--hairline);border:2px solid var(--hairline-strong)}
   input[type=file]{display:none}
 
   .link-row{display:flex;gap:8px;align-items:flex-start}
@@ -194,10 +277,15 @@
     font:inherit;font-size:13px;font-weight:700;padding:9px 16px;border-radius:10px;cursor:pointer}
   .add-link-btn:hover{border-color:var(--brand);color:var(--brand)}
 
-  .row-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:6px}
-  .row-actions .submit{width:auto}
-
-  .danger-zone{border-color:var(--red-soft)}
+  .step-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:40px}
+  .btn-back{background:none;border:1px solid var(--hairline-strong);color:var(--ink);font:inherit;
+    font-weight:700;font-size:14.5px;padding:13px 22px;border-radius:999px;cursor:pointer;
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .btn-back:hover{border-color:var(--brand);color:var(--brand)}
+  .step-nav .submit{width:auto;margin-left:auto}
+  .wizard-close{display:block;margin:24px auto 0;background:none;border:0;color:var(--muted);
+    font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:center}
+  .wizard-close:hover{color:var(--ink)}
 </style>
 </head>
 <body>
@@ -237,6 +325,7 @@
   </nav>
 </div>
 
+<!-- ============ VIEW: gate (log in / sign up / forgot / reset) ============ -->
 <div class="wrap" id="gateWrap">
   <h1>Your Kazi profile</h1>
   <p class="sub">Create a designer profile so employers can find you: a bio, a photo, and links to your work.</p>
@@ -296,75 +385,169 @@
   </div>
 </div>
 
-<div class="wrap" id="appWrap">
-  <h1>Your profile</h1>
-  <p class="sub">This is what employers see once it's approved.</p>
-
-  <div id="statusBanner"></div>
-
-  <div class="panel">
-    <h3>Photo</h3>
-    <div class="avatar-row">
-      <img class="avatar-preview" id="avatarPreview" src="" alt="">
-      <div class="avatar-actions">
-        <button type="button" class="btn-ghost" id="photoBtn">Upload photo</button>
-        <p class="hint" style="margin:0">JPG, PNG, or WebP. Up to 3MB.</p>
-      </div>
-      <input type="file" id="photoInput" accept=".jpg,.jpeg,.png,.webp">
+<!-- ============ VIEW: verify (OTP code entry) ============ -->
+<div class="wrap" id="verifyWrap">
+  <div class="verify-box">
+    <div class="verify-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
     </div>
-    <p class="err" id="photoErr" style="display:none;margin-top:10px"></p>
+    <h1>Check your email</h1>
+    <p class="sub">We sent a 6-digit code to <b id="verifyEmailDisplay"></b></p>
+
+    <div class="otp-row" id="otpRow">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="0" autocomplete="one-time-code">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="1">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="2">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="3">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="4">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="5">
+    </div>
+    <p class="err" id="verifyErr" style="display:none"></p>
+    <button type="button" class="submit" id="verifySubmitBtn" disabled>Verify email</button>
+
+    <div class="verify-foot">
+      <span>Didn't get it? <button type="button" class="link-inline" id="resendCodeBtn">Resend code</button></span>
+      <button type="button" class="link-inline" id="verifyLogoutBtn">Use a different account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VIEW: dashboard (empty or filled) ============ -->
+<div class="wrap" id="dashboardWrap">
+  <div class="empty-state" id="dashboardEmpty" style="display:none">
+    <div class="empty-avatar">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21a8 8 0 1 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <h1>Your profile is empty</h1>
+    <p class="sub">Add a photo, a bio, and links to your work so employers browsing Kazi can find you. Takes about two minutes.</p>
+    <button type="button" class="btn-primary" id="startWizardBtn">Set up your profile</button>
   </div>
 
-  <div class="panel">
-    <h3>About you</h3>
-    <form class="panel-form" id="profileForm" novalidate>
+  <div id="dashboardFilled" style="display:none">
+    <div class="dash-head">
+      <h1>Your profile</h1>
+    </div>
+    <div id="statusBanner"></div>
+    <div class="profile-card" id="profileCard"></div>
+    <div class="dash-actions">
+      <button type="button" class="btn-ghost" id="editProfileBtn">Edit profile</button>
+      <button type="button" class="link-inline" id="dashLogoutBtn">Log out</button>
+    </div>
+    <div class="danger-zone">
+      <h3>Delete account</h3>
+      <p class="hint">Permanently deletes your account, profile, and photo. This can't be undone.</p>
+      <button type="button" class="btn-ghost -danger" id="deleteBtn">Delete my account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ VIEW: wizard (6-step profile setup) ============ -->
+<div class="wrap" id="wizardWrap">
+  <div class="wizard-inner">
+    <div class="steps-head">
+      <div class="step-label">Step <b id="stepNum">1</b> of 6 · <span id="stepName">Photo</span></div>
+      <div class="step-bar">
+        <span class="step-dot active" data-dot="1"></span>
+        <span class="step-dot" data-dot="2"></span>
+        <span class="step-dot" data-dot="3"></span>
+        <span class="step-dot" data-dot="4"></span>
+        <span class="step-dot" data-dot="5"></span>
+        <span class="step-dot" data-dot="6"></span>
+      </div>
+    </div>
+
+    <fieldset class="step active" data-step="1">
+      <p class="step-title">Add a photo</p>
+      <p class="step-sub">A face helps employers connect a name to your work. You can skip this and add it later.</p>
+      <div class="wizard-photo">
+        <img class="wizard-avatar" id="wizardAvatar" src="" alt="">
+        <button type="button" class="btn-ghost" id="wizardPhotoBtn">Upload photo</button>
+        <input type="file" id="wizardPhotoInput" accept=".jpg,.jpeg,.png,.webp">
+        <p class="hint">JPG, PNG, or WebP. Up to 3MB.</p>
+      </div>
+      <p class="err" id="wizardPhotoErr" style="display:none"></p>
+      <div class="step-nav">
+        <span></span>
+        <button type="button" class="submit" data-next>Next</button>
+      </div>
+    </fieldset>
+
+    <fieldset class="step" data-step="2">
+      <p class="step-title">About you</p>
+      <p class="step-sub">This is how you'll show up in the directory.</p>
       <label class="field"><span>Name</span>
-        <input type="text" id="profileName" required>
+        <input type="text" id="wizardName" required>
       </label>
       <label class="field"><span>Job function</span>
-        <select id="profileDiscipline"></select>
+        <select id="wizardDiscipline" required></select>
       </label>
       <label class="field"><span>Location <span class="hint">(city, or "Remote")</span></span>
-        <input type="text" id="profileLocation" placeholder="e.g. Nairobi, Kenya">
+        <div class="loc-wrap">
+          <input type="text" id="wizardLocation" placeholder="e.g. Nairobi, Kenya" autocomplete="off">
+          <div class="loc-suggest" id="locSuggest" role="listbox"></div>
+        </div>
       </label>
-      <label class="field"><span>Bio</span>
-        <textarea id="profileBio" placeholder="A few sentences about you and the work you do..."></textarea>
-      </label>
-      <p class="err" id="profileErr" style="display:none"></p>
-      <div class="row-actions">
-        <span></span>
-        <button type="submit" class="submit" id="profileBtn">Save</button>
+      <p class="err" id="wizardAboutErr" style="display:none"></p>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back>Back</button>
+        <button type="button" class="submit" data-next disabled>Next</button>
       </div>
-    </form>
-  </div>
+    </fieldset>
 
-  <div class="panel">
-    <h3>Links <span class="hint">(portfolio, LinkedIn, Dribbble, case studies — up to 8)</span></h3>
-    <div id="linkRows" style="display:flex;flex-direction:column;gap:10px"></div>
-    <button type="button" class="add-link-btn" id="addLinkBtn" style="margin-top:10px">+ Add a link</button>
-    <p class="err" id="linksErr" style="display:none;margin-top:10px"></p>
-    <div class="row-actions">
-      <span></span>
-      <button type="button" class="submit" id="linksBtn" style="width:auto">Save links</button>
-    </div>
-  </div>
+    <fieldset class="step" data-step="3">
+      <p class="step-title">Get in touch</p>
+      <p class="step-sub">Optional. Shown publicly on your profile so employers can reach you directly, separate from your login email.</p>
+      <label class="field"><span>Phone <span class="hint">(optional)</span></span>
+        <input type="tel" id="wizardPhone" placeholder="e.g. +254 700 123 456">
+      </label>
+      <label class="field"><span>Public contact email <span class="hint">(optional)</span></span>
+        <input type="email" id="wizardContactEmail" placeholder="e.g. hello@yourname.design">
+      </label>
+      <p class="err" id="wizardContactErr" style="display:none"></p>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back>Back</button>
+        <button type="button" class="submit" data-next>Next</button>
+      </div>
+    </fieldset>
 
-  <div class="panel">
-    <h3>Publish</h3>
-    <p class="hint" style="margin:0 0 14px">Submitting sends your profile to an admin for review. It won't be public until approved.</p>
-    <p class="err" id="submitErr" style="display:none"></p>
-    <button type="button" class="submit" id="submitBtn" style="width:auto">Submit for review</button>
-  </div>
+    <fieldset class="step" data-step="4">
+      <p class="step-title">Your bio</p>
+      <p class="step-sub">A few sentences about you and the work you do. Optional, but profiles with a bio get more attention.</p>
+      <label class="field"><span>Bio</span>
+        <textarea id="wizardBio" placeholder="Product designer based in Nairobi, focused on fintech and mobile-first experiences..."></textarea>
+      </label>
+      <p class="err" id="wizardBioErr" style="display:none"></p>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back>Back</button>
+        <button type="button" class="submit" data-next>Next</button>
+      </div>
+    </fieldset>
 
-  <div class="panel danger-zone">
-    <h3>Delete account</h3>
-    <p class="hint" style="margin:0 0 14px">Permanently deletes your account, profile, and photo. This can't be undone.</p>
-    <button type="button" class="btn-ghost -danger" id="deleteBtn">Delete my account</button>
-  </div>
+    <fieldset class="step" data-step="5">
+      <p class="step-title">Your links</p>
+      <p class="step-sub">Portfolio, LinkedIn, Dribbble, case studies, up to 8.</p>
+      <div id="linkRows" style="display:flex;flex-direction:column;gap:10px"></div>
+      <button type="button" class="add-link-btn" id="addLinkBtn">+ Add a link</button>
+      <p class="err" id="wizardLinksErr" style="display:none"></p>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back>Back</button>
+        <button type="button" class="submit" data-next>Next</button>
+      </div>
+    </fieldset>
 
-  <p style="text-align:center;margin:24px 0 40px">
-    <button type="button" class="link-inline" id="logoutBtn">Log out</button>
-  </p>
+    <fieldset class="step" data-step="6">
+      <p class="step-title">Review &amp; submit</p>
+      <p class="step-sub">This is what employers will see once it's approved.</p>
+      <div class="profile-card" id="reviewCard"></div>
+      <p class="err" id="wizardSubmitErr" style="display:none"></p>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back>Back</button>
+        <button type="button" class="submit" id="wizardSubmitBtn">Submit for review</button>
+      </div>
+    </fieldset>
+
+    <button type="button" class="wizard-close" id="wizardCloseBtn">Save and finish later</button>
+  </div>
 </div>
 
 <footer class="foot">
@@ -382,14 +565,100 @@
 <script>
 const DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
 const PLACEHOLDER_OPT = '<option value="" disabled selected>Select</option>';
-const discSel = document.getElementById("profileDiscipline");
+const discSel = document.getElementById("wizardDiscipline");
 discSel.innerHTML = PLACEHOLDER_OPT + DISCIPLINES.map(d => `<option value="${d}">${d}</option>`).join("");
+
+/* ---------- location autocomplete (same LOCATIONS list + behavior as post.html) ---------- */
+const LOCATIONS = [
+  "Remote", "Worldwide Remote",
+  "Nairobi, Kenya", "Mombasa, Kenya",
+  "Lagos, Nigeria", "Abuja, Nigeria",
+  "Accra, Ghana",
+  "Cape Town, South Africa", "Johannesburg, South Africa", "Pretoria, South Africa", "Durban, South Africa",
+  "Cairo, Egypt", "Alexandria, Egypt",
+  "Kigali, Rwanda",
+  "Kampala, Uganda",
+  "Dar es Salaam, Tanzania",
+  "Addis Ababa, Ethiopia",
+  "Casablanca, Morocco", "Rabat, Morocco",
+  "Dakar, Senegal",
+  "Lusaka, Zambia",
+  "Harare, Zimbabwe",
+  "Gaborone, Botswana",
+  "Windhoek, Namibia",
+  "Maputo, Mozambique",
+  "Kinshasa, DR Congo",
+  "Tunis, Tunisia",
+  "Algiers, Algeria",
+];
+(function(){
+  const input = document.getElementById("wizardLocation");
+  const box = document.getElementById("locSuggest");
+  if(!input || !box) return;
+  let items = [];
+  let activeIdx = -1;
+
+  function highlight(){
+    Array.from(box.children).forEach((el, i) => el.classList.toggle("-active", i === activeIdx));
+  }
+  function close(){
+    items = []; activeIdx = -1;
+    box.classList.remove("-open");
+    box.innerHTML = "";
+  }
+  function open(matches){
+    items = matches;
+    activeIdx = -1;
+    if(!matches.length){ close(); return; }
+    box.innerHTML = matches.map((m, i) => `<button type="button" class="loc-opt" data-i="${i}" role="option">${m}</button>`).join("");
+    box.classList.add("-open");
+  }
+  function filter(q){
+    q = q.trim().toLowerCase();
+    if(!q){ close(); return; }
+    open(LOCATIONS.filter(l => l.toLowerCase().includes(q)).slice(0, 8));
+  }
+  function choose(i){
+    input.value = items[i];
+    close();
+    input.focus();
+  }
+
+  input.addEventListener("input", () => filter(input.value));
+  input.addEventListener("focus", () => { if(input.value.trim()) filter(input.value); });
+  box.addEventListener("mousedown", e => {
+    const btn = e.target.closest(".loc-opt");
+    if(btn) choose(+btn.dataset.i);
+  });
+  input.addEventListener("keydown", e => {
+    if(!box.classList.contains("-open")) return;
+    if(e.key === "ArrowDown"){ e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); highlight(); }
+    else if(e.key === "ArrowUp"){ e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlight(); }
+    else if(e.key === "Enter"){ if(activeIdx >= 0){ e.preventDefault(); choose(activeIdx); } }
+    else if(e.key === "Escape"){ close(); }
+  });
+  document.addEventListener("click", e => {
+    if(!e.target.closest(".loc-wrap")) close();
+  });
+})();
 
 const TOKEN_KEY = "kazi_designer_token";
 let token = localStorage.getItem(TOKEN_KEY) || "";
+let pendingEmail = ""; // set right after signup, used only to display "we sent a code to ___"
+let me = null; // last-loaded profile, refreshed by afterAuth()
 
 const gateWrap = document.getElementById("gateWrap");
-const appWrap = document.getElementById("appWrap");
+const verifyWrap = document.getElementById("verifyWrap");
+const dashboardWrap = document.getElementById("dashboardWrap");
+const wizardWrap = document.getElementById("wizardWrap");
+
+function showView(name) {
+  gateWrap.style.display = name === "gate" ? "block" : "none";
+  verifyWrap.style.display = name === "verify" ? "block" : "none";
+  dashboardWrap.style.display = name === "dashboard" ? "block" : "none";
+  wizardWrap.style.display = name === "wizard" ? "block" : "none";
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
 
 async function api(path, opts = {}) {
   const res = await fetch(path, {
@@ -441,7 +710,7 @@ document.getElementById("loginPanel").addEventListener("submit", async (e) => {
     });
     token = res.token;
     localStorage.setItem(TOKEN_KEY, token);
-    enterApp();
+    await afterAuth();
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
@@ -457,11 +726,12 @@ document.getElementById("signupPanel").addEventListener("submit", async (e) => {
   errEl.style.display = "none";
   const btn = document.getElementById("signupBtn");
   btn.disabled = true;
+  const email = document.getElementById("signupEmail").value.trim();
   try {
     const res = await api("/api/designers/signup", {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({
-        email: document.getElementById("signupEmail").value.trim(),
+        email,
         password: document.getElementById("signupPassword").value,
         display_name: document.getElementById("signupName").value.trim(),
         honeypot: document.getElementById("signupHoneypot").value,
@@ -470,7 +740,8 @@ document.getElementById("signupPanel").addEventListener("submit", async (e) => {
     if (!res.token) { errEl.textContent = "Something went wrong. Please try again."; errEl.style.display = "block"; return; }
     token = res.token;
     localStorage.setItem(TOKEN_KEY, token);
-    enterApp();
+    pendingEmail = email;
+    enterVerify(email);
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
@@ -479,7 +750,7 @@ document.getElementById("signupPanel").addEventListener("submit", async (e) => {
   }
 });
 
-/* ---------- forgot / reset password ---------- */
+/* ---------- forgot / reset password (still link-based) ---------- */
 document.getElementById("forgotPanel").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errEl = document.getElementById("forgotErr");
@@ -515,7 +786,7 @@ document.getElementById("resetPanel").addEventListener("submit", async (e) => {
     });
     showPanel("login");
     document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === "login"));
-    document.getElementById("loginErr").textContent = "Password updated — log in with your new password.";
+    document.getElementById("loginErr").textContent = "Password updated. Log in with your new password.";
     document.getElementById("loginErr").style.display = "block";
     document.getElementById("loginErr").style.color = "var(--green-ink)";
   } catch (err) {
@@ -526,19 +797,9 @@ document.getElementById("resetPanel").addEventListener("submit", async (e) => {
   }
 });
 
-/* ---------- verify-email / reset-password links land here via query params ---------- */
-(function handleEmailLinks() {
+(function handleResetLink() {
   const params = new URLSearchParams(location.search);
-  const verifyToken = params.get("verify");
   const resetTok = params.get("reset");
-  if (verifyToken) {
-    api("/api/designers/verify-email", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({token: verifyToken}),
-    }).then(() => { window._justVerified = true; }).catch(() => {}).finally(() => {
-      history.replaceState({}, "", location.pathname);
-    });
-  }
   if (resetTok) {
     resetToken = resetTok;
     document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.remove("active"));
@@ -547,101 +808,299 @@ document.getElementById("resetPanel").addEventListener("submit", async (e) => {
   }
 })();
 
-/* ---------- app: status banner ---------- */
-function renderStatusBanner(me) {
-  const el = document.getElementById("statusBanner");
-  if (!me.email_verified) {
-    el.innerHTML = `<div class="status-banner unverified">
-      Please verify your email before submitting your profile.
-      <button type="button" class="link-inline" id="resendBtn">Resend verification email</button>
-    </div>`;
-    document.getElementById("resendBtn").addEventListener("click", async (e) => {
-      e.target.textContent = "Sending…";
-      try { await api("/api/designers/me/resend-verification", {method: "POST"}); e.target.textContent = "Sent — check your inbox"; }
-      catch { e.target.textContent = "Couldn't send, try again"; }
+/* ---------- verify: OTP code entry ---------- */
+const otpBoxes = Array.from(document.querySelectorAll(".otp-box"));
+function currentCode() {
+  return otpBoxes.map(b => b.value).join("");
+}
+function updateVerifyBtn() {
+  document.getElementById("verifySubmitBtn").disabled = currentCode().length !== 6;
+}
+otpBoxes.forEach((box, i) => {
+  box.addEventListener("input", () => {
+    box.value = box.value.replace(/[^0-9]/g, "").slice(0, 1);
+    box.classList.remove("-error");
+    if (box.value && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
+    updateVerifyBtn();
+    if (currentCode().length === 6) submitVerifyCode();
+  });
+  box.addEventListener("keydown", (e) => {
+    if (e.key === "Backspace" && !box.value && i > 0) otpBoxes[i - 1].focus();
+  });
+  box.addEventListener("paste", (e) => {
+    const text = (e.clipboardData || window.clipboardData).getData("text").replace(/[^0-9]/g, "");
+    if (!text) return;
+    e.preventDefault();
+    text.slice(0, 6).split("").forEach((ch, idx) => { if (otpBoxes[idx]) otpBoxes[idx].value = ch; });
+    const last = Math.min(text.length, 6) - 1;
+    if (otpBoxes[last]) otpBoxes[last].focus();
+    updateVerifyBtn();
+    if (currentCode().length === 6) submitVerifyCode();
+  });
+});
+
+function enterVerify(email) {
+  document.getElementById("verifyEmailDisplay").textContent = email;
+  otpBoxes.forEach(b => { b.value = ""; b.classList.remove("-error"); });
+  updateVerifyBtn();
+  showView("verify");
+  otpBoxes[0].focus();
+}
+
+async function submitVerifyCode() {
+  const errEl = document.getElementById("verifyErr");
+  errEl.style.display = "none";
+  const code = currentCode();
+  if (code.length !== 6) return;
+  const btn = document.getElementById("verifySubmitBtn");
+  btn.disabled = true;
+  btn.textContent = "Verifying…";
+  try {
+    await api("/api/designers/me/verify-email", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({code}),
     });
+    await afterAuth();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+    otpBoxes.forEach(b => b.classList.add("-error"));
+    otpBoxes[0].focus();
+    otpBoxes[0].select();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Verify email";
+    updateVerifyBtn();
+  }
+}
+document.getElementById("verifySubmitBtn").addEventListener("click", submitVerifyCode);
+
+let resendCooldown = 0;
+let resendTimer = null;
+document.getElementById("resendCodeBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("resendCodeBtn");
+  if (btn.disabled) return;
+  try {
+    await api("/api/designers/me/resend-verification", {method: "POST"});
+  } catch {}
+  resendCooldown = 30;
+  btn.disabled = true;
+  clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    resendCooldown -= 1;
+    if (resendCooldown <= 0) {
+      clearInterval(resendTimer);
+      btn.disabled = false;
+      btn.textContent = "Resend code";
+    } else {
+      btn.textContent = `Resend code (${resendCooldown}s)`;
+    }
+  }, 1000);
+});
+
+document.getElementById("verifyLogoutBtn").addEventListener("click", () => logout());
+
+/* ---------- shared: what to do once we have a valid, current session ---------- */
+async function afterAuth() {
+  try {
+    me = await api("/api/designers/me");
+  } catch (err) {
+    if (err.status === 401) logout();
     return;
   }
-  if (me.status === "approved") {
-    el.innerHTML = `<div class="status-banner approved">Live — <a href="/designers/${me.id}" target="_blank">view your public profile</a></div>`;
-  } else if (me.status === "rejected") {
-    el.innerHTML = `<div class="status-banner rejected">Your profile wasn't approved. Update it below and submit again.</div>`;
+  if (!me.email_verified) {
+    pendingEmail = me.email;
+    enterVerify(me.email);
+    return;
+  }
+  renderDashboard();
+}
+
+function isProfileEmpty(m) {
+  return !m.bio && !m.discipline && !m.location && !m.photo_path && !m.phone && !m.contact_email
+    && (!m.links || m.links.length === 0);
+}
+
+const ICON_PHONE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>';
+const ICON_MAIL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>';
+
+function profileCardHtml(m) {
+  const links = m.links || [];
+  const contactRows = [
+    m.phone ? `<a href="tel:${escapeHtml(m.phone)}">${ICON_PHONE}${escapeHtml(m.phone)}</a>` : "",
+    m.contact_email ? `<a href="mailto:${escapeHtml(m.contact_email)}">${ICON_MAIL}${escapeHtml(m.contact_email)}</a>` : "",
+  ].filter(Boolean);
+  return `
+    <div class="pc-banner"></div>
+    <div class="pc-body">
+      <div class="pc-head">
+        <img class="pc-avatar" src="${m.photo_path ? escapeHtml(m.photo_path) : 'logo.png'}" alt="">
+        <div>
+          <p class="pc-name">${escapeHtml(m.display_name || "")}</p>
+          <p class="pc-meta">${m.location ? escapeHtml(m.location) : "No location set"}</p>
+          ${m.discipline ? `<span class="pc-discipline">${escapeHtml(m.discipline)}</span>` : ""}
+        </div>
+      </div>
+      ${contactRows.length ? `<div class="pc-contact">${contactRows.join("")}</div>` : ""}
+      ${m.bio ? `<p class="pc-bio -clamped">${escapeHtml(m.bio)}</p><button type="button" class="pc-bio-toggle">Read more</button>` : ""}
+      ${links.length ? `<div class="pc-links">${links.map(l => `<span>${escapeHtml(l.label)}</span>`).join("")}</div>` : ""}
+    </div>
+  `;
+}
+
+/* Bio "Read more" toggle — scoped per-container since profileCardHtml() is
+   rendered into two different places (dashboard + wizard review) that can
+   both exist in the DOM at once, so a plain getElementById id would collide. */
+function wireBioToggle(container) {
+  const bio = container.querySelector(".pc-bio");
+  const toggle = container.querySelector(".pc-bio-toggle");
+  if (!bio || !toggle) return;
+  requestAnimationFrame(() => {
+    if (bio.scrollHeight > bio.clientHeight + 2) toggle.classList.add("-show");
+  });
+  toggle.addEventListener("click", () => {
+    const expanded = bio.classList.toggle("-clamped") === false;
+    toggle.textContent = expanded ? "Show less" : "Read more";
+  });
+}
+
+function renderStatusBanner(m) {
+  const el = document.getElementById("statusBanner");
+  if (m.status === "approved") {
+    el.innerHTML = `<div class="status-banner approved">Live: <a href="/designers/${m.id}" target="_blank">view your public profile</a></div>`;
+  } else if (m.status === "rejected") {
+    el.innerHTML = `<div class="status-banner rejected">Your profile wasn't approved. Update it and submit again.</div>`;
   } else {
-    el.innerHTML = `<div class="status-banner pending">Pending review — not visible to employers yet.</div>`;
+    el.innerHTML = `<div class="status-banner pending">Pending review. Not visible to employers yet.</div>`;
   }
 }
 
-/* ---------- app: load + populate ---------- */
-async function enterApp() {
-  gateWrap.style.display = "none";
-  appWrap.style.display = "block";
-  await loadMe();
-}
-
-async function loadMe() {
-  try {
-    const me = await api("/api/designers/me");
+function renderDashboard() {
+  showView("dashboard");
+  const emptyEl = document.getElementById("dashboardEmpty");
+  const filledEl = document.getElementById("dashboardFilled");
+  if (isProfileEmpty(me)) {
+    emptyEl.style.display = "block";
+    filledEl.style.display = "none";
+  } else {
+    emptyEl.style.display = "none";
+    filledEl.style.display = "block";
     renderStatusBanner(me);
-    document.getElementById("avatarPreview").src = me.photo_path || "logo.png";
-    document.getElementById("profileName").value = me.display_name || "";
-    document.getElementById("profileDiscipline").value = me.discipline || "";
-    document.getElementById("profileLocation").value = me.location || "";
-    document.getElementById("profileBio").value = me.bio || "";
-    renderLinks(me.links || []);
-  } catch (err) {
-    if (err.status === 401) { logout(); }
+    document.getElementById("profileCard").innerHTML = profileCardHtml(me);
+    wireBioToggle(document.getElementById("profileCard"));
   }
 }
 
-/* ---------- app: photo upload ---------- */
-document.getElementById("photoBtn").addEventListener("click", () => document.getElementById("photoInput").click());
-document.getElementById("photoInput").addEventListener("change", async () => {
-  const file = document.getElementById("photoInput").files[0];
+document.getElementById("startWizardBtn").addEventListener("click", () => openWizard());
+document.getElementById("editProfileBtn").addEventListener("click", () => openWizard());
+document.getElementById("wizardCloseBtn").addEventListener("click", async () => { await afterAuth(); });
+
+/* ---------- wizard ---------- */
+const steps = Array.from(document.querySelectorAll(".step"));
+const dots = Array.from(document.querySelectorAll(".step-dot"));
+const stepNames = ["Photo", "About you", "Get in touch", "Bio", "Links", "Review"];
+let current = 1;
+
+function stepControls(stepEl) {
+  return Array.from(stepEl.querySelectorAll("input, select, textarea"));
+}
+function stepIsValid(stepEl) {
+  return stepControls(stepEl).every(el => el.checkValidity());
+}
+function updateNextButtonState() {
+  const stepEl = steps[current - 1];
+  const nextBtn = stepEl.querySelector("[data-next]");
+  if (nextBtn) nextBtn.disabled = !stepIsValid(stepEl);
+}
+
+function showStep(n) {
+  current = n;
+  steps.forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
+  dots.forEach((d, i) => {
+    d.classList.toggle("active", i + 1 === n);
+    d.classList.toggle("complete", i + 1 < n);
+  });
+  document.getElementById("stepNum").textContent = n;
+  document.getElementById("stepName").textContent = stepNames[n - 1];
+  updateNextButtonState();
+  if (n === 6) {
+    document.getElementById("reviewCard").innerHTML = profileCardHtml(wizardState());
+    wireBioToggle(document.getElementById("reviewCard"));
+  }
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+function wizardState() {
+  return {
+    display_name: document.getElementById("wizardName").value.trim(),
+    discipline: document.getElementById("wizardDiscipline").value,
+    location: document.getElementById("wizardLocation").value.trim(),
+    phone: document.getElementById("wizardPhone").value.trim(),
+    contact_email: document.getElementById("wizardContactEmail").value.trim(),
+    bio: document.getElementById("wizardBio").value.trim(),
+    photo_path: me ? me.photo_path : "",
+    links: currentLinkRows(),
+  };
+}
+
+function openWizard() {
+  document.getElementById("wizardName").value = me.display_name || "";
+  document.getElementById("wizardDiscipline").value = me.discipline || "";
+  document.getElementById("wizardLocation").value = me.location || "";
+  document.getElementById("wizardPhone").value = me.phone || "";
+  document.getElementById("wizardContactEmail").value = me.contact_email || "";
+  document.getElementById("wizardBio").value = me.bio || "";
+  document.getElementById("wizardAvatar").src = me.photo_path || "logo.png";
+  renderLinkRows(me.links || []);
+  showView("wizard");
+  showStep(1);
+}
+
+/* Step 1: photo (uploads immediately on choose, like the old single-page editor did) */
+document.getElementById("wizardPhotoBtn").addEventListener("click", () => document.getElementById("wizardPhotoInput").click());
+document.getElementById("wizardPhotoInput").addEventListener("change", async () => {
+  const file = document.getElementById("wizardPhotoInput").files[0];
   if (!file) return;
-  const errEl = document.getElementById("photoErr");
+  const errEl = document.getElementById("wizardPhotoErr");
   errEl.style.display = "none";
   const fd = new FormData();
   fd.append("file", file);
   try {
     const res = await api("/api/designers/me/photo", {method: "POST", body: fd});
-    document.getElementById("avatarPreview").src = res.photo_path + "?t=" + Date.now();
+    document.getElementById("wizardAvatar").src = res.photo_path + "?t=" + Date.now();
+    me.photo_path = res.photo_path;
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
   }
 });
 
-/* ---------- app: profile form ---------- */
-document.getElementById("profileForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById("profileErr");
-  errEl.style.display = "none";
-  const btn = document.getElementById("profileBtn");
-  btn.disabled = true;
-  btn.textContent = "Saving…";
-  try {
-    await api("/api/designers/me", {
-      method: "PUT", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        display_name: document.getElementById("profileName").value.trim(),
-        discipline: document.getElementById("profileDiscipline").value,
-        location: document.getElementById("profileLocation").value.trim(),
-        bio: document.getElementById("profileBio").value.trim(),
-      }),
-    });
-    await loadMe();
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = "block";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Save";
-  }
-});
+/* Steps 2, 3, 4: About you / Get in touch / Bio all save via PUT /me, so
+   Next on any of them just re-sends the full current form state —
+   nothing to lose by re-sending fields another step owns. */
+async function saveProfileFields() {
+  await api("/api/designers/me", {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      display_name: document.getElementById("wizardName").value.trim(),
+      discipline: document.getElementById("wizardDiscipline").value,
+      location: document.getElementById("wizardLocation").value.trim(),
+      phone: document.getElementById("wizardPhone").value.trim(),
+      contact_email: document.getElementById("wizardContactEmail").value.trim(),
+      bio: document.getElementById("wizardBio").value.trim(),
+    }),
+  });
+}
 
-/* ---------- app: links editor ---------- */
+/* Step 5: links */
 const MAX_LINKS = 8;
-function renderLinks(links) {
+function currentLinkRows() {
+  return Array.from(document.querySelectorAll("#linkRows .link-row")).map(r => {
+    const [labelInput, urlInput] = r.querySelectorAll("input");
+    return {label: labelInput.value.trim(), url: urlInput.value.trim()};
+  }).filter(l => l.label && l.url);
+}
+function renderLinkRows(links) {
   const box = document.getElementById("linkRows");
   box.innerHTML = "";
   (links.length ? links : [{label: "", url: ""}]).forEach(l => addLinkRow(l.label, l.url));
@@ -667,42 +1126,56 @@ function updateAddLinkBtn() {
 }
 document.getElementById("addLinkBtn").addEventListener("click", () => addLinkRow());
 
-document.getElementById("linksBtn").addEventListener("click", async () => {
-  const errEl = document.getElementById("linksErr");
-  errEl.style.display = "none";
-  const rows = Array.from(document.querySelectorAll("#linkRows .link-row"));
-  const links = rows.map(r => {
-    const [labelInput, urlInput] = r.querySelectorAll("input");
-    return {label: labelInput.value.trim(), url: urlInput.value.trim()};
-  }).filter(l => l.label && l.url);
-  const btn = document.getElementById("linksBtn");
-  btn.disabled = true;
-  btn.textContent = "Saving…";
-  try {
-    await api("/api/designers/me/links", {
-      method: "PUT", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({links}),
-    });
-    await loadMe();
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = "block";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Save links";
-  }
+async function saveLinks() {
+  await api("/api/designers/me/links", {
+    method: "PUT", headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({links: currentLinkRows()}),
+  });
+}
+
+/* Next / Back wiring: each step saves its own data before advancing */
+document.querySelectorAll("[data-next]").forEach(btn => {
+  btn.addEventListener("click", async () => {
+    const stepEl = btn.closest(".step");
+    const stepNum = Number(stepEl.dataset.step);
+    const errMap = {2: "wizardAboutErr", 3: "wizardContactErr", 4: "wizardBioErr", 5: "wizardLinksErr"};
+    const errEl = errMap[stepNum] ? document.getElementById(errMap[stepNum]) : null;
+    if (errEl) errEl.style.display = "none";
+    btn.disabled = true;
+    const originalText = btn.textContent;
+    btn.textContent = "Saving…";
+    try {
+      if (stepNum === 2 || stepNum === 3 || stepNum === 4) await saveProfileFields();
+      if (stepNum === 5) await saveLinks();
+      me = {...me, ...wizardState()};
+      showStep(current + 1);
+    } catch (err) {
+      if (errEl) { errEl.textContent = err.message; errEl.style.display = "block"; }
+    } finally {
+      btn.disabled = !stepIsValid(stepEl);
+      btn.textContent = originalText;
+    }
+  });
+});
+document.querySelectorAll("[data-back]").forEach(btn => {
+  btn.addEventListener("click", () => showStep(current - 1));
 });
 
-/* ---------- app: submit for review ---------- */
-document.getElementById("submitBtn").addEventListener("click", async () => {
-  const errEl = document.getElementById("submitErr");
+document.querySelectorAll(".step").forEach(stepEl => {
+  stepEl.addEventListener("input", () => { if (Number(stepEl.dataset.step) === current) updateNextButtonState(); });
+  stepEl.addEventListener("change", () => { if (Number(stepEl.dataset.step) === current) updateNextButtonState(); });
+});
+
+/* Step 5: submit for review */
+document.getElementById("wizardSubmitBtn").addEventListener("click", async () => {
+  const errEl = document.getElementById("wizardSubmitErr");
   errEl.style.display = "none";
-  const btn = document.getElementById("submitBtn");
+  const btn = document.getElementById("wizardSubmitBtn");
   btn.disabled = true;
   btn.textContent = "Submitting…";
   try {
     await api("/api/designers/me/submit", {method: "POST"});
-    await loadMe();
+    await afterAuth();
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
@@ -712,7 +1185,7 @@ document.getElementById("submitBtn").addEventListener("click", async () => {
   }
 });
 
-/* ---------- app: delete account ---------- */
+/* ---------- delete account / logout ---------- */
 document.getElementById("deleteBtn").addEventListener("click", async () => {
   if (!confirm("Delete your account and profile permanently? This can't be undone.")) return;
   try {
@@ -723,21 +1196,22 @@ document.getElementById("deleteBtn").addEventListener("click", async () => {
   }
 });
 
-/* ---------- logout ---------- */
 function logout() {
   token = "";
+  me = null;
   localStorage.removeItem(TOKEN_KEY);
-  appWrap.style.display = "none";
-  gateWrap.style.display = "block";
+  showView("gate");
   showPanel("login");
   document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === "login"));
 }
-document.getElementById("logoutBtn").addEventListener("click", async () => {
+async function logoutRemote() {
   try { await api("/api/designers/logout", {method: "POST"}); } catch {}
   logout();
-});
+}
+document.getElementById("dashLogoutBtn").addEventListener("click", logoutRemote);
 
-if (token) enterApp();
+if (token) afterAuth();
+else showView("gate");
 </script>
 </body>
 </html>
