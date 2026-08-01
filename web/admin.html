@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Review queue · Kazi</title>
+<title>Admin · Kazi</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
-<script src="nav.js?v=3"></script>
+<script src="nav.js?v=4"></script>
 <style>
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -160,6 +160,56 @@
   .status.rejected{background:var(--amber-soft);color:var(--amber)}
 
   .empty{text-align:center;padding:60px 20px;color:var(--muted);border:1px dashed var(--hairline-strong);border-radius:var(--radius)}
+
+  /* ---- dashboard ---- */
+  .view-switch{display:flex;gap:8px;margin:32px 0 20px}
+  .view-switch button{font:inherit;font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;
+    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
+  .view-switch button.active{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+
+  .dash-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+  .dash-head h1{margin:0 0 2px}
+  .dash-head .sub{margin:0}
+  #rangeSelect{font:inherit;font-size:13.5px;border:1px solid var(--hairline-strong);background:var(--surface);
+    border-radius:8px;padding:8px 32px 8px 12px;color:var(--ink);cursor:pointer;appearance:none;-webkit-appearance:none;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+    background-repeat:no-repeat;background-position:right 10px center;background-size:13px}
+
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px}
+  .stat-tile{border:1px solid var(--hairline);border-radius:var(--radius);padding:16px 18px;background:var(--surface)}
+  .stat-tile .n{font-size:25px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .stat-tile .l{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+  .panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;background:var(--surface)}
+  .panel h3{margin:0 0 16px;font-size:13.5px;font-weight:700}
+  .attrib{margin:12px 0 0;font-size:11px;color:var(--muted)}
+  .attrib a{color:inherit}
+  .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .dash-grid .panel{margin-bottom:0}
+  @media(max-width:700px){.dash-grid{grid-template-columns:1fr}}
+
+  .bar-chart{display:flex;align-items:flex-end;gap:3px;height:110px}
+  .bar-chart .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
+  .bar-chart .col .bar{width:100%;background:var(--brand);border-radius:3px 3px 0 0;min-height:2px}
+  .bar-chart .col .lbl{font-size:9px;color:var(--faint);margin-top:5px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;max-width:100%}
+  .bar-chart-empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+
+  .hbar-row{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:11px}
+  .hbar-row:last-child{margin-bottom:0}
+  .hbar-row .lbl{width:70px;flex:none;color:var(--ink);font-weight:600;text-transform:capitalize}
+  .hbar-row .track{flex:1;height:8px;background:var(--hairline);border-radius:999px;overflow:hidden}
+  .hbar-row .fill{height:100%;background:var(--brand);border-radius:999px}
+  .hbar-row .n{width:32px;flex:none;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+
+  .rank-list{display:flex;flex-direction:column}
+  .rank-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;
+    padding:9px 0;border-bottom:1px solid var(--hairline)}
+  .rank-row:last-child{border-bottom:0;padding-bottom:0}
+  .rank-row:first-child{padding-top:0}
+  .rank-row .name{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .rank-row .sub{color:var(--muted);font-size:12px}
+  .rank-row .n{flex:none;font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -175,7 +225,7 @@
       <a class="nav-jobs" href="/">Jobs</a>
       <a href="/post">Post a job</a>
       <a href="mailto:hello@odana.design">Contact us</a>
-    </nav>    <span class="tag">Review queue</span>
+    </nav>    <span class="tag">Admin</span>
     <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
       <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
       <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
@@ -209,17 +259,70 @@
 </div>
 
 <div class="wrap" id="appWrap" style="display:none">
-  <h1>Review queue</h1>
-  <p class="sub">Approve a listing and it appears on the board within seconds. Nothing goes live without a click here.</p>
-
-  <div class="tabs">
-    <button data-status="pending" class="active">Pending</button>
-    <button data-status="approved">Approved</button>
-    <button data-status="rejected">Rejected</button>
-    <button data-status="all">All</button>
+  <div class="view-switch">
+    <button data-view="dashboard" class="active">Dashboard</button>
+    <button data-view="queue">Review queue</button>
   </div>
 
-  <div id="list"></div>
+  <section id="dashboardView">
+    <div class="dash-head">
+      <div>
+        <h1>Dashboard</h1>
+        <p class="sub">Visits, searches, and applies across the board.</p>
+      </div>
+      <select id="rangeSelect">
+        <option value="7">Last 7 days</option>
+        <option value="30" selected>Last 30 days</option>
+        <option value="90">Last 90 days</option>
+      </select>
+    </div>
+
+    <div class="stat-grid" id="statGrid"></div>
+
+    <div class="panel">
+      <h3>Pageviews by day</h3>
+      <div class="bar-chart" id="dayChart"></div>
+    </div>
+
+    <div class="dash-grid">
+      <div class="panel">
+        <h3>Device</h3>
+        <div id="deviceBars"></div>
+      </div>
+      <div class="panel">
+        <h3>Location</h3>
+        <div id="countryList" class="rank-list"></div>
+        <p class="attrib">IP Geolocation by <a href="https://db-ip.com" target="_blank" rel="noopener">DB-IP</a></p>
+      </div>
+      <div class="panel">
+        <h3>Most visited pages</h3>
+        <div id="pagesList" class="rank-list"></div>
+      </div>
+      <div class="panel">
+        <h3>Top searches</h3>
+        <div id="searchesList" class="rank-list"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Most applied-to roles</h3>
+      <div id="appliedList" class="rank-list"></div>
+    </div>
+  </section>
+
+  <section id="queueView" style="display:none">
+    <h1>Review queue</h1>
+    <p class="sub">Approve a listing and it appears on the board within seconds. Nothing goes live without a click here.</p>
+
+    <div class="tabs">
+      <button data-status="pending" class="active">Pending</button>
+      <button data-status="approved">Approved</button>
+      <button data-status="rejected">Rejected</button>
+      <button data-status="all">All</button>
+    </div>
+
+    <div id="list"></div>
+  </section>
 </div>
 
 <footer class="foot">
@@ -259,11 +362,119 @@ async function tryEnter() {
     localStorage.setItem(TOKEN_KEY, token);
     gateWrap.style.display = "none";
     appWrap.style.display = "block";
-    loadTab("pending");
+    loadDashboard();
   } catch (e) {
     gateErr.textContent = "That token didn't work.";
     gateErr.style.display = "block";
   }
+}
+
+/* ---------- dashboard <-> review queue switch ---------- */
+const dashboardView = document.getElementById("dashboardView");
+const queueView = document.getElementById("queueView");
+document.querySelectorAll(".view-switch button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll(".view-switch button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    const isDash = b.dataset.view === "dashboard";
+    dashboardView.style.display = isDash ? "block" : "none";
+    queueView.style.display = isDash ? "none" : "block";
+    if (isDash) loadDashboard();
+    else loadTab(document.querySelector(".tabs button.active").dataset.status);
+  });
+});
+
+/* ---------- dashboard ---------- */
+const PAGE_LABELS = {
+  "/": "Jobs (home)", "/post": "Post a job", "/admin": "Admin",
+  "/terms": "Terms", "/privacy": "Privacy", "/cookies": "Cookies",
+};
+function pageLabel(path) { return PAGE_LABELS[path] || path; }
+
+document.getElementById("rangeSelect").addEventListener("change", loadDashboard);
+
+async function loadDashboard() {
+  const days = document.getElementById("rangeSelect").value;
+  try {
+    const d = await api(`/api/admin/analytics?days=${days}`);
+    renderStats(d);
+    renderDayChart(d.by_day);
+    renderDeviceBars(d.by_device);
+    renderCountryList(d.by_country);
+    renderPagesList(d.top_pages);
+    renderSearchesList(d.top_searches);
+    renderAppliedList(d.top_applied);
+  } catch (e) {
+    document.getElementById("statGrid").innerHTML = `<div class="empty">Couldn't load analytics: ${e.message}</div>`;
+  }
+}
+
+function renderStats(d) {
+  const topPage = d.top_pages[0] ? pageLabel(d.top_pages[0].path) : "—";
+  const tiles = [
+    [d.total_views, "Pageviews"],
+    [d.total_searches, "Searches"],
+    [d.total_applies, "Apply clicks"],
+    [topPage, "Most popular page"],
+  ];
+  document.getElementById("statGrid").innerHTML = tiles.map(([n, l]) => `
+    <div class="stat-tile"><div class="n">${n}</div><div class="l">${l}</div></div>
+  `).join("");
+}
+
+function renderDayChart(byDay) {
+  const el = document.getElementById("dayChart");
+  if (!byDay.length) { el.innerHTML = `<div class="bar-chart-empty">No pageviews in this range yet.</div>`; return; }
+  const max = Math.max(...byDay.map(r => r.n), 1);
+  el.innerHTML = byDay.map(r => {
+    const h = Math.max(2, Math.round((r.n / max) * 100));
+    const label = new Date(r.day + "T00:00:00").toLocaleDateString(undefined, {month:"short", day:"numeric"});
+    return `<div class="col" title="${r.n} on ${r.day}">
+      <div class="bar" style="height:${h}%"></div>
+      <div class="lbl">${label}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderDeviceBars(byDevice) {
+  const el = document.getElementById("deviceBars");
+  if (!byDevice.length) { el.innerHTML = `<div class="empty">No data yet.</div>`; return; }
+  const max = Math.max(...byDevice.map(r => r.n), 1);
+  el.innerHTML = byDevice.map(r => `
+    <div class="hbar-row">
+      <span class="lbl">${escapeHtml(r.device)}</span>
+      <span class="track"><span class="fill" style="width:${Math.round((r.n/max)*100)}%"></span></span>
+      <span class="n">${r.n}</span>
+    </div>
+  `).join("");
+}
+
+function renderCountryList(byCountry) {
+  document.getElementById("countryList").outerHTML = `<div id="countryList" class="rank-list">` +
+    (byCountry.length ? byCountry.map(r => `
+      <div class="rank-row"><span class="name">${escapeHtml(r.country)}</span><span class="n">${r.n}</span></div>
+    `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;
+}
+function renderPagesList(topPages) {
+  document.getElementById("pagesList").outerHTML = `<div id="pagesList" class="rank-list">` +
+    (topPages.length ? topPages.map(r => `
+      <div class="rank-row"><span class="name">${escapeHtml(pageLabel(r.path))}</span><span class="n">${r.n}</span></div>
+    `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;
+}
+function renderSearchesList(topSearches) {
+  document.getElementById("searchesList").outerHTML = `<div id="searchesList" class="rank-list">` +
+    (topSearches.length ? topSearches.map(r => `
+      <div class="rank-row"><span class="name">${escapeHtml(r.query)}</span><span class="n">${r.n}</span></div>
+    `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;
+}
+function renderAppliedList(topApplied) {
+  document.getElementById("appliedList").outerHTML = `<div id="appliedList" class="rank-list">` +
+    (topApplied.length ? topApplied.map(r => `
+      <div class="rank-row">
+        <span class="name">${escapeHtml(r.job_title)} <span class="sub">— ${escapeHtml(r.company)}</span></span>
+        <span class="n">${r.n}</span>
+      </div>
+    `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;
 }
 
 document.getElementById("tokenSubmit").addEventListener("click", () => {

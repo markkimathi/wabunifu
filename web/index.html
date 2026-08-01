@@ -6,7 +6,7 @@
 <title>Kazi · Design jobs, open to Africa</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
-<script src="nav.js?v=3"></script>
+<script src="nav.js?v=4"></script>
 <style>
   /* ---- Grift (local) ---- */
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Thin.woff2") format("woff2"),url("fonts/grift/Grift-Thin.woff") format("woff");font-weight:100;font-style:normal;font-display:swap}
@@ -726,7 +726,8 @@ function render(){
             <span class="srcpill">via ${j.src}</span>
           </div>
         </div>
-        <a class="apply" href="${j.url}" target="_blank" rel="noopener">
+        <a class="apply" href="${j.url}" target="_blank" rel="noopener"
+          data-job-id="${j.id}" data-job-title="${j.t.replace(/"/g,'&quot;')}" data-job-company="${j.co.replace(/"/g,'&quot;')}">
           <span class="apply-label"><span>Apply</span><span aria-hidden="true">Apply</span></span>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
         </a>
@@ -795,17 +796,38 @@ function revealCards(){
    reflects state.q. */
 const qHero = document.getElementById("q");
 const qHeader = document.getElementById("qHeader");
+let searchTrackTimer = null;
 function setQuery(val){
   state.q = val; state.page = 1;
   if(qHero.value !== val) qHero.value = val;
   if(qHeader.value !== val) qHeader.value = val;
   render();
+  // Debounced so we log "what someone searched for" once they pause, not
+  // once per keystroke.
+  clearTimeout(searchTrackTimer);
+  const q = val.trim();
+  if(q && window.kaziTrack){
+    searchTrackTimer = setTimeout(() => kaziTrack("/api/track/search", {query: q}), 800);
+  }
 }
 qHero.addEventListener("input", e => setQuery(e.target.value));
 qHeader.addEventListener("input", e => setQuery(e.target.value));
 
 document.getElementById("sort").addEventListener("change",e=>{state.sort=e.target.value;state.page=1;render()});
 document.getElementById("clearAll").addEventListener("click",clearAll);
+
+// Apply-click tracking: delegated since job cards are re-rendered on every
+// filter/sort/page change. Doesn't block or delay the link — it opens in
+// a new tab regardless of whether the beacon lands.
+document.getElementById("list").addEventListener("click", e => {
+  const a = e.target.closest(".apply");
+  if(!a || !window.kaziTrack) return;
+  kaziTrack("/api/track/apply", {
+    job_id: a.dataset.jobId || "",
+    job_title: a.dataset.jobTitle || "",
+    company: a.dataset.jobCompany || "",
+  });
+});
 document.getElementById("searchBtn").addEventListener("click",()=>{
   render();
   // Icon-only on mobile — just confirms/filters in place. The scroll-to-

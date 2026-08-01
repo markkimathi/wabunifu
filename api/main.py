@@ -18,12 +18,13 @@ Nothing an employer submits goes live until it's approved; see db.py's note.
 from __future__ import annotations
 import json
 import os
+import re
 from typing import Optional
 import sys
 from pathlib import Path
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, Request
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
@@ -32,7 +33,11 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "scraper"))
 from models import Job, DISCIPLINES, ELIGIBILITY, MAX_AGE_DAYS  # noqa: E402  (reuse the canonical schema)
 
-from .db import init_db, insert_submission, list_submissions, get_submission, set_status  # noqa: E402
+from .db import (  # noqa: E402
+    init_db, insert_submission, list_submissions, get_submission, set_status,
+    log_pageview, log_search, log_apply_click, get_analytics_summary,
+)
+from . import geoip  # noqa: E402
 
 WEB_DIR = ROOT / "web"
 JOBS_JSON = WEB_DIR / "jobs.json"
@@ -43,6 +48,31 @@ LEVELS = {"Junior", "Mid", "Senior", "Lead"}
 # KAZI_ADMIN_TOKEN env var before deploying anywhere reachable; anyone with
 # this token can approve/reject submissions.
 ADMIN_TOKEN = os.environ.get("KAZI_ADMIN_TOKEN", "dev-only-change-me")
+
+
+def classify_device(user_agent: str) -> str:
+    """mobile | tablet | desktop, from a plain User-Agent string check —
+    phones and tablets both say "Android"/mention touch, so the standard
+    signal is that phone UAs additionally include the literal "Mobile"
+    token and tablet UAs don't."""
+    ua = user_agent or ""
+    if "iPad" in ua or ("Android" in ua and "Mobile" not in ua):
+        return "tablet"
+    if "iPhone" in ua or "iPod" in ua or "Windows Phone" in ua or "Mobi" in ua:
+        return "mobile"
+    return "desktop"
+
+
+def client_ip(request: Request) -> str:
+    """Best-effort real visitor IP behind Fly's edge proxy. Used only for an
+    in-process GeoIP lookup at request time — never stored (see db.py)."""
+    fly_ip = request.headers.get("fly-client-ip")
+    if fly_ip:
+        return fly_ip
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    return request.client.host if request.client else ""
 
 app = FastAPI(title="Kazi API")
 init_db()
@@ -103,6 +133,20 @@ class JobSubmission(BaseModel):
         if not v:
             raise ValueError("must agree to the posting guidelines")
         return v
+
+
+class PageviewIn(BaseModel):
+    path: str
+
+
+class SearchIn(BaseModel):
+    query: str
+
+
+class ApplyIn(BaseModel):
+    job_id: str
+    job_title: str
+    company: str
 
 
 def require_admin(authorization: str = Header(default="")) -> None:
@@ -168,6 +212,49 @@ def admin_reject(sub_id: int, _: None = Depends(require_admin)):
         raise HTTPException(404, "no such submission")
     set_status(sub_id, "rejected")
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Analytics: three fire-and-forget beacons the frontend calls (see nav.js /
+# index.html), plus the aggregate dashboard the admin page reads. No auth on
+# the beacons — they're called from every visitor's browser, not just admins.
+# ---------------------------------------------------------------------------
+
+@app.post("/api/track/pageview")
+def track_pageview(payload: PageviewIn, request: Request):
+    device = classify_device(request.headers.get("user-agent", ""))
+    country = geoip.lookup_country(client_ip(request))
+    log_pageview(payload.path.strip()[:200] or "/", device, country)
+    return {"ok": True}
+
+
+@app.post("/api/track/search")
+def track_search(payload: SearchIn, request: Request):
+    query = payload.query.strip()
+    if not query:
+        return {"ok": True}
+    device = classify_device(request.headers.get("user-agent", ""))
+    country = geoip.lookup_country(client_ip(request))
+    log_search(query[:200], device, country)
+    return {"ok": True}
+
+
+@app.post("/api/track/apply")
+def track_apply(payload: ApplyIn, request: Request):
+    device = classify_device(request.headers.get("user-agent", ""))
+    country = geoip.lookup_country(client_ip(request))
+    log_apply_click(
+        payload.job_id.strip()[:100],
+        payload.job_title.strip()[:200],
+        payload.company.strip()[:200],
+        device, country,
+    )
+    return {"ok": True}
+
+
+@app.get("/api/admin/analytics")
+def admin_analytics(days: int = 30, _: None = Depends(require_admin)):
+    return get_analytics_summary(days=max(1, min(days, 365)))
 
 
 # Clean URLs: serve the .html files without the extension...

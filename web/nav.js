@@ -9,6 +9,23 @@
     else document.addEventListener("DOMContentLoaded", fn);
   }
 
+  // Analytics beacon: fire-and-forget POST, never lets a tracking failure
+  // touch the page. sendBeacon survives the tab closing/navigating away,
+  // which fetch() doesn't reliably do, so it's preferred where available.
+  // See api/db.py's module docstring for exactly what this does and
+  // doesn't store (no IPs, no cookies, no cross-visit identifiers).
+  function track(endpoint, data){
+    try{
+      var body = JSON.stringify(data);
+      if(navigator.sendBeacon){
+        navigator.sendBeacon(endpoint, new Blob([body], {type: "application/json"}));
+      } else {
+        fetch(endpoint, {method: "POST", headers: {"Content-Type": "application/json"}, body: body, keepalive: true});
+      }
+    } catch(e){ /* analytics must never break the page */ }
+  }
+  window.kaziTrack = track;
+
   // Marks whichever nav link points at the current page with .active, so
   // the dot + purple styling in each page's <style> block picks it up.
   function markActiveNav(){
@@ -51,6 +68,7 @@
   ready(function(){
     hidePageLoader();
     markActiveNav();
+    track("/api/track/pageview", {path: location.pathname});
     var toggle = document.querySelector(".menu-toggle");
     var menu = document.querySelector(".mobile-menu");
     if(!toggle || !menu) return;
