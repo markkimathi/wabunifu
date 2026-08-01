@@ -12,7 +12,8 @@ import re
 from collections import Counter
 from dataclasses import dataclass
 
-MAX_FILE_BYTES = 5 * 1024 * 1024
+MAX_FILE_BYTES = 3 * 1024 * 1024
+MAX_PDF_PAGES = 8  # a real resume is 1-3 pages; this bounds worst-case memory on oversized uploads
 ALLOWED_EXTENSIONS = {"pdf", "docx"}
 
 
@@ -43,12 +44,17 @@ def _extract_pdf(data: bytes) -> tuple[str, bool, bool]:
     has_tables = False
     has_images = False
     with pdfplumber.open(io.BytesIO(data)) as pdf:
-        for page in pdf.pages:
+        for page in pdf.pages[:MAX_PDF_PAGES]:
             text_parts.append(page.extract_text() or "")
             if page.extract_tables():
                 has_tables = True
             if page.images:
                 has_images = True
+            # pdfplumber caches each page's decoded layout/image objects on
+            # the Page object as it goes; on a memory-constrained VM this
+            # adds up fast across pages, so release it as soon as we're done
+            # reading this page rather than waiting for the `with` to exit.
+            page.flush_cache()
     return "\n".join(text_parts), has_tables, has_images
 
 
@@ -194,7 +200,7 @@ def _keyword_match(resume_text: str, job_description: str) -> dict | None:
 
 def analyze(filename: str, data: bytes, job_description: str = "") -> dict:
     if len(data) > MAX_FILE_BYTES:
-        raise UnsupportedFile("That file is larger than 5MB — please upload a smaller one.")
+        raise UnsupportedFile("That file is larger than 3MB — please upload a smaller one.")
     ext = _ext(filename)
     if ext not in ALLOWED_EXTENSIONS:
         raise UnsupportedFile("Please upload a .pdf or .docx file.")
