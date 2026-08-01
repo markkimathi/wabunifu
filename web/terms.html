@@ -90,6 +90,14 @@
   .mm-nav a:hover{background:var(--hairline)}
   .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
   .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
+  .nav-links a.nav-cta{background:var(--brand);color:#fff;padding:7px 16px;border-radius:999px;margin-left:10px;font-weight:700;transition:filter .3s var(--ease-expo)}
+  .nav-links a.nav-cta:hover{filter:brightness(1.12);color:#fff}
+  .nav-links a.nav-cta.active{color:#fff}
+  .nav-links a.nav-cta.active::before{content:none}
+  .mm-nav a.nav-cta{background:var(--brand);color:#fff;text-align:center;margin-top:10px;transition:filter .25s var(--ease-expo)}
+  .mm-nav a.nav-cta:hover{filter:brightness(1.12);background:var(--brand);color:#fff}
+  .mm-nav a.nav-cta.active{color:#fff}
+  .mm-nav a.nav-cta.active::before{content:none}
 
   @media(max-width:860px){
     body{font-size:15px}
@@ -139,8 +147,8 @@
     <nav class="nav-links">
       <a class="nav-jobs" href="/">Jobs</a>
       <a href="/post">Post a job</a>
-      <a href="/cv-check">Check your CV</a>
       <a href="mailto:hello@odana.design">Contact us</a>
+      <a href="/cv-check" class="nav-cta">Check your CV</a>
     </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
       <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
       <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
@@ -159,8 +167,8 @@
   <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
-      <a href="/cv-check">Check your CV</a>
       <a href="mailto:hello@odana.design">Contact us</a>
+      <a href="/cv-check" class="nav-cta">Check your CV</a>
   </nav>
 </div>
 
