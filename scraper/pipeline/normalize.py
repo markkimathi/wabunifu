@@ -61,6 +61,12 @@ SALARY_RANGE_RE = re.compile(
 )
 SALARY_K_RE = re.compile(rf"{CCY}\s*[\d][\d,\.]*\s*k\b", re.IGNORECASE)
 
+# Source postings format the range separator inconsistently (hyphen, en
+# dash, or "to"); normalize whichever one matched to a single em dash with
+# consistent spacing, so every salary range on the site reads the same way
+# regardless of how the original posting wrote it.
+SEPARATOR_RE = re.compile(r"\s*(?:–|-|to)\s*", re.IGNORECASE)
+
 
 def extract_salary(*texts: str) -> str | None:
     for t in texts:
@@ -68,5 +74,6 @@ def extract_salary(*texts: str) -> str | None:
             continue
         m = SALARY_RANGE_RE.search(t) or SALARY_K_RE.search(t)
         if m:
-            return re.sub(r"\s+", " ", m.group(0)).strip()
+            salary = re.sub(r"\s+", " ", m.group(0)).strip()
+            return SEPARATOR_RE.sub(" — ", salary, count=1)
     return None

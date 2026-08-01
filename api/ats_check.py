@@ -86,7 +86,7 @@ def _run_checks(text: str, has_tables: bool, has_images: bool) -> list[Check]:
         "critical",
         "Your CV's text extracted cleanly." if parseable else "We could barely extract any text from this file.",
         "This file may be a scanned image or built entirely from graphics/text boxes. Rebuild it as "
-        "a real text document (export from Word, or a text-based PDF) — ATS software can't read pictures of text.",
+        "a real text document (export from Word, or a text-based PDF). ATS software can't read pictures of text.",
         25 if parseable else 0, 25,
     ))
 
@@ -95,7 +95,7 @@ def _run_checks(text: str, has_tables: bool, has_images: bool) -> list[Check]:
         "email", "Email address found", has_email,
         "critical" if not has_email else "tip",
         "Found a valid-looking email address." if has_email else "No email address detected.",
-        "Add a clear email address near the top of your CV, in plain text — not inside an image, header, or text box.",
+        "Add a clear email address near the top of your CV, in plain text, not inside an image, header, or text box.",
         10 if has_email else 0, 10,
     ))
 
@@ -114,7 +114,7 @@ def _run_checks(text: str, has_tables: bool, has_images: bool) -> list[Check]:
             f"section_{key}", f"'{key.title()}' section present", found,
             "warning" if not found else "tip",
             f"Found a clearly labeled {key} section." if found else f"We couldn't find a clearly labeled {key} section.",
-            f"Add a section titled '{key.title()}' — ATS software parses resumes by these standard "
+            f"Add a section titled '{key.title()}'. ATS software parses resumes by these standard "
             "headings, and creative alternatives (like \"What I've Built\") often get missed entirely.",
             pts if found else 0, pts,
         ))
@@ -139,15 +139,15 @@ def _run_checks(text: str, has_tables: bool, has_images: bool) -> list[Check]:
 
     length_ok = 250 <= word_count <= 1400
     if length_ok:
-        length_detail = f"{word_count} words — a good length."
+        length_detail = f"{word_count} words: a good length."
     elif word_count < 250:
-        length_detail = f"{word_count} words — too short to show much depth."
+        length_detail = f"{word_count} words: too short to show much depth."
     else:
-        length_detail = f"{word_count} words — quite long; ATS and recruiters both skim."
+        length_detail = f"{word_count} words: quite long; ATS and recruiters both skim."
     checks.append(Check(
         "length", "Reasonable length", length_ok,
         "tip", length_detail,
-        "Aim for roughly one to two pages (about 400-900 words) — enough to show depth without losing the reader.",
+        "Aim for roughly one to two pages (about 400-900 words), enough to show depth without losing the reader.",
         10 if length_ok else 0, 10,
     ))
 
@@ -156,7 +156,7 @@ def _run_checks(text: str, has_tables: bool, has_images: bool) -> list[Check]:
         "bullets", "Uses bullet points", has_bullets,
         "tip",
         "Bullet points found." if has_bullets else "No bullet points detected.",
-        "Use bullet points for your responsibilities and achievements — dense paragraphs are harder "
+        "Use bullet points for your responsibilities and achievements. Dense paragraphs are harder "
         "for both ATS software and human reviewers to scan quickly.",
         5 if has_bullets else 0, 5,
     ))
@@ -200,7 +200,7 @@ def _keyword_match(resume_text: str, job_description: str) -> dict | None:
 
 def analyze(filename: str, data: bytes, job_description: str = "") -> dict:
     if len(data) > MAX_FILE_BYTES:
-        raise UnsupportedFile("That file is larger than 3MB — please upload a smaller one.")
+        raise UnsupportedFile("That file is larger than 3MB. Please upload a smaller one.")
     ext = _ext(filename)
     if ext not in ALLOWED_EXTENSIONS:
         raise UnsupportedFile("Please upload a .pdf or .docx file.")
@@ -212,7 +212,7 @@ def analyze(filename: str, data: bytes, job_description: str = "") -> dict:
             text, has_tables, has_images = _extract_docx(data)
     except Exception as e:
         raise UnsupportedFile(
-            "Couldn't read this file — it may be corrupted or password-protected."
+            "Couldn't read this file. It may be corrupted or password-protected."
         ) from e
 
     checks = _run_checks(text, has_tables, has_images)
