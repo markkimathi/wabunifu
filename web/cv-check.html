@@ -227,6 +227,7 @@
     <nav class="nav-links">
       <a class="nav-jobs" href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
     </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
@@ -247,6 +248,7 @@
   <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
   </nav>
@@ -377,7 +379,7 @@ function setFile(file){
     return;
   }
   if(file.size > MAX_BYTES){
-    showError("That file is larger than 3MB — please choose a smaller one.");
+    showError("That file is larger than 3MB. Please choose a smaller one.");
     return;
   }
   selectedFile = file;
@@ -506,7 +508,7 @@ checkBtn.addEventListener("click", async () => {
     }
     const data = await res.json();
     renderScoreRing(data.score);
-    document.getElementById("scoreLabel").textContent = `${scoreLabelText(data.score)} — ${data.score}/100`;
+    document.getElementById("scoreLabel").textContent = `${scoreLabelText(data.score)} (${data.score}/100)`;
     document.getElementById("scoreLabel").style.color = scoreColor(data.score);
     document.getElementById("scoreDesc").textContent = scoreDescText(data.score);
     renderChecks(data.checks);

@@ -228,6 +228,7 @@
     <nav class="nav-links">
       <a class="nav-jobs" href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
     </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
@@ -248,6 +249,7 @@
   <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
   </nav>
@@ -346,7 +348,7 @@
         <input name="url" type="url" required placeholder="https://yourcompany.com/careers/role">
       </label>
 
-      <label class="field"><span class="field-label">Your email <span class="req">*</span> <span class="hint">(never shown publicly — we'll email you here when your listing is approved or rejected)</span></span>
+      <label class="field"><span class="field-label">Your email <span class="req">*</span> <span class="hint">(never shown publicly, we'll email you here when your listing is approved or rejected)</span></span>
         <input name="contact_email" type="email" required placeholder="hiring@yourcompany.com">
       </label>
 
@@ -505,7 +507,7 @@ function stepIsValid(stepEl){
 const FIELD_MESSAGES = {
   title: "Enter the job title",
   company: "Enter the company name",
-  description: "Describe the role — a few sentences is enough",
+  description: "Describe the role, a few sentences is enough",
   url: {valueMissing: "Enter the application link", typeMismatch: "Enter a valid URL, e.g. https://company.com/careers/role"},
   contact_email: {valueMissing: "Enter your email", typeMismatch: "Enter a valid email address"},
   agreed_to_terms: "You need to agree to the posting guidelines to continue",

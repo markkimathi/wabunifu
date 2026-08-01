@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Privacy Policy · Kazi</title>
+<title>Find a designer · Kazi</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
 <script src="nav.js?v=4"></script>
@@ -16,7 +16,7 @@
 
   :root{
     --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
-    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1;
+    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-light:#AA52ED; --brand-soft:#F1E7FA;
     --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
     --amber:#F25C05; --amber-soft:#FDE6D8;
     --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
@@ -24,7 +24,7 @@
   }
   :root[data-theme="dark"]{
     --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
-    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8;
+    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8; --brand-light:#C79AF2; --brand-soft:#251A38;
     --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
     --amber:#FF9B57; --amber-soft:#3A2412;
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
@@ -43,7 +43,7 @@
     font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
   body > .wrap{flex:1}
   a{color:inherit}
-  .wrap{max-width:720px;margin:0 auto;padding:0 24px}
+  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
@@ -52,12 +52,18 @@
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
   .logomark{height:20px;width:auto;flex:none;display:block}
   .bar-spacer{flex:1}
-
   .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     display:flex;align-items:center;gap:20px;white-space:nowrap}
   .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
     transition:color .3s var(--ease-expo)}
   .nav-links a:hover{color:var(--ink)}
+
+  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px;margin-top:auto}
+  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
+  .foot-links a{color:var(--muted);text-decoration:none}
+  .foot-links a:hover{color:var(--ink)}
+
   .menu-toggle{display:none;position:relative;flex:none;width:38px;height:38px;padding:0;
     border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
     cursor:pointer;color:var(--ink);
@@ -71,9 +77,6 @@
   .menu-toggle.-active span:last-child{transform:translate(-50%,-50%) rotate(-45deg)}
 
   html.menu-open{overflow:hidden}
-  /* ---- mobile nav menu: same design language as the filter rail
-     (full-bleed canvas panel, fast simple slide, plain list rows) but
-     pulling in from the right instead of the left ---- */
   .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
     padding:20px 22px 40px;overflow:auto;
     transform:translateX(100%);transition:transform .22s ease}
@@ -118,21 +121,38 @@
   [data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
   [data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:rotate(0deg) scale(1)}
 
-  .legal{padding:48px 0 80px}
+  .head{padding:44px 0 20px}
   .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:600;margin:0 0 14px}
-  .legal h1{font-weight:800;font-size:clamp(28px,4vw,38px);letter-spacing:-.02em;margin:0 0 8px;line-height:1.1}
-  .legal .updated{color:var(--faint);font-size:13px;margin:0 0 36px}
-  .legal h2{font-weight:700;font-size:19px;margin:36px 0 12px;letter-spacing:-.01em}
-  .legal p{color:var(--muted);margin:0 0 14px;line-height:1.65}
-  .legal ul{color:var(--muted);margin:0 0 14px;padding-left:20px;line-height:1.65}
-  .legal li{margin-bottom:6px}
-  .legal a{color:var(--brand);text-decoration:underline;text-underline-offset:2px}
+  h1{font-weight:800;font-size:clamp(26px,4vw,36px);letter-spacing:-.02em;margin:0 0 10px;line-height:1.1}
+  .lede{color:var(--muted);font-size:15.5px;margin:0;max-width:56ch}
 
-  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
-  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
-  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
-  .foot-links a{color:var(--muted);text-decoration:none}
-  .foot-links a:hover{color:var(--ink)}
+  .toolbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding-bottom:26px}
+  .chip-filter{display:flex;gap:8px;flex-wrap:wrap}
+  .chip{font:inherit;font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;
+    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer;
+    transition:border-color .2s var(--ease-expo),color .2s var(--ease-expo)}
+  .chip.active{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+  .chip:hover{border-color:var(--brand);color:var(--brand)}
+  .chip.active:hover{color:var(--canvas)}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;padding-bottom:60px}
+  .dcard{border:1px solid var(--hairline);border-radius:var(--radius);padding:22px;background:var(--surface);
+    box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;
+    transition:border-color .25s var(--ease-expo),transform .25s var(--ease-expo)}
+  .dcard:hover{border-color:var(--brand);transform:translateY(-2px)}
+  .dcard-top{display:flex;align-items:center;gap:14px}
+  .dcard-avatar{width:54px;height:54px;border-radius:50%;object-fit:cover;flex:none;background:var(--hairline);
+    border:1px solid var(--hairline-strong)}
+  .dcard-name{font-size:16px;font-weight:800;margin:0}
+  .dcard-meta{font-size:12.5px;color:var(--muted);margin:2px 0 0}
+  .dcard-bio{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .dcard-links{display:flex;flex-wrap:wrap;gap:6px;margin-top:auto}
+  .dcard-links span{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;
+    background:var(--brand-soft);color:var(--brand)}
+
+  .empty{text-align:center;padding:70px 20px;color:var(--muted);border:1px dashed var(--hairline-strong);
+    border-radius:var(--radius);grid-column:1/-1}
 </style>
 </head>
 <body>
@@ -175,42 +195,17 @@
 </div>
 
 <div class="wrap">
-  <div class="legal">
-    <p class="kicker">Legal</p>
-    <h1>Privacy Policy</h1>
-    <p class="updated">Last updated 1 August 2026</p>
-
-    <h2>1. What we collect</h2>
-    <p>If you're just browsing the board, we don't collect any personally identifying data. We do keep basic, aggregate usage analytics: which pages get visited, what device type (mobile, tablet, desktop), a country-level location derived from your IP address, which searches are run, and which listings get an "Apply" click. We never store your IP address, any cookie, or anything else that could tie this activity back to you individually or across visits (see section 4 for exactly how the location lookup works). Our hosting provider may separately log standard technical request data as part of normal server operation, the same as any website.</p>
-    <p>If you submit a role through "Post a job," we collect the job details you provide and your email address. Your email is used only to review the submission and to contact you about it if needed; it's never shown publicly on the board.</p>
-    <p>If you use "Check your CV," your uploaded file (and any job description you paste alongside it) is read entirely in memory to generate your report. It is never written to disk, never stored in our database, and is discarded the moment your results are returned. We have no record of your CV, its contents, or anything it contains after your browser receives the response.</p>
-    <p>If you create a designer account, we collect your email address, a password (stored as an irreversible hash, never in plain text), and whatever profile details you choose to add: your name, a bio, your job function, your location, a profile photo, and links to your portfolio or social profiles.</p>
-
-    <h2>2. Designer profiles: what's public</h2>
-    <p>This is the one part of Kazi that's built around showing personal information publicly on purpose, so it's worth being explicit about the line. Your email address and password are never shown to anyone and are never public. Once you submit your profile and an admin approves it, everything else you've added, your name, bio, job function, location, photo, and links, is shown publicly on your profile page and in the designer directory, exactly as you wrote it. Editing an approved profile takes it back out of the public directory until an admin reviews the changes, the same review step every profile goes through before it first goes live.</p>
-    <p>You can delete your account at any time from your account page. This permanently removes your login, your profile, your photo, and your links; nothing is kept afterward.</p>
-
-    <h2>3. How we use it</h2>
-    <p>Submission details are used solely to review and, if approved, publish employer listings, and to reach out about a specific submission. Designer account details are used to run your login and, once approved, to display your public profile. Usage analytics are used to understand which parts of the board are useful and to prioritize what we build next. We don't use any of this for marketing or advertising, and we don't sell or share it with third parties beyond what's needed to run the site (our hosting provider, and Resend, which delivers our account emails like email verification and password resets).</p>
-
-    <h2>4. Where it's stored</h2>
-    <p>Submissions, designer accounts, and analytics are all stored in a database on our hosting infrastructure (Fly.io). Profile photos are stored on the same infrastructure, resized and compressed before they're ever saved. Submissions are kept only as long as needed to review and manage the listing. Analytics records are kept for 90 days, then automatically deleted. Designer accounts are kept until you delete them.</p>
-
-    <h2>5. How the location lookup works</h2>
-    <p>To show a country-level location in analytics, your IP address is checked against a local, offline lookup table on our server (the same one used by the site to route the request). Your IP address itself is never stored, logged, or sent to any third party; only the resulting country name is kept. That lookup table is derived from the free <a href="https://db-ip.com" target="_blank" rel="noopener">DB-IP</a> "IP to Country Lite" database, used under a <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a> license.</p>
-
-    <h2>6. Cookies and local storage</h2>
-    <p>See our <a href="/cookies">Cookie Policy</a> for the full picture. In short, Kazi doesn't use tracking cookies. We use your browser's local storage only for your light/dark theme preference and, if you have an account (admin or designer), to keep you signed in.</p>
-
-    <h2>7. Your rights</h2>
-    <p>You can ask us to access, correct, or delete data you've submitted at any time: <a href="mailto:hello@odana.design">hello@odana.design</a>. If you have a designer account, you can also correct or delete your own data directly from your account page at any time, without needing to ask us.</p>
-
-    <h2>8. Changes to this policy</h2>
-    <p>We may update this policy as the site evolves.</p>
-
-    <h2>9. Contact</h2>
-    <p><a href="mailto:hello@odana.design">hello@odana.design</a></p>
+  <div class="head">
+    <p class="kicker">For employers</p>
+    <h1>Find a designer</h1>
+    <p class="lede">Browse designer profiles from across Kazi's community — bios, portfolios, and where to reach them.</p>
   </div>
+
+  <div class="toolbar">
+    <div class="chip-filter" id="chipFilter"></div>
+  </div>
+
+  <div class="grid" id="grid"></div>
 </div>
 
 <footer class="foot">
@@ -225,5 +220,67 @@
   </div>
 </footer>
 
+<script>
+const DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
+let allDesigners = [];
+let activeDiscipline = "";
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function countFor(discipline) {
+  return allDesigners.filter(d => d.discipline === discipline).length;
+}
+
+function renderChips() {
+  const present = DISCIPLINES.filter(d => countFor(d) > 0);
+  const box = document.getElementById("chipFilter");
+  box.innerHTML = `<button class="chip${activeDiscipline === "" ? " active" : ""}" data-d="">All (${allDesigners.length})</button>` +
+    present.map(d => `<button class="chip${activeDiscipline === d ? " active" : ""}" data-d="${escapeHtml(d)}">${escapeHtml(d)} (${countFor(d)})</button>`).join("");
+  box.querySelectorAll(".chip").forEach(btn => {
+    btn.addEventListener("click", () => {
+      activeDiscipline = btn.dataset.d;
+      renderChips();
+      renderGrid();
+    });
+  });
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  const rows = activeDiscipline ? allDesigners.filter(d => d.discipline === activeDiscipline) : allDesigners;
+  if (!rows.length) {
+    grid.innerHTML = `<div class="empty"><h4>No designers here yet</h4><p>Check back soon, or be the first — <a href="/account">create a profile</a>.</p></div>`;
+    return;
+  }
+  grid.innerHTML = rows.map(d => `
+    <a class="dcard" href="/designers/${d.id}">
+      <div class="dcard-top">
+        <img class="dcard-avatar" src="${d.photo_path ? escapeHtml(d.photo_path) : 'logo.png'}" alt="">
+        <div>
+          <p class="dcard-name">${escapeHtml(d.display_name)}</p>
+          <p class="dcard-meta">${escapeHtml(d.discipline || "Designer")}${d.location ? " · " + escapeHtml(d.location) : ""}</p>
+        </div>
+      </div>
+      ${d.bio ? `<p class="dcard-bio">${escapeHtml(d.bio)}</p>` : ""}
+      ${d.links && d.links.length ? `<div class="dcard-links">${d.links.slice(0,3).map(l => `<span>${escapeHtml(l.label)}</span>`).join("")}</div>` : ""}
+    </a>
+  `).join("");
+}
+
+async function boot() {
+  try {
+    const res = await fetch("/api/designers", {cache: "no-store"});
+    const data = await res.json();
+    allDesigners = data.designers || [];
+  } catch (e) {
+    allDesigners = [];
+  }
+  renderChips();
+  renderGrid();
+}
+boot();
+</script>
 </body>
 </html>

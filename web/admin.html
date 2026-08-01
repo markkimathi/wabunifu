@@ -265,6 +265,7 @@
     <nav class="nav-links">
       <a class="nav-jobs" href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
     </nav>    <span class="tag">Admin</span>
@@ -286,6 +287,7 @@
   <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
   </nav>
@@ -305,6 +307,7 @@
   <div class="view-switch">
     <button data-view="dashboard" class="active">Dashboard</button>
     <button data-view="queue">Review queue</button>
+    <button data-view="designers">Designer profiles</button>
   </div>
 
   <section id="dashboardView">
@@ -369,6 +372,20 @@
 
     <div id="list"></div>
   </section>
+
+  <section id="designersView" style="display:none">
+    <h1>Designer profiles</h1>
+    <p class="sub">Approve a profile and it appears in the public directory within seconds.</p>
+
+    <div class="tabs">
+      <button data-dstatus="pending" class="active">Pending</button>
+      <button data-dstatus="approved">Approved</button>
+      <button data-dstatus="rejected">Rejected</button>
+      <button data-dstatus="all">All</button>
+    </div>
+
+    <div id="designerList"></div>
+  </section>
 </div>
 
 <footer class="foot">
@@ -415,18 +432,21 @@ async function tryEnter() {
   }
 }
 
-/* ---------- dashboard <-> review queue switch ---------- */
+/* ---------- dashboard <-> review queue <-> designer profiles switch ---------- */
 const dashboardView = document.getElementById("dashboardView");
 const queueView = document.getElementById("queueView");
+const designersView = document.getElementById("designersView");
 document.querySelectorAll(".view-switch button").forEach(b => {
   b.addEventListener("click", () => {
     document.querySelectorAll(".view-switch button").forEach(x => x.classList.remove("active"));
     b.classList.add("active");
-    const isDash = b.dataset.view === "dashboard";
-    dashboardView.style.display = isDash ? "block" : "none";
-    queueView.style.display = isDash ? "none" : "block";
-    if (isDash) loadDashboard();
-    else loadTab(document.querySelector(".tabs button.active").dataset.status);
+    const view = b.dataset.view;
+    dashboardView.style.display = view === "dashboard" ? "block" : "none";
+    queueView.style.display = view === "queue" ? "block" : "none";
+    designersView.style.display = view === "designers" ? "block" : "none";
+    if (view === "dashboard") loadDashboard();
+    else if (view === "queue") loadTab(document.querySelector("#queueView .tabs button.active").dataset.status);
+    else loadDesignerTab(document.querySelector("#designersView .tabs button.active").dataset.dstatus);
   });
 });
 
@@ -648,7 +668,7 @@ function renderAppliedList(topApplied) {
   document.getElementById("appliedList").outerHTML = `<div id="appliedList" class="rank-list">` +
     (topApplied.length ? topApplied.map(r => `
       <div class="rank-row">
-        <span class="who"><span class="rank-avatar">${escapeHtml(initials(r.company))}</span><span class="name">${escapeHtml(r.job_title)} <span class="sub">— ${escapeHtml(r.company)}</span></span></span>
+        <span class="who"><span class="rank-avatar">${escapeHtml(initials(r.company))}</span><span class="name">${escapeHtml(r.job_title)} <span class="sub">at ${escapeHtml(r.company)}</span></span></span>
         <span class="n">${r.n}</span>
       </div>
     `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;
@@ -662,11 +682,19 @@ document.getElementById("tokenInput").addEventListener("keydown", (e) => {
   if (e.key === "Enter") document.getElementById("tokenSubmit").click();
 });
 
-document.querySelectorAll(".tabs button").forEach(b => {
+document.querySelectorAll("#queueView .tabs button").forEach(b => {
   b.addEventListener("click", () => {
-    document.querySelectorAll(".tabs button").forEach(x => x.classList.remove("active"));
+    document.querySelectorAll("#queueView .tabs button").forEach(x => x.classList.remove("active"));
     b.classList.add("active");
     loadTab(b.dataset.status);
+  });
+});
+
+document.querySelectorAll("#designersView .tabs button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#designersView .tabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    loadDesignerTab(b.dataset.dstatus);
   });
 });
 
@@ -715,7 +743,7 @@ function render(rows, status) {
       btn.disabled = true;
       try {
         await api(`/api/admin/submissions/${id}/${action}`, { method: "POST" });
-        const activeTab = document.querySelector(".tabs button.active").dataset.status;
+        const activeTab = document.querySelector("#queueView .tabs button.active").dataset.status;
         loadTab(activeTab);
       } catch (e) {
         alert("Failed: " + e.message);
@@ -732,6 +760,63 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function escapeAttr(s) { return escapeHtml(s); }
+
+/* ---------- designer profile review queue ---------- */
+const designerList = document.getElementById("designerList");
+
+async function loadDesignerTab(status) {
+  designerList.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const rows = await api(`/api/admin/designers?status=${status}`);
+    renderDesigners(rows, status);
+  } catch (e) {
+    designerList.innerHTML = `<div class="empty">Couldn't load: ${e.message}</div>`;
+  }
+}
+
+function renderDesigners(rows, status) {
+  if (!rows.length) {
+    designerList.innerHTML = `<div class="empty">Nothing here.</div>`;
+    return;
+  }
+  designerList.innerHTML = rows.map(d => `
+    <div class="item" data-id="${d.id}">
+      <div>
+        <h3>${escapeHtml(d.display_name)}</h3>
+        <p class="meta"><b>${escapeHtml(d.email)}</b> · ${escapeHtml(d.discipline || "No discipline set")} · ${escapeHtml(d.location || "No location set")}</p>
+        <div class="badges">
+          <span>${d.email_verified ? "Email verified" : "Email not verified"}</span>
+        </div>
+        ${d.bio ? `<p class="desc">${escapeHtml(d.bio)}</p>` : ""}
+        ${d.links && d.links.length ? `<p class="meta" style="margin-top:8px">${d.links.map(l => `<a class="applylink" href="${escapeAttr(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.label)}</a>`).join(" &nbsp;·&nbsp; ")}</p>` : ""}
+        <p class="meta" style="margin-top:8px">Joined ${new Date(d.created_at).toLocaleDateString()}</p>
+        ${!d.email_verified ? `<button class="reject" data-daction="verify-email" style="margin-top:8px">Mark email verified</button>` : ""}
+      </div>
+      <div class="actions">
+        ${d.status === "pending" ? `
+          <button class="approve" data-daction="approve">Approve</button>
+          <button class="reject" data-daction="reject">Reject</button>
+        ` : `<span class="status ${d.status}">${d.status}</span>`}
+      </div>
+    </div>
+  `).join("");
+
+  designerList.querySelectorAll("[data-daction]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.closest(".item").dataset.id;
+      const action = btn.dataset.daction;
+      btn.disabled = true;
+      try {
+        await api(`/api/admin/designers/${id}/${action}`, { method: "POST" });
+        const activeTab = document.querySelector("#designersView .tabs button.active").dataset.dstatus;
+        loadDesignerTab(activeTab);
+      } catch (e) {
+        alert("Failed: " + e.message);
+        btn.disabled = false;
+      }
+    });
+  });
+}
 
 if (token) tryEnter();
 </script>

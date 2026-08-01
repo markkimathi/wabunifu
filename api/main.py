@@ -24,7 +24,10 @@ import sys
 from pathlib import Path
 from datetime import datetime
 
-from fastapi import FastAPI, HTTPException, Header, Depends, Request, UploadFile, File, Form
+import bcrypt
+from fastapi import (
+    FastAPI, HTTPException, Header, Depends, Request, UploadFile, File, Form, BackgroundTasks,
+)
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator
@@ -36,19 +39,32 @@ from models import Job, DISCIPLINES, ELIGIBILITY, MAX_AGE_DAYS  # noqa: E402  (r
 from .db import (  # noqa: E402
     init_db, insert_submission, list_submissions, get_submission, set_status,
     log_pageview, log_search, log_apply_click, get_analytics_summary,
+    create_designer, get_designer, get_designer_by_email, update_designer_profile,
+    set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
+    list_designers, list_approved_designers, delete_designer, replace_designer_links,
+    list_designer_links, create_session, get_session, delete_session, delete_sessions_for_designer,
+    create_email_token, consume_email_token,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
+from . import photo as photo_module  # noqa: E402
+from . import email as email_module  # noqa: E402
 
 WEB_DIR = ROOT / "web"
 JOBS_JSON = WEB_DIR / "jobs.json"
 WORK_TYPES = {"Remote", "Hybrid", "On-site"}
 LEVELS = {"Junior", "Mid", "Senior", "Lead"}
+MAX_LINKS = 8
 
 # Dev default so `uvicorn api.main:app` works out of the box. Set a real
 # KAZI_ADMIN_TOKEN env var before deploying anywhere reachable; anyone with
 # this token can approve/reject submissions.
 ADMIN_TOKEN = os.environ.get("KAZI_ADMIN_TOKEN", "dev-only-change-me")
+
+# Profile photos live next to the SQLite file (same persistent volume in
+# production, /data — see fly.toml), so they survive redeploys the same way
+# employer submissions already do.
+PHOTOS_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "photos"
 
 
 def classify_device(user_agent: str) -> str:
@@ -150,10 +166,120 @@ class ApplyIn(BaseModel):
     company: str
 
 
+class DesignerSignup(BaseModel):
+    email: str
+    password: str
+    display_name: str
+    honeypot: str = ""  # left blank by real users; a filled-in value means a bot
+
+    @field_validator("email")
+    @classmethod
+    def _valid_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("enter a valid email address")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def _valid_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("password must be at least 8 characters")
+        return v
+
+    @field_validator("display_name")
+    @classmethod
+    def _valid_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("enter your name")
+        return v.strip()
+
+
+class DesignerLogin(BaseModel):
+    email: str
+    password: str
+
+
+class ForgotPasswordIn(BaseModel):
+    email: str
+
+
+class ResetPasswordIn(BaseModel):
+    token: str
+    new_password: str
+
+    @field_validator("new_password")
+    @classmethod
+    def _valid_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("password must be at least 8 characters")
+        return v
+
+
+class VerifyEmailIn(BaseModel):
+    token: str
+
+
+class ProfileUpdate(BaseModel):
+    display_name: str
+    bio: str = ""
+    discipline: str = ""
+    location: str = ""
+
+    @field_validator("display_name")
+    @classmethod
+    def _valid_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("enter your name")
+        return v.strip()
+
+
+class LinkItem(BaseModel):
+    label: str
+    url: str
+
+    @field_validator("label")
+    @classmethod
+    def _valid_label(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("every link needs a label")
+        return v.strip()[:60]
+
+    @field_validator("url")
+    @classmethod
+    def _valid_url(cls, v: str) -> str:
+        v = v.strip()
+        if not v.startswith("http://") and not v.startswith("https://"):
+            raise ValueError("links must start with http:// or https://")
+        return v[:500]
+
+
+class LinksUpdate(BaseModel):
+    links: list[LinkItem]
+
+    @field_validator("links")
+    @classmethod
+    def _valid_count(cls, v: list[LinkItem]) -> list[LinkItem]:
+        if len(v) > MAX_LINKS:
+            raise ValueError(f"no more than {MAX_LINKS} links")
+        return v
+
+
 def require_admin(authorization: str = Header(default="")) -> None:
     token = authorization.removeprefix("Bearer ").strip()
     if not token or token != ADMIN_TOKEN:
         raise HTTPException(401, "invalid or missing admin token")
+
+
+def require_designer(authorization: str = Header(default="")) -> dict:
+    token = authorization.removeprefix("Bearer ").strip()
+    session = get_session(token) if token else None
+    if not session:
+        raise HTTPException(401, "invalid or expired session")
+    designer = get_designer(session["designer_id"])
+    if not designer:
+        raise HTTPException(401, "invalid session")
+    return designer
 
 
 @app.post("/api/submissions")
@@ -270,8 +396,211 @@ async def ats_check_endpoint(file: UploadFile = File(...), job_description: str 
         raise HTTPException(status_code=400, detail=str(e))
 
 
+# ---------------------------------------------------------------------------
+# Designer accounts: signup/login/password-reset, profile editing, and the
+# public directory. Real per-account auth (require_designer) sits alongside
+# the single shared admin token — the two are unrelated. Literal /me routes
+# are registered before the dynamic /{designer_id} route further down so
+# "me" is never mistaken for an id.
+# ---------------------------------------------------------------------------
+
+def _designer_public(d: dict) -> dict:
+    """Strip private fields (email, password_hash) before this ever reaches
+    a public response — used for both the directory and single-profile
+    endpoints so there's exactly one place that decides what's public."""
+    return {
+        "id": d["id"], "display_name": d["display_name"], "bio": d["bio"],
+        "discipline": d["discipline"], "location": d["location"],
+        "photo_path": d["photo_path"], "created_at": d["created_at"],
+        "links": list_designer_links(d["id"]),
+    }
+
+
+@app.post("/api/designers/signup")
+def designer_signup(payload: DesignerSignup, background: BackgroundTasks):
+    if payload.honeypot:
+        # Silently succeed so a bot can't tell it was rejected, without
+        # actually creating an account.
+        return {"ok": True}
+    if get_designer_by_email(payload.email):
+        raise HTTPException(400, "An account with this email already exists.")
+    password_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
+    designer_id = create_designer(payload.email, password_hash, payload.display_name)
+    token = create_email_token(designer_id, "verify")
+    background.add_task(email_module.send_verification_email, payload.email, token)
+    session_token = create_session(designer_id)
+    return {"ok": True, "token": session_token}
+
+
+@app.post("/api/designers/login")
+def designer_login(payload: DesignerLogin):
+    designer = get_designer_by_email(payload.email.strip().lower())
+    if not designer or not bcrypt.checkpw(payload.password.encode(), designer["password_hash"].encode()):
+        raise HTTPException(401, "Incorrect email or password.")
+    return {"ok": True, "token": create_session(designer["id"])}
+
+
+@app.post("/api/designers/logout")
+def designer_logout(authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if token:
+        delete_session(token)
+    return {"ok": True}
+
+
+@app.post("/api/designers/verify-email")
+def designer_verify_email(payload: VerifyEmailIn):
+    designer_id = consume_email_token(payload.token, "verify")
+    if not designer_id:
+        raise HTTPException(400, "This verification link is invalid or has expired.")
+    set_designer_email_verified(designer_id)
+    return {"ok": True}
+
+
+@app.post("/api/designers/me/resend-verification")
+def designer_resend_verification(background: BackgroundTasks, designer: dict = Depends(require_designer)):
+    if designer["email_verified"]:
+        return {"ok": True}
+    token = create_email_token(designer["id"], "verify")
+    background.add_task(email_module.send_verification_email, designer["email"], token)
+    return {"ok": True}
+
+
+@app.post("/api/designers/forgot-password")
+def designer_forgot_password(payload: ForgotPasswordIn, background: BackgroundTasks):
+    designer = get_designer_by_email(payload.email.strip().lower())
+    if designer:
+        token = create_email_token(designer["id"], "reset")
+        background.add_task(email_module.send_password_reset_email, designer["email"], token)
+    # Same response either way — don't leak whether an email is registered.
+    return {"ok": True}
+
+
+@app.post("/api/designers/reset-password")
+def designer_reset_password(payload: ResetPasswordIn):
+    designer_id = consume_email_token(payload.token, "reset")
+    if not designer_id:
+        raise HTTPException(400, "This reset link is invalid or has expired.")
+    password_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
+    set_designer_password(designer_id, password_hash)
+    # A password reset might mean the account was compromised — invalidate
+    # every other active session rather than leaving a stolen token valid.
+    delete_sessions_for_designer(designer_id)
+    return {"ok": True}
+
+
+@app.get("/api/designers/me")
+def designer_me(designer: dict = Depends(require_designer)):
+    return {**_designer_public(designer), "email": designer["email"],
+            "email_verified": bool(designer["email_verified"]), "status": designer["status"]}
+
+
+@app.put("/api/designers/me")
+def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_designer)):
+    if payload.discipline and payload.discipline not in DISCIPLINES:
+        raise HTTPException(400, f"discipline must be one of {DISCIPLINES}")
+    update_designer_profile(
+        designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
+        discipline=payload.discipline, location=payload.location.strip()[:200],
+    )
+    return {"ok": True}
+
+
+@app.put("/api/designers/me/links")
+def designer_update_links(payload: LinksUpdate, designer: dict = Depends(require_designer)):
+    replace_designer_links(designer["id"], [link.model_dump() for link in payload.links])
+    return {"ok": True}
+
+
+@app.post("/api/designers/me/photo")
+async def designer_upload_photo(file: UploadFile = File(...), designer: dict = Depends(require_designer)):
+    data = await file.read()
+    try:
+        jpeg_bytes = photo_module.process_photo(data)
+    except photo_module.UnsupportedPhoto as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+    photo_path = f"{designer['id']}.jpg"
+    (PHOTOS_DIR / photo_path).write_bytes(jpeg_bytes)
+    set_designer_photo(designer["id"], f"/photos/{photo_path}")
+    return {"ok": True, "photo_path": f"/photos/{photo_path}"}
+
+
+@app.post("/api/designers/me/submit")
+def designer_submit(designer: dict = Depends(require_designer)):
+    if not designer["email_verified"]:
+        raise HTTPException(400, "Please verify your email before submitting your profile for review.")
+    set_designer_status(designer["id"], "pending")
+    return {"ok": True}
+
+
+@app.delete("/api/designers/me")
+def designer_delete_me(designer: dict = Depends(require_designer)):
+    photo_file = PHOTOS_DIR / f"{designer['id']}.jpg"
+    if photo_file.exists():
+        photo_file.unlink()
+    delete_designer(designer["id"])
+    return {"ok": True}
+
+
+@app.get("/api/designers")
+def designers_directory(discipline: str = ""):
+    rows = list_approved_designers(discipline=discipline or None)
+    return {"count": len(rows), "designers": [_designer_public(d) for d in rows]}
+
+
+@app.get("/api/admin/designers")
+def admin_list_designers(status: str = "pending", _: None = Depends(require_admin)):
+    rows = list_designers(status=status if status != "all" else None)
+    return [{**d, "links": list_designer_links(d["id"])} for d in rows]
+
+
+@app.post("/api/admin/designers/{designer_id}/approve")
+def admin_approve_designer(designer_id: int, _: None = Depends(require_admin)):
+    if not get_designer(designer_id):
+        raise HTTPException(404, "no such designer")
+    set_designer_status(designer_id, "approved")
+    return {"ok": True}
+
+
+@app.post("/api/admin/designers/{designer_id}/reject")
+def admin_reject_designer(designer_id: int, _: None = Depends(require_admin)):
+    if not get_designer(designer_id):
+        raise HTTPException(404, "no such designer")
+    set_designer_status(designer_id, "rejected")
+    return {"ok": True}
+
+
+@app.post("/api/admin/designers/{designer_id}/verify-email")
+def admin_verify_designer_email(designer_id: int, _: None = Depends(require_admin)):
+    """Manual fallback for when the verification email can't be delivered
+    (e.g. Resend isn't configured/working) — an admin can unblock a real
+    designer without them being stuck waiting on an email that never arrives."""
+    if not get_designer(designer_id):
+        raise HTTPException(404, "no such designer")
+    set_designer_email_verified(designer_id)
+    return {"ok": True}
+
+
+# Public single-profile lookup — registered after the /me routes above so
+# "me" is never routed here as if it were a numeric id.
+@app.get("/api/designers/{designer_id}")
+def designer_public_profile(designer_id: int):
+    designer = get_designer(designer_id)
+    if not designer or designer["status"] != "approved":
+        raise HTTPException(404, "no such designer")
+    return _designer_public(designer)
+
+
+# Serve processed profile photos. Registered before the catch-all web/ mount
+# further down so it isn't shadowed. StaticFiles needs the directory to
+# exist at mount time, same reason db.py's _conn() creates DB.parent first.
+PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/photos", StaticFiles(directory=str(PHOTOS_DIR)), name="photos")
+
+
 # Clean URLs: serve the .html files without the extension...
-CLEAN_PAGES = ["post", "cv-check", "admin", "terms", "privacy", "cookies"]
+CLEAN_PAGES = ["post", "cv-check", "account", "designers", "admin", "terms", "privacy", "cookies"]
 for _page in CLEAN_PAGES:
     def _make_page_route(page: str):
         def _serve():
@@ -287,6 +616,15 @@ for _name, _target in _HTML_REDIRECTS.items():
             return RedirectResponse(url=target, status_code=301)
         return _redirect
     app.get(f"/{_name}.html", include_in_schema=False)(_make_redirect_route(_target))
+
+# One dynamic page route: /designers/{id} always serves the same static
+# file — designer.html reads the id from location.pathname client-side and
+# fetches GET /api/designers/{id} itself, same pattern index.html already
+# uses to fetch jobs.json.
+@app.get("/designers/{designer_id}", include_in_schema=False)
+def designer_profile_page(designer_id: int):
+    return FileResponse(WEB_DIR / "designer.html")
+
 
 # Static site last: /api/* and the routes above take priority, everything
 # else falls through to web/ (jobs.json, css, js, images, ...).

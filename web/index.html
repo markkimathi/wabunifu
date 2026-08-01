@@ -321,7 +321,7 @@
 
   .c-foot{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:auto;padding-top:16px}
   .c-foot-meta{display:flex;align-items:center;gap:9px;color:var(--ink);font-size:13.5px}
-  .c-foot-meta .pay{font-weight:700;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:5px}
+  .c-foot-meta .pay{font-weight:700;font-variant-numeric:tabular-nums;display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
   .c-foot-meta .sep{width:3px;height:3px;border-radius:50%;background:var(--faint);flex:none}
   .c-foot-meta .posted{color:var(--faint);display:inline-flex;align-items:center;gap:5px}
   .c-foot-meta svg{opacity:.75}
@@ -446,6 +446,7 @@
       <nav class="nav-links">
         <a class="nav-jobs" href="/">Jobs</a>
         <a href="/post">Post a job</a>
+        <a href="/account">Sign in</a>
         <a href="mailto:hello@odana.design">Contact us</a>
         <a href="/cv-check" class="nav-cta">Check your CV</a>
       </nav>
@@ -469,6 +470,7 @@
   <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
   </nav>
@@ -601,28 +603,28 @@ if(gsapReady && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
    server, so the board still renders something to look at. ---------- */
 let JOBS = [];
 const FALLBACK = [
-  {t:"Senior Product Designer",co:"Flutterwave",city:"Lagos, Nigeria",work:"Hybrid",cat:"Product Design",level:"Senior",elig:"africa",pay:"$—",src:"Greenhouse",days:1,url:"https://flutterwave.com/careers",desc:"Own end-to-end product design for Flutterwave's merchant payments dashboard, from flows to design-system components."},
+  {t:"Senior Product Designer",co:"Flutterwave",city:"Lagos, Nigeria",work:"Hybrid",cat:"Product Design",level:"Senior",elig:"africa",pay:"Not disclosed",src:"Greenhouse",days:1,url:"https://flutterwave.com/careers",desc:"Own end-to-end product design for Flutterwave's merchant payments dashboard, from flows to design-system components."},
   {t:"Product Designer",co:"M-KOPA",city:"Nairobi, Kenya",work:"Hybrid",cat:"Product Design",level:"Mid",elig:"kenya",pay:"Not disclosed",src:"Ashby",days:2,url:"https://m-kopa.com/careers",desc:"Design the in-app experience for M-KOPA customers financing solar and smartphones across East Africa."},
-  {t:"UX Designer (Remote, Africa)",co:"Andela",city:"Remote",work:"Remote",cat:"UX Design",level:"Mid",elig:"africa",pay:"$45k–$70k",src:"Lever",days:1,url:"https://andela.com/careers",desc:"Research and design talent-marketplace flows connecting African engineers with global companies."},
-  {t:"Staff Product Designer",co:"GitLab",city:"Remote",work:"Remote",cat:"Product Design",level:"Lead",elig:"world",pay:"$120k–$160k",src:"Greenhouse",days:3,url:"https://about.gitlab.com/jobs",desc:"Lead design for GitLab's CI/CD workflows, partnering with PM and engineering across a fully remote org."},
+  {t:"UX Designer (Remote, Africa)",co:"Andela",city:"Remote",work:"Remote",cat:"UX Design",level:"Mid",elig:"africa",pay:"$45k — $70k",src:"Lever",days:1,url:"https://andela.com/careers",desc:"Research and design talent-marketplace flows connecting African engineers with global companies."},
+  {t:"Staff Product Designer",co:"GitLab",city:"Remote",work:"Remote",cat:"Product Design",level:"Lead",elig:"world",pay:"$120k — $160k",src:"Greenhouse",days:3,url:"https://about.gitlab.com/jobs",desc:"Lead design for GitLab's CI/CD workflows, partnering with PM and engineering across a fully remote org."},
   {t:"Brand & Visual Designer",co:"Chipper Cash",city:"Remote",work:"Remote",cat:"Brand Design",level:"Mid",elig:"africa",pay:"Not disclosed",src:"company site",days:4,url:"https://chippercash.com/careers",desc:"Shape brand identity and campaign visuals for a cross-border payments app used across the continent."},
-  {t:"UI Designer",co:"Cellulant",city:"Nairobi, Kenya",work:"On-site",cat:"UI Design",level:"Mid",elig:"kenya",pay:"KES 220k–320k",src:"BrighterMonday",days:2,url:"https://cellulant.io/careers",desc:"Craft polished interfaces for Cellulant's banking and payments products used by partner banks."},
+  {t:"UI Designer",co:"Cellulant",city:"Nairobi, Kenya",work:"On-site",cat:"UI Design",level:"Mid",elig:"kenya",pay:"KES 220k — 320k",src:"BrighterMonday",days:2,url:"https://cellulant.io/careers",desc:"Craft polished interfaces for Cellulant's banking and payments products used by partner banks."},
   {t:"Junior Product Designer",co:"Wasoko",city:"Nairobi, Kenya",work:"Hybrid",cat:"Product Design",level:"Junior",elig:"kenya",pay:"Not disclosed",src:"Fuzu",days:5,url:"https://wasoko.com/careers",desc:"Support senior designers building ordering and logistics tools for informal retailers across Africa."},
-  {t:"Product Designer, Payments",co:"Paystack",city:"Lagos, Nigeria",work:"Hybrid",cat:"Product Design",level:"Mid",elig:"africa",pay:"$—",src:"Greenhouse",days:3,url:"https://paystack.com/careers",desc:"Design checkout and dashboard experiences trusted by thousands of merchants across West Africa."},
+  {t:"Product Designer, Payments",co:"Paystack",city:"Lagos, Nigeria",work:"Hybrid",cat:"Product Design",level:"Mid",elig:"africa",pay:"Not disclosed",src:"Greenhouse",days:3,url:"https://paystack.com/careers",desc:"Design checkout and dashboard experiences trusted by thousands of merchants across West Africa."},
   {t:"Motion Designer",co:"Yoco",city:"Cape Town, South Africa",work:"Hybrid",cat:"Motion Design",level:"Mid",elig:"africa",pay:"Not disclosed",src:"Ashby",days:6,url:"https://yoco.com/za/careers",desc:"Produce motion assets and micro-interactions for Yoco's card-reader app and marketing campaigns."},
-  {t:"Senior UX Designer",co:"Canonical",city:"Remote",work:"Remote",cat:"UX Design",level:"Senior",elig:"world",pay:"$70k–$110k",src:"Greenhouse",days:2,url:"https://canonical.com/careers",desc:"Lead UX research and flows for Ubuntu and Canonical's enterprise cloud tooling, fully remote."},
+  {t:"Senior UX Designer",co:"Canonical",city:"Remote",work:"Remote",cat:"UX Design",level:"Senior",elig:"world",pay:"$70k — $110k",src:"Greenhouse",days:2,url:"https://canonical.com/careers",desc:"Lead UX research and flows for Ubuntu and Canonical's enterprise cloud tooling, fully remote."},
   {t:"Product Designer",co:"Apollo Agriculture",city:"Nairobi, Kenya",work:"Hybrid",cat:"Product Design",level:"Mid",elig:"kenya",pay:"Not disclosed",src:"Lever",days:1,url:"https://apolloagriculture.com/careers",desc:"Design farmer-facing tools that make financing and farm inputs accessible across rural Kenya."},
-  {t:"Design Systems Engineer",co:"Moniepoint",city:"Remote",work:"Remote",cat:"Design Systems",level:"Senior",elig:"africa",pay:"$—",src:"company site",days:4,url:"https://moniepoint.com/careers",desc:"Build and maintain the component library powering Moniepoint's banking products at scale."},
+  {t:"Design Systems Engineer",co:"Moniepoint",city:"Remote",work:"Remote",cat:"Design Systems",level:"Senior",elig:"africa",pay:"Not disclosed",src:"company site",days:4,url:"https://moniepoint.com/careers",desc:"Build and maintain the component library powering Moniepoint's banking products at scale."},
   {t:"UX Researcher",co:"Sun King",city:"Nairobi, Kenya",work:"Hybrid",cat:"UX Research",level:"Mid",elig:"kenya",pay:"Not disclosed",src:"Greenhouse",days:7,url:"https://sunking.com/careers",desc:"Run field research with off-grid solar customers to guide product decisions across East Africa."},
-  {t:"Product Designer (Contract)",co:"Toptal",city:"Remote",work:"Remote",cat:"Product Design",level:"Senior",elig:"world",pay:"$30–$60/hr",src:"company site",days:2,url:"https://toptal.com/careers",desc:"Take on contract product design engagements for Toptal's global roster of client companies."},
+  {t:"Product Designer (Contract)",co:"Toptal",city:"Remote",work:"Remote",cat:"Product Design",level:"Senior",elig:"world",pay:"$30 — $60/hr",src:"company site",days:2,url:"https://toptal.com/careers",desc:"Take on contract product design engagements for Toptal's global roster of client companies."},
   {t:"Visual Designer",co:"mPharma",city:"Accra, Ghana",work:"On-site",cat:"Brand Design",level:"Mid",elig:"africa",pay:"Not disclosed",src:"BrighterMonday",days:8,url:"https://mpharma.com/careers",desc:"Design patient-facing materials and brand assets for mPharma's pharmacy network across Africa."},
-  {t:"Senior Product Designer",co:"Deel",city:"Remote",work:"Remote",cat:"Product Design",level:"Senior",elig:"world",pay:"$90k–$130k",src:"Ashby",days:1,url:"https://deel.com/careers",desc:"Design global payroll and compliance flows for Deel's remote-work platform, remote-first team."},
-  {t:"UI/UX Designer",co:"Kyosk Digital",city:"Nairobi, Kenya",work:"On-site",cat:"UI Design",level:"Mid",elig:"kenya",pay:"KES 250k–350k",src:"Fuzu",days:3,url:"https://kyosk.app/careers",desc:"Design ordering and delivery flows for retailers using Kyosk's B2B marketplace app."},
-  {t:"Product Designer",co:"Zapier",city:"Remote",work:"Remote",cat:"Product Design",level:"Mid",elig:"check",pay:"$95k–$130k",src:"Greenhouse",days:2,url:"https://zapier.com/jobs",desc:"Design automation-building flows for Zapier's no-code platform; check regional hiring restrictions."},
+  {t:"Senior Product Designer",co:"Deel",city:"Remote",work:"Remote",cat:"Product Design",level:"Senior",elig:"world",pay:"$90k — $130k",src:"Ashby",days:1,url:"https://deel.com/careers",desc:"Design global payroll and compliance flows for Deel's remote-work platform, remote-first team."},
+  {t:"UI/UX Designer",co:"Kyosk Digital",city:"Nairobi, Kenya",work:"On-site",cat:"UI Design",level:"Mid",elig:"kenya",pay:"KES 250k — 350k",src:"Fuzu",days:3,url:"https://kyosk.app/careers",desc:"Design ordering and delivery flows for retailers using Kyosk's B2B marketplace app."},
+  {t:"Product Designer",co:"Zapier",city:"Remote",work:"Remote",cat:"Product Design",level:"Mid",elig:"check",pay:"$95k — $130k",src:"Greenhouse",days:2,url:"https://zapier.com/jobs",desc:"Design automation-building flows for Zapier's no-code platform; check regional hiring restrictions."},
   {t:"Junior UX/UI Designer",co:"BURN Manufacturing",city:"Nairobi, Kenya",work:"On-site",cat:"UI Design",level:"Junior",elig:"kenya",pay:"Not disclosed",src:"BrighterMonday",days:5,url:"https://burnstoves.com/careers",desc:"Support UI work for BURN's e-commerce and IoT stove-monitoring products."},
   {t:"Lead Product Designer",co:"Sendy",city:"Nairobi, Kenya",work:"Hybrid",cat:"Product Design",level:"Lead",elig:"kenya",pay:"Not disclosed",src:"LinkedIn",days:9,url:"https://sendy.co.ke/careers",desc:"Lead a small design team building logistics and fleet tools for Sendy's delivery network."},
-  {t:"Brand Designer (Remote)",co:"Automattic",city:"Remote",work:"Remote",cat:"Brand Design",level:"Senior",elig:"world",pay:"$80k–$120k",src:"company site",days:3,url:"https://automattic.com/work-with-us",desc:"Shape brand and marketing design across Automattic's family of products, distributed team."},
-  {t:"Product Designer",co:"Sun King",city:"Remote",work:"Remote",cat:"Product Design",level:"Mid",elig:"africa",pay:"$—",src:"Greenhouse",days:6,url:"https://sunking.com/careers",desc:"Design mobile experiences for pay-as-you-go solar customers across multiple African markets."},
+  {t:"Brand Designer (Remote)",co:"Automattic",city:"Remote",work:"Remote",cat:"Brand Design",level:"Senior",elig:"world",pay:"$80k — $120k",src:"company site",days:3,url:"https://automattic.com/work-with-us",desc:"Shape brand and marketing design across Automattic's family of products, distributed team."},
+  {t:"Product Designer",co:"Sun King",city:"Remote",work:"Remote",cat:"Product Design",level:"Mid",elig:"africa",pay:"Not disclosed",src:"Greenhouse",days:6,url:"https://sunking.com/careers",desc:"Design mobile experiences for pay-as-you-go solar customers across multiple African markets."},
 ];
 
 const CATS = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
@@ -688,7 +690,7 @@ function passes(j){
   }
   return true;
 }
-function hasPay(j){ return j.pay!=="Not disclosed" && j.pay!=="$—"; }
+function hasPay(j){ return j.pay!=="Not disclosed"; }
 function fallbackDesc(j){
   return `${j.level} ${j.cat.toLowerCase()} role at ${j.co}, ${j.work.toLowerCase()}.`;
 }

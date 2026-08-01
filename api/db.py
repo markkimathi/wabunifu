@@ -1,11 +1,21 @@
 """
-SQLite storage for employer-submitted job postings (the "post a job" journey)
-and site analytics (admin dashboard). Raw sqlite3, no ORM, matching
-scraper/store.py's style.
+SQLite storage for employer-submitted job postings (the "post a job" journey),
+designer accounts/profiles, and site analytics (admin dashboard). Raw sqlite3,
+no ORM, matching scraper/store.py's style.
 
 Every submission starts as 'pending' and is invisible to the public feed until
 an admin approves it via /api/admin/submissions/{id}/approve. This is the only
 gate against spam/fake listings, since submission itself is unauthenticated.
+
+Designer profiles follow the same review-queue model (designers.status:
+pending/approved/rejected), gated on top of real per-account auth: a
+designer's email/password/session data is private, everything else on an
+approved profile (name, bio, discipline, location, photo, links) is public.
+Editing an approved profile drops it back to 'pending' for re-review, same as
+job listings. Session tokens and one-time email tokens (verify/reset) expire
+and are swept on startup, same "good enough given how often this app
+redeploys" approach used for analytics retention — see cleanup_stale_analytics
+and cleanup_stale_designer_tokens.
 
 Analytics tables (pageviews, search_events, apply_clicks) store no personal
 data — no IP addresses, no cookies, no identifiers that could tie two visits
@@ -16,11 +26,15 @@ ANALYTICS_RETENTION_DAYS are deleted on startup; see cleanup_stale_analytics.
 """
 from __future__ import annotations
 import os
+import secrets
 import sqlite3
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
 ANALYTICS_RETENTION_DAYS = 90
+SESSION_DAYS = 30
+VERIFY_TOKEN_HOURS = 24
+RESET_TOKEN_HOURS = 1
 
 # Override with KAZI_DB_PATH in production to point at a mounted volume:
 # e.g. a host that wipes the container filesystem on every deploy needs this
@@ -75,6 +89,46 @@ CREATE TABLE IF NOT EXISTS apply_clicks (
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_apply_created ON apply_clicks(created_at);
+
+CREATE TABLE IF NOT EXISTS designers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  display_name TEXT NOT NULL,
+  bio TEXT NOT NULL DEFAULT '',
+  discipline TEXT NOT NULL DEFAULT '',
+  location TEXT NOT NULL DEFAULT '',
+  photo_path TEXT NOT NULL DEFAULT '',
+  email_verified INTEGER NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_designers_status ON designers(status);
+
+CREATE TABLE IF NOT EXISTS designer_links (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  label TEXT NOT NULL,
+  url TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_designer_links_designer ON designer_links(designer_id);
+
+CREATE TABLE IF NOT EXISTS designer_sessions (
+  token TEXT PRIMARY KEY,
+  designer_id INTEGER NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS designer_email_tokens (
+  token TEXT PRIMARY KEY,
+  designer_id INTEGER NOT NULL,
+  purpose TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
 """
 
 # Columns added after the table first shipped. A fresh database gets them
@@ -105,6 +159,7 @@ def init_db() -> None:
     c = _conn()
     c.close()
     cleanup_stale_analytics()
+    cleanup_stale_designer_tokens()
 
 
 def insert_submission(data: dict) -> int:
@@ -148,6 +203,232 @@ def get_submission(sub_id: int) -> dict | None:
 def set_status(sub_id: int, status: str) -> None:
     c = _conn()
     c.execute("UPDATE submissions SET status = ? WHERE id = ?", (status, sub_id))
+    c.commit()
+    c.close()
+
+
+# ---------------------------------------------------------------------------
+# Designer accounts and profiles. Same review-queue model as submissions
+# above (pending/approved/rejected), sitting on top of real per-account auth.
+# ---------------------------------------------------------------------------
+
+def create_designer(email: str, password_hash: str, display_name: str) -> int:
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO designers (email, password_hash, display_name, status, created_at) "
+        "VALUES (?, ?, ?, 'pending', ?)",
+        (email, password_hash, display_name, datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    designer_id = cur.lastrowid
+    c.close()
+    return designer_id
+
+
+def get_designer(designer_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM designers WHERE id = ?", (designer_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def get_designer_by_email(email: str) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM designers WHERE email = ?", (email,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def update_designer_profile(designer_id: int, *, display_name: str, bio: str, discipline: str, location: str) -> None:
+    c = _conn()
+    # Editing an approved profile sends it back for re-review, same as a job
+    # listing would if it were editable — never let a live public profile
+    # change without another pass through the admin queue.
+    row = c.execute("SELECT status FROM designers WHERE id = ?", (designer_id,)).fetchone()
+    new_status = "pending" if row and row["status"] == "approved" else (row["status"] if row else "pending")
+    c.execute(
+        "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, status = ? WHERE id = ?",
+        (display_name, bio, discipline, location, new_status, designer_id),
+    )
+    c.commit()
+    c.close()
+
+
+def set_designer_photo(designer_id: int, photo_path: str) -> None:
+    c = _conn()
+    # Same re-review rule as update_designer_profile — a new photo on an
+    # already-public profile shouldn't go live without another look.
+    row = c.execute("SELECT status FROM designers WHERE id = ?", (designer_id,)).fetchone()
+    new_status = "pending" if row and row["status"] == "approved" else (row["status"] if row else "pending")
+    c.execute(
+        "UPDATE designers SET photo_path = ?, status = ? WHERE id = ?",
+        (photo_path, new_status, designer_id),
+    )
+    c.commit()
+    c.close()
+
+
+def set_designer_email_verified(designer_id: int) -> None:
+    c = _conn()
+    c.execute("UPDATE designers SET email_verified = 1 WHERE id = ?", (designer_id,))
+    c.commit()
+    c.close()
+
+
+def set_designer_password(designer_id: int, password_hash: str) -> None:
+    c = _conn()
+    c.execute("UPDATE designers SET password_hash = ? WHERE id = ?", (password_hash, designer_id))
+    c.commit()
+    c.close()
+
+
+def set_designer_status(designer_id: int, status: str) -> None:
+    c = _conn()
+    c.execute("UPDATE designers SET status = ? WHERE id = ?", (status, designer_id))
+    c.commit()
+    c.close()
+
+
+def list_designers(status: str | None = None) -> list[dict]:
+    c = _conn()
+    if status:
+        rows = c.execute(
+            "SELECT * FROM designers WHERE status = ? ORDER BY created_at DESC", (status,)
+        ).fetchall()
+    else:
+        rows = c.execute("SELECT * FROM designers ORDER BY created_at DESC").fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def list_approved_designers(discipline: str | None = None) -> list[dict]:
+    c = _conn()
+    if discipline:
+        rows = c.execute(
+            "SELECT * FROM designers WHERE status = 'approved' AND discipline = ? ORDER BY created_at DESC",
+            (discipline,),
+        ).fetchall()
+    else:
+        rows = c.execute(
+            "SELECT * FROM designers WHERE status = 'approved' ORDER BY created_at DESC"
+        ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def delete_designer(designer_id: int) -> None:
+    c = _conn()
+    c.execute("DELETE FROM designer_links WHERE designer_id = ?", (designer_id,))
+    c.execute("DELETE FROM designer_sessions WHERE designer_id = ?", (designer_id,))
+    c.execute("DELETE FROM designer_email_tokens WHERE designer_id = ?", (designer_id,))
+    c.execute("DELETE FROM designers WHERE id = ?", (designer_id,))
+    c.commit()
+    c.close()
+
+
+def replace_designer_links(designer_id: int, links: list[dict]) -> None:
+    """Delete-then-insert the whole list — simplest correct way to save an
+    edit form that lets someone add/remove/reorder freely."""
+    c = _conn()
+    c.execute("DELETE FROM designer_links WHERE designer_id = ?", (designer_id,))
+    for i, link in enumerate(links):
+        c.execute(
+            "INSERT INTO designer_links (designer_id, label, url, sort_order) VALUES (?, ?, ?, ?)",
+            (designer_id, link["label"], link["url"], i),
+        )
+    c.commit()
+    c.close()
+
+
+def list_designer_links(designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT label, url FROM designer_links WHERE designer_id = ? ORDER BY sort_order", (designer_id,)
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def create_session(designer_id: int) -> str:
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    c = _conn()
+    c.execute(
+        "INSERT INTO designer_sessions (token, designer_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
+        (token, designer_id, (now + timedelta(days=SESSION_DAYS)).isoformat(timespec="seconds"),
+         now.isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+    return token
+
+
+def get_session(token: str) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM designer_sessions WHERE token = ?", (token,)).fetchone()
+    c.close()
+    if not row:
+        return None
+    if row["expires_at"] < datetime.now(timezone.utc).isoformat(timespec="seconds"):
+        return None
+    return dict(row)
+
+
+def delete_session(token: str) -> None:
+    c = _conn()
+    c.execute("DELETE FROM designer_sessions WHERE token = ?", (token,))
+    c.commit()
+    c.close()
+
+
+def delete_sessions_for_designer(designer_id: int) -> None:
+    """Invalidate every active session for this designer — called on
+    password reset, in case the reset was triggered by a stolen session."""
+    c = _conn()
+    c.execute("DELETE FROM designer_sessions WHERE designer_id = ?", (designer_id,))
+    c.commit()
+    c.close()
+
+
+def create_email_token(designer_id: int, purpose: str) -> str:
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    hours = VERIFY_TOKEN_HOURS if purpose == "verify" else RESET_TOKEN_HOURS
+    c = _conn()
+    c.execute(
+        "INSERT INTO designer_email_tokens (token, designer_id, purpose, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (token, designer_id, purpose, (now + timedelta(hours=hours)).isoformat(timespec="seconds"),
+         now.isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+    return token
+
+
+def consume_email_token(token: str, purpose: str) -> int | None:
+    """Returns the designer_id if the token is valid, unused, unexpired, and
+    matches the expected purpose — and marks it used so it can't be replayed."""
+    c = _conn()
+    row = c.execute(
+        "SELECT * FROM designer_email_tokens WHERE token = ? AND purpose = ?", (token, purpose)
+    ).fetchone()
+    if not row or row["used"] or row["expires_at"] < datetime.now(timezone.utc).isoformat(timespec="seconds"):
+        c.close()
+        return None
+    c.execute("UPDATE designer_email_tokens SET used = 1 WHERE token = ?", (token,))
+    c.commit()
+    c.close()
+    return row["designer_id"]
+
+
+def cleanup_stale_designer_tokens() -> None:
+    """Sweep expired sessions and email tokens on startup — same
+    good-enough-given-how-often-this-redeploys approach as analytics."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    c = _conn()
+    c.execute("DELETE FROM designer_sessions WHERE expires_at < ?", (now,))
+    c.execute("DELETE FROM designer_email_tokens WHERE expires_at < ?", (now,))
     c.commit()
     c.close()
 

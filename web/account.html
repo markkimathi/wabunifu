@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your profile · Kazi</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<script src="theme.js?v=6"></script>
+<script src="nav.js?v=4"></script>
+<style>
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Bold.woff2") format("woff2"),url("fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+
+  :root{
+    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
+    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-light:#AA52ED; --brand-soft:#F1E7FA;
+    --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
+    --amber:#F25C05; --amber-soft:#FDE6D8;
+    --red:#D3322A; --red-soft:#FBE4E2;
+    --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
+    --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1); --ease-io:cubic-bezier(.65,0,.35,1);
+  }
+  :root[data-theme="dark"]{
+    --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
+    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8; --brand-light:#C79AF2; --brand-soft:#251A38;
+    --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
+    --amber:#FF9B57; --amber-soft:#3A2412;
+    --red:#FF6B5B; --red-soft:#3A1712;
+    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
+  }
+  *{box-sizing:border-box}
+  #pageLoader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
+    background:var(--canvas);transition:opacity .35s var(--ease-io),visibility .35s var(--ease-io)}
+  #pageLoader.-hide{opacity:0;visibility:hidden;pointer-events:none}
+  #pageLoader .pl-spinner{width:32px;height:32px;border-radius:50%;
+    border:3px solid var(--hairline-strong);border-top-color:var(--brand);
+    animation:pl-spin .7s linear infinite}
+  @keyframes pl-spin{to{transform:rotate(360deg)}}
+  @media(prefers-reduced-motion:reduce){#pageLoader .pl-spinner{animation:none}}
+  body{margin:0;min-height:100vh;display:flex;flex-direction:column;
+    background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
+    font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  body > .wrap{flex:1}
+  a{color:inherit}
+  .wrap{max-width:640px;margin:0 auto;padding:0 24px}
+
+  header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
+  [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
+  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .logomark{height:20px;width:auto;flex:none;display:block}
+  .bar-spacer{flex:1}
+  .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    display:flex;align-items:center;gap:20px;white-space:nowrap}
+  .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
+    transition:color .3s var(--ease-expo)}
+  .nav-links a:hover{color:var(--ink)}
+
+  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px;margin-top:auto}
+  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
+  .foot-links a{color:var(--muted);text-decoration:none}
+  .foot-links a:hover{color:var(--ink)}
+
+  .menu-toggle{display:none;position:relative;flex:none;width:38px;height:38px;padding:0;
+    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
+    cursor:pointer;color:var(--ink);
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .menu-toggle:hover{border-color:var(--brand);color:var(--brand)}
+  .menu-toggle span{display:block;position:absolute;left:50%;top:50%;width:16px;height:2px;
+    border-radius:2px;background:currentColor;transition:transform .4s var(--ease-io)}
+  .menu-toggle span:first-child{transform:translate(-50%,-50%) translateY(-3px)}
+  .menu-toggle span:last-child{transform:translate(-50%,-50%) translateY(3px)}
+  .menu-toggle.-active span:first-child{transform:translate(-50%,-50%) rotate(45deg)}
+  .menu-toggle.-active span:last-child{transform:translate(-50%,-50%) rotate(-45deg)}
+
+  html.menu-open{overflow:hidden}
+  .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
+    padding:20px 22px 40px;overflow:auto;
+    transform:translateX(100%);transition:transform .22s ease}
+  .mobile-menu.-open{transform:translateX(0)}
+  .mm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
+  .mm-top h2{margin:0;font-size:16.5px;font-weight:800;color:var(--ink)}
+  .mm-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;
+    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
+    font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}
+  .mm-nav{display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--hairline);padding-top:6px}
+  .mm-nav a{display:block;padding:14px 8px;margin:0 -8px;border-radius:8px;
+    font-size:16px;font-weight:600;color:var(--ink);text-decoration:none;
+    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
+  .mm-nav a:hover{background:var(--hairline)}
+  .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
+  .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
+  .nav-links a.nav-cta{background:var(--brand);color:#fff;padding:7px 16px;border-radius:999px;margin-left:10px;font-weight:700;transition:filter .3s var(--ease-expo)}
+  .nav-links a.nav-cta:hover{filter:brightness(1.12);color:#fff}
+  .nav-links a.nav-cta.active{color:#fff}
+  .nav-links a.nav-cta.active::before{content:none}
+  .mm-nav a.nav-cta{background:var(--brand);color:#fff;text-align:center;margin-top:10px;transition:filter .25s var(--ease-expo)}
+  .mm-nav a.nav-cta:hover{filter:brightness(1.12);background:var(--brand);color:#fff}
+  .mm-nav a.nav-cta.active{color:#fff}
+  .mm-nav a.nav-cta.active::before{content:none}
+
+  @media(max-width:860px){
+    body{font-size:15px}
+  }
+  @media(max-width:600px){
+    body{font-size:14px}
+    .nav-links{display:none}
+    .menu-toggle{display:block}
+  }
+
+  .theme-toggle{position:relative;flex:none;width:36px;height:36px;padding:0;border-radius:50%;
+    background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
+    display:grid;place-items:center;color:var(--ink);
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .theme-toggle:hover{border-color:var(--brand);color:var(--brand)}
+  .theme-toggle svg{position:absolute;transition:transform .5s var(--ease-expo),opacity .35s var(--ease-expo)}
+  .theme-toggle .i-moon{opacity:0;transform:rotate(-90deg) scale(.4)}
+  [data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
+  [data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:rotate(0deg) scale(1)}
+
+  h1{font-weight:800;font-size:26px;letter-spacing:-.02em;margin:32px 0 4px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
+
+  /* ---- gate: log in / sign up / forgot password ---- */
+  .gate{max-width:420px;margin:48px auto}
+  .gate-tabs{display:flex;gap:8px;margin-bottom:22px}
+  .gate-tabs button{flex:1;font:inherit;font-size:13.5px;font-weight:700;padding:10px;border-radius:999px;
+    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
+  .gate-tabs button.active{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+  .gate-panel{display:none;flex-direction:column;gap:14px}
+  .gate-panel.active{display:flex}
+  label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .hint{font-weight:400;color:var(--faint);font-size:12.5px}
+  input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
+    border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
+    transition:border-color .2s var(--ease-expo)}
+  @media(max-width:600px){input,select,textarea{font-size:16px}}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand)}
+  textarea{resize:vertical;min-height:100px;font-family:inherit}
+  select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:38px;
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
+    background-repeat:no-repeat;background-position:right 14px center;background-size:14px}
+  .honeypot{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+  .link-inline{background:none;border:0;color:var(--brand);font:inherit;font-size:13px;font-weight:700;
+    cursor:pointer;padding:0;text-align:left}
+  .submit{background:var(--brand);color:#fff;border:0;font:inherit;font-weight:700;font-size:14.5px;
+    padding:13px 22px;border-radius:999px;cursor:pointer;width:100%;
+    transition:background .3s var(--ease-expo),transform .3s var(--ease-expo)}
+  .submit:hover:not(:disabled){background:var(--brand-light)}
+  .submit:disabled{background:var(--hairline-strong);color:var(--faint);cursor:not-allowed}
+  .submit:active:not(:disabled){transform:scale(.98)}
+  .err{color:#a5341f;font-size:13px;margin:0}
+  .ok-msg{color:var(--green-ink);font-size:13px;margin:0;background:var(--green-soft);padding:10px 12px;border-radius:8px}
+  [data-theme="dark"] .err{color:#FF6B5B}
+
+  /* ---- app: profile editor ---- */
+  #appWrap{display:none}
+  .status-banner{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;
+    font-size:13.5px;font-weight:600;margin-bottom:22px}
+  .status-banner.pending{background:var(--amber-soft);color:var(--amber)}
+  .status-banner.approved{background:var(--green-soft);color:var(--green-ink)}
+  .status-banner.rejected{background:var(--red-soft);color:var(--red)}
+  .status-banner.unverified{background:var(--hairline);color:var(--muted)}
+  .status-banner a,.status-banner button.link-inline{color:inherit;text-decoration:underline}
+
+  .panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:22px;background:var(--surface);
+    box-shadow:var(--shadow);margin-bottom:20px}
+  .panel h3{margin:0 0 16px;font-size:14.5px;font-weight:800}
+  .panel-form{display:flex;flex-direction:column;gap:16px}
+
+  .avatar-row{display:flex;align-items:center;gap:16px}
+  .avatar-preview{width:76px;height:76px;border-radius:50%;background:var(--hairline);flex:none;
+    object-fit:cover;border:1px solid var(--hairline-strong)}
+  .avatar-actions{display:flex;flex-direction:column;gap:6px}
+  .btn-ghost{background:none;border:1px solid var(--hairline-strong);color:var(--ink);font:inherit;
+    font-weight:700;font-size:13px;padding:9px 16px;border-radius:999px;cursor:pointer;
+    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
+  .btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+  .btn-ghost.-danger:hover{border-color:var(--red);color:var(--red)}
+  input[type=file]{display:none}
+
+  .link-row{display:flex;gap:8px;align-items:flex-start}
+  .link-row input{flex:1;min-width:0}
+  .link-row input.label-input{flex:0 0 110px}
+  .link-remove{flex:none;background:none;border:1px solid var(--hairline-strong);color:var(--muted);
+    width:40px;height:40px;border-radius:10px;cursor:pointer;font-size:16px}
+  .link-remove:hover{border-color:var(--red);color:var(--red)}
+  .add-link-btn{align-self:flex-start;background:none;border:1px dashed var(--hairline-strong);color:var(--muted);
+    font:inherit;font-size:13px;font-weight:700;padding:9px 16px;border-radius:10px;cursor:pointer}
+  .add-link-btn:hover{border-color:var(--brand);color:var(--brand)}
+
+  .row-actions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:6px}
+  .row-actions .submit{width:auto}
+
+  .danger-zone{border-color:var(--red-soft)}
+</style>
+</head>
+<body>
+<div id="pageLoader"><span class="pl-spinner"></span></div>
+
+<header class="bar">
+  <div class="bar-inner">
+    <a class="brand" href="/">
+      <img class="logomark" src="logo.png" alt="Kazi">
+    </a>
+    <div class="bar-spacer"></div>
+    <nav class="nav-links">
+      <a class="nav-jobs" href="/">Jobs</a>
+      <a href="/post">Post a job</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+      <a href="/cv-check" class="nav-cta">Check your CV</a>
+    </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
+      <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    </button>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
+      <span></span><span></span>
+    </button>
+  </div>
+</header>
+
+<div class="mobile-menu" aria-label="Menu">
+  <div class="mm-top">
+    <h2>Menu</h2>
+    <button class="mm-close" aria-label="Close menu" type="button">&times;</button>
+  </div>
+  <nav class="mm-nav">
+      <a href="/">Jobs</a>
+      <a href="/post">Post a job</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+      <a href="/cv-check" class="nav-cta">Check your CV</a>
+  </nav>
+</div>
+
+<div class="wrap" id="gateWrap">
+  <h1>Your Kazi profile</h1>
+  <p class="sub">Create a designer profile so employers can find you: a bio, a photo, and links to your work.</p>
+
+  <div class="gate">
+    <div class="gate-tabs">
+      <button data-panel="login" class="active">Log in</button>
+      <button data-panel="signup">Sign up</button>
+    </div>
+
+    <form class="gate-panel active" id="loginPanel" novalidate>
+      <label class="field"><span>Email</span>
+        <input type="email" id="loginEmail" required autocomplete="email">
+      </label>
+      <label class="field"><span>Password</span>
+        <input type="password" id="loginPassword" required autocomplete="current-password">
+      </label>
+      <p class="err" id="loginErr" style="display:none"></p>
+      <button type="submit" class="submit" id="loginBtn">Log in</button>
+      <button type="button" class="link-inline" id="forgotLink">Forgot your password?</button>
+    </form>
+
+    <form class="gate-panel" id="signupPanel" novalidate>
+      <label class="field"><span>Your name</span>
+        <input type="text" id="signupName" required autocomplete="name">
+      </label>
+      <label class="field"><span>Email</span>
+        <input type="email" id="signupEmail" required autocomplete="email">
+      </label>
+      <label class="field"><span>Password <span class="hint">(at least 8 characters)</span></span>
+        <input type="password" id="signupPassword" required minlength="8" autocomplete="new-password">
+      </label>
+      <input type="text" id="signupHoneypot" class="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="hint" style="margin:0">By signing up you agree your profile info may be shown publicly on Kazi once an admin approves it.</p>
+      <p class="err" id="signupErr" style="display:none"></p>
+      <button type="submit" class="submit" id="signupBtn">Create account</button>
+    </form>
+
+    <form class="gate-panel" id="forgotPanel" novalidate>
+      <label class="field"><span>Email</span>
+        <input type="email" id="forgotEmail" required autocomplete="email">
+      </label>
+      <p class="hint" style="margin:0">We'll email you a link to reset your password.</p>
+      <p class="ok-msg" id="forgotOk" style="display:none">If that email has an account, a reset link is on its way.</p>
+      <p class="err" id="forgotErr" style="display:none"></p>
+      <button type="submit" class="submit" id="forgotBtn">Send reset link</button>
+      <button type="button" class="link-inline" id="backToLogin">Back to log in</button>
+    </form>
+
+    <form class="gate-panel" id="resetPanel" novalidate>
+      <label class="field"><span>New password <span class="hint">(at least 8 characters)</span></span>
+        <input type="password" id="resetPassword" required minlength="8" autocomplete="new-password">
+      </label>
+      <p class="err" id="resetErr" style="display:none"></p>
+      <button type="submit" class="submit" id="resetBtn">Set new password</button>
+    </form>
+  </div>
+</div>
+
+<div class="wrap" id="appWrap">
+  <h1>Your profile</h1>
+  <p class="sub">This is what employers see once it's approved.</p>
+
+  <div id="statusBanner"></div>
+
+  <div class="panel">
+    <h3>Photo</h3>
+    <div class="avatar-row">
+      <img class="avatar-preview" id="avatarPreview" src="" alt="">
+      <div class="avatar-actions">
+        <button type="button" class="btn-ghost" id="photoBtn">Upload photo</button>
+        <p class="hint" style="margin:0">JPG, PNG, or WebP. Up to 3MB.</p>
+      </div>
+      <input type="file" id="photoInput" accept=".jpg,.jpeg,.png,.webp">
+    </div>
+    <p class="err" id="photoErr" style="display:none;margin-top:10px"></p>
+  </div>
+
+  <div class="panel">
+    <h3>About you</h3>
+    <form class="panel-form" id="profileForm" novalidate>
+      <label class="field"><span>Name</span>
+        <input type="text" id="profileName" required>
+      </label>
+      <label class="field"><span>Job function</span>
+        <select id="profileDiscipline"></select>
+      </label>
+      <label class="field"><span>Location <span class="hint">(city, or "Remote")</span></span>
+        <input type="text" id="profileLocation" placeholder="e.g. Nairobi, Kenya">
+      </label>
+      <label class="field"><span>Bio</span>
+        <textarea id="profileBio" placeholder="A few sentences about you and the work you do..."></textarea>
+      </label>
+      <p class="err" id="profileErr" style="display:none"></p>
+      <div class="row-actions">
+        <span></span>
+        <button type="submit" class="submit" id="profileBtn">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Links <span class="hint">(portfolio, LinkedIn, Dribbble, case studies — up to 8)</span></h3>
+    <div id="linkRows" style="display:flex;flex-direction:column;gap:10px"></div>
+    <button type="button" class="add-link-btn" id="addLinkBtn" style="margin-top:10px">+ Add a link</button>
+    <p class="err" id="linksErr" style="display:none;margin-top:10px"></p>
+    <div class="row-actions">
+      <span></span>
+      <button type="button" class="submit" id="linksBtn" style="width:auto">Save links</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Publish</h3>
+    <p class="hint" style="margin:0 0 14px">Submitting sends your profile to an admin for review. It won't be public until approved.</p>
+    <p class="err" id="submitErr" style="display:none"></p>
+    <button type="button" class="submit" id="submitBtn" style="width:auto">Submit for review</button>
+  </div>
+
+  <div class="panel danger-zone">
+    <h3>Delete account</h3>
+    <p class="hint" style="margin:0 0 14px">Permanently deletes your account, profile, and photo. This can't be undone.</p>
+    <button type="button" class="btn-ghost -danger" id="deleteBtn">Delete my account</button>
+  </div>
+
+  <p style="text-align:center;margin:24px 0 40px">
+    <button type="button" class="link-inline" id="logoutBtn">Log out</button>
+  </p>
+</div>
+
+<footer class="foot">
+  <div class="wrap">
+    <span>© Kazi</span>
+    <nav class="foot-links">
+      <a href="/terms">Terms</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/cookies">Cookies</a>
+      <a href="mailto:hello@odana.design">Contact us</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+const DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
+const PLACEHOLDER_OPT = '<option value="" disabled selected>Select</option>';
+const discSel = document.getElementById("profileDiscipline");
+discSel.innerHTML = PLACEHOLDER_OPT + DISCIPLINES.map(d => `<option value="${d}">${d}</option>`).join("");
+
+const TOKEN_KEY = "kazi_designer_token";
+let token = localStorage.getItem(TOKEN_KEY) || "";
+
+const gateWrap = document.getElementById("gateWrap");
+const appWrap = document.getElementById("appWrap");
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: {...(opts.headers||{}), ...(token ? {"Authorization": `Bearer ${token}`} : {})},
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const err = new Error(body.detail || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ---------- gate: tab switching ---------- */
+function showPanel(name) {
+  document.querySelectorAll(".gate-panel").forEach(p => p.classList.remove("active"));
+  document.getElementById(`${name}Panel`).classList.add("active");
+  document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === name));
+}
+document.querySelectorAll(".gate-tabs button").forEach(b => {
+  b.addEventListener("click", () => showPanel(b.dataset.panel));
+});
+document.getElementById("forgotLink").addEventListener("click", () => {
+  document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.remove("active"));
+  showPanel("forgot");
+});
+document.getElementById("backToLogin").addEventListener("click", () => showPanel("login"));
+
+/* ---------- login ---------- */
+document.getElementById("loginPanel").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("loginErr");
+  errEl.style.display = "none";
+  const btn = document.getElementById("loginBtn");
+  btn.disabled = true;
+  try {
+    const res = await api("/api/designers/login", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        email: document.getElementById("loginEmail").value.trim(),
+        password: document.getElementById("loginPassword").value,
+      }),
+    });
+    token = res.token;
+    localStorage.setItem(TOKEN_KEY, token);
+    enterApp();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- signup ---------- */
+document.getElementById("signupPanel").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("signupErr");
+  errEl.style.display = "none";
+  const btn = document.getElementById("signupBtn");
+  btn.disabled = true;
+  try {
+    const res = await api("/api/designers/signup", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        email: document.getElementById("signupEmail").value.trim(),
+        password: document.getElementById("signupPassword").value,
+        display_name: document.getElementById("signupName").value.trim(),
+        honeypot: document.getElementById("signupHoneypot").value,
+      }),
+    });
+    if (!res.token) { errEl.textContent = "Something went wrong. Please try again."; errEl.style.display = "block"; return; }
+    token = res.token;
+    localStorage.setItem(TOKEN_KEY, token);
+    enterApp();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- forgot / reset password ---------- */
+document.getElementById("forgotPanel").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("forgotErr");
+  const okEl = document.getElementById("forgotOk");
+  errEl.style.display = "none"; okEl.style.display = "none";
+  const btn = document.getElementById("forgotBtn");
+  btn.disabled = true;
+  try {
+    await api("/api/designers/forgot-password", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({email: document.getElementById("forgotEmail").value.trim()}),
+    });
+    okEl.style.display = "block";
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+let resetToken = "";
+document.getElementById("resetPanel").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("resetErr");
+  errEl.style.display = "none";
+  const btn = document.getElementById("resetBtn");
+  btn.disabled = true;
+  try {
+    await api("/api/designers/reset-password", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({token: resetToken, new_password: document.getElementById("resetPassword").value}),
+    });
+    showPanel("login");
+    document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === "login"));
+    document.getElementById("loginErr").textContent = "Password updated — log in with your new password.";
+    document.getElementById("loginErr").style.display = "block";
+    document.getElementById("loginErr").style.color = "var(--green-ink)";
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- verify-email / reset-password links land here via query params ---------- */
+(function handleEmailLinks() {
+  const params = new URLSearchParams(location.search);
+  const verifyToken = params.get("verify");
+  const resetTok = params.get("reset");
+  if (verifyToken) {
+    api("/api/designers/verify-email", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({token: verifyToken}),
+    }).then(() => { window._justVerified = true; }).catch(() => {}).finally(() => {
+      history.replaceState({}, "", location.pathname);
+    });
+  }
+  if (resetTok) {
+    resetToken = resetTok;
+    document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.remove("active"));
+    showPanel("reset");
+    history.replaceState({}, "", location.pathname);
+  }
+})();
+
+/* ---------- app: status banner ---------- */
+function renderStatusBanner(me) {
+  const el = document.getElementById("statusBanner");
+  if (!me.email_verified) {
+    el.innerHTML = `<div class="status-banner unverified">
+      Please verify your email before submitting your profile.
+      <button type="button" class="link-inline" id="resendBtn">Resend verification email</button>
+    </div>`;
+    document.getElementById("resendBtn").addEventListener("click", async (e) => {
+      e.target.textContent = "Sending…";
+      try { await api("/api/designers/me/resend-verification", {method: "POST"}); e.target.textContent = "Sent — check your inbox"; }
+      catch { e.target.textContent = "Couldn't send, try again"; }
+    });
+    return;
+  }
+  if (me.status === "approved") {
+    el.innerHTML = `<div class="status-banner approved">Live — <a href="/designers/${me.id}" target="_blank">view your public profile</a></div>`;
+  } else if (me.status === "rejected") {
+    el.innerHTML = `<div class="status-banner rejected">Your profile wasn't approved. Update it below and submit again.</div>`;
+  } else {
+    el.innerHTML = `<div class="status-banner pending">Pending review — not visible to employers yet.</div>`;
+  }
+}
+
+/* ---------- app: load + populate ---------- */
+async function enterApp() {
+  gateWrap.style.display = "none";
+  appWrap.style.display = "block";
+  await loadMe();
+}
+
+async function loadMe() {
+  try {
+    const me = await api("/api/designers/me");
+    renderStatusBanner(me);
+    document.getElementById("avatarPreview").src = me.photo_path || "logo.png";
+    document.getElementById("profileName").value = me.display_name || "";
+    document.getElementById("profileDiscipline").value = me.discipline || "";
+    document.getElementById("profileLocation").value = me.location || "";
+    document.getElementById("profileBio").value = me.bio || "";
+    renderLinks(me.links || []);
+  } catch (err) {
+    if (err.status === 401) { logout(); }
+  }
+}
+
+/* ---------- app: photo upload ---------- */
+document.getElementById("photoBtn").addEventListener("click", () => document.getElementById("photoInput").click());
+document.getElementById("photoInput").addEventListener("change", async () => {
+  const file = document.getElementById("photoInput").files[0];
+  if (!file) return;
+  const errEl = document.getElementById("photoErr");
+  errEl.style.display = "none";
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const res = await api("/api/designers/me/photo", {method: "POST", body: fd});
+    document.getElementById("avatarPreview").src = res.photo_path + "?t=" + Date.now();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  }
+});
+
+/* ---------- app: profile form ---------- */
+document.getElementById("profileForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("profileErr");
+  errEl.style.display = "none";
+  const btn = document.getElementById("profileBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+  try {
+    await api("/api/designers/me", {
+      method: "PUT", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        display_name: document.getElementById("profileName").value.trim(),
+        discipline: document.getElementById("profileDiscipline").value,
+        location: document.getElementById("profileLocation").value.trim(),
+        bio: document.getElementById("profileBio").value.trim(),
+      }),
+    });
+    await loadMe();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save";
+  }
+});
+
+/* ---------- app: links editor ---------- */
+const MAX_LINKS = 8;
+function renderLinks(links) {
+  const box = document.getElementById("linkRows");
+  box.innerHTML = "";
+  (links.length ? links : [{label: "", url: ""}]).forEach(l => addLinkRow(l.label, l.url));
+  updateAddLinkBtn();
+}
+function addLinkRow(label = "", url = "") {
+  const box = document.getElementById("linkRows");
+  if (box.children.length >= MAX_LINKS) return;
+  const row = document.createElement("div");
+  row.className = "link-row";
+  row.innerHTML = `
+    <input class="label-input" placeholder="Portfolio" value="${escapeHtml(label)}">
+    <input placeholder="https://..." value="${escapeHtml(url)}">
+    <button type="button" class="link-remove" aria-label="Remove link">&times;</button>
+  `;
+  row.querySelector(".link-remove").addEventListener("click", () => { row.remove(); updateAddLinkBtn(); });
+  box.appendChild(row);
+  updateAddLinkBtn();
+}
+function updateAddLinkBtn() {
+  const box = document.getElementById("linkRows");
+  document.getElementById("addLinkBtn").style.display = box.children.length >= MAX_LINKS ? "none" : "inline-block";
+}
+document.getElementById("addLinkBtn").addEventListener("click", () => addLinkRow());
+
+document.getElementById("linksBtn").addEventListener("click", async () => {
+  const errEl = document.getElementById("linksErr");
+  errEl.style.display = "none";
+  const rows = Array.from(document.querySelectorAll("#linkRows .link-row"));
+  const links = rows.map(r => {
+    const [labelInput, urlInput] = r.querySelectorAll("input");
+    return {label: labelInput.value.trim(), url: urlInput.value.trim()};
+  }).filter(l => l.label && l.url);
+  const btn = document.getElementById("linksBtn");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+  try {
+    await api("/api/designers/me/links", {
+      method: "PUT", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({links}),
+    });
+    await loadMe();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Save links";
+  }
+});
+
+/* ---------- app: submit for review ---------- */
+document.getElementById("submitBtn").addEventListener("click", async () => {
+  const errEl = document.getElementById("submitErr");
+  errEl.style.display = "none";
+  const btn = document.getElementById("submitBtn");
+  btn.disabled = true;
+  btn.textContent = "Submitting…";
+  try {
+    await api("/api/designers/me/submit", {method: "POST"});
+    await loadMe();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Submit for review";
+  }
+});
+
+/* ---------- app: delete account ---------- */
+document.getElementById("deleteBtn").addEventListener("click", async () => {
+  if (!confirm("Delete your account and profile permanently? This can't be undone.")) return;
+  try {
+    await api("/api/designers/me", {method: "DELETE"});
+    logout();
+  } catch (err) {
+    alert("Couldn't delete account: " + err.message);
+  }
+});
+
+/* ---------- logout ---------- */
+function logout() {
+  token = "";
+  localStorage.removeItem(TOKEN_KEY);
+  appWrap.style.display = "none";
+  gateWrap.style.display = "block";
+  showPanel("login");
+  document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === "login"));
+}
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  try { await api("/api/designers/logout", {method: "POST"}); } catch {}
+  logout();
+});
+
+if (token) enterApp();
+</script>
+</body>
+</html>
