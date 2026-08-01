@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Kazi · Design jobs, open to Africa</title>
-<link rel="icon" type="image/png" href="logo.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
 <script src="nav.js?v=3"></script>
 <style>
@@ -170,7 +170,7 @@
   .hero p.lede{margin:22px 0 0;max-width:52ch;color:var(--muted);font-size:16.5px}
 
   .hero-videos{position:relative;aspect-ratio:1/1;border-radius:24px;overflow:hidden;
-    background:var(--surface);border:1px solid var(--hairline-strong);box-shadow:var(--shadow-lift)}
+    background:var(--surface)}
   .hero-vtrack{display:flex;height:100%;transition:transform .6s var(--ease-io)}
   .hero-vslide{flex:0 0 100%;height:100%}
   .hero-vslide video{width:100%;height:100%;object-fit:cover;display:block}
@@ -241,6 +241,8 @@
   .rail-top h2{margin:0;font-size:16.5px;font-weight:800}
   .reset{font-size:13px;color:var(--brand);background:none;border:0;cursor:pointer;font-family:inherit;font-weight:600;padding:0}
   .reset:hover{text-decoration:underline}
+  .reset:disabled{color:var(--faint);cursor:not-allowed;pointer-events:none}
+  .reset:disabled:hover{text-decoration:none}
   .rail-close-x{display:none}
   .fgroup{border-top:1px solid var(--hairline);padding:16px 0}
   .fgroup:first-of-type{padding-top:14px}
@@ -464,7 +466,7 @@
 
 <div class="promo" id="promo">
   <div class="wrap promo-inner">
-    <span class="promo-text">🎨 Hiring designers in or open to Africa? <a href="/post">Post a role for free</a>, reviewed and live within a day.</span>
+    <span class="promo-text">Hiring designers in or open to Africa? <a href="/post">Post a role for free</a>, reviewed and live within a day.</span>
     <button class="promo-close" onclick="document.getElementById('promo').remove()" aria-label="Dismiss">×</button>
   </div>
 </div>
@@ -507,7 +509,7 @@
   <aside class="rail" id="rail" aria-label="Filters">
     <div class="rail-top">
       <h2>Filter</h2>
-      <button class="reset" id="clearAll">Reset</button>
+      <button class="reset" id="clearAll" disabled>Reset</button>
       <button class="rail-close-x" aria-label="Close filters" onclick="toggleRail(false)">×</button>
     </div>
 
@@ -634,13 +636,17 @@ function countFor(field,val){
 }
 function makeOpts(containerId, items, field){
   const box = document.getElementById(containerId);
+  // Only show an option once at least one role currently falls under it —
+  // an empty "Game Design (0)" row is just dead weight in the filter list.
   box.innerHTML = items.map(it=>{
     const val = typeof it==="string"?it:it.k;
     const lab = typeof it==="string"?it:it.l;
+    return {val, lab, n: countFor(field, val)};
+  }).filter(o => o.n > 0).map(({val, lab, n})=>{
     return `<label class="opt">
       <input type="checkbox" data-field="${field}" value="${val}">
       <span class="box"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
-      <span>${lab}</span><span class="cnt">${countFor(field,val)}</span>
+      <span>${lab}</span><span class="cnt">${n}</span>
     </label>`;
   }).join("");
 }
@@ -688,6 +694,7 @@ function render(){
   const badge = document.getElementById("filtBadge");
   badge.style.display = active? "flex":"none";
   badge.textContent = active;
+  document.getElementById("clearAll").disabled = !(active || state.q.trim());
 
   const list = document.getElementById("list");
   if(!rows.length){

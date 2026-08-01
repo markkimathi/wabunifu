@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Review queue · Kazi</title>
-<link rel="icon" type="image/png" href="logo.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
 <script src="nav.js?v=3"></script>
 <style>
@@ -125,6 +125,11 @@
   .gate{max-width:380px;margin:80px auto;text-align:center}
   .gate input{width:100%;font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
     border-radius:10px;padding:12px 14px;margin-top:14px;background:var(--surface);color:var(--ink)}
+  /* iOS Safari auto-zooms on focus into any input under 16px. Must come
+     after the base rule above: same selector, so source order decides. */
+  @media(max-width:600px){
+    .gate input{font-size:16px}
+  }
   .gate button{margin-top:12px;width:100%;background:var(--ink);color:var(--canvas);border:0;font:inherit;
     font-weight:700;font-size:14.5px;padding:12px;border-radius:999px;cursor:pointer}
   .gate button:hover{background:var(--brand)}

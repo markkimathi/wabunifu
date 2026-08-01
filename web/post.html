@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Post a design role · Kazi</title>
-<link rel="icon" type="image/png" href="logo.png">
+<link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
 <script src="nav.js?v=3"></script>
 <style>
@@ -130,11 +130,32 @@
   input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
     border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
     transition:border-color .2s var(--ease-expo)}
+  /* iOS Safari auto-zooms on focus into any input under 16px — this form's
+     14.5px base was quietly triggering that on every tap. Must come after
+     the base rule above: same selector/specificity, so source order is
+     what decides which one wins once the media query is active. */
+  @media(max-width:600px){
+    input,select,textarea{font-size:16px}
+  }
   input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand)}
   textarea{resize:vertical;min-height:110px;font-family:inherit}
   select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:38px;
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
     background-repeat:no-repeat;background-position:right 14px center;background-size:14px}
+
+  /* ---- location autocomplete: custom-styled so it looks and behaves the
+     same everywhere, instead of a native <datalist> popup (inconsistent
+     styling and poor touch support on mobile) ---- */
+  .loc-wrap{position:relative}
+  .loc-wrap input{width:100%}
+  .loc-suggest{position:absolute;top:calc(100% + 6px);left:0;right:0;z-index:20;
+    background:var(--surface);border:1px solid var(--hairline-strong);border-radius:12px;
+    box-shadow:var(--shadow);max-height:260px;overflow-y:auto;padding:6px;
+    display:none}
+  .loc-suggest.-open{display:block}
+  .loc-opt{display:block;width:100%;text-align:left;padding:11px 12px;border-radius:8px;
+    border:0;background:none;font:inherit;font-size:14.5px;color:var(--ink);cursor:pointer}
+  .loc-opt:hover,.loc-opt.-active{background:var(--hairline)}
 
   /* ---- step progress ---- */
   .steps-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
@@ -142,14 +163,13 @@
   .step-label b{color:var(--ink)}
   .step-bar{display:flex;gap:6px;flex:none}
   .step-dot{width:28px;height:4px;border-radius:999px;background:var(--hairline-strong);transition:background .3s var(--ease-expo)}
-  .step-dot.active,.step-dot.done{background:var(--brand)}
+  .step-dot.active{background:linear-gradient(90deg,var(--green),var(--brand))}
+  .step-dot.complete{background:var(--green)}
   .req-note{font-size:12.5px;color:var(--faint);margin:-10px 0 0}
 
   .step{display:none;flex-direction:column;gap:18px}
   .step.active{display:flex}
 
-  .elig-note{background:var(--green-soft);color:var(--green-ink);border-radius:10px;padding:12px 14px;
-    font-size:13px;line-height:1.5}
 
   .terms{background:var(--hairline);border-radius:10px;padding:14px 16px}
   .terms-title{margin:0 0 8px;font-weight:700;font-size:13.5px}
@@ -255,13 +275,17 @@
           <input name="company" required placeholder="e.g. Flutterwave">
         </label>
         <label class="field"><span class="field-label">Location <span class="hint">(city, or "Remote")</span></span>
-          <input name="location" placeholder="e.g. Nairobi, Kenya">
+          <div class="loc-wrap">
+            <input name="location" id="locationInput" placeholder="e.g. Nairobi, Kenya" autocomplete="off">
+            <div class="loc-suggest" id="locSuggest" role="listbox"></div>
+          </div>
         </label>
       </div>
 
       <div class="row2">
         <label class="field"><span class="field-label">Work type <span class="req">*</span></span>
           <select name="work_type" required>
+            <option value="" disabled selected>Select</option>
             <option value="Remote">Remote</option>
             <option value="Hybrid">Hybrid</option>
             <option value="On-site">On-site</option>
@@ -269,8 +293,9 @@
         </label>
         <label class="field"><span class="field-label">Level <span class="req">*</span></span>
           <select name="level" required>
+            <option value="" disabled selected>Select</option>
             <option value="Junior">Junior</option>
-            <option value="Mid" selected>Mid</option>
+            <option value="Mid">Mid</option>
             <option value="Senior">Senior</option>
             <option value="Lead">Lead</option>
           </select>
@@ -283,7 +308,7 @@
 
       <div class="step-nav">
         <span></span>
-        <button type="button" class="submit" data-next>Next</button>
+        <button type="button" class="submit" data-next disabled>Next</button>
       </div>
     </fieldset>
 
@@ -295,13 +320,10 @@
       <label class="field"><span class="field-label">Who can actually apply? <span class="req">*</span> <span class="hint">(be honest, this is the whole point of Kazi)</span></span>
         <select name="eligibility" id="eligibility" required></select>
       </label>
-      <p class="elig-note">This badge is the first thing candidates see. "Open to Kenya" means someone
-        based in Kenya can genuinely take this role today, not "we're a global company" fine print
-        that turns out to require a work visa. If you're not sure, pick "Check restrictions."</p>
 
       <div class="step-nav">
         <button type="button" class="btn-back" data-back>Back</button>
-        <button type="button" class="submit" data-next>Next</button>
+        <button type="button" class="submit" data-next disabled>Next</button>
       </div>
     </fieldset>
 
@@ -367,11 +389,87 @@ const ELIGIBILITY = [
   {v:"check", l:"Check restrictions (relocation / visa needed)"},
 ];
 
+const PLACEHOLDER_OPT = '<option value="" disabled selected>Select</option>';
+
 const discSel = document.getElementById("discipline");
-discSel.innerHTML = DISCIPLINES.map(d => `<option value="${d}">${d}</option>`).join("");
+discSel.innerHTML = PLACEHOLDER_OPT + DISCIPLINES.map(d => `<option value="${d}">${d}</option>`).join("");
 
 const eligSel = document.getElementById("eligibility");
-eligSel.innerHTML = ELIGIBILITY.map(e => `<option value="${e.v}">${e.l}</option>`).join("");
+eligSel.innerHTML = PLACEHOLDER_OPT + ELIGIBILITY.map(e => `<option value="${e.v}">${e.l}</option>`).join("");
+
+/* ---------- location autocomplete (custom dropdown, not native <datalist>) ---------- */
+const LOCATIONS = [
+  "Remote", "Worldwide Remote",
+  "Nairobi, Kenya", "Mombasa, Kenya",
+  "Lagos, Nigeria", "Abuja, Nigeria",
+  "Accra, Ghana",
+  "Cape Town, South Africa", "Johannesburg, South Africa", "Pretoria, South Africa", "Durban, South Africa",
+  "Cairo, Egypt", "Alexandria, Egypt",
+  "Kigali, Rwanda",
+  "Kampala, Uganda",
+  "Dar es Salaam, Tanzania",
+  "Addis Ababa, Ethiopia",
+  "Casablanca, Morocco", "Rabat, Morocco",
+  "Dakar, Senegal",
+  "Lusaka, Zambia",
+  "Harare, Zimbabwe",
+  "Gaborone, Botswana",
+  "Windhoek, Namibia",
+  "Maputo, Mozambique",
+  "Kinshasa, DR Congo",
+  "Tunis, Tunisia",
+  "Algiers, Algeria",
+];
+(function(){
+  const input = document.getElementById("locationInput");
+  const box = document.getElementById("locSuggest");
+  if(!input || !box) return;
+  let items = [];
+  let activeIdx = -1;
+
+  function highlight(){
+    Array.from(box.children).forEach((el, i) => el.classList.toggle("-active", i === activeIdx));
+  }
+  function close(){
+    items = []; activeIdx = -1;
+    box.classList.remove("-open");
+    box.innerHTML = "";
+  }
+  function open(matches){
+    items = matches;
+    activeIdx = -1;
+    if(!matches.length){ close(); return; }
+    box.innerHTML = matches.map((m, i) => `<button type="button" class="loc-opt" data-i="${i}" role="option">${m}</button>`).join("");
+    box.classList.add("-open");
+  }
+  function filter(q){
+    q = q.trim().toLowerCase();
+    if(!q){ close(); return; }
+    open(LOCATIONS.filter(l => l.toLowerCase().includes(q)).slice(0, 8));
+  }
+  function choose(i){
+    input.value = items[i];
+    close();
+    input.focus();
+  }
+
+  input.addEventListener("input", () => filter(input.value));
+  input.addEventListener("focus", () => { if(input.value.trim()) filter(input.value); });
+  box.addEventListener("mousedown", e => {
+    const btn = e.target.closest(".loc-opt");
+    if(btn) choose(+btn.dataset.i);
+  });
+  input.addEventListener("keydown", e => {
+    if(!box.classList.contains("-open")) return;
+    if(e.key === "ArrowDown"){ e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); highlight(); }
+    else if(e.key === "ArrowUp"){ e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlight(); }
+    else if(e.key === "Enter"){ if(activeIdx >= 0){ e.preventDefault(); choose(activeIdx); } }
+    else if(e.key === "Escape"){ close(); }
+  });
+  document.addEventListener("click", e => {
+    if(!e.target.closest(".loc-wrap")) close();
+  });
+})();
 
 const form = document.getElementById("jobForm");
 const errEl = document.getElementById("formErr");
@@ -448,16 +546,26 @@ function updateSubmitState(){
   btn.disabled = !stepIsValid(lastStep);
 }
 
+// The Next button on whichever step is showing stays disabled until that
+// step's own required fields are filled in — same "nothing to do yet"
+// treatment as the disabled Reset button on the homepage filter.
+function updateNextButtonState(){
+  const stepEl = steps[current - 1];
+  const nextBtn = stepEl.querySelector("[data-next]");
+  if(nextBtn) nextBtn.disabled = !stepIsValid(stepEl);
+}
+
 function showStep(n){
   current = n;
   steps.forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
   dots.forEach((d, i) => {
     d.classList.toggle("active", i + 1 === n);
-    d.classList.toggle("done", i + 1 < n);
+    d.classList.toggle("complete", i + 1 < n);
   });
   document.getElementById("stepNum").textContent = n;
   document.getElementById("stepName").textContent = stepNames[n - 1];
   updateSubmitState();
+  updateNextButtonState();
   window.scrollTo({top: 0, behavior: "smooth"});
 }
 
@@ -493,10 +601,12 @@ form.addEventListener("blur", (e) => {
 
 form.addEventListener("input", (e) => {
   updateSubmitState();
+  updateNextButtonState();
   if(touched.has(e.target)) validateField(e.target);
 });
 form.addEventListener("change", (e) => {
   updateSubmitState();
+  updateNextButtonState();
   if(touched.has(e.target)) validateField(e.target);
 });
 
@@ -531,6 +641,20 @@ form.addEventListener("submit", async (e) => {
   }
 });
 
+// Steps have different amounts of content (step 2's textarea + selects vs.
+// step 1's shorter field set), and since only the .active step is ever in
+// flow, switching steps used to visibly grow/shrink the whole page. Measure
+// the tallest step once up front and hold the form open to that height so
+// navigating between steps doesn't jump around.
+function lockFormHeight(){
+  form.style.minHeight = "";
+  steps.forEach(s => s.classList.add("active"));
+  const maxH = Math.max(...steps.map(s => s.scrollHeight));
+  steps.forEach(s => s.classList.remove("active"));
+  form.style.minHeight = maxH + "px";
+}
+lockFormHeight();
+window.addEventListener("resize", lockFormHeight);
 showStep(1);
 </script>
 </body>

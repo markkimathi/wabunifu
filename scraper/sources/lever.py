@@ -31,7 +31,8 @@ def to_common(raw: dict, company: str, slug: str) -> dict:
         "company": company,
         "department": cats.get("team", "") or cats.get("department", ""),
         "location": loc,
-        "body": (f"{workplace} {desc}")[:4000],
+        # Not truncated — see greenhouse.py's to_common for why.
+        "body": f"{workplace} {desc}",
         "url": raw.get("hostedUrl", raw.get("applyUrl", "")),
         "source": "Lever",
         "updated_at": "",  # Lever createdAt is epoch ms; run.py fills a date if empty

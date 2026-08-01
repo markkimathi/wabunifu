@@ -47,11 +47,19 @@ def guess_country(location: str) -> str:
 # ("$70k"), so require one of those two as a condition of a match,
 # instead of accepting any lone currency+number pair.
 CCY = r"(?:\$|€|£|KES|USD|NGN|ZAR|GHS)"
+# Companies format the range separator inconsistently: hyphen, en dash (–),
+# em dash (—, often what "&mdash;" unescapes to), or the word "to". Missing
+# any one of these silently drops real salary data (seen live: Coinbase's
+# "$207,485 — $244,100" used an em dash and matched nothing before this).
+# \s* (not \s?): stripping adjacent HTML tags (e.g. "</span><span>") often
+# collapses to two or more spaces, and a single optional \s? left the
+# currency symbol on the far side of the range unreachable (seen live:
+# GitLab's "$165,000  —  $200,000", two spaces on each side of the dash).
 SALARY_RANGE_RE = re.compile(
-    rf"{CCY}\s?[\d][\d,\.]*\s?k?\s?(?:–|-|to)\s?{CCY}?\s?[\d][\d,\.]*\s?k?",
+    rf"{CCY}\s*[\d][\d,\.]*\s*k?\s*(?:–|—|-|to)\s*{CCY}?\s*[\d][\d,\.]*\s*k?",
     re.IGNORECASE,
 )
-SALARY_K_RE = re.compile(rf"{CCY}\s?[\d][\d,\.]*\s?k\b", re.IGNORECASE)
+SALARY_K_RE = re.compile(rf"{CCY}\s*[\d][\d,\.]*\s*k\b", re.IGNORECASE)
 
 
 def extract_salary(*texts: str) -> str | None:

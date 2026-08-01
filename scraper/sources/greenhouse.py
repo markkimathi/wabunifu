@@ -27,14 +27,25 @@ def fetch(token: str) -> list[dict]:
 
 def to_common(raw: dict, company: str, token: str) -> dict:
     """Map a Greenhouse job into the neutral shape the pipeline consumes."""
-    content = html.unescape(re.sub(r"<[^>]+>", " ", raw.get("content", "") or ""))
+    # Greenhouse's `content` field is double HTML-escaped: raw JSON has
+    # "&lt;div&gt;...&amp;mdash;..." rather than "<div>...&mdash;...". A
+    # single unescape() only reveals the tags/entities, it doesn't resolve
+    # them, so tags never got stripped and leftover entities like &mdash;
+    # broke pay-range extraction. unescape() twice, then strip tags.
+    raw_content = raw.get("content", "") or ""
+    content = re.sub(r"<[^>]+>", " ", html.unescape(html.unescape(raw_content)))
     loc = (raw.get("location") or {}).get("name", "")
     return {
         "title": raw.get("title", "").strip(),
         "company": company,
         "department": " ".join(d.get("name", "") for d in raw.get("departments", [])),
         "location": loc,
-        "body": content[:4000],
+        # Not truncated: pay-transparency sections are commonly the very
+        # last thing in a long JD (after the role copy and EEO boilerplate),
+        # so a 4000-char cap was silently cutting salary ranges out before
+        # extract_salary() ever saw them. This body is only used internally
+        # for classification/salary extraction, never shown to users.
+        "body": content,
         "url": raw.get("absolute_url", ""),
         "source": "Greenhouse",
         "updated_at": raw.get("updated_at", "")[:10],

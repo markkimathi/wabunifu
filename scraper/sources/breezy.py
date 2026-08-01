@@ -35,7 +35,8 @@ def to_common(raw: dict, company: str, token: str) -> dict:
         "company": company,
         "department": raw.get("department", ""),
         "location": loc,
-        "body": desc[:4000],
+        # Not truncated — see greenhouse.py's to_common for why.
+        "body": desc,
         "url": raw.get("url", ""),
         "source": "Breezy",
         "updated_at": (raw.get("published_date") or "")[:10],
