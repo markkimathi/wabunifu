@@ -16,17 +16,21 @@
 
   :root{
     --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
-    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1;
+    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-soft:#F1E7FA;
     --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
     --amber:#F25C05; --amber-soft:#FDE6D8;
+    --blue:#2F6FE4; --blue-soft:#E4ECFC;
+    --red:#D3322A; --red-soft:#FBE4E2;
     --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
     --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1); --ease-io:cubic-bezier(.65,0,.35,1);
   }
   :root[data-theme="dark"]{
     --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
-    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8;
+    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8; --brand-soft:#251A38;
     --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
     --amber:#FF9B57; --amber-soft:#3A2412;
+    --blue:#5B9BFF; --blue-soft:#152A46;
+    --red:#FF6B5B; --red-soft:#3A1712;
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
@@ -44,11 +48,12 @@
   body > .wrap{flex:1}
   a{color:inherit}
   .wrap{max-width:860px;margin:0 auto;padding:0 24px}
+  #appWrap.wrap{max-width:1180px}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
-  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:860px;margin:0 auto;padding:0 24px}
+  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1180px;margin:0 auto;padding:0 24px}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
   .logomark{height:20px;width:auto;flex:none;display:block}
   .bar-spacer{flex:1}
@@ -62,7 +67,7 @@
   .nav-links a:hover{color:var(--ink)}
 
   footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
-  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;max-width:860px}
+  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center;max-width:1180px}
   .foot-links{display:flex;gap:16px;flex-wrap:wrap}
   .foot-links a{color:var(--muted);text-decoration:none}
   .foot-links a:hover{color:var(--ink)}
@@ -175,31 +180,55 @@
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
     background-repeat:no-repeat;background-position:right 10px center;background-size:13px}
 
-  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:16px}
-  .stat-tile{border:1px solid var(--hairline);border-radius:var(--radius);padding:16px 18px;background:var(--surface)}
-  .stat-tile .n{font-size:25px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
+  .stat-tile{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;background:var(--surface);
+    box-shadow:var(--shadow)}
+  .stat-tile .stat-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+  .stat-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none}
+  .stat-tile .n{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
   .stat-tile .l{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:999px}
+  .delta.up{background:var(--green-soft);color:var(--green-ink)}
+  .delta.down{background:var(--red-soft);color:var(--red)}
+  .delta-sub{font-size:11px;color:var(--faint);margin-left:6px}
+  .stat-tile .delta-row{margin-top:9px;display:flex;align-items:center;flex-wrap:wrap;gap:2px}
 
-  .panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;background:var(--surface)}
+  .panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;background:var(--surface);
+    box-shadow:var(--shadow)}
   .panel h3{margin:0 0 16px;font-size:13.5px;font-weight:700}
   .attrib{margin:12px 0 0;font-size:11px;color:var(--muted)}
   .attrib a{color:inherit}
-  .dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
   .dash-grid .panel{margin-bottom:0}
-  @media(max-width:700px){.dash-grid{grid-template-columns:1fr}}
+  @media(max-width:980px){.dash-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:600px){.dash-grid{grid-template-columns:1fr}}
 
-  .bar-chart{display:flex;align-items:flex-end;gap:3px;height:110px}
-  .bar-chart .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}
-  .bar-chart .col .bar{width:100%;background:var(--brand);border-radius:3px 3px 0 0;min-height:2px}
-  .bar-chart .col .lbl{font-size:9px;color:var(--faint);margin-top:5px;white-space:nowrap;overflow:hidden;
-    text-overflow:ellipsis;max-width:100%}
+  .trend-panel{display:flex;gap:28px;flex-wrap:wrap;align-items:stretch}
+  .trend-summary{flex:none;min-width:150px;display:flex;flex-direction:column;justify-content:center}
+  .trend-summary .n{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+  .trend-summary .l{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .trend-chart-wrap{flex:1;min-width:220px;position:relative}
+  .trend-chart-wrap svg{display:block;width:100%;height:170px}
+  .trend-tooltip{position:absolute;top:0;transform:translate(-50%,-100%) translateY(-8px);
+    background:var(--ink);color:var(--canvas);font-size:11.5px;padding:7px 11px;border-radius:9px;
+    white-space:nowrap;pointer-events:none;display:none;text-align:center;line-height:1.35;z-index:2}
+  .trend-tooltip b{font-size:12.5px}
+  .trend-tooltip span{display:block;color:var(--faint)}
+  [data-theme="dark"] .trend-tooltip span{color:#94A0AC}
   .bar-chart-empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
 
-  .hbar-row{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:11px}
+  .weekday-chart{display:flex;align-items:flex-end;gap:8px;height:110px;padding-top:26px}
+  .weekday-chart .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0;position:relative}
+  .weekday-chart .col .peak-n{position:absolute;top:-24px;font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap}
+  .weekday-chart .col .bar{width:100%;max-width:30px;background:var(--hairline-strong);border-radius:6px 6px 3px 3px;min-height:3px}
+  .weekday-chart .col.peak .bar{background:var(--brand)}
+  .weekday-chart .col .lbl{font-size:10.5px;color:var(--faint);margin-top:8px}
+
+  .hbar-row{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:12px}
   .hbar-row:last-child{margin-bottom:0}
   .hbar-row .lbl{width:70px;flex:none;color:var(--ink);font-weight:600;text-transform:capitalize}
   .hbar-row .track{flex:1;height:8px;background:var(--hairline);border-radius:999px;overflow:hidden}
-  .hbar-row .fill{height:100%;background:var(--brand);border-radius:999px}
+  .hbar-row .fill{height:100%;border-radius:999px}
   .hbar-row .n{width:32px;flex:none;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
 
   .rank-list{display:flex;flex-direction:column}
@@ -207,9 +236,13 @@
     padding:9px 0;border-bottom:1px solid var(--hairline)}
   .rank-row:last-child{border-bottom:0;padding-bottom:0}
   .rank-row:first-child{padding-top:0}
+  .rank-row .who{display:flex;align-items:center;gap:10px;overflow:hidden;min-width:0}
+  .rank-avatar{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
+    font-size:11px;font-weight:800;color:var(--brand);background:var(--brand-soft)}
   .rank-row .name{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
   .rank-row .sub{color:var(--muted);font-size:12px}
-  .rank-row .n{flex:none;font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums}
+  .rank-row .n{flex:none;font-weight:700;font-size:12px;color:var(--brand);background:var(--brand-soft);
+    padding:3px 9px;border-radius:999px;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -280,11 +313,15 @@
     <div class="stat-grid" id="statGrid"></div>
 
     <div class="panel">
-      <h3>Pageviews by day</h3>
-      <div class="bar-chart" id="dayChart"></div>
+      <h3>Pageviews trend</h3>
+      <div class="trend-panel" id="trendPanel"></div>
     </div>
 
     <div class="dash-grid">
+      <div class="panel">
+        <h3>Busiest day</h3>
+        <div class="weekday-chart" id="weekdayChart"></div>
+      </div>
       <div class="panel">
         <h3>Device</h3>
         <div id="deviceBars"></div>
@@ -302,11 +339,10 @@
         <h3>Top searches</h3>
         <div id="searchesList" class="rank-list"></div>
       </div>
-    </div>
-
-    <div class="panel">
-      <h3>Most applied-to roles</h3>
-      <div id="appliedList" class="rank-list"></div>
+      <div class="panel">
+        <h3>Most applied-to roles</h3>
+        <div id="appliedList" class="rank-list"></div>
+      </div>
     </div>
   </section>
 
@@ -398,7 +434,8 @@ async function loadDashboard() {
   try {
     const d = await api(`/api/admin/analytics?days=${days}`);
     renderStats(d);
-    renderDayChart(d.by_day);
+    renderTrendPanel(d);
+    renderWeekdayChart(d.by_weekday);
     renderDeviceBars(d.by_device);
     renderCountryList(d.by_country);
     renderPagesList(d.top_pages);
@@ -409,33 +446,160 @@ async function loadDashboard() {
   }
 }
 
+const ICONS = {
+  eye: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>',
+  search: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>',
+  click: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 9 11 4-4.5 2-2 4.5L9 9Z"/></svg>',
+  target: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>',
+};
+
+function pctDelta(cur, prev) {
+  if (prev === 0) return cur === 0 ? 0 : 100;
+  return ((cur - prev) / prev) * 100;
+}
+function deltaRow(cur, prev) {
+  const d = pctDelta(cur, prev);
+  const up = d >= 0;
+  return `<div class="delta-row">
+    <span class="delta ${up ? "up" : "down"}">${up ? "▲" : "▼"} ${Math.abs(d).toFixed(1)}%</span>
+    <span class="delta-sub">vs ${prev.toLocaleString()} last period</span>
+  </div>`;
+}
+
 function renderStats(d) {
-  const topPage = d.top_pages[0] ? pageLabel(d.top_pages[0].path) : "—";
+  const applyRate = d.total_views ? (d.total_applies / d.total_views) * 100 : 0;
+  const prevApplyRate = d.prev_views ? (d.prev_applies / d.prev_views) * 100 : 0;
   const tiles = [
-    [d.total_views, "Pageviews"],
-    [d.total_searches, "Searches"],
-    [d.total_applies, "Apply clicks"],
-    [topPage, "Most popular page"],
+    { n: d.total_views.toLocaleString(), l: "Pageviews", icon: "eye", bg: "var(--blue-soft)", fg: "var(--blue)", delta: deltaRow(d.total_views, d.prev_views) },
+    { n: d.total_searches.toLocaleString(), l: "Searches", icon: "search", bg: "var(--brand-soft)", fg: "var(--brand)", delta: deltaRow(d.total_searches, d.prev_searches) },
+    { n: d.total_applies.toLocaleString(), l: "Apply clicks", icon: "click", bg: "var(--green-soft)", fg: "var(--green-ink)", delta: deltaRow(d.total_applies, d.prev_applies) },
+    { n: `${applyRate.toFixed(1)}%`, l: "Apply rate", icon: "target", bg: "var(--amber-soft)", fg: "var(--amber)", delta: deltaRow(Math.round(applyRate * 10), Math.round(prevApplyRate * 10)) },
   ];
-  document.getElementById("statGrid").innerHTML = tiles.map(([n, l]) => `
-    <div class="stat-tile"><div class="n">${n}</div><div class="l">${l}</div></div>
+  document.getElementById("statGrid").innerHTML = tiles.map(t => `
+    <div class="stat-tile">
+      <div class="stat-top">
+        <span class="stat-icon" style="background:${t.bg};color:${t.fg}">${ICONS[t.icon]}</span>
+      </div>
+      <div class="n">${t.n}</div>
+      <div class="l">${t.l}</div>
+      ${t.delta}
+    </div>
   `).join("");
 }
 
-function renderDayChart(byDay) {
-  const el = document.getElementById("dayChart");
-  if (!byDay.length) { el.innerHTML = `<div class="bar-chart-empty">No pageviews in this range yet.</div>`; return; }
-  const max = Math.max(...byDay.map(r => r.n), 1);
-  el.innerHTML = byDay.map(r => {
-    const h = Math.max(2, Math.round((r.n / max) * 100));
-    const label = new Date(r.day + "T00:00:00").toLocaleDateString(undefined, {month:"short", day:"numeric"});
-    return `<div class="col" title="${r.n} on ${r.day}">
+function smoothPath(pts) {
+  if (pts.length < 2) { const [x, y] = pts[0] || [0, 0]; return `M${x},${y}`; }
+  let d = `M${pts[0][0]},${pts[0][1]}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [x0, y0] = pts[i], [x1, y1] = pts[i + 1];
+    const mx = (x0 + x1) / 2;
+    d += ` C${mx},${y0} ${mx},${y1} ${x1},${y1}`;
+  }
+  return d;
+}
+
+function renderTrendPanel(d) {
+  const byDay = d.by_day;
+  const panel = document.getElementById("trendPanel");
+  const delta = pctDelta(d.total_views, d.prev_views);
+  const summaryHtml = `
+    <div class="trend-summary">
+      <div class="n">${d.total_views.toLocaleString()}</div>
+      <div class="l">Total pageviews</div>
+      <div class="delta-row">
+        <span class="delta ${delta >= 0 ? "up" : "down"}">${delta >= 0 ? "▲" : "▼"} ${Math.abs(delta).toFixed(1)}%</span>
+      </div>
+    </div>`;
+
+  if (!byDay.length) {
+    panel.innerHTML = summaryHtml + `<div class="trend-chart-wrap"><div class="bar-chart-empty">No pageviews in this range yet.</div></div>`;
+    return;
+  }
+
+  const W = 640, H = 170, PAD = 6;
+  const vals = byDay.map(r => r.n);
+  const max = Math.max(...vals, 1);
+  const stepX = byDay.length > 1 ? (W - PAD * 2) / (byDay.length - 1) : 0;
+  const pts = byDay.map((r, i) => {
+    const x = PAD + i * stepX;
+    const y = H - PAD - (r.n / max) * (H - PAD * 2);
+    return [x, y];
+  });
+  const linePath = smoothPath(pts);
+  const areaPath = `${linePath} L${pts[pts.length - 1][0]},${H} L${pts[0][0]},${H} Z`;
+  const last = pts[pts.length - 1];
+
+  panel.innerHTML = summaryHtml + `
+    <div class="trend-chart-wrap">
+      <div class="trend-tooltip" id="trendTooltip"></div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" id="trendSvg">
+        <defs>
+          <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="var(--brand)" stop-opacity="0.28"/>
+            <stop offset="100%" stop-color="var(--brand)" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${areaPath}" fill="url(#trendFill)" stroke="none"></path>
+        <path d="${linePath}" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        <line id="trendGuide" x1="${last[0]}" y1="0" x2="${last[0]}" y2="${H}" stroke="var(--hairline-strong)" stroke-width="1" style="display:none"></line>
+        <circle id="trendDot" cx="${last[0]}" cy="${last[1]}" r="4" fill="var(--brand)" stroke="var(--surface)" stroke-width="2"></circle>
+        <rect id="trendCapture" x="0" y="0" width="${W}" height="${H}" fill="transparent"></rect>
+      </svg>
+    </div>`;
+
+  const svg = document.getElementById("trendSvg");
+  const capture = document.getElementById("trendCapture");
+  const dot = document.getElementById("trendDot");
+  const guide = document.getElementById("trendGuide");
+  const tooltip = document.getElementById("trendTooltip");
+
+  function showAt(idx) {
+    const [x, y] = pts[idx];
+    dot.setAttribute("cx", x); dot.setAttribute("cy", y);
+    guide.setAttribute("x1", x); guide.setAttribute("x2", x);
+    const day = byDay[idx];
+    const label = new Date(day.day + "T00:00:00").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    tooltip.style.left = `${(x / W) * 100}%`;
+    tooltip.innerHTML = `<b>${day.n}</b><span>${label}</span>`;
+  }
+
+  capture.addEventListener("mousemove", e => {
+    const rect = svg.getBoundingClientRect();
+    const relX = ((e.clientX - rect.left) / rect.width) * W;
+    let idx = stepX ? Math.round((relX - PAD) / stepX) : 0;
+    idx = Math.max(0, Math.min(byDay.length - 1, idx));
+    guide.style.display = "block";
+    tooltip.style.display = "block";
+    showAt(idx);
+  });
+  capture.addEventListener("mouseleave", () => {
+    guide.style.display = "none";
+    tooltip.style.display = "none";
+    dot.setAttribute("cx", last[0]); dot.setAttribute("cy", last[1]);
+  });
+}
+
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+function renderWeekdayChart(byWeekday) {
+  const el = document.getElementById("weekdayChart");
+  const counts = new Array(7).fill(0);
+  byWeekday.forEach(r => { counts[r.wd] = r.n; });
+  const total = counts.reduce((a, b) => a + b, 0);
+  if (!total) { el.innerHTML = `<div class="bar-chart-empty">No data yet.</div>`; return; }
+  const max = Math.max(...counts, 1);
+  const peakIdx = counts.indexOf(max);
+  el.innerHTML = counts.map((n, i) => {
+    const h = Math.max(3, Math.round((n / max) * 100));
+    const isPeak = i === peakIdx && n > 0;
+    return `<div class="col${isPeak ? " peak" : ""}">
+      ${isPeak ? `<span class="peak-n">${n}</span>` : ""}
       <div class="bar" style="height:${h}%"></div>
-      <div class="lbl">${label}</div>
+      <div class="lbl">${WEEKDAY_LABELS[i]}</div>
     </div>`;
   }).join("");
 }
 
+const DEVICE_COLORS = { desktop: "var(--brand)", mobile: "var(--blue)", tablet: "var(--green)" };
 function renderDeviceBars(byDevice) {
   const el = document.getElementById("deviceBars");
   if (!byDevice.length) { el.innerHTML = `<div class="empty">No data yet.</div>`; return; }
@@ -443,35 +607,38 @@ function renderDeviceBars(byDevice) {
   el.innerHTML = byDevice.map(r => `
     <div class="hbar-row">
       <span class="lbl">${escapeHtml(r.device)}</span>
-      <span class="track"><span class="fill" style="width:${Math.round((r.n/max)*100)}%"></span></span>
+      <span class="track"><span class="fill" style="width:${Math.round((r.n/max)*100)}%;background:${DEVICE_COLORS[r.device] || "var(--brand)"}"></span></span>
       <span class="n">${r.n}</span>
     </div>
   `).join("");
 }
 
+function initials(s) {
+  return String(s ?? "").trim().slice(0, 2).toUpperCase() || "–";
+}
 function renderCountryList(byCountry) {
   document.getElementById("countryList").outerHTML = `<div id="countryList" class="rank-list">` +
     (byCountry.length ? byCountry.map(r => `
-      <div class="rank-row"><span class="name">${escapeHtml(r.country)}</span><span class="n">${r.n}</span></div>
+      <div class="rank-row"><span class="who"><span class="rank-avatar">${escapeHtml(initials(r.country))}</span><span class="name">${escapeHtml(r.country)}</span></span><span class="n">${r.n}</span></div>
     `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;
 }
 function renderPagesList(topPages) {
   document.getElementById("pagesList").outerHTML = `<div id="pagesList" class="rank-list">` +
     (topPages.length ? topPages.map(r => `
-      <div class="rank-row"><span class="name">${escapeHtml(pageLabel(r.path))}</span><span class="n">${r.n}</span></div>
+      <div class="rank-row"><span class="who"><span class="rank-avatar">${escapeHtml(initials(pageLabel(r.path)))}</span><span class="name">${escapeHtml(pageLabel(r.path))}</span></span><span class="n">${r.n}</span></div>
     `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;
 }
 function renderSearchesList(topSearches) {
   document.getElementById("searchesList").outerHTML = `<div id="searchesList" class="rank-list">` +
     (topSearches.length ? topSearches.map(r => `
-      <div class="rank-row"><span class="name">${escapeHtml(r.query)}</span><span class="n">${r.n}</span></div>
+      <div class="rank-row"><span class="who"><span class="rank-avatar">${escapeHtml(initials(r.query))}</span><span class="name">${escapeHtml(r.query)}</span></span><span class="n">${r.n}</span></div>
     `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;
 }
 function renderAppliedList(topApplied) {
   document.getElementById("appliedList").outerHTML = `<div id="appliedList" class="rank-list">` +
     (topApplied.length ? topApplied.map(r => `
       <div class="rank-row">
-        <span class="name">${escapeHtml(r.job_title)} <span class="sub">— ${escapeHtml(r.company)}</span></span>
+        <span class="who"><span class="rank-avatar">${escapeHtml(initials(r.company))}</span><span class="name">${escapeHtml(r.job_title)} <span class="sub">— ${escapeHtml(r.company)}</span></span></span>
         <span class="n">${r.n}</span>
       </div>
     `).join("") : `<div class="empty">No data yet.</div>`) + `</div>`;

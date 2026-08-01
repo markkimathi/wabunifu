@@ -201,11 +201,19 @@ def cleanup_stale_analytics(days: int = ANALYTICS_RETENTION_DAYS) -> None:
 
 
 def get_analytics_summary(days: int = 30) -> dict:
-    since = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec="seconds")
+    now = datetime.now(timezone.utc)
+    since = (now - timedelta(days=days)).isoformat(timespec="seconds")
+    prev_since = (now - timedelta(days=days * 2)).isoformat(timespec="seconds")
     c = _conn()
 
     def count(table: str) -> int:
         return c.execute(f"SELECT COUNT(*) FROM {table} WHERE created_at >= ?", (since,)).fetchone()[0]
+
+    def count_prev(table: str) -> int:
+        return c.execute(
+            f"SELECT COUNT(*) FROM {table} WHERE created_at >= ? AND created_at < ?",
+            (prev_since, since),
+        ).fetchone()[0]
 
     def rows(sql: str) -> list[dict]:
         return [dict(r) for r in c.execute(sql, (since,)).fetchall()]
@@ -215,10 +223,18 @@ def get_analytics_summary(days: int = 30) -> dict:
         "total_views": count("pageviews"),
         "total_searches": count("search_events"),
         "total_applies": count("apply_clicks"),
+        "prev_views": count_prev("pageviews"),
+        "prev_searches": count_prev("search_events"),
+        "prev_applies": count_prev("apply_clicks"),
         "by_day": rows("""
             SELECT substr(created_at,1,10) AS day, COUNT(*) AS n
             FROM pageviews WHERE created_at >= ?
             GROUP BY day ORDER BY day
+        """),
+        "by_weekday": rows("""
+            SELECT CAST(strftime('%w', created_at) AS INTEGER) AS wd, COUNT(*) AS n
+            FROM pageviews WHERE created_at >= ?
+            GROUP BY wd
         """),
         "by_device": rows("""
             SELECT device, COUNT(*) AS n FROM pageviews WHERE created_at >= ?
