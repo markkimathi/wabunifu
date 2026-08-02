@@ -325,6 +325,13 @@
   /* ---- wizard: step progress (ported from post.html) ---- */
   #wizardWrap{display:none}
   .wizard-inner{max-width:480px;margin:48px auto 0}
+  /* Tablet: the 480px cap made sense against a full desktop-width wrap,
+     but on tablet it leaves the wizard noticeably narrower than the
+     dashboard content (profile card etc.) shown on this same page —
+     let it fill the same width instead. */
+  @media(min-width:768px) and (max-width:1399px){
+    .wizard-inner{max-width:none}
+  }
   .steps-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
   .step-label{font-size:13px;color:var(--muted);font-weight:600}
   .step-label b{color:var(--ink)}

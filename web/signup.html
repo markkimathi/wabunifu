@@ -217,6 +217,13 @@
   .gate{max-width:480px;margin:24px auto 0}
   .gate-panel{display:flex;flex-direction:column;gap:14px}
   .gate-foot{text-align:center;font-size:13.5px;color:var(--muted);margin:20px 0 0}
+  /* Tablet: the 480px cap made sense against a full desktop-width wrap,
+     but on tablet it leaves the form noticeably narrower than the
+     heading above it — let it fill the same width as the rest of the
+     page's content instead. */
+  @media(min-width:768px) and (max-width:1399px){
+    .gate{max-width:none}
+  }
 
   /* ---- verify: OTP code entry ---- */
   #verifyWrap{display:none}
