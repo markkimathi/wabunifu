@@ -115,6 +115,13 @@
     .bar-stat .stattext{display:none}
     .bar-stat{padding:7px 10px}
   }
+  /* Same idea, but triggered by the scrolled state itself rather than
+     viewport width — the compact search pill growing to 230px inside
+     .header-center eats into the room .bar-right has, on any screen
+     width, so drop the same supplementary text there too instead of
+     only below 1500px. */
+  header.bar.scrolled .bar-stat .stattext{display:none}
+  header.bar.scrolled .bar-stat{padding:7px 10px}
   /* .header-center is a real flex:1 child now (not absolutely centered
      on the viewport independent of its siblings), so it's physically
      bounded by whatever space brand and bar-right leave it — it can
@@ -476,7 +483,7 @@
      right-side icon cluster (theme toggle + account chip) — below this
      it starts colliding with them, so hand off to the hamburger sooner
      than the plain "mobile" breakpoint above. */
-  @media(max-width:1100px){
+  @media(max-width:1400px){
     .header-center{display:none}
     .menu-toggle{display:block}
   }
