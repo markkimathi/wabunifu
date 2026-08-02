@@ -117,6 +117,12 @@
   }
   @media(max-width:600px){
     body{font-size:14px}
+  }
+  /* Centered nav needs real room on either side for the brand and the
+     right-side icon cluster (theme toggle + account chip) — below this
+     it starts colliding with them, so hand off to the hamburger sooner
+     than the plain "mobile" breakpoint above. */
+  @media(max-width:1100px){
     .nav-links{display:none}
     .menu-toggle{display:block}
   }
@@ -263,6 +269,7 @@
     <nav class="nav-links">
       <a class="nav-jobs" href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/designers">Find a designer</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
     </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
@@ -295,6 +302,7 @@
   <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/designers">Find a designer</a>
       <a href="/account" class="mm-cta-outline">Create an account</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>

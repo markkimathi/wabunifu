@@ -109,9 +109,20 @@
     font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
   .bar-stat b{color:var(--ink);font-weight:700}
   .bar-stat .livedot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotblink 2.6s ease-in-out infinite}
+  /* The centered nav (.header-center) is absolutely positioned on the
+     viewport midpoint, independent of the brand/right-icon clusters on
+     either side of it — so on medium-width desktops (a fixed-width nav
+     centered on a narrower viewport, while the two side clusters stay
+     the same width) it can run into the right-side icon cluster. Drop
+     the stat's supplementary text first, since it's the least essential
+     thing over there, before anything in the nav itself has to give. */
+  @media(max-width:1500px){
+    .bar-stat .stattext{display:none}
+    .bar-stat{padding:7px 10px}
+  }
   .header-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     display:flex;align-items:center;gap:18px}
-  .nav-links{display:flex;align-items:center;gap:22px;white-space:nowrap}
+  .nav-links{display:flex;align-items:center;gap:12px;white-space:nowrap}
   .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
     transition:color .3s var(--ease-expo)}
   .nav-links a:hover{color:var(--ink)}
@@ -455,10 +466,16 @@
 
   @media(max-width:600px){
     body{font-size:14px}
-    .header-center{display:none}
-    .menu-toggle{display:block}
     .hero-videos{display:none}
     .seg{min-height:40px}
+  }
+  /* Centered nav needs real room on either side for the brand and the
+     right-side icon cluster (theme toggle + account chip) — below this
+     it starts colliding with them, so hand off to the hamburger sooner
+     than the plain "mobile" breakpoint above. */
+  @media(max-width:1100px){
+    .header-center{display:none}
+    .menu-toggle{display:block}
   }
   @media(min-width:861px){.rail-close-x{display:none}}
   @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -481,6 +498,7 @@
       <nav class="nav-links">
         <a class="nav-jobs" href="/">Jobs</a>
         <a href="/post">Post a job</a>
+        <a href="/designers">Find a designer</a>
         <a href="mailto:hello@odana.design">Contact us</a>
         <a href="/cv-check" class="nav-cta">Check your CV</a>
       </nav>
@@ -516,6 +534,7 @@
   <nav class="mm-nav">
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
+      <a href="/designers">Find a designer</a>
       <a href="/account" class="mm-cta-outline">Create an account</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
