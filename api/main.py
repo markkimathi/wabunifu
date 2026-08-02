@@ -320,8 +320,7 @@ def submit_job(payload: JobSubmission):
     return {"ok": True, "id": sub_id, "status": "pending"}
 
 
-@app.get("/api/jobs")
-def get_jobs():
+def _combined_jobs() -> tuple[list[dict], str | None]:
     scraped: list[dict] = []
     generated_at = None
     if JOBS_JSON.exists():
@@ -345,10 +344,28 @@ def get_jobs():
     # submissions, which run.py never sees.
     combined = [j for j in employer_jobs + scraped if j["days"] <= MAX_AGE_DAYS]
     combined.sort(key=lambda j: j["days"])
+    return combined, generated_at
+
+
+@app.get("/api/jobs")
+def get_jobs():
+    combined, generated_at = _combined_jobs()
     return {
         "generated_at": generated_at or datetime.now().isoformat(timespec="seconds"),
         "count": len(combined),
         "jobs": combined,
+    }
+
+
+@app.get("/api/jobs/count")
+def get_jobs_count():
+    """Lightweight sibling of /api/jobs for the header's live role count,
+    which every page shows (not just the jobs listing) — avoids shipping the
+    full jobs payload site-wide just to read its length."""
+    combined, generated_at = _combined_jobs()
+    return {
+        "generated_at": generated_at or datetime.now().isoformat(timespec="seconds"),
+        "count": len(combined),
     }
 
 

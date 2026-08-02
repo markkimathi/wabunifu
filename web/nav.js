@@ -131,11 +131,32 @@
       });
   }
 
+  // Live role count pill in the header (".bar-stat"): shared across every
+  // page, not just the jobs listing, so it's driven by the lightweight
+  // /api/jobs/count endpoint here rather than each page fetching the full
+  // jobs payload just to read its length.
+  function initLiveCount(){
+    var stat = document.querySelector(".bar-stat");
+    if(!stat) return;
+    fetch("/api/jobs/count", {cache: "no-store"})
+      .then(function(res){ return res.ok ? res.json() : null; })
+      .then(function(data){
+        if(!data) return;
+        var d = new Date(data.generated_at);
+        stat.innerHTML =
+          '<span class="livedot"></span><b id="liveCount">' + data.count +
+          '</b><span class="stattext"> roles · updated ' +
+          d.toLocaleDateString('en-GB', {day: 'numeric', month: 'short'}) + '</span>';
+      })
+      .catch(function(){});
+  }
+
   ready(function(){
     hidePageLoader();
     markActiveNav();
     track("/api/track/pageview", {path: location.pathname});
     initAccountMenu();
+    initLiveCount();
     var toggle = document.querySelector(".menu-toggle");
     var menu = document.querySelector(".mobile-menu");
     if(!toggle || !menu) return;

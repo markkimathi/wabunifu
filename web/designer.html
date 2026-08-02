@@ -6,7 +6,7 @@
 <title>Designer profile · Kazi</title>
 <link rel="icon" type="image/png" href="/favicon.png">
 <script src="/theme.js?v=6"></script>
-<script src="/nav.js?v=7"></script>
+<script src="/nav.js?v=8"></script>
 <style>
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -49,11 +49,22 @@
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
   .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
-  .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
   .logomark{height:20px;width:auto;flex:none;display:block}
-  .bar-spacer{flex:1}
-  .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    display:flex;align-items:center;gap:24px;white-space:nowrap}
+  .bar-stat{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);
+    background:var(--surface);border:1px solid var(--hairline);border-radius:999px;padding:7px 14px;
+    font-variant-numeric:tabular-nums;box-shadow:var(--shadow);flex:none}
+  .bar-stat b{color:var(--ink);font-weight:700}
+  .bar-stat .livedot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotblink 2.6s ease-in-out infinite}
+  @keyframes dotblink{0%,100%{opacity:1}50%{opacity:.25}}
+  @media(max-width:1500px){
+    .bar-stat .stattext{display:none}
+    .bar-stat{padding:7px 10px}
+  }
+  .header-center{flex:1;min-width:0;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;gap:18px}
+  .bar-right{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
+  .nav-links{display:flex;align-items:center;gap:24px;white-space:nowrap}
   .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
     transition:color .3s var(--ease-expo)}
   .nav-links a:hover{color:var(--ink)}
@@ -111,12 +122,19 @@
   @media(max-width:600px){
     body{font-size:14px}
   }
+  @media(max-width:860px){
+    .bar-inner{gap:10px}
+    .bar-stat{padding:6px 10px;font-size:12px;gap:5px}
+    .bar-stat .stattext{display:none}
+    .nav-links{gap:14px}
+    .nav-links a{font-size:12.5px;white-space:nowrap}
+  }
   /* Centered nav needs real room on either side for the brand and the
      right-side icon cluster (theme toggle + account chip) — below this
      it starts colliding with them, so hand off to the hamburger sooner
      than the plain "mobile" breakpoint above. */
   @media(max-width:767px),(orientation:portrait) and (max-width:1400px){
-    .nav-links{display:none}
+    .header-center{display:none}
     .menu-toggle{display:block}
   }
   /* Tablet portrait: put the hamburger at the far right edge, past
@@ -212,14 +230,18 @@
     <a class="brand" href="/">
       <img class="logomark" src="/logo.png" alt="Kazi">
     </a>
-    <div class="bar-spacer"></div>
+    <div class="header-center">
     <nav class="nav-links">
       <a class="nav-jobs" href="/">Jobs</a>
       <a href="/post">Post a job</a>
       <a href="/designers">Find a designer</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
-    </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
+    </nav>
+    </div>
+    <div class="bar-right">
+      <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
+    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
       <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
       <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
     </button>
@@ -237,6 +259,7 @@
         <a href="/account">My profile</a>
         <button type="button" id="acctLogoutBtn">Log out</button>
       </div>
+    </div>
     </div>
   </div>
 </header>

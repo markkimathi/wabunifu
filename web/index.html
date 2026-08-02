@@ -6,7 +6,7 @@
 <title>Kazi · Design jobs, open to Africa</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
-<script src="nav.js?v=7"></script>
+<script src="nav.js?v=8"></script>
 <style>
   /* ---- Grift (local) ---- */
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Thin.woff2") format("woff2"),url("fonts/grift/Grift-Thin.woff") format("woff");font-weight:100;font-style:normal;font-display:swap}
@@ -1014,11 +1014,9 @@ async function boot(){
     if(!res.ok) throw new Error("no jobs feed reachable");
     const data = await res.json();
     JOBS = data.jobs || [];
-    if(data.generated_at){
-      const d = new Date(data.generated_at);
-      document.querySelector(".bar-stat").innerHTML =
-        `<span class="livedot"></span><b id="liveCount">${JOBS.length}</b><span class="stattext"> roles · updated ${d.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>`;
-    }
+    // The header's role-count pill itself is populated by nav.js's
+    // initLiveCount() (shared across every page); render() below keeps
+    // #liveCount in sync with whatever JOBS this page actually loaded.
   }catch(e){
     JOBS = FALLBACK;  // opened as a loose file, or neither feed is reachable
   }
