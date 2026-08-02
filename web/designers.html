@@ -288,7 +288,7 @@
   <div class="head">
     <p class="kicker">For employers</p>
     <h1>Find a designer</h1>
-    <p class="lede">Browse designer profiles from across Kazi's community — bios, portfolios, and where to reach them.</p>
+    <p class="lede">Browse designer profiles from across Kazi's community: bios, portfolios, and where to reach them.</p>
   </div>
 
   <div class="toolbar">
@@ -341,7 +341,7 @@ function renderGrid() {
   const grid = document.getElementById("grid");
   const rows = activeDiscipline ? allDesigners.filter(d => d.discipline === activeDiscipline) : allDesigners;
   if (!rows.length) {
-    grid.innerHTML = `<div class="empty"><h4>No designers here yet</h4><p>Check back soon, or be the first — <a href="/account">create a profile</a>.</p></div>`;
+    grid.innerHTML = `<div class="empty"><h4>No designers here yet</h4><p>Check back soon, or be the first to <a href="/account">create a profile</a>.</p></div>`;
     return;
   }
   grid.innerHTML = rows.map(d => `
