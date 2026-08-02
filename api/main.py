@@ -40,7 +40,7 @@ from .db import (  # noqa: E402
     init_db, insert_submission, list_submissions, get_submission, set_status,
     log_pageview, log_search, log_apply_click, get_analytics_summary,
     create_designer, get_designer, get_designer_by_email, get_designer_by_handle,
-    update_designer_profile, HandleTaken,
+    update_designer_profile, update_designer_handle, HandleTaken,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
     list_designers, list_approved_designers, delete_designer, replace_designer_links,
     list_designer_links, create_session, get_session, delete_session, delete_sessions_for_designer,
@@ -236,7 +236,6 @@ class ProfileUpdate(BaseModel):
     location: str = ""
     phone: str = ""
     contact_email: str = ""
-    handle: str = ""
 
     @field_validator("display_name")
     @classmethod
@@ -245,12 +244,14 @@ class ProfileUpdate(BaseModel):
             raise ValueError("enter your name")
         return v.strip()
 
+
+class HandleUpdate(BaseModel):
+    handle: str
+
     @field_validator("handle")
     @classmethod
     def _valid_handle(cls, v: str) -> str:
         v = v.strip().lstrip("@").lower()
-        if not v:
-            return v
         if not HANDLE_RE.match(v) or v in RESERVED_HANDLES:
             raise ValueError("handle must be 3-30 characters: lowercase letters, numbers, and underscores, starting with a letter")
         return v
@@ -531,16 +532,21 @@ def designer_me(designer: dict = Depends(require_designer)):
 def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_designer)):
     if payload.discipline and payload.discipline not in DISCIPLINES:
         raise HTTPException(400, f"discipline must be one of {DISCIPLINES}")
+    update_designer_profile(
+        designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
+        discipline=payload.discipline, location=payload.location.strip()[:200],
+        phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
+    )
+    return {"ok": True}
+
+
+@app.put("/api/designers/me/handle")
+def designer_update_handle(payload: HandleUpdate, designer: dict = Depends(require_designer)):
     try:
-        update_designer_profile(
-            designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
-            discipline=payload.discipline, location=payload.location.strip()[:200],
-            phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
-            handle=payload.handle,
-        )
+        update_designer_handle(designer["id"], payload.handle)
     except HandleTaken:
         raise HTTPException(400, "That handle is already taken.")
-    return {"ok": True}
+    return {"ok": True, "handle": payload.handle}
 
 
 @app.put("/api/designers/me/links")

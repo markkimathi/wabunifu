@@ -26,6 +26,7 @@ ANALYTICS_RETENTION_DAYS are deleted on startup; see cleanup_stale_analytics.
 """
 from __future__ import annotations
 import os
+import re
 import secrets
 import sqlite3
 from pathlib import Path
@@ -166,6 +167,7 @@ def init_db() -> None:
     c.close()
     cleanup_stale_analytics()
     cleanup_stale_designer_tokens()
+    backfill_designer_handles()
 
 
 def insert_submission(data: dict) -> int:
@@ -218,12 +220,57 @@ def set_status(sub_id: int, status: str) -> None:
 # above (pending/approved/rejected), sitting on top of real per-account auth.
 # ---------------------------------------------------------------------------
 
+def _slugify_handle(name: str) -> str:
+    """Turn a display name into a valid handle base: lowercase letters/digits
+    only, starting with a letter, at least 3 characters. Matches main.py's
+    HANDLE_RE (^[a-z][a-z0-9_]{2,29}$) by construction — this is the only
+    place that generates a handle without going through that validator."""
+    base = re.sub(r"[^a-z0-9]", "", name.lower())
+    if not base or not base[0].isalpha():
+        base = "designer" + base
+    base = base[:30]
+    while len(base) < 3:
+        base += "0"
+    return base
+
+
+def _unique_handle(c: sqlite3.Connection, display_name: str, exclude_id: int | None = None) -> str:
+    base = _slugify_handle(display_name)
+    candidate = base
+    n = 2
+    while True:
+        row = c.execute(
+            "SELECT id FROM designers WHERE lower(handle) = ?", (candidate,)
+        ).fetchone()
+        if not row or row["id"] == exclude_id:
+            return candidate
+        candidate = f"{base}{n}"[:30]
+        n += 1
+
+
+def backfill_designer_handles() -> None:
+    """One-time-per-startup pass: any designer row from before handles
+    existed (or created some other way with handle left blank) gets one
+    auto-picked from their display name, so every profile always has a URL."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT id, display_name FROM designers WHERE handle = '' OR handle IS NULL"
+    ).fetchall()
+    for row in rows:
+        handle = _unique_handle(c, row["display_name"], exclude_id=row["id"])
+        c.execute("UPDATE designers SET handle = ? WHERE id = ?", (handle, row["id"]))
+    if rows:
+        c.commit()
+    c.close()
+
+
 def create_designer(email: str, password_hash: str, display_name: str) -> int:
     c = _conn()
+    handle = _unique_handle(c, display_name)
     cur = c.execute(
-        "INSERT INTO designers (email, password_hash, display_name, status, created_at) "
-        "VALUES (?, ?, ?, 'pending', ?)",
-        (email, password_hash, display_name, datetime.now(timezone.utc).isoformat(timespec="seconds")),
+        "INSERT INTO designers (email, password_hash, display_name, handle, status, created_at) "
+        "VALUES (?, ?, ?, ?, 'pending', ?)",
+        (email, password_hash, display_name, handle, datetime.now(timezone.utc).isoformat(timespec="seconds")),
     )
     c.commit()
     designer_id = cur.lastrowid
@@ -260,17 +307,9 @@ class HandleTaken(Exception):
 
 def update_designer_profile(
     designer_id: int, *, display_name: str, bio: str, discipline: str, location: str,
-    phone: str = "", contact_email: str = "", handle: str = "",
+    phone: str = "", contact_email: str = "",
 ) -> None:
     c = _conn()
-    if handle:
-        clash = c.execute(
-            "SELECT id FROM designers WHERE lower(handle) = ? AND id != ?",
-            (handle.lower(), designer_id),
-        ).fetchone()
-        if clash:
-            c.close()
-            raise HandleTaken(handle)
     # Editing an approved profile sends it back for re-review, same as a job
     # listing would if it were editable — never let a live public profile
     # change without another pass through the admin queue.
@@ -278,9 +317,27 @@ def update_designer_profile(
     new_status = "pending" if row and row["status"] == "approved" else (row["status"] if row else "pending")
     c.execute(
         "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, "
-        "phone = ?, contact_email = ?, handle = ?, status = ? WHERE id = ?",
-        (display_name, bio, discipline, location, phone, contact_email, handle, new_status, designer_id),
+        "phone = ?, contact_email = ?, status = ? WHERE id = ?",
+        (display_name, bio, discipline, location, phone, contact_email, new_status, designer_id),
     )
+    c.commit()
+    c.close()
+
+
+def update_designer_handle(designer_id: int, handle: str) -> None:
+    """Handle edits are deliberately kept separate from update_designer_profile
+    and DON'T reset an approved profile back to pending: a handle is a URL
+    slug, not moderated content, so changing it shouldn't pull a live profile
+    out of the directory for re-review the way editing bio/photo/etc. does."""
+    c = _conn()
+    clash = c.execute(
+        "SELECT id FROM designers WHERE lower(handle) = ? AND id != ?",
+        (handle.lower(), designer_id),
+    ).fetchone()
+    if clash:
+        c.close()
+        raise HandleTaken(handle)
+    c.execute("UPDATE designers SET handle = ? WHERE id = ?", (handle, designer_id))
     c.commit()
     c.close()
 

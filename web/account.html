@@ -45,7 +45,12 @@
     font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
   body > .wrap{flex:1}
   a{color:inherit}
-  .wrap{max-width:640px;margin:0 auto;padding:0 24px}
+  /* width:100% (not just max-width) matters here: body is a column flex
+     container, and a flex item with auto horizontal margins skips stretch
+     and shrink-wraps to its content instead — without this, each .wrap's
+     rendered width silently followed whatever was inside it (e.g. the OTP
+     boxes' fixed width) rather than the max-width below. */
+  .wrap{width:100%;max-width:640px;margin:0 auto;padding:0 24px}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
@@ -174,7 +179,8 @@
   [data-theme="dark"] .err{color:#FF6B5B}
 
   /* ---- gate: log in / sign up / forgot password ---- */
-  .gate{max-width:420px;margin:48px auto}
+  #gateWrap > h1{margin-top:48px}
+  .gate{max-width:480px;margin:24px auto 0}
   .gate-tabs{display:flex;gap:8px;margin-bottom:22px}
   .gate-tabs button{flex:1;font:inherit;font-size:13.5px;font-weight:700;padding:10px;border-radius:999px;
     border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
@@ -184,7 +190,7 @@
 
   /* ---- verify: OTP code entry ---- */
   #verifyWrap{display:none}
-  .verify-box{max-width:400px;margin:56px auto;text-align:center}
+  .verify-box{max-width:480px;margin:48px auto 0;text-align:center}
   .verify-icon{width:56px;height:56px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
     display:grid;place-items:center;margin:0 auto 18px}
   .verify-box h1{margin:0 0 6px}
@@ -199,7 +205,7 @@
 
   /* ---- dashboard: empty + filled states ---- */
   #dashboardWrap{display:none}
-  .empty-state{max-width:420px;margin:56px auto;text-align:center}
+  .empty-state{max-width:480px;margin:48px auto 0;text-align:center}
   .empty-avatar{width:96px;height:96px;border-radius:50%;border:2px dashed var(--hairline-strong);
     display:grid;place-items:center;margin:0 auto 20px;color:var(--faint)}
   .empty-state h1{margin:0 0 8px}
@@ -207,6 +213,21 @@
 
   .dash-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:32px;margin-bottom:20px}
   .dash-head h1{margin:0}
+
+  .handle-card{display:flex;align-items:center;gap:14px;padding:14px 18px;
+    border:1px solid var(--hairline);border-radius:var(--radius);background:var(--surface);
+    box-shadow:var(--shadow);margin-bottom:22px}
+  .handle-card-view{flex:1;min-width:0}
+  .handle-card-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--muted);margin:0 0 2px}
+  .handle-card-url{font-size:13.5px;font-weight:600;margin:0;color:var(--ink);
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .handle-card-url b{color:var(--brand)}
+  .handle-card-edit{display:none;align-items:center;gap:10px;flex:1;min-width:0}
+  .handle-card-edit .handle-wrap{flex:1;min-width:0}
+  .handle-card.-editing .handle-card-view{display:none}
+  .handle-card.-editing .handle-card-edit{display:flex}
+  .handle-card.-editing #handleEditBtn{display:none}
   .status-banner{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;
     font-size:13.5px;font-weight:600;margin-bottom:22px;flex-wrap:wrap}
   .status-banner.pending{background:var(--amber-soft);color:var(--amber)}
@@ -256,8 +277,8 @@
 
   /* ---- wizard: step progress (ported from post.html) ---- */
   #wizardWrap{display:none}
-  .wizard-inner{max-width:520px;margin:0 auto}
-  .steps-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:32px}
+  .wizard-inner{max-width:480px;margin:48px auto 0}
+  .steps-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
   .step-label{font-size:13px;color:var(--muted);font-weight:600}
   .step-label b{color:var(--ink)}
   .step-bar{display:flex;gap:6px;flex:none}
@@ -437,6 +458,22 @@
     <div class="dash-head">
       <h1>Your profile</h1>
     </div>
+    <div class="handle-card" id="handleCard">
+      <div class="handle-card-view" id="handleCardView">
+        <p class="handle-card-label">Your profile URL</p>
+        <p class="handle-card-url">kazi.odana.design/designers/<b id="handleCardValue"></b></p>
+      </div>
+      <div class="handle-card-edit">
+        <div class="handle-wrap">
+          <span>@</span>
+          <input type="text" id="handleInput" maxlength="30" autocomplete="off">
+        </div>
+        <button type="button" class="btn-ghost" id="handleSaveBtn">Save</button>
+        <button type="button" class="link-inline" id="handleCancelBtn">Cancel</button>
+      </div>
+      <button type="button" class="btn-ghost" id="handleEditBtn">Edit</button>
+    </div>
+    <p class="err" id="handleErr" style="display:none"></p>
     <div id="statusBanner"></div>
     <div class="profile-card" id="profileCard"></div>
     <div class="dash-actions">
@@ -487,12 +524,6 @@
       <p class="step-sub">This is how you'll show up in the directory.</p>
       <label class="field"><span>Name</span>
         <input type="text" id="wizardName" required>
-      </label>
-      <label class="field"><span>Handle <span class="hint">(used in your profile URL)</span></span>
-        <div class="handle-wrap">
-          <span>@</span>
-          <input type="text" id="wizardHandle" required pattern="[a-z][a-z0-9_]{2,29}" maxlength="30" placeholder="yourname" autocomplete="off">
-        </div>
       </label>
       <label class="field"><span>Job function</span>
         <select id="wizardDiscipline" required></select>
@@ -993,6 +1024,11 @@ function renderStatusBanner(m) {
   }
 }
 
+function renderHandleCard(m) {
+  document.getElementById("handleCardValue").textContent = `@${m.handle || ""}`;
+  document.getElementById("handleInput").value = m.handle || "";
+}
+
 function renderDashboard() {
   showView("dashboard");
   const emptyEl = document.getElementById("dashboardEmpty");
@@ -1004,21 +1040,57 @@ function renderDashboard() {
     emptyEl.style.display = "none";
     filledEl.style.display = "block";
     renderStatusBanner(me);
+    renderHandleCard(me);
     document.getElementById("profileCard").innerHTML = profileCardHtml(me);
     wireBioToggle(document.getElementById("profileCard"));
   }
 }
 
+/* ---------- editable handle card ---------- */
+const handleCard = document.getElementById("handleCard");
+const handleInput = document.getElementById("handleInput");
+const handleErr = document.getElementById("handleErr");
+
+handleInput.addEventListener("input", (e) => {
+  e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+});
+
+document.getElementById("handleEditBtn").addEventListener("click", () => {
+  handleErr.style.display = "none";
+  handleInput.value = me.handle || "";
+  handleCard.classList.add("-editing");
+  handleInput.focus();
+});
+
+document.getElementById("handleCancelBtn").addEventListener("click", () => {
+  handleErr.style.display = "none";
+  handleCard.classList.remove("-editing");
+});
+
+document.getElementById("handleSaveBtn").addEventListener("click", async () => {
+  handleErr.style.display = "none";
+  const btn = document.getElementById("handleSaveBtn");
+  btn.disabled = true;
+  try {
+    const res = await api("/api/designers/me/handle", {
+      method: "PUT", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({handle: handleInput.value.trim()}),
+    });
+    me.handle = res.handle;
+    renderHandleCard(me);
+    renderStatusBanner(me);
+    handleCard.classList.remove("-editing");
+  } catch (err) {
+    handleErr.textContent = err.message;
+    handleErr.style.display = "block";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 document.getElementById("startWizardBtn").addEventListener("click", () => openWizard());
 document.getElementById("editProfileBtn").addEventListener("click", () => openWizard());
 document.getElementById("wizardCloseBtn").addEventListener("click", async () => { await afterAuth(); });
-
-/* Handles are lowercase-only — strip anything else as the designer types
-   rather than rejecting on submit, so the pattern mismatch is never a
-   surprise at Next. */
-document.getElementById("wizardHandle").addEventListener("input", (e) => {
-  e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
-});
 
 /* ---------- wizard ---------- */
 const steps = Array.from(document.querySelectorAll(".step"));
@@ -1058,7 +1130,6 @@ function showStep(n) {
 function wizardState() {
   return {
     display_name: document.getElementById("wizardName").value.trim(),
-    handle: document.getElementById("wizardHandle").value.trim().toLowerCase(),
     discipline: document.getElementById("wizardDiscipline").value,
     location: document.getElementById("wizardLocation").value.trim(),
     phone: document.getElementById("wizardPhone").value.trim(),
@@ -1071,7 +1142,6 @@ function wizardState() {
 
 function openWizard() {
   document.getElementById("wizardName").value = me.display_name || "";
-  document.getElementById("wizardHandle").value = me.handle || "";
   document.getElementById("wizardDiscipline").value = me.discipline || "";
   document.getElementById("wizardLocation").value = me.location || "";
   document.getElementById("wizardPhone").value = me.phone || "";
@@ -1110,7 +1180,6 @@ async function saveProfileFields() {
     method: "PUT", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       display_name: document.getElementById("wizardName").value.trim(),
-      handle: document.getElementById("wizardHandle").value.trim().toLowerCase(),
       discipline: document.getElementById("wizardDiscipline").value,
       location: document.getElementById("wizardLocation").value.trim(),
       phone: document.getElementById("wizardPhone").value.trim(),
