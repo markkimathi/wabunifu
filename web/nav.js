@@ -81,6 +81,7 @@
   }
   function initAccountMenu(){
     var menu = document.getElementById("acctMenu");
+    var mmAccount = document.getElementById("mmAccount");
     var token = getAcctToken();
     if(!menu || !token) return;
 
@@ -92,9 +93,11 @@
       .then(function(me){
         document.getElementById("acctAvatar").src = me.photo_path || "/logo.png";
         document.querySelectorAll('a[href="/account"]').forEach(function(a){
-          if(!menu.contains(a)) a.style.display = "none";
+          if(menu.contains(a) || (mmAccount && mmAccount.contains(a))) return;
+          a.style.display = "none";
         });
         menu.classList.add("-visible");
+        if(mmAccount) mmAccount.style.display = "";
 
         var trigger = document.getElementById("acctTrigger");
         trigger.addEventListener("click", function(e){
@@ -109,12 +112,15 @@
           if(e.key === "Escape") menu.classList.remove("-open");
         });
 
-        document.getElementById("acctLogoutBtn").addEventListener("click", function(){
+        function doLogout(){
           fetch("/api/designers/logout", {method: "POST", headers: {"Authorization": "Bearer " + token}})
             .catch(function(){});
           clearAcctToken();
           location.href = "/";
-        });
+        }
+        document.getElementById("acctLogoutBtn").addEventListener("click", doLogout);
+        var mmLogoutBtn = document.getElementById("mmLogoutBtn");
+        if(mmLogoutBtn) mmLogoutBtn.addEventListener("click", doLogout);
       })
       .catch(function(){
         clearAcctToken();

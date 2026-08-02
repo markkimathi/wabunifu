@@ -6,7 +6,7 @@
 <title>CV Checker · Kazi</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
-<script src="nav.js?v=4"></script>
+<script src="nav.js?v=6"></script>
 <style>
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -80,7 +80,7 @@
 
   html.menu-open{overflow:hidden}
   .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
-    padding:20px 22px 40px;overflow:auto;
+    padding:20px 22px 40px;overflow:auto;display:flex;flex-direction:column;
     transform:translateX(100%);transition:transform .22s ease}
   .mobile-menu.-open{transform:translateX(0)}
   .mm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
@@ -93,6 +93,11 @@
     font-size:16px;font-weight:600;color:var(--ink);text-decoration:none;
     transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
   .mm-nav a:hover{background:var(--hairline)}
+  .mm-account{margin-top:auto}
+  .mm-nav button.mm-logout{display:block;width:100%;text-align:left;padding:14px 8px;margin:0 -8px;border-radius:8px;
+    font-size:16px;font-weight:600;color:var(--ink);background:none;border:0;cursor:pointer;font:inherit;
+    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
+  .mm-nav button.mm-logout:hover{background:var(--hairline)}
   .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
   .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
   .nav-links a.nav-cta{background:var(--brand);color:#fff;padding:7px 16px;border-radius:999px;margin-left:10px;font-weight:700;transition:filter .3s var(--ease-expo)}
@@ -132,8 +137,7 @@
     font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none}
   .acct-dropdown a:hover,.acct-dropdown button:hover{background:var(--hairline)}
   @media(max-width:600px){
-    .acct-label{display:none}
-    .acct-trigger{padding:0 8px 0 6px;gap:4px}
+    .acct-menu{display:none!important}
   }
 
   .theme-toggle{position:relative;flex:none;width:36px;height:36px;padding:0;border-radius:50%;
@@ -253,7 +257,14 @@
       <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
-    </nav>    <div class="acct-menu" id="acctMenu">
+    </nav>    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
+      <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
+    </button>
+    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
+      <span></span><span></span>
+    </button>
+    <div class="acct-menu" id="acctMenu">
       <button class="acct-trigger" id="acctTrigger" type="button" aria-haspopup="true" aria-expanded="false">
         <img class="acct-avatar" id="acctAvatar" src="" alt="">
         <span class="acct-label">Account</span>
@@ -264,13 +275,6 @@
         <button type="button" id="acctLogoutBtn">Log out</button>
       </div>
     </div>
-    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
-      <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-    </button>
-    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
-      <span></span><span></span>
-    </button>
   </div>
 </header>
 
@@ -285,6 +289,10 @@
       <a href="/account">Sign in</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
+  </nav>
+  <nav class="mm-nav mm-account" id="mmAccount" style="display:none">
+    <a href="/account">My profile</a>
+    <button type="button" class="mm-logout" id="mmLogoutBtn">Log out</button>
   </nav>
 </div>
 
