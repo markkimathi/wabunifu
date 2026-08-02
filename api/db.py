@@ -103,6 +103,9 @@ CREATE TABLE IF NOT EXISTS designers (
   phone TEXT NOT NULL DEFAULT '',
   contact_email TEXT NOT NULL DEFAULT '',
   handle TEXT NOT NULL DEFAULT '',
+  headline TEXT NOT NULL DEFAULT '',
+  years_experience TEXT NOT NULL DEFAULT '',
+  availability_status TEXT NOT NULL DEFAULT '',
   email_verified INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
@@ -145,6 +148,9 @@ _MIGRATIONS = [
     "ALTER TABLE designers ADD COLUMN phone TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN contact_email TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN handle TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN headline TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN years_experience TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN availability_status TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -308,6 +314,7 @@ class HandleTaken(Exception):
 def update_designer_profile(
     designer_id: int, *, display_name: str, bio: str, discipline: str, location: str,
     phone: str = "", contact_email: str = "",
+    headline: str = "", years_experience: str = "", availability_status: str = "",
 ) -> None:
     c = _conn()
     # Editing an approved profile sends it back for re-review, same as a job
@@ -317,8 +324,10 @@ def update_designer_profile(
     new_status = "pending" if row and row["status"] == "approved" else (row["status"] if row else "pending")
     c.execute(
         "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, "
-        "phone = ?, contact_email = ?, status = ? WHERE id = ?",
-        (display_name, bio, discipline, location, phone, contact_email, new_status, designer_id),
+        "phone = ?, contact_email = ?, headline = ?, years_experience = ?, "
+        "availability_status = ?, status = ? WHERE id = ?",
+        (display_name, bio, discipline, location, phone, contact_email,
+         headline, years_experience, availability_status, new_status, designer_id),
     )
     c.commit()
     c.close()
@@ -575,6 +584,23 @@ def cleanup_stale_analytics(days: int = ANALYTICS_RETENTION_DAYS) -> None:
         c.execute(f"DELETE FROM {table} WHERE created_at < ?", (cutoff,))
     c.commit()
     c.close()
+
+
+def count_profile_views(handle: str, designer_id: int) -> int:
+    """Total pageviews of a designer's public profile, matched against both
+    the numeric-id path and the handle path (older views may be logged under
+    either, e.g. before a handle existed or via an id-based link). Rows age
+    out after ANALYTICS_RETENTION_DAYS like the rest of this module's
+    analytics, so this is a rolling ~90-day count, not a lifetime total —
+    and a handle change silently orphans views logged under the old handle."""
+    paths = [f"/designers/{designer_id}"]
+    if handle:
+        paths.append(f"/designers/{handle}")
+    c = _conn()
+    placeholders = ",".join("?" * len(paths))
+    row = c.execute(f"SELECT COUNT(*) FROM pageviews WHERE path IN ({placeholders})", paths).fetchone()
+    c.close()
+    return row[0]
 
 
 def get_analytics_summary(days: int = 30) -> dict:

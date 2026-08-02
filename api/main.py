@@ -38,7 +38,7 @@ from models import Job, DISCIPLINES, ELIGIBILITY, MAX_AGE_DAYS  # noqa: E402  (r
 
 from .db import (  # noqa: E402
     init_db, insert_submission, list_submissions, get_submission, set_status,
-    log_pageview, log_search, log_apply_click, get_analytics_summary,
+    log_pageview, log_search, log_apply_click, get_analytics_summary, count_profile_views,
     create_designer, get_designer, get_designer_by_email, get_designer_by_handle,
     update_designer_profile, update_designer_handle, HandleTaken,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
@@ -56,6 +56,7 @@ JOBS_JSON = WEB_DIR / "jobs.json"
 WORK_TYPES = {"Remote", "Hybrid", "On-site"}
 LEVELS = {"Junior", "Mid", "Senior", "Lead"}
 MAX_LINKS = 8
+AVAILABILITY_STATUSES = ["Available", "Open to offers", "Not available"]
 
 # Designer profile handles (the @name used in public profile URLs instead of
 # a numeric id). Must start with a letter — this also guarantees a handle
@@ -236,6 +237,9 @@ class ProfileUpdate(BaseModel):
     location: str = ""
     phone: str = ""
     contact_email: str = ""
+    headline: str = ""
+    years_experience: str = ""
+    availability_status: str = ""
 
     @field_validator("display_name")
     @classmethod
@@ -252,6 +256,16 @@ class ProfileUpdate(BaseModel):
         # isn't a digit/+/space anyway in case a client ever sends something
         # freeform (or an old stray value gets re-submitted unchanged).
         return re.sub(r"[^\d+ ]", "", v).strip()
+
+    @field_validator("headline")
+    @classmethod
+    def _clean_headline(cls, v: str) -> str:
+        return v.strip()[:120]
+
+    @field_validator("years_experience")
+    @classmethod
+    def _clean_years_experience(cls, v: str) -> str:
+        return v.strip()[:20]
 
 
 class HandleUpdate(BaseModel):
@@ -466,6 +480,8 @@ def _designer_public(d: dict) -> dict:
         "photo_path": d["photo_path"], "created_at": d["created_at"],
         "phone": d.get("phone", ""), "contact_email": d.get("contact_email", ""),
         "handle": d.get("handle", ""),
+        "headline": d.get("headline", ""), "years_experience": d.get("years_experience", ""),
+        "availability_status": d.get("availability_status", ""),
         "links": list_designer_links(d["id"]),
     }
 
@@ -554,14 +570,26 @@ def designer_me(designer: dict = Depends(require_designer)):
             "email_verified": bool(designer["email_verified"]), "status": designer["status"]}
 
 
+@app.get("/api/designers/me/stats")
+def designer_stats(designer: dict = Depends(require_designer)):
+    """Lightweight dashboard-stats sibling of /api/designers/me, same idea as
+    /api/jobs/count next to /api/jobs — a later phase can add more keys here
+    (click counts, visitor breakdowns, ...) without breaking existing callers."""
+    return {"profile_views": count_profile_views(designer.get("handle", ""), designer["id"])}
+
+
 @app.put("/api/designers/me")
 def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_designer)):
     if payload.discipline and payload.discipline not in DISCIPLINES:
         raise HTTPException(400, f"discipline must be one of {DISCIPLINES}")
+    if payload.availability_status and payload.availability_status not in AVAILABILITY_STATUSES:
+        raise HTTPException(400, f"availability_status must be one of {AVAILABILITY_STATUSES}")
     update_designer_profile(
         designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
         discipline=payload.discipline, location=payload.location.strip()[:200],
         phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
+        headline=payload.headline, years_experience=payload.years_experience,
+        availability_status=payload.availability_status,
     )
     return {"ok": True}
 

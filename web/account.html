@@ -260,6 +260,21 @@
   .dash-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:32px;margin-bottom:20px}
   .dash-head h1{margin:0}
 
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
+  .stat-tile{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;background:var(--surface);
+    box-shadow:var(--shadow)}
+  .stat-tile .stat-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
+  .stat-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none}
+  .stat-tile .n{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+  .stat-tile .l{font-size:12.5px;color:var(--muted);margin-top:3px}
+
+  .completion-banner{border:1px solid var(--hairline);border-radius:var(--radius);padding:14px 18px;
+    margin-bottom:22px;background:var(--surface);box-shadow:var(--shadow)}
+  .completion-bar{height:6px;border-radius:999px;background:var(--hairline);overflow:hidden;margin-bottom:10px}
+  .completion-fill{height:100%;background:linear-gradient(90deg,var(--green),var(--brand));border-radius:999px;
+    transition:width .4s var(--ease-expo)}
+  .completion-banner p{margin:0;font-size:13px;color:var(--muted)}
+
   .handle-card{display:flex;align-items:center;gap:14px;padding:14px 18px;
     border:1px solid var(--hairline);border-radius:var(--radius);background:var(--surface);
     box-shadow:var(--shadow);margin-bottom:22px}
@@ -291,9 +306,15 @@
     margin-top:-42px;background:var(--hairline);border:4px solid var(--surface);box-shadow:var(--shadow)}
   .pc-name-block{margin:12px 0 16px}
   .pc-name{font-size:19px;font-weight:800;margin:0}
+  .pc-headline{font-size:13.5px;font-weight:600;color:var(--muted);margin:2px 0 0}
   .pc-meta{font-size:13px;color:var(--muted);margin:3px 0 0}
+  .pc-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
   .pc-discipline{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;
-    background:var(--brand-soft);color:var(--brand);margin-top:8px}
+    background:var(--brand-soft);color:var(--brand)}
+  .pc-availability{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px}
+  .pc-availability.-available{background:var(--green-soft);color:var(--green-ink)}
+  .pc-availability.-open{background:var(--amber-soft);color:var(--amber)}
+  .pc-availability.-unavailable{background:var(--hairline);color:var(--muted)}
   .pc-contact{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
   .pc-contact a{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;
     padding:8px 14px;border-radius:999px;border:1px solid var(--hairline-strong);color:var(--ink);
@@ -305,14 +326,18 @@
     cursor:pointer;padding:0;margin:0 0 16px;display:none}
   .pc-bio-toggle.-show{display:block}
   .pc-links{display:flex;flex-wrap:wrap;gap:8px}
-  .pc-links span{font-size:12px;font-weight:600;padding:5px 12px;border-radius:999px;
-    background:var(--brand-soft);color:var(--brand)}
+  .pc-links a{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:5px 12px;
+    border-radius:999px;background:var(--brand-soft);color:var(--brand);text-decoration:none;
+    transition:filter .25s var(--ease-expo)}
+  .pc-links a:hover{filter:brightness(1.1)}
 
   .dash-actions{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:36px}
   .btn-ghost{background:none;border:1px solid var(--hairline-strong);color:var(--ink);font:inherit;
     font-weight:700;font-size:13px;padding:11px 18px;border-radius:999px;cursor:pointer;
     transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
   .btn-ghost:hover{border-color:var(--brand);color:var(--brand)}
+  .btn-ghost:disabled{opacity:.5;cursor:not-allowed;border-color:var(--hairline-strong);color:var(--faint)}
+  .btn-ghost:disabled:hover{border-color:var(--hairline-strong);color:var(--faint)}
   .btn-ghost.-danger:hover{border-color:var(--red);color:var(--red)}
   .btn-primary{background:var(--brand);color:#fff;border:0;font:inherit;font-weight:700;font-size:14px;
     padding:12px 22px;border-radius:999px;cursor:pointer;transition:background .3s var(--ease-expo)}
@@ -452,6 +477,26 @@
     <div class="dash-head">
       <h1>Your profile</h1>
     </div>
+    <div class="stat-grid" id="statGrid">
+      <div class="stat-tile">
+        <div class="stat-top">
+          <span class="stat-icon" style="background:var(--brand-soft);color:var(--brand)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </span>
+        </div>
+        <div class="n" id="statViews">–</div>
+        <div class="l">Profile views</div>
+      </div>
+      <div class="stat-tile">
+        <div class="stat-top">
+          <span class="stat-icon" style="background:var(--green-soft);color:var(--green-ink)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </span>
+        </div>
+        <div class="n" id="statCompletion">–</div>
+        <div class="l">Profile completion</div>
+      </div>
+    </div>
     <div class="handle-card" id="handleCard">
       <div class="handle-card-view" id="handleCardView">
         <p class="handle-card-label">Your profile URL</p>
@@ -470,8 +515,15 @@
     <p class="err" id="handleErr" style="display:none"></p>
     <div id="statusBanner"></div>
     <div class="profile-card" id="profileCard"></div>
+    <div class="completion-banner" id="completionBanner" style="display:none">
+      <div class="completion-bar"><div class="completion-fill" id="completionFill"></div></div>
+      <p id="completionText"></p>
+    </div>
     <div class="dash-actions">
       <button type="button" class="btn-ghost" id="editProfileBtn">Edit profile</button>
+      <button type="button" class="btn-ghost" id="viewPublicBtn">View public profile</button>
+      <button type="button" class="btn-ghost" id="copyLinkBtn">Copy profile link</button>
+      <button type="button" class="btn-ghost" id="shareProfileBtn">Share profile</button>
       <button type="button" class="link-inline" id="dashLogoutBtn">Log out</button>
     </div>
     <div class="danger-zone">
@@ -519,8 +571,22 @@
       <label class="field"><span>Name</span>
         <input type="text" id="wizardName" required>
       </label>
+      <label class="field"><span>Professional headline <span class="hint">(optional)</span></span>
+        <input type="text" id="wizardHeadline" maxlength="120" placeholder="e.g. Senior Product Designer">
+      </label>
       <label class="field"><span>Job function</span>
         <select id="wizardDiscipline" required></select>
+      </label>
+      <label class="field"><span>Years of experience <span class="hint">(optional)</span></span>
+        <input type="text" id="wizardYearsExperience" maxlength="20" placeholder="e.g. 5+ years">
+      </label>
+      <label class="field"><span>Availability <span class="hint">(optional)</span></span>
+        <select id="wizardAvailability">
+          <option value="">Not specified</option>
+          <option value="Available">Available</option>
+          <option value="Open to offers">Open to offers</option>
+          <option value="Not available">Not available</option>
+        </select>
       </label>
       <label class="field"><span>Location <span class="hint">(city, or "Remote")</span></span>
         <div class="loc-wrap">
@@ -748,6 +814,7 @@ const LOCATIONS = [
 const TOKEN_KEY = "kazi_designer_token";
 let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
 let me = null; // last-loaded profile, refreshed by afterAuth()
+let stats = null; // last-loaded dashboard stats, refreshed by afterAuth()
 
 const dashboardWrap = document.getElementById("dashboardWrap");
 const wizardWrap = document.getElementById("wizardWrap");
@@ -781,7 +848,10 @@ function escapeHtml(s) {
    so getting here without a usable session just bounces you there ---------- */
 async function afterAuth() {
   try {
-    me = await api("/api/designers/me");
+    [me, stats] = await Promise.all([
+      api("/api/designers/me"),
+      api("/api/designers/me/stats").catch(() => null),
+    ]);
   } catch (err) {
     if (err.status === 401) logout();
     return;
@@ -793,13 +863,83 @@ async function afterAuth() {
   renderDashboard();
 }
 
+/* ---------- profile completion: 8 equally-weighted fields, computed
+   client-side from the already-fetched /api/designers/me payload. phone
+   and contact_email are deliberately excluded — they're opt-in contact
+   methods, not core profile substance, and shouldn't penalize a designer
+   for reasonably choosing not to publish one. ---------- */
+const COMPLETION_FIELDS = [
+  {label: "a profile photo", test: m => !!m.photo_path},
+  {label: "a professional headline", test: m => !!m.headline},
+  {label: "your job function", test: m => !!m.discipline},
+  {label: "your location", test: m => !!m.location},
+  {label: "your years of experience", test: m => !!m.years_experience},
+  {label: "your availability status", test: m => !!m.availability_status},
+  {label: "a bio", test: m => !!m.bio},
+  {label: "at least one link", test: m => (m.links || []).length > 0},
+];
+function computeCompletion(m) {
+  const missing = COMPLETION_FIELDS.filter(f => !f.test(m)).map(f => f.label);
+  const percent = Math.round(((COMPLETION_FIELDS.length - missing.length) / COMPLETION_FIELDS.length) * 100);
+  return {percent, missing};
+}
+function formatMissingList(items) {
+  if (items.length <= 1) return items.join("");
+  return items.slice(0, -1).join(", ") + ", and " + items[items.length - 1];
+}
+
 function isProfileEmpty(m) {
   return !m.bio && !m.discipline && !m.location && !m.photo_path && !m.phone && !m.contact_email
+    && !m.headline && !m.years_experience && !m.availability_status
     && (!m.links || m.links.length === 0);
 }
 
 const ICON_PHONE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92Z"/></svg>';
 const ICON_MAIL = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>';
+
+/* Brand marks (Simple Icons, CC0) for link auto-icons; the two generic ones
+   match ICON_PHONE/ICON_MAIL's outline style since there's no real brand to
+   be literal about for a personal site or an unrecognized link. */
+const ICON_LINKEDIN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 1 1 0-4.124 2.062 2.062 0 0 1 0 4.124zM7.119 20.452H3.554V9h3.565v11.452z"/></svg>';
+const ICON_GITHUB = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.305-5.466-1.334-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>';
+const ICON_BEHANCE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M22 7.469h-7.464v-1.9H22v1.9zM6.938 8.897c1.804 0 3.05.98 3.05 2.87 0 1.04-.492 1.88-1.372 2.42.93.34 1.5 1.24 1.5 2.31 0 1.94-1.376 3.06-3.312 3.06H0V8.897h6.938zM3 15.24v2.32h3.376c.68 0 1.334-.4 1.334-1.16 0-.76-.654-1.16-1.334-1.16H3zm0-4.32v2.06h3.104c.68 0 1.174-.36 1.174-1.03 0-.67-.494-1.03-1.174-1.03H3zM24 15.05h-6.554c.14 1.234 1.014 1.83 2.13 1.83.808 0 1.446-.35 1.816-.9h2.398c-.552 1.86-2.176 2.996-4.214 2.996-2.62 0-4.658-1.826-4.658-4.996 0-3 2.038-4.996 4.62-4.996 2.686 0 4.55 2.14 4.55 5.09 0 .326-.03.65-.088.976zm-6.508-1.88h4.036c-.1-1.14-.94-1.72-1.996-1.72-1.09 0-1.938.6-2.04 1.72z"/></svg>';
+const ICON_DRIBBBLE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zM19.79 6.4c1.31 1.62 2.1 3.68 2.13 5.91-.31-.06-3.42-.69-6.55-.3-.13-.31-.26-.63-.4-.95-.19-.44-.4-.89-.62-1.33 3.46-1.4 5.02-3.4 5.44-4.33zM12 1.71c2.4 0 4.6.9 6.28 2.37-.36.79-1.72 2.65-4.98 3.94-1.55-2.86-3.28-5.2-3.53-5.55.71-.16 1.45-.24 2.23-.24zm-4.15.75c.24.32 1.94 2.65 3.51 5.44-4.44 1.18-8.37 1.17-8.75 1.17-.02-.03.68-4.24 5.24-6.61zm-5.4 8.18v-.34c.36.01 4.95.06 9.68-1.34.27.53.53 1.06.76 1.6-.14.04-.28.08-.4.12-4.9 1.58-7.51 5.92-7.73 6.29-1.36-1.5-2.19-3.48-2.31-5.63v-.7zm4.02 7.05c.18-.36 2.19-4.24 7.56-6.03.02-.01.03-.01.05-.02 1.28 3.3 1.8 6.07 1.94 6.9-1.4.65-2.95 1.02-4.6 1.02-1.75 0-3.4-.42-4.85-1.17.02-.23.02-.42.02-.7zm10.4-.3c-.1-.6-.58-3.17-1.78-6.42 2.95-.47 5.53.3 5.85.4-.42 2.5-1.9 4.65-3.99 6.02z"/></svg>';
+const ICON_INSTAGRAM = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zm0 10.162a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/></svg>';
+const ICON_TWITTER = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>';
+const ICON_GLOBE = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>';
+const ICON_LINK_GENERIC = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>';
+
+const AVAILABILITY_META = {
+  "Available": {cls: "-available", label: "Available"},
+  "Open to offers": {cls: "-open", label: "Open to offers"},
+  "Not available": {cls: "-unavailable", label: "Not available"},
+};
+
+/* Auto-detects a link's icon from its URL's domain first (most reliable),
+   then falls back to matching keywords in the label the designer typed,
+   then a generic external-link glyph as the last resort. */
+function iconForLink(link) {
+  let host = "";
+  try { host = new URL(link.url).hostname.replace(/^www\./, "").toLowerCase(); } catch (e) {}
+  const domainRules = [
+    ["linkedin.com", ICON_LINKEDIN], ["github.com", ICON_GITHUB],
+    ["behance.net", ICON_BEHANCE], ["dribbble.com", ICON_DRIBBBLE],
+    ["instagram.com", ICON_INSTAGRAM],
+    ["twitter.com", ICON_TWITTER], ["x.com", ICON_TWITTER],
+  ];
+  for (const [domain, icon] of domainRules) if (host.includes(domain)) return icon;
+
+  const label = (link.label || "").toLowerCase();
+  const labelRules = [
+    [/linkedin/, ICON_LINKEDIN], [/github/, ICON_GITHUB],
+    [/behance/, ICON_BEHANCE], [/dribbble/, ICON_DRIBBBLE],
+    [/instagram/, ICON_INSTAGRAM], [/twitter|^x$/, ICON_TWITTER],
+    [/portfolio|website|\bsite\b|personal/, ICON_GLOBE],
+  ];
+  for (const [re, icon] of labelRules) if (re.test(label)) return icon;
+
+  return ICON_LINK_GENERIC;
+}
 
 function profileCardHtml(m) {
   const links = m.links || [];
@@ -807,18 +947,23 @@ function profileCardHtml(m) {
     m.phone ? `<a href="tel:${escapeHtml(m.phone)}">${ICON_PHONE}${escapeHtml(m.phone)}</a>` : "",
     m.contact_email ? `<a href="mailto:${escapeHtml(m.contact_email)}">${ICON_MAIL}${escapeHtml(m.contact_email)}</a>` : "",
   ].filter(Boolean);
+  const availability = m.availability_status && AVAILABILITY_META[m.availability_status];
   return `
     <div class="pc-banner"></div>
     <div class="pc-body">
       <img class="pc-avatar" src="${m.photo_path ? escapeHtml(m.photo_path) : 'logo.png'}" alt="">
       <div class="pc-name-block">
         <p class="pc-name">${escapeHtml(m.display_name || "")}</p>
-        <p class="pc-meta">${m.location ? escapeHtml(m.location) : "No location set"}</p>
-        ${m.discipline ? `<span class="pc-discipline">${escapeHtml(m.discipline)}</span>` : ""}
+        ${m.headline ? `<p class="pc-headline">${escapeHtml(m.headline)}</p>` : ""}
+        <p class="pc-meta">${[m.location || "No location set", m.years_experience].filter(Boolean).map(escapeHtml).join(" · ")}</p>
+        <div class="pc-badges">
+          ${m.discipline ? `<span class="pc-discipline">${escapeHtml(m.discipline)}</span>` : ""}
+          ${availability ? `<span class="pc-availability ${availability.cls}">${availability.label}</span>` : ""}
+        </div>
       </div>
       ${contactRows.length ? `<div class="pc-contact">${contactRows.join("")}</div>` : ""}
       ${m.bio ? `<p class="pc-bio -clamped">${escapeHtml(m.bio)}</p><button type="button" class="pc-bio-toggle">Read more</button>` : ""}
-      ${links.length ? `<div class="pc-links">${links.map(l => `<span>${escapeHtml(l.label)}</span>`).join("")}</div>` : ""}
+      ${links.length ? `<div class="pc-links">${links.map(l => `<a href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${iconForLink(l)}${escapeHtml(l.label)}</a>`).join("")}</div>` : ""}
     </div>
   `;
 }
@@ -871,6 +1016,20 @@ function renderDashboard() {
     renderHandleCard(me);
     document.getElementById("profileCard").innerHTML = profileCardHtml(me);
     wireBioToggle(document.getElementById("profileCard"));
+
+    document.getElementById("statViews").textContent = stats ? stats.profile_views : "–";
+    const completion = computeCompletion(me);
+    document.getElementById("statCompletion").textContent = completion.percent + "%";
+    const bannerEl = document.getElementById("completionBanner");
+    if (completion.percent < 100) {
+      bannerEl.style.display = "block";
+      document.getElementById("completionFill").style.width = completion.percent + "%";
+      document.getElementById("completionText").textContent =
+        `Your profile is ${completion.percent}% complete. Add ${formatMissingList(completion.missing)} to finish it.`;
+    } else {
+      bannerEl.style.display = "none";
+    }
+    renderQuickActions(me);
   }
 }
 
@@ -920,6 +1079,41 @@ document.getElementById("startWizardBtn").addEventListener("click", () => openWi
 document.getElementById("editProfileBtn").addEventListener("click", () => openWizard());
 document.getElementById("wizardCloseBtn").addEventListener("click", async () => { await afterAuth(); });
 
+/* ---------- quick actions: view / copy / share the public profile URL ---------- */
+function profileUrl() {
+  return `${location.origin}/designers/${me.handle || me.id}`;
+}
+function flipButtonText(btn, tempText, ms = 1500) {
+  if (btn.dataset.flipping) return;
+  const original = btn.textContent;
+  btn.dataset.flipping = "1";
+  btn.textContent = tempText;
+  setTimeout(() => { btn.textContent = original; delete btn.dataset.flipping; }, ms);
+}
+function renderQuickActions(m) {
+  document.getElementById("viewPublicBtn").disabled = m.status !== "approved";
+}
+document.getElementById("viewPublicBtn").addEventListener("click", () => {
+  if (me.status === "approved") window.open(profileUrl(), "_blank", "noopener");
+});
+document.getElementById("copyLinkBtn").addEventListener("click", async (e) => {
+  try {
+    await navigator.clipboard.writeText(profileUrl());
+    flipButtonText(e.currentTarget, "Copied!");
+  } catch (err) { /* clipboard API can fail without permission/on insecure origins */ }
+});
+document.getElementById("shareProfileBtn").addEventListener("click", async (e) => {
+  const url = profileUrl();
+  if (navigator.share) {
+    try { await navigator.share({title: `${me.display_name} on Kazi`, url}); } catch (err) { /* user cancelled */ }
+  } else {
+    try {
+      await navigator.clipboard.writeText(url);
+      flipButtonText(e.currentTarget, "Copied!");
+    } catch (err) { /* clipboard API can fail without permission/on insecure origins */ }
+  }
+});
+
 /* ---------- wizard ---------- */
 const steps = Array.from(document.querySelectorAll(".step"));
 const dots = Array.from(document.querySelectorAll(".step-dot"));
@@ -962,7 +1156,10 @@ function showStep(n) {
 function wizardState() {
   return {
     display_name: document.getElementById("wizardName").value.trim(),
+    headline: document.getElementById("wizardHeadline").value.trim(),
     discipline: document.getElementById("wizardDiscipline").value,
+    years_experience: document.getElementById("wizardYearsExperience").value.trim(),
+    availability_status: document.getElementById("wizardAvailability").value,
     location: document.getElementById("wizardLocation").value.trim(),
     phone: composePhone(),
     contact_email: document.getElementById("wizardContactEmail").value.trim(),
@@ -974,7 +1171,10 @@ function wizardState() {
 
 function openWizard() {
   document.getElementById("wizardName").value = me.display_name || "";
+  document.getElementById("wizardHeadline").value = me.headline || "";
   document.getElementById("wizardDiscipline").value = me.discipline || "";
+  document.getElementById("wizardYearsExperience").value = me.years_experience || "";
+  document.getElementById("wizardAvailability").value = me.availability_status || "";
   document.getElementById("wizardLocation").value = me.location || "";
   const existingPhone = splitPhone(me.phone || "");
   document.getElementById("wizardPhoneCode").value = existingPhone.code || countryCodeForLocation(me.location);
@@ -1014,7 +1214,10 @@ async function saveProfileFields() {
     method: "PUT", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       display_name: document.getElementById("wizardName").value.trim(),
+      headline: document.getElementById("wizardHeadline").value.trim(),
       discipline: document.getElementById("wizardDiscipline").value,
+      years_experience: document.getElementById("wizardYearsExperience").value.trim(),
+      availability_status: document.getElementById("wizardAvailability").value,
       location: document.getElementById("wizardLocation").value.trim(),
       phone: composePhone(),
       contact_email: document.getElementById("wizardContactEmail").value.trim(),
