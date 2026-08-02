@@ -129,6 +129,8 @@
   /* ---- shared form bits (gate + wizard) ---- */
   label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
   .hint{font-weight:400;color:var(--faint);font-size:12.5px}
+  .check-row{display:flex;gap:9px;align-items:center;font-size:13.5px;font-weight:500;cursor:pointer;margin:-6px 0 2px}
+  .check-row input{flex:none;width:16px;height:16px;cursor:pointer;accent-color:var(--brand)}
   input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
     border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
     transition:border-color .2s var(--ease-expo)}
@@ -139,6 +141,13 @@
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
     background-repeat:no-repeat;background-position:right 14px center;background-size:14px}
   .honeypot{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+  .handle-wrap{display:flex;align-items:center;border:1px solid var(--hairline-strong);
+    border-radius:10px;padding:0 13px;transition:border-color .2s var(--ease-expo)}
+  .handle-wrap:focus-within{border-color:var(--brand)}
+  .handle-wrap span{color:var(--muted);font-size:14.5px;flex:none}
+  .handle-wrap input{border:0;padding:11px 0 11px 2px;flex:1;min-width:0}
+  .handle-wrap input:focus{outline:0}
 
   /* ---- location autocomplete (same pattern as post.html) ---- */
   .loc-wrap{position:relative}
@@ -210,9 +219,9 @@
     background:var(--surface);box-shadow:var(--shadow);margin-bottom:22px;overflow:hidden}
   .pc-banner{height:84px;background:linear-gradient(135deg,var(--brand),var(--brand-light))}
   .pc-body{padding:0 26px 26px}
-  .pc-head{display:flex;align-items:flex-end;gap:16px;margin-top:-42px;margin-bottom:16px}
-  .pc-avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;flex:none;
-    background:var(--hairline);border:4px solid var(--surface);box-shadow:var(--shadow)}
+  .pc-avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;display:block;
+    margin-top:-42px;background:var(--hairline);border:4px solid var(--surface);box-shadow:var(--shadow)}
+  .pc-name-block{margin:12px 0 16px}
   .pc-name{font-size:19px;font-weight:800;margin:0}
   .pc-meta{font-size:13px;color:var(--muted);margin:3px 0 0}
   .pc-discipline{display:inline-block;font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;
@@ -343,6 +352,7 @@
       <label class="field"><span>Password</span>
         <input type="password" id="loginPassword" required autocomplete="current-password">
       </label>
+      <label class="check-row"><input type="checkbox" id="rememberMe" checked><span>Remember me</span></label>
       <p class="err" id="loginErr" style="display:none"></p>
       <button type="submit" class="submit" id="loginBtn">Log in</button>
       <button type="button" class="link-inline" id="forgotLink">Forgot your password?</button>
@@ -477,6 +487,12 @@
       <p class="step-sub">This is how you'll show up in the directory.</p>
       <label class="field"><span>Name</span>
         <input type="text" id="wizardName" required>
+      </label>
+      <label class="field"><span>Handle <span class="hint">(used in your profile URL)</span></span>
+        <div class="handle-wrap">
+          <span>@</span>
+          <input type="text" id="wizardHandle" required pattern="[a-z][a-z0-9_]{2,29}" maxlength="30" placeholder="yourname" autocomplete="off">
+        </div>
       </label>
       <label class="field"><span>Job function</span>
         <select id="wizardDiscipline" required></select>
@@ -643,7 +659,7 @@ const LOCATIONS = [
 })();
 
 const TOKEN_KEY = "kazi_designer_token";
-let token = localStorage.getItem(TOKEN_KEY) || "";
+let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
 let pendingEmail = ""; // set right after signup, used only to display "we sent a code to ___"
 let me = null; // last-loaded profile, refreshed by afterAuth()
 
@@ -709,7 +725,11 @@ document.getElementById("loginPanel").addEventListener("submit", async (e) => {
       }),
     });
     token = res.token;
-    localStorage.setItem(TOKEN_KEY, token);
+    if (document.getElementById("rememberMe").checked) {
+      localStorage.setItem(TOKEN_KEY, token);
+    } else {
+      sessionStorage.setItem(TOKEN_KEY, token);
+    }
     await afterAuth();
   } catch (err) {
     errEl.textContent = err.message;
@@ -933,13 +953,11 @@ function profileCardHtml(m) {
   return `
     <div class="pc-banner"></div>
     <div class="pc-body">
-      <div class="pc-head">
-        <img class="pc-avatar" src="${m.photo_path ? escapeHtml(m.photo_path) : 'logo.png'}" alt="">
-        <div>
-          <p class="pc-name">${escapeHtml(m.display_name || "")}</p>
-          <p class="pc-meta">${m.location ? escapeHtml(m.location) : "No location set"}</p>
-          ${m.discipline ? `<span class="pc-discipline">${escapeHtml(m.discipline)}</span>` : ""}
-        </div>
+      <img class="pc-avatar" src="${m.photo_path ? escapeHtml(m.photo_path) : 'logo.png'}" alt="">
+      <div class="pc-name-block">
+        <p class="pc-name">${escapeHtml(m.display_name || "")}</p>
+        <p class="pc-meta">${m.location ? escapeHtml(m.location) : "No location set"}</p>
+        ${m.discipline ? `<span class="pc-discipline">${escapeHtml(m.discipline)}</span>` : ""}
       </div>
       ${contactRows.length ? `<div class="pc-contact">${contactRows.join("")}</div>` : ""}
       ${m.bio ? `<p class="pc-bio -clamped">${escapeHtml(m.bio)}</p><button type="button" class="pc-bio-toggle">Read more</button>` : ""}
@@ -967,7 +985,7 @@ function wireBioToggle(container) {
 function renderStatusBanner(m) {
   const el = document.getElementById("statusBanner");
   if (m.status === "approved") {
-    el.innerHTML = `<div class="status-banner approved">Live: <a href="/designers/${m.id}" target="_blank">view your public profile</a></div>`;
+    el.innerHTML = `<div class="status-banner approved">Live: <a href="/designers/${m.handle || m.id}" target="_blank">view your public profile</a></div>`;
   } else if (m.status === "rejected") {
     el.innerHTML = `<div class="status-banner rejected">Your profile wasn't approved. Update it and submit again.</div>`;
   } else {
@@ -994,6 +1012,13 @@ function renderDashboard() {
 document.getElementById("startWizardBtn").addEventListener("click", () => openWizard());
 document.getElementById("editProfileBtn").addEventListener("click", () => openWizard());
 document.getElementById("wizardCloseBtn").addEventListener("click", async () => { await afterAuth(); });
+
+/* Handles are lowercase-only — strip anything else as the designer types
+   rather than rejecting on submit, so the pattern mismatch is never a
+   surprise at Next. */
+document.getElementById("wizardHandle").addEventListener("input", (e) => {
+  e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, "");
+});
 
 /* ---------- wizard ---------- */
 const steps = Array.from(document.querySelectorAll(".step"));
@@ -1033,6 +1058,7 @@ function showStep(n) {
 function wizardState() {
   return {
     display_name: document.getElementById("wizardName").value.trim(),
+    handle: document.getElementById("wizardHandle").value.trim().toLowerCase(),
     discipline: document.getElementById("wizardDiscipline").value,
     location: document.getElementById("wizardLocation").value.trim(),
     phone: document.getElementById("wizardPhone").value.trim(),
@@ -1045,6 +1071,7 @@ function wizardState() {
 
 function openWizard() {
   document.getElementById("wizardName").value = me.display_name || "";
+  document.getElementById("wizardHandle").value = me.handle || "";
   document.getElementById("wizardDiscipline").value = me.discipline || "";
   document.getElementById("wizardLocation").value = me.location || "";
   document.getElementById("wizardPhone").value = me.phone || "";
@@ -1083,6 +1110,7 @@ async function saveProfileFields() {
     method: "PUT", headers: {"Content-Type": "application/json"},
     body: JSON.stringify({
       display_name: document.getElementById("wizardName").value.trim(),
+      handle: document.getElementById("wizardHandle").value.trim().toLowerCase(),
       discipline: document.getElementById("wizardDiscipline").value,
       location: document.getElementById("wizardLocation").value.trim(),
       phone: document.getElementById("wizardPhone").value.trim(),
@@ -1200,6 +1228,7 @@ function logout() {
   token = "";
   me = null;
   localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
   showView("gate");
   showPanel("login");
   document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === "login"));

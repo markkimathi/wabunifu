@@ -255,7 +255,7 @@ function renderGrid() {
     return;
   }
   grid.innerHTML = rows.map(d => `
-    <a class="dcard" href="/designers/${d.id}">
+    <a class="dcard" href="/designers/${d.handle || d.id}">
       <div class="dcard-top">
         <img class="dcard-avatar" src="${d.photo_path ? escapeHtml(d.photo_path) : 'logo.png'}" alt="">
         <div>

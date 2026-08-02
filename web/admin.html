@@ -782,7 +782,7 @@ function renderDesigners(rows, status) {
   designerList.innerHTML = rows.map(d => `
     <div class="item" data-id="${d.id}">
       <div>
-        <h3>${escapeHtml(d.display_name)}</h3>
+        <h3>${escapeHtml(d.display_name)}${d.handle ? ` <span style="font-weight:400;color:var(--muted)">@${escapeHtml(d.handle)}</span>` : ""}</h3>
         <p class="meta"><b>${escapeHtml(d.email)}</b> · ${escapeHtml(d.discipline || "No discipline set")} · ${escapeHtml(d.location || "No location set")}</p>
         <div class="badges">
           <span>${d.email_verified ? "Email verified" : "Email not verified"}</span>

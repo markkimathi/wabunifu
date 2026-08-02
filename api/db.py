@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS designers (
   photo_path TEXT NOT NULL DEFAULT '',
   phone TEXT NOT NULL DEFAULT '',
   contact_email TEXT NOT NULL DEFAULT '',
+  handle TEXT NOT NULL DEFAULT '',
   email_verified INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
@@ -142,6 +143,7 @@ _MIGRATIONS = [
     "ALTER TABLE submissions ADD COLUMN agreed_to_terms INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE designers ADD COLUMN phone TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN contact_email TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN handle TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -243,11 +245,32 @@ def get_designer_by_email(email: str) -> dict | None:
     return dict(row) if row else None
 
 
+def get_designer_by_handle(handle: str) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM designers WHERE lower(handle) = ?", (handle.lower(),)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+class HandleTaken(Exception):
+    """Raised by update_designer_profile when another designer already
+    holds the requested handle — kept as a distinct exception so main.py
+    can turn it into a friendly 400 instead of a generic 500."""
+
+
 def update_designer_profile(
     designer_id: int, *, display_name: str, bio: str, discipline: str, location: str,
-    phone: str = "", contact_email: str = "",
+    phone: str = "", contact_email: str = "", handle: str = "",
 ) -> None:
     c = _conn()
+    if handle:
+        clash = c.execute(
+            "SELECT id FROM designers WHERE lower(handle) = ? AND id != ?",
+            (handle.lower(), designer_id),
+        ).fetchone()
+        if clash:
+            c.close()
+            raise HandleTaken(handle)
     # Editing an approved profile sends it back for re-review, same as a job
     # listing would if it were editable — never let a live public profile
     # change without another pass through the admin queue.
@@ -255,8 +278,8 @@ def update_designer_profile(
     new_status = "pending" if row and row["status"] == "approved" else (row["status"] if row else "pending")
     c.execute(
         "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, "
-        "phone = ?, contact_email = ?, status = ? WHERE id = ?",
-        (display_name, bio, discipline, location, phone, contact_email, new_status, designer_id),
+        "phone = ?, contact_email = ?, handle = ?, status = ? WHERE id = ?",
+        (display_name, bio, discipline, location, phone, contact_email, handle, new_status, designer_id),
     )
     c.commit()
     c.close()

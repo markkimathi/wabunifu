@@ -39,7 +39,8 @@ from models import Job, DISCIPLINES, ELIGIBILITY, MAX_AGE_DAYS  # noqa: E402  (r
 from .db import (  # noqa: E402
     init_db, insert_submission, list_submissions, get_submission, set_status,
     log_pageview, log_search, log_apply_click, get_analytics_summary,
-    create_designer, get_designer, get_designer_by_email, update_designer_profile,
+    create_designer, get_designer, get_designer_by_email, get_designer_by_handle,
+    update_designer_profile, HandleTaken,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
     list_designers, list_approved_designers, delete_designer, replace_designer_links,
     list_designer_links, create_session, get_session, delete_session, delete_sessions_for_designer,
@@ -55,6 +56,14 @@ JOBS_JSON = WEB_DIR / "jobs.json"
 WORK_TYPES = {"Remote", "Hybrid", "On-site"}
 LEVELS = {"Junior", "Mid", "Senior", "Lead"}
 MAX_LINKS = 8
+
+# Designer profile handles (the @name used in public profile URLs instead of
+# a numeric id). Must start with a letter — this also guarantees a handle
+# can never be all-digits, so a lookup can always tell a handle from an id
+# just by checking .isdigit(). "me" is reserved because /api/designers/me
+# is a literal route registered ahead of the dynamic /{identifier} one.
+HANDLE_RE = re.compile(r"^[a-z][a-z0-9_]{2,29}$")
+RESERVED_HANDLES = {"me"}
 
 # Dev default so `uvicorn api.main:app` works out of the box. Set a real
 # KAZI_ADMIN_TOKEN env var before deploying anywhere reachable; anyone with
@@ -227,6 +236,7 @@ class ProfileUpdate(BaseModel):
     location: str = ""
     phone: str = ""
     contact_email: str = ""
+    handle: str = ""
 
     @field_validator("display_name")
     @classmethod
@@ -234,6 +244,16 @@ class ProfileUpdate(BaseModel):
         if not v or not v.strip():
             raise ValueError("enter your name")
         return v.strip()
+
+    @field_validator("handle")
+    @classmethod
+    def _valid_handle(cls, v: str) -> str:
+        v = v.strip().lstrip("@").lower()
+        if not v:
+            return v
+        if not HANDLE_RE.match(v) or v in RESERVED_HANDLES:
+            raise ValueError("handle must be 3-30 characters: lowercase letters, numbers, and underscores, starting with a letter")
+        return v
 
 
 class LinkItem(BaseModel):
@@ -418,6 +438,7 @@ def _designer_public(d: dict) -> dict:
         "discipline": d["discipline"], "location": d["location"],
         "photo_path": d["photo_path"], "created_at": d["created_at"],
         "phone": d.get("phone", ""), "contact_email": d.get("contact_email", ""),
+        "handle": d.get("handle", ""),
         "links": list_designer_links(d["id"]),
     }
 
@@ -510,11 +531,15 @@ def designer_me(designer: dict = Depends(require_designer)):
 def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_designer)):
     if payload.discipline and payload.discipline not in DISCIPLINES:
         raise HTTPException(400, f"discipline must be one of {DISCIPLINES}")
-    update_designer_profile(
-        designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
-        discipline=payload.discipline, location=payload.location.strip()[:200],
-        phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
-    )
+    try:
+        update_designer_profile(
+            designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
+            discipline=payload.discipline, location=payload.location.strip()[:200],
+            phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
+            handle=payload.handle,
+        )
+    except HandleTaken:
+        raise HTTPException(400, "That handle is already taken.")
     return {"ok": True}
 
 
@@ -595,10 +620,16 @@ def admin_verify_designer_email(designer_id: int, _: None = Depends(require_admi
 
 
 # Public single-profile lookup — registered after the /me routes above so
-# "me" is never routed here as if it were a numeric id.
-@app.get("/api/designers/{designer_id}")
-def designer_public_profile(designer_id: int):
-    designer = get_designer(designer_id)
+# "me" is never routed here as if it were a numeric id. Accepts either the
+# numeric id (old-style links, and any profile that hasn't set a handle
+# yet) or a handle (the canonical form once a designer has one) — a handle
+# can never be all-digits (HANDLE_RE requires a leading letter), so
+# .isdigit() alone is enough to tell the two apart.
+@app.get("/api/designers/{identifier}")
+def designer_public_profile(identifier: str):
+    designer = get_designer(int(identifier)) if identifier.isdigit() else None
+    if not designer:
+        designer = get_designer_by_handle(identifier)
     if not designer or designer["status"] != "approved":
         raise HTTPException(404, "no such designer")
     return _designer_public(designer)
@@ -629,12 +660,12 @@ for _name, _target in _HTML_REDIRECTS.items():
         return _redirect
     app.get(f"/{_name}.html", include_in_schema=False)(_make_redirect_route(_target))
 
-# One dynamic page route: /designers/{id} always serves the same static
-# file — designer.html reads the id from location.pathname client-side and
-# fetches GET /api/designers/{id} itself, same pattern index.html already
-# uses to fetch jobs.json.
-@app.get("/designers/{designer_id}", include_in_schema=False)
-def designer_profile_page(designer_id: int):
+# One dynamic page route: /designers/{id-or-handle} always serves the same
+# static file — designer.html reads the identifier from location.pathname
+# client-side and fetches GET /api/designers/{identifier} itself, same
+# pattern index.html already uses to fetch jobs.json.
+@app.get("/designers/{identifier}", include_in_schema=False)
+def designer_profile_page(identifier: str):
     return FileResponse(WEB_DIR / "designer.html")
 
 
