@@ -65,10 +65,67 @@
   // clicked away and then hit back before the next page loaded.
   window.addEventListener("pageshow", hidePageLoader);
 
+  // Header account menu: swaps the "Sign in" link for an avatar+dropdown
+  // when a designer session is present. Runs on every page (this file is
+  // shared sitewide) so the logged-in state is consistent everywhere, not
+  // just on /account. Silently does nothing on pages that don't have the
+  // #acctMenu markup, and silently falls back to the logged-out "Sign in"
+  // state if the stored token is missing or has expired.
+  var ACCT_TOKEN_KEY = "kazi_designer_token";
+  function getAcctToken(){
+    return localStorage.getItem(ACCT_TOKEN_KEY) || sessionStorage.getItem(ACCT_TOKEN_KEY) || "";
+  }
+  function clearAcctToken(){
+    localStorage.removeItem(ACCT_TOKEN_KEY);
+    sessionStorage.removeItem(ACCT_TOKEN_KEY);
+  }
+  function initAccountMenu(){
+    var menu = document.getElementById("acctMenu");
+    var token = getAcctToken();
+    if(!menu || !token) return;
+
+    fetch("/api/designers/me", {headers: {"Authorization": "Bearer " + token}})
+      .then(function(res){
+        if(!res.ok) throw new Error("unauthorized");
+        return res.json();
+      })
+      .then(function(me){
+        document.getElementById("acctAvatar").src = me.photo_path || "/logo.png";
+        document.querySelectorAll('a[href="/account"]').forEach(function(a){
+          if(!menu.contains(a)) a.style.display = "none";
+        });
+        menu.classList.add("-visible");
+
+        var trigger = document.getElementById("acctTrigger");
+        trigger.addEventListener("click", function(e){
+          e.stopPropagation();
+          var open = menu.classList.toggle("-open");
+          trigger.setAttribute("aria-expanded", open ? "true" : "false");
+        });
+        document.addEventListener("click", function(e){
+          if(!menu.contains(e.target)) menu.classList.remove("-open");
+        });
+        window.addEventListener("keyup", function(e){
+          if(e.key === "Escape") menu.classList.remove("-open");
+        });
+
+        document.getElementById("acctLogoutBtn").addEventListener("click", function(){
+          fetch("/api/designers/logout", {method: "POST", headers: {"Authorization": "Bearer " + token}})
+            .catch(function(){});
+          clearAcctToken();
+          location.href = "/";
+        });
+      })
+      .catch(function(){
+        clearAcctToken();
+      });
+  }
+
   ready(function(){
     hidePageLoader();
     markActiveNav();
     track("/api/track/pageview", {path: location.pathname});
+    initAccountMenu();
     var toggle = document.querySelector(".menu-toggle");
     var menu = document.querySelector(".mobile-menu");
     if(!toggle || !menu) return;
