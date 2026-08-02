@@ -98,7 +98,8 @@
 
   /* ---- top bar ---- */
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.82);
-    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
+    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline);
+    transform:translateZ(0);-webkit-transform:translateZ(0)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.78)}
   .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:68px}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
@@ -143,6 +144,7 @@
   .header-search{display:flex;align-items:center;gap:0;width:0;overflow:hidden;
     background:var(--surface);border:1px solid transparent;border-radius:999px;
     padding:8px 0;opacity:0;pointer-events:none;
+    transform:translateZ(0);-webkit-transform:translateZ(0);
     transition:width .35s var(--ease-io),opacity .25s var(--ease-io),
       padding .35s var(--ease-io),border-color .35s var(--ease-io)}
   .header-search svg{flex:none;color:var(--muted);margin-left:16px}
