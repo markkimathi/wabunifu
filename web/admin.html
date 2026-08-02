@@ -134,6 +134,13 @@
     .nav-links{display:none}
     .menu-toggle{display:block}
   }
+  /* Tablet portrait: put the hamburger at the far right edge, past
+     "Create an account", instead of between the icons and it. */
+  @media(orientation:portrait) and (max-width:1400px){
+    .acct-cta{order:1}
+    .acct-menu{order:1}
+    .menu-toggle{order:2}
+  }
 
   .acct-menu{position:relative;flex:none;display:none}
   .acct-menu.-visible{display:block}
