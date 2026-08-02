@@ -675,7 +675,7 @@ app.mount("/photos", StaticFiles(directory=str(PHOTOS_DIR)), name="photos")
 
 
 # Clean URLs: serve the .html files without the extension...
-CLEAN_PAGES = ["post", "cv-check", "account", "designers", "admin", "terms", "privacy", "cookies"]
+CLEAN_PAGES = ["post", "cv-check", "account", "login", "signup", "designers", "admin", "terms", "privacy", "cookies"]
 for _page in CLEAN_PAGES:
     def _make_page_route(page: str):
         def _serve():

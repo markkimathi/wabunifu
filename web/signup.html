@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cookie Policy · Kazi</title>
+<title>Sign up · Kazi</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
 <script src="nav.js?v=9"></script>
@@ -16,17 +16,19 @@
 
   :root{
     --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
-    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1;
+    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-light:#AA52ED; --brand-soft:#F1E7FA;
     --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
     --amber:#F25C05; --amber-soft:#FDE6D8;
+    --red:#D3322A; --red-soft:#FBE4E2;
     --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
     --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1); --ease-io:cubic-bezier(.65,0,.35,1);
   }
   :root[data-theme="dark"]{
     --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
-    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8;
+    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8; --brand-light:#C79AF2; --brand-soft:#251A38;
     --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
     --amber:#FF9B57; --amber-soft:#3A2412;
+    --red:#FF6B5B; --red-soft:#3A1712;
     --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
   }
   *{box-sizing:border-box}
@@ -43,7 +45,7 @@
     font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
   body > .wrap{flex:1}
   a{color:inherit}
-  .wrap{max-width:720px;margin:0 auto;padding:0 24px}
+  .wrap{width:100%;max-width:640px;margin:0 auto;padding:0 24px}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
@@ -64,11 +66,17 @@
   .header-center{flex:1;min-width:0;overflow:hidden;
     display:flex;align-items:center;justify-content:center;gap:18px}
   .bar-right{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
-
   .nav-links{display:flex;align-items:center;gap:24px;white-space:nowrap}
   .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
     transition:color .3s var(--ease-expo)}
   .nav-links a:hover{color:var(--ink)}
+
+  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px;margin-top:auto}
+  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
+  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
+  .foot-links a{color:var(--muted);text-decoration:none}
+  .foot-links a:hover{color:var(--ink)}
+
   .menu-toggle{display:none;position:relative;flex:none;width:38px;height:38px;padding:0;
     border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
     cursor:pointer;color:var(--ink);
@@ -82,9 +90,6 @@
   .menu-toggle.-active span:last-child{transform:translate(-50%,-50%) rotate(-45deg)}
 
   html.menu-open{overflow:hidden}
-  /* ---- mobile nav menu: same design language as the filter rail
-     (full-bleed canvas panel, fast simple slide, plain list rows) but
-     pulling in from the right instead of the left ---- */
   .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
     padding:20px 22px 40px;overflow:auto;display:flex;flex-direction:column;
     transform:translateX(100%);transition:transform .22s ease}
@@ -135,16 +140,10 @@
     .nav-links{gap:14px}
     .nav-links a{font-size:12.5px;white-space:nowrap}
   }
-  /* Centered nav needs real room on either side for the brand and the
-     right-side icon cluster (theme toggle + account chip) — below this
-     it starts colliding with them, so hand off to the hamburger sooner
-     than the plain "mobile" breakpoint above. */
   @media(max-width:767px),(orientation:portrait) and (max-width:1400px){
     .header-center{display:none}
     .menu-toggle{display:block}
   }
-  /* Tablet portrait: put the hamburger at the far right edge, past
-     "Create an account", instead of between the icons and it. */
   @media(orientation:portrait) and (max-width:1400px){
     .acct-cta{order:1}
     .acct-menu{order:1}
@@ -189,21 +188,50 @@
   [data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
   [data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:rotate(0deg) scale(1)}
 
-  .legal{padding:48px 0 80px}
-  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:600;margin:0 0 14px}
-  .legal h1{font-weight:800;font-size:clamp(28px,4vw,38px);letter-spacing:-.02em;margin:0 0 8px;line-height:1.1}
-  .legal .updated{color:var(--faint);font-size:13px;margin:0 0 36px}
-  .legal h2{font-weight:700;font-size:19px;margin:36px 0 12px;letter-spacing:-.01em}
-  .legal p{color:var(--muted);margin:0 0 14px;line-height:1.65}
-  .legal ul{color:var(--muted);margin:0 0 14px;padding-left:20px;line-height:1.65}
-  .legal li{margin-bottom:6px}
-  .legal a{color:var(--brand);text-decoration:underline;text-underline-offset:2px}
+  h1{font-weight:800;font-size:26px;letter-spacing:-.02em;margin:32px 0 4px}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
 
-  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
-  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
-  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
-  .foot-links a{color:var(--muted);text-decoration:none}
-  .foot-links a:hover{color:var(--ink)}
+  label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
+  .hint{font-weight:400;color:var(--faint);font-size:12.5px}
+  input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
+    border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
+    transition:border-color .2s var(--ease-expo)}
+  @media(max-width:600px){input,select,textarea{font-size:16px}}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:var(--brand)}
+  .honeypot{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+  .link-inline{background:none;border:0;color:var(--brand);font:inherit;font-size:13px;font-weight:700;
+    cursor:pointer;padding:0;text-align:left}
+  .link-inline:disabled{color:var(--faint);cursor:default}
+  .submit{background:var(--brand);color:#fff;border:0;font:inherit;font-weight:700;font-size:14.5px;
+    padding:13px 22px;border-radius:999px;cursor:pointer;width:100%;
+    transition:background .3s var(--ease-expo),transform .3s var(--ease-expo)}
+  .submit:hover:not(:disabled){background:var(--brand-light)}
+  .submit:disabled{background:var(--hairline-strong);color:var(--faint);cursor:not-allowed}
+  .submit:active:not(:disabled){transform:scale(.98)}
+  .err{color:#a5341f;font-size:13px;margin:0}
+  [data-theme="dark"] .err{color:#FF6B5B}
+
+  /* ---- gate: sign up ---- */
+  #gateWrap > h1{margin-top:48px}
+  .gate{max-width:480px;margin:24px auto 0}
+  .gate-panel{display:flex;flex-direction:column;gap:14px}
+  .gate-foot{text-align:center;font-size:13.5px;color:var(--muted);margin:20px 0 0}
+
+  /* ---- verify: OTP code entry ---- */
+  #verifyWrap{display:none}
+  .verify-box{max-width:480px;margin:48px auto 0;text-align:center}
+  .verify-icon{width:56px;height:56px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+    display:grid;place-items:center;margin:0 auto 18px}
+  .verify-box h1{margin:0 0 6px}
+  .verify-box .sub{margin:0 0 26px}
+  .otp-row{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+  .otp-box{width:46px;height:56px;text-align:center;font-size:24px;font-weight:800;padding:0;
+    border-radius:12px}
+  .otp-box.-error{border-color:var(--red)}
+  .verify-box .err{margin-bottom:14px}
+  .verify-box .submit{margin-bottom:16px}
+  .verify-foot{display:flex;flex-direction:column;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
 </style>
 </head>
 <body>
@@ -271,36 +299,56 @@
   </nav>
 </div>
 
-<div class="wrap">
-  <div class="legal">
-    <p class="kicker">Legal</p>
-    <h1>Cookie Policy</h1>
-    <p class="updated">Last updated 1 August 2026</p>
+<!-- ============ VIEW: gate (sign up) ============ -->
+<div class="wrap" id="gateWrap">
+  <h1>Create your Kazi profile</h1>
+  <p class="sub">Employers browsing Kazi can find you by your bio, a photo, and links to your work.</p>
 
-    <h2>1. Short version</h2>
-    <p>Kazi doesn't use tracking cookies, advertising cookies, or third-party analytics of any kind. We do keep basic first-party usage analytics (see section 2) to understand how the board is used, but nothing that identifies you or follows you across visits.</p>
+  <div class="gate">
+    <form class="gate-panel" id="signupPanel" novalidate>
+      <label class="field"><span>Your name</span>
+        <input type="text" id="signupName" required autocomplete="name">
+      </label>
+      <label class="field"><span>Email</span>
+        <input type="email" id="signupEmail" required autocomplete="email">
+      </label>
+      <label class="field"><span>Password <span class="hint">(at least 8 characters)</span></span>
+        <input type="password" id="signupPassword" required minlength="8" autocomplete="new-password">
+      </label>
+      <input type="text" id="signupHoneypot" class="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="hint" style="margin:0">By signing up you agree your profile info may be shown publicly on Kazi once an admin approves it.</p>
+      <p class="err" id="signupErr" style="display:none"></p>
+      <button type="submit" class="submit" id="signupBtn">Create account</button>
+    </form>
 
-    <h2>2. Analytics we keep</h2>
-    <p>Each page visit, search, and "Apply" click logs: the page or action itself, your device type (mobile, tablet, desktop), and your country, derived from your IP address via a local lookup on our own server. We never store your IP address, set an analytics cookie, or use any identifier that would let us link separate visits together. There's no way for us to tell that two visits came from the same person. These records are automatically deleted after 90 days. See our <a href="/privacy">Privacy Policy</a> for more detail.</p>
+    <p class="gate-foot" id="gateFoot">Already have an account? <a href="/login" class="link-inline" style="display:inline">Log in</a></p>
+  </div>
+</div>
 
-    <h2>3. What we do use local storage for</h2>
-    <p>Your browser's local storage (not a cookie, but similar in spirit: data kept in your browser rather than sent with every request) for two things:</p>
-    <ul>
-      <li>Remembering your light/dark theme choice, on every page.</li>
-      <li>Keeping you signed in, if you have a designer account or are an admin reviewer (this doesn't affect regular visitors browsing or applying to jobs).</li>
-    </ul>
+<!-- ============ VIEW: verify (OTP code entry) ============ -->
+<div class="wrap" id="verifyWrap">
+  <div class="verify-box">
+    <div class="verify-icon">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+    </div>
+    <h1>Check your email</h1>
+    <p class="sub">We sent a 6-digit code to <b id="verifyEmailDisplay"></b></p>
 
-    <h2>4. Third parties</h2>
-    <p>Kazi loads one third-party script (the GSAP animation library, from a CDN) used only to animate the page. It doesn't track you or set cookies. Our analytics are entirely first-party and self-hosted; no visitor data is ever sent to a third party.</p>
+    <div class="otp-row" id="otpRow">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="0" autocomplete="one-time-code">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="1">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="2">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="3">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="4">
+      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="5">
+    </div>
+    <p class="err" id="verifyErr" style="display:none"></p>
+    <button type="button" class="submit" id="verifySubmitBtn" disabled>Verify email</button>
 
-    <h2>5. Managing this</h2>
-    <p>You can clear local storage at any time from your browser's settings; this just resets your theme choice back to your system default.</p>
-
-    <h2>6. Changes to this policy</h2>
-    <p>We may update this policy as the site evolves.</p>
-
-    <h2>7. Contact</h2>
-    <p><a href="mailto:hello@odana.design">hello@odana.design</a></p>
+    <div class="verify-foot">
+      <span>Didn't get it? <button type="button" class="link-inline" id="resendCodeBtn">Resend code</button></span>
+      <button type="button" class="link-inline" id="verifyLogoutBtn">Use a different account</button>
+    </div>
   </div>
 </div>
 
@@ -316,5 +364,184 @@
   </div>
 </footer>
 
+<script>
+const TOKEN_KEY = "kazi_designer_token";
+let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
+let pendingEmail = ""; // set right after signup, used only to display "we sent a code to ___"
+
+const gateWrap = document.getElementById("gateWrap");
+const verifyWrap = document.getElementById("verifyWrap");
+
+function showView(name) {
+  gateWrap.style.display = name === "gate" ? "block" : "none";
+  verifyWrap.style.display = name === "verify" ? "block" : "none";
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+async function api(path, opts = {}) {
+  const res = await fetch(path, {
+    ...opts,
+    headers: {...(opts.headers||{}), ...(token ? {"Authorization": `Bearer ${token}`} : {})},
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    const err = new Error(body.detail || `Request failed (${res.status})`);
+    err.status = res.status;
+    throw err;
+  }
+  return res.json();
+}
+
+/* ---------- signup ---------- */
+document.getElementById("signupPanel").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("signupErr");
+  errEl.style.display = "none";
+  const btn = document.getElementById("signupBtn");
+  btn.disabled = true;
+  const email = document.getElementById("signupEmail").value.trim();
+  try {
+    const res = await api("/api/designers/signup", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        email,
+        password: document.getElementById("signupPassword").value,
+        display_name: document.getElementById("signupName").value.trim(),
+        honeypot: document.getElementById("signupHoneypot").value,
+      }),
+    });
+    if (!res.token) { errEl.textContent = "Something went wrong. Please try again."; errEl.style.display = "block"; return; }
+    token = res.token;
+    localStorage.setItem(TOKEN_KEY, token);
+    pendingEmail = email;
+    enterVerify(email);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- verify: OTP code entry ---------- */
+const otpBoxes = Array.from(document.querySelectorAll(".otp-box"));
+function currentCode() {
+  return otpBoxes.map(b => b.value).join("");
+}
+function updateVerifyBtn() {
+  document.getElementById("verifySubmitBtn").disabled = currentCode().length !== 6;
+}
+otpBoxes.forEach((box, i) => {
+  box.addEventListener("input", () => {
+    box.value = box.value.replace(/[^0-9]/g, "").slice(0, 1);
+    box.classList.remove("-error");
+    if (box.value && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
+    updateVerifyBtn();
+    if (currentCode().length === 6) submitVerifyCode();
+  });
+  box.addEventListener("keydown", (e) => {
+    if (e.key === "Backspace" && !box.value && i > 0) otpBoxes[i - 1].focus();
+  });
+  box.addEventListener("paste", (e) => {
+    const text = (e.clipboardData || window.clipboardData).getData("text").replace(/[^0-9]/g, "");
+    if (!text) return;
+    e.preventDefault();
+    text.slice(0, 6).split("").forEach((ch, idx) => { if (otpBoxes[idx]) otpBoxes[idx].value = ch; });
+    const last = Math.min(text.length, 6) - 1;
+    if (otpBoxes[last]) otpBoxes[last].focus();
+    updateVerifyBtn();
+    if (currentCode().length === 6) submitVerifyCode();
+  });
+});
+
+function enterVerify(email) {
+  document.getElementById("verifyEmailDisplay").textContent = email;
+  otpBoxes.forEach(b => { b.value = ""; b.classList.remove("-error"); });
+  updateVerifyBtn();
+  showView("verify");
+  otpBoxes[0].focus();
+}
+
+async function submitVerifyCode() {
+  const errEl = document.getElementById("verifyErr");
+  errEl.style.display = "none";
+  const code = currentCode();
+  if (code.length !== 6) return;
+  const btn = document.getElementById("verifySubmitBtn");
+  btn.disabled = true;
+  btn.textContent = "Verifying…";
+  try {
+    await api("/api/designers/me/verify-email", {
+      method: "POST", headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({code}),
+    });
+    location.href = "/account";
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+    otpBoxes.forEach(b => b.classList.add("-error"));
+    otpBoxes[0].focus();
+    otpBoxes[0].select();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Verify email";
+    updateVerifyBtn();
+  }
+}
+document.getElementById("verifySubmitBtn").addEventListener("click", submitVerifyCode);
+
+let resendCooldown = 0;
+let resendTimer = null;
+document.getElementById("resendCodeBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("resendCodeBtn");
+  if (btn.disabled) return;
+  try {
+    await api("/api/designers/me/resend-verification", {method: "POST"});
+  } catch {}
+  resendCooldown = 30;
+  btn.disabled = true;
+  clearInterval(resendTimer);
+  resendTimer = setInterval(() => {
+    resendCooldown -= 1;
+    if (resendCooldown <= 0) {
+      clearInterval(resendTimer);
+      btn.disabled = false;
+      btn.textContent = "Resend code";
+    } else {
+      btn.textContent = `Resend code (${resendCooldown}s)`;
+    }
+  }, 1000);
+});
+
+document.getElementById("verifyLogoutBtn").addEventListener("click", () => {
+  token = "";
+  localStorage.removeItem(TOKEN_KEY);
+  sessionStorage.removeItem(TOKEN_KEY);
+  showView("gate");
+});
+
+/* ---------- boot: an existing session either needs to finish verifying
+   (stay here) or is already good to go (send it to the dashboard) ---------- */
+async function boot() {
+  if (!token) { showView("gate"); return; }
+  try {
+    const me = await api("/api/designers/me");
+    if (me.email_verified) {
+      location.href = "/account";
+    } else {
+      pendingEmail = me.email;
+      enterVerify(me.email);
+    }
+  } catch (err) {
+    if (err.status === 401) {
+      token = "";
+      localStorage.removeItem(TOKEN_KEY);
+      sessionStorage.removeItem(TOKEN_KEY);
+    }
+    showView("gate");
+  }
+}
+boot();
+</script>
 </body>
 </html>

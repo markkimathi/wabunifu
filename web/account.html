@@ -202,11 +202,9 @@
   h1{font-weight:800;font-size:26px;letter-spacing:-.02em;margin:32px 0 4px}
   .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
 
-  /* ---- shared form bits (gate + wizard) ---- */
+  /* ---- shared form bits (wizard) ---- */
   label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
   .hint{font-weight:400;color:var(--faint);font-size:12.5px}
-  .check-row{display:flex;gap:9px;align-items:center;font-size:13.5px;font-weight:500;cursor:pointer;margin:-6px 0 2px}
-  .check-row input{flex:none;width:16px;height:16px;cursor:pointer;accent-color:var(--brand)}
   input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
     border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
     transition:border-color .2s var(--ease-expo)}
@@ -216,7 +214,6 @@
   select{cursor:pointer;appearance:none;-webkit-appearance:none;padding-right:38px;
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
     background-repeat:no-repeat;background-position:right 14px center;background-size:14px}
-  .honeypot{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
 
   .handle-wrap{display:flex;align-items:center;border:1px solid var(--hairline-strong);
     border-radius:10px;padding:0 13px;transition:border-color .2s var(--ease-expo)}
@@ -250,33 +247,7 @@
   .submit:disabled{background:var(--hairline-strong);color:var(--faint);cursor:not-allowed}
   .submit:active:not(:disabled){transform:scale(.98)}
   .err{color:#a5341f;font-size:13px;margin:0}
-  .ok-msg{color:var(--green-ink);font-size:13px;margin:0;background:var(--green-soft);padding:10px 12px;border-radius:8px}
   [data-theme="dark"] .err{color:#FF6B5B}
-
-  /* ---- gate: log in / sign up / forgot password ---- */
-  #gateWrap > h1{margin-top:48px}
-  .gate{max-width:480px;margin:24px auto 0}
-  .gate-tabs{display:flex;gap:8px;margin-bottom:22px}
-  .gate-tabs button{flex:1;font:inherit;font-size:13.5px;font-weight:700;padding:10px;border-radius:999px;
-    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
-  .gate-tabs button.active{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
-  .gate-panel{display:none;flex-direction:column;gap:14px}
-  .gate-panel.active{display:flex}
-
-  /* ---- verify: OTP code entry ---- */
-  #verifyWrap{display:none}
-  .verify-box{max-width:480px;margin:48px auto 0;text-align:center}
-  .verify-icon{width:56px;height:56px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
-    display:grid;place-items:center;margin:0 auto 18px}
-  .verify-box h1{margin:0 0 6px}
-  .verify-box .sub{margin:0 0 26px}
-  .otp-row{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
-  .otp-box{width:46px;height:56px;text-align:center;font-size:24px;font-weight:800;padding:0;
-    border-radius:12px}
-  .otp-box.-error{border-color:var(--red)}
-  .verify-box .err{margin-bottom:14px}
-  .verify-box .submit{margin-bottom:16px}
-  .verify-foot{display:flex;flex-direction:column;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
 
   /* ---- dashboard: empty + filled states ---- */
   #dashboardWrap{display:none}
@@ -420,8 +391,8 @@
     <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
       <span></span><span></span>
     </button>
-    <a href="/account?tab=login" class="acct-cta" id="signinCta">Sign in</a>
-    <a href="/account?tab=signup" class="acct-cta" id="acctCta">Create an account</a>
+    <a href="/login" class="acct-cta" id="signinCta">Sign in</a>
+    <a href="/signup" class="acct-cta" id="acctCta">Create an account</a>
     <div class="acct-menu" id="acctMenu">
       <button class="acct-trigger" id="acctTrigger" type="button" aria-haspopup="true" aria-expanded="false">
         <img class="acct-avatar" id="acctAvatar" src="" alt="">
@@ -450,101 +421,13 @@
       <a href="/cv-check" class="nav-cta">Check your CV</a>
   </nav>
   <nav class="mm-nav mm-account" id="mmCta">
-    <a href="/account?tab=login" class="mm-cta-outline">Sign in</a>
-    <a href="/account?tab=signup" class="mm-cta-outline">Create an account</a>
+    <a href="/login" class="mm-cta-outline">Sign in</a>
+    <a href="/signup" class="mm-cta-outline">Create an account</a>
   </nav>
   <nav class="mm-nav mm-account" id="mmAccount" style="display:none">
     <a href="/account">My profile</a>
     <button type="button" class="mm-logout" id="mmLogoutBtn">Log out</button>
   </nav>
-</div>
-
-<!-- ============ VIEW: gate (log in / sign up / forgot / reset) ============ -->
-<div class="wrap" id="gateWrap">
-  <h1>Your Kazi profile</h1>
-  <p class="sub">Create a designer profile so employers can find you: a bio, a photo, and links to your work.</p>
-
-  <div class="gate">
-    <div class="gate-tabs">
-      <button data-panel="login" class="active">Log in</button>
-      <button data-panel="signup">Sign up</button>
-    </div>
-
-    <form class="gate-panel active" id="loginPanel" novalidate>
-      <label class="field"><span>Email</span>
-        <input type="email" id="loginEmail" required autocomplete="email">
-      </label>
-      <label class="field"><span>Password</span>
-        <input type="password" id="loginPassword" required autocomplete="current-password">
-      </label>
-      <label class="check-row"><input type="checkbox" id="rememberMe" checked><span>Remember me</span></label>
-      <p class="err" id="loginErr" style="display:none"></p>
-      <button type="submit" class="submit" id="loginBtn">Log in</button>
-      <button type="button" class="link-inline" id="forgotLink">Forgot your password?</button>
-    </form>
-
-    <form class="gate-panel" id="signupPanel" novalidate>
-      <label class="field"><span>Your name</span>
-        <input type="text" id="signupName" required autocomplete="name">
-      </label>
-      <label class="field"><span>Email</span>
-        <input type="email" id="signupEmail" required autocomplete="email">
-      </label>
-      <label class="field"><span>Password <span class="hint">(at least 8 characters)</span></span>
-        <input type="password" id="signupPassword" required minlength="8" autocomplete="new-password">
-      </label>
-      <input type="text" id="signupHoneypot" class="honeypot" tabindex="-1" autocomplete="off" aria-hidden="true">
-      <p class="hint" style="margin:0">By signing up you agree your profile info may be shown publicly on Kazi once an admin approves it.</p>
-      <p class="err" id="signupErr" style="display:none"></p>
-      <button type="submit" class="submit" id="signupBtn">Create account</button>
-    </form>
-
-    <form class="gate-panel" id="forgotPanel" novalidate>
-      <label class="field"><span>Email</span>
-        <input type="email" id="forgotEmail" required autocomplete="email">
-      </label>
-      <p class="hint" style="margin:0">We'll email you a link to reset your password.</p>
-      <p class="ok-msg" id="forgotOk" style="display:none">If that email has an account, a reset link is on its way.</p>
-      <p class="err" id="forgotErr" style="display:none"></p>
-      <button type="submit" class="submit" id="forgotBtn">Send reset link</button>
-      <button type="button" class="link-inline" id="backToLogin">Back to log in</button>
-    </form>
-
-    <form class="gate-panel" id="resetPanel" novalidate>
-      <label class="field"><span>New password <span class="hint">(at least 8 characters)</span></span>
-        <input type="password" id="resetPassword" required minlength="8" autocomplete="new-password">
-      </label>
-      <p class="err" id="resetErr" style="display:none"></p>
-      <button type="submit" class="submit" id="resetBtn">Set new password</button>
-    </form>
-  </div>
-</div>
-
-<!-- ============ VIEW: verify (OTP code entry) ============ -->
-<div class="wrap" id="verifyWrap">
-  <div class="verify-box">
-    <div class="verify-icon">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-    </div>
-    <h1>Check your email</h1>
-    <p class="sub">We sent a 6-digit code to <b id="verifyEmailDisplay"></b></p>
-
-    <div class="otp-row" id="otpRow">
-      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="0" autocomplete="one-time-code">
-      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="1">
-      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="2">
-      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="3">
-      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="4">
-      <input class="otp-box" maxlength="1" inputmode="numeric" pattern="[0-9]" data-i="5">
-    </div>
-    <p class="err" id="verifyErr" style="display:none"></p>
-    <button type="button" class="submit" id="verifySubmitBtn" disabled>Verify email</button>
-
-    <div class="verify-foot">
-      <span>Didn't get it? <button type="button" class="link-inline" id="resendCodeBtn">Resend code</button></span>
-      <button type="button" class="link-inline" id="verifyLogoutBtn">Use a different account</button>
-    </div>
-  </div>
 </div>
 
 <!-- ============ VIEW: dashboard (empty or filled) ============ -->
@@ -857,17 +740,12 @@ const LOCATIONS = [
 
 const TOKEN_KEY = "kazi_designer_token";
 let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
-let pendingEmail = ""; // set right after signup, used only to display "we sent a code to ___"
 let me = null; // last-loaded profile, refreshed by afterAuth()
 
-const gateWrap = document.getElementById("gateWrap");
-const verifyWrap = document.getElementById("verifyWrap");
 const dashboardWrap = document.getElementById("dashboardWrap");
 const wizardWrap = document.getElementById("wizardWrap");
 
 function showView(name) {
-  gateWrap.style.display = name === "gate" ? "block" : "none";
-  verifyWrap.style.display = name === "verify" ? "block" : "none";
   dashboardWrap.style.display = name === "dashboard" ? "block" : "none";
   wizardWrap.style.display = name === "wizard" ? "block" : "none";
   window.scrollTo({top: 0, behavior: "smooth"});
@@ -891,236 +769,9 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-/* ---------- gate: tab switching ---------- */
-function showPanel(name) {
-  document.querySelectorAll(".gate-panel").forEach(p => p.classList.remove("active"));
-  document.getElementById(`${name}Panel`).classList.add("active");
-  document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === name));
-}
-document.querySelectorAll(".gate-tabs button").forEach(b => {
-  b.addEventListener("click", () => showPanel(b.dataset.panel));
-});
-document.getElementById("forgotLink").addEventListener("click", () => {
-  document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.remove("active"));
-  showPanel("forgot");
-});
-document.getElementById("backToLogin").addEventListener("click", () => showPanel("login"));
-
-/* ---------- login ---------- */
-document.getElementById("loginPanel").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById("loginErr");
-  errEl.style.display = "none";
-  const btn = document.getElementById("loginBtn");
-  btn.disabled = true;
-  try {
-    const res = await api("/api/designers/login", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        email: document.getElementById("loginEmail").value.trim(),
-        password: document.getElementById("loginPassword").value,
-      }),
-    });
-    token = res.token;
-    if (document.getElementById("rememberMe").checked) {
-      localStorage.setItem(TOKEN_KEY, token);
-    } else {
-      sessionStorage.setItem(TOKEN_KEY, token);
-    }
-    await afterAuth();
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = "block";
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-/* ---------- signup ---------- */
-document.getElementById("signupPanel").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById("signupErr");
-  errEl.style.display = "none";
-  const btn = document.getElementById("signupBtn");
-  btn.disabled = true;
-  const email = document.getElementById("signupEmail").value.trim();
-  try {
-    const res = await api("/api/designers/signup", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({
-        email,
-        password: document.getElementById("signupPassword").value,
-        display_name: document.getElementById("signupName").value.trim(),
-        honeypot: document.getElementById("signupHoneypot").value,
-      }),
-    });
-    if (!res.token) { errEl.textContent = "Something went wrong. Please try again."; errEl.style.display = "block"; return; }
-    token = res.token;
-    localStorage.setItem(TOKEN_KEY, token);
-    pendingEmail = email;
-    enterVerify(email);
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = "block";
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-/* ---------- forgot / reset password (still link-based) ---------- */
-document.getElementById("forgotPanel").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById("forgotErr");
-  const okEl = document.getElementById("forgotOk");
-  errEl.style.display = "none"; okEl.style.display = "none";
-  const btn = document.getElementById("forgotBtn");
-  btn.disabled = true;
-  try {
-    await api("/api/designers/forgot-password", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({email: document.getElementById("forgotEmail").value.trim()}),
-    });
-    okEl.style.display = "block";
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = "block";
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-let resetToken = "";
-document.getElementById("resetPanel").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById("resetErr");
-  errEl.style.display = "none";
-  const btn = document.getElementById("resetBtn");
-  btn.disabled = true;
-  try {
-    await api("/api/designers/reset-password", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({token: resetToken, new_password: document.getElementById("resetPassword").value}),
-    });
-    showPanel("login");
-    document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === "login"));
-    document.getElementById("loginErr").textContent = "Password updated. Log in with your new password.";
-    document.getElementById("loginErr").style.display = "block";
-    document.getElementById("loginErr").style.color = "var(--green-ink)";
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = "block";
-  } finally {
-    btn.disabled = false;
-  }
-});
-
-(function handleResetLink() {
-  const params = new URLSearchParams(location.search);
-  const resetTok = params.get("reset");
-  if (resetTok) {
-    resetToken = resetTok;
-    document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.remove("active"));
-    showPanel("reset");
-    history.replaceState({}, "", location.pathname);
-  } else {
-    const tab = params.get("tab");
-    if (tab === "signup" || tab === "login") showPanel(tab);
-  }
-})();
-
-/* ---------- verify: OTP code entry ---------- */
-const otpBoxes = Array.from(document.querySelectorAll(".otp-box"));
-function currentCode() {
-  return otpBoxes.map(b => b.value).join("");
-}
-function updateVerifyBtn() {
-  document.getElementById("verifySubmitBtn").disabled = currentCode().length !== 6;
-}
-otpBoxes.forEach((box, i) => {
-  box.addEventListener("input", () => {
-    box.value = box.value.replace(/[^0-9]/g, "").slice(0, 1);
-    box.classList.remove("-error");
-    if (box.value && i < otpBoxes.length - 1) otpBoxes[i + 1].focus();
-    updateVerifyBtn();
-    if (currentCode().length === 6) submitVerifyCode();
-  });
-  box.addEventListener("keydown", (e) => {
-    if (e.key === "Backspace" && !box.value && i > 0) otpBoxes[i - 1].focus();
-  });
-  box.addEventListener("paste", (e) => {
-    const text = (e.clipboardData || window.clipboardData).getData("text").replace(/[^0-9]/g, "");
-    if (!text) return;
-    e.preventDefault();
-    text.slice(0, 6).split("").forEach((ch, idx) => { if (otpBoxes[idx]) otpBoxes[idx].value = ch; });
-    const last = Math.min(text.length, 6) - 1;
-    if (otpBoxes[last]) otpBoxes[last].focus();
-    updateVerifyBtn();
-    if (currentCode().length === 6) submitVerifyCode();
-  });
-});
-
-function enterVerify(email) {
-  document.getElementById("verifyEmailDisplay").textContent = email;
-  otpBoxes.forEach(b => { b.value = ""; b.classList.remove("-error"); });
-  updateVerifyBtn();
-  showView("verify");
-  otpBoxes[0].focus();
-}
-
-async function submitVerifyCode() {
-  const errEl = document.getElementById("verifyErr");
-  errEl.style.display = "none";
-  const code = currentCode();
-  if (code.length !== 6) return;
-  const btn = document.getElementById("verifySubmitBtn");
-  btn.disabled = true;
-  btn.textContent = "Verifying…";
-  try {
-    await api("/api/designers/me/verify-email", {
-      method: "POST", headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({code}),
-    });
-    await afterAuth();
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = "block";
-    otpBoxes.forEach(b => b.classList.add("-error"));
-    otpBoxes[0].focus();
-    otpBoxes[0].select();
-  } finally {
-    btn.disabled = false;
-    btn.textContent = "Verify email";
-    updateVerifyBtn();
-  }
-}
-document.getElementById("verifySubmitBtn").addEventListener("click", submitVerifyCode);
-
-let resendCooldown = 0;
-let resendTimer = null;
-document.getElementById("resendCodeBtn").addEventListener("click", async () => {
-  const btn = document.getElementById("resendCodeBtn");
-  if (btn.disabled) return;
-  try {
-    await api("/api/designers/me/resend-verification", {method: "POST"});
-  } catch {}
-  resendCooldown = 30;
-  btn.disabled = true;
-  clearInterval(resendTimer);
-  resendTimer = setInterval(() => {
-    resendCooldown -= 1;
-    if (resendCooldown <= 0) {
-      clearInterval(resendTimer);
-      btn.disabled = false;
-      btn.textContent = "Resend code";
-    } else {
-      btn.textContent = `Resend code (${resendCooldown}s)`;
-    }
-  }, 1000);
-});
-
-document.getElementById("verifyLogoutBtn").addEventListener("click", () => logout());
-
-/* ---------- shared: what to do once we have a valid, current session ---------- */
+/* ---------- this page is the authenticated dashboard only now; log in
+   and sign up (including email verification) live on their own pages,
+   so getting here without a usable session just bounces you there ---------- */
 async function afterAuth() {
   try {
     me = await api("/api/designers/me");
@@ -1129,8 +780,7 @@ async function afterAuth() {
     return;
   }
   if (!me.email_verified) {
-    pendingEmail = me.email;
-    enterVerify(me.email);
+    location.href = "/signup";
     return;
   }
   renderDashboard();
@@ -1475,9 +1125,7 @@ function logout() {
   me = null;
   localStorage.removeItem(TOKEN_KEY);
   sessionStorage.removeItem(TOKEN_KEY);
-  showView("gate");
-  showPanel("login");
-  document.querySelectorAll(".gate-tabs button").forEach(b => b.classList.toggle("active", b.dataset.panel === "login"));
+  location.href = "/login";
 }
 async function logoutRemote() {
   try { await api("/api/designers/logout", {method: "POST"}); } catch {}
@@ -1486,7 +1134,7 @@ async function logoutRemote() {
 document.getElementById("dashLogoutBtn").addEventListener("click", logoutRemote);
 
 if (token) afterAuth();
-else showView("gate");
+else location.href = "/login";
 </script>
 </body>
 </html>

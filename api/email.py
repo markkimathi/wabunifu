@@ -73,7 +73,7 @@ def send_verification_email(email: str, code: str) -> None:
 
 
 def send_password_reset_email(email: str, token: str) -> None:
-    link = f"{SITE_URL}/account?reset={token}"
+    link = f"{SITE_URL}/login?reset={token}"
     send_email(
         email,
         "Reset your password for Kazi",
