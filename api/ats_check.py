@@ -198,6 +198,61 @@ def _keyword_match(resume_text: str, job_description: str) -> dict | None:
     return {"score": score, "matched": matched[:20], "missing": missing}
 
 
+YEARS_RE = re.compile(r"\b(\d{1,2})\+?\s*years?\b", re.I)
+QUALIFICATION_PATTERNS = [
+    ("Bachelor's degree", re.compile(r"\bbachelor'?s?\b|\bb\.?sc\.?\b|\bb\.?a\.?\b", re.I)),
+    ("Master's degree", re.compile(r"\bmaster'?s?\b|\bm\.?sc\.?\b|\bmba\b", re.I)),
+    ("PhD / doctorate", re.compile(r"\bph\.?d\.?\b|\bdoctorate\b", re.I)),
+    ("Professional certification", re.compile(r"\bcertifi(?:ed|cation)s?\b", re.I)),
+]
+
+
+def _required_years(job_description: str) -> int | None:
+    match = YEARS_RE.search(job_description)
+    return int(match.group(1)) if match else None
+
+
+def _max_years_mentioned(text: str) -> int | None:
+    years = [int(y) for y in YEARS_RE.findall(text)]
+    return max(years) if years else None
+
+
+def _requirements_match(resume_text: str, job_description: str) -> dict | None:
+    """Rough, regex-based check of whether the CV meets the experience and
+    qualification bars the job description states explicitly (e.g. "5+
+    years", "Bachelor's degree"). Catches literal phrasing only, not
+    paraphrases — a heuristic on top of the keyword match, not a substitute
+    for it."""
+    items = []
+
+    required_years = _required_years(job_description)
+    if required_years is not None:
+        resume_years = _max_years_mentioned(resume_text)
+        met = resume_years is not None and resume_years >= required_years
+        items.append({
+            "label": f"{required_years}+ years of experience",
+            "met": met,
+            "detail": (
+                f"Your CV mentions {resume_years} years." if resume_years is not None
+                else "Your CV doesn't mention a number of years of experience."
+            ),
+        })
+
+    for label, pattern in QUALIFICATION_PATTERNS:
+        if pattern.search(job_description):
+            met = bool(pattern.search(resume_text))
+            items.append({
+                "label": label,
+                "met": met,
+                "detail": "Found on your CV." if met else "Not found on your CV.",
+            })
+
+    if not items:
+        return None
+    score = round(sum(1 for i in items if i["met"]) / len(items) * 100)
+    return {"score": score, "items": items}
+
+
 def analyze(filename: str, data: bytes, job_description: str = "") -> dict:
     if len(data) > MAX_FILE_BYTES:
         raise UnsupportedFile("That file is larger than 3MB. Please upload a smaller one.")
@@ -232,4 +287,5 @@ def analyze(filename: str, data: bytes, job_description: str = "") -> dict:
     }
     if job_description.strip():
         result["keyword_match"] = _keyword_match(text, job_description)
+        result["requirements_match"] = _requirements_match(text, job_description)
     return result

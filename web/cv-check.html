@@ -246,8 +246,13 @@
     box-shadow:var(--shadow);margin-bottom:24px}
   .panel h3{margin:0 0 4px;font-size:15px;font-weight:800}
   .panel .kw-sub{font-size:13px;color:var(--muted);margin:0 0 14px}
+  .kw-group{margin-top:16px}
+  .kw-group:first-of-type{margin-top:0}
+  .kw-group-label{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;
+    color:var(--faint);margin:0 0 8px}
   .kw-pills{display:flex;flex-wrap:wrap;gap:8px}
   .kw-pill{font-size:12.5px;font-weight:600;padding:5px 12px;border-radius:999px;background:var(--red-soft);color:var(--red)}
+  .kw-pill.-match{background:var(--green-soft);color:var(--green-ink)}
 
   .reset-row{text-align:center}
   .btn-ghost{background:none;border:1px solid var(--hairline-strong);color:var(--ink);font:inherit;
@@ -378,7 +383,20 @@
       <div class="panel" id="kwPanel" style="display:none">
         <h3>Keyword match</h3>
         <p class="kw-sub" id="kwSub"></p>
-        <div class="kw-pills" id="kwPills"></div>
+        <div class="kw-group">
+          <p class="kw-group-label">Missing — in the job description, not in your CV</p>
+          <div class="kw-pills" id="kwPillsMissing"></div>
+        </div>
+        <div class="kw-group">
+          <p class="kw-group-label">Matched — in both</p>
+          <div class="kw-pills" id="kwPillsMatched"></div>
+        </div>
+      </div>
+
+      <div class="panel" id="reqPanel" style="display:none">
+        <h3>Experience &amp; qualifications match</h3>
+        <p class="kw-sub" id="reqSub"></p>
+        <div class="check-list" id="reqList"></div>
       </div>
 
       <div class="reset-row">
@@ -535,12 +553,34 @@ function renderKeywordMatch(km){
   panel.style.display = "block";
   document.getElementById("kwSub").textContent =
     `${km.score}% of the job description's key terms appear in your CV.`;
-  const pills = document.getElementById("kwPills");
-  if(km.missing.length){
-    pills.innerHTML = km.missing.map(w => `<span class="kw-pill">${escapeHtml(w)}</span>`).join("");
-  } else {
-    pills.innerHTML = `<span class="kw-pill" style="background:var(--green-soft);color:var(--green-ink)">Nothing major missing</span>`;
-  }
+
+  const missingPills = document.getElementById("kwPillsMissing");
+  missingPills.innerHTML = km.missing.length
+    ? km.missing.map(w => `<span class="kw-pill">${escapeHtml(w)}</span>`).join("")
+    : `<span class="kw-pill -match">Nothing major missing</span>`;
+
+  const matchedPills = document.getElementById("kwPillsMatched");
+  matchedPills.innerHTML = km.matched.length
+    ? km.matched.map(w => `<span class="kw-pill -match">${escapeHtml(w)}</span>`).join("")
+    : `<span class="kw-pill">None of the key terms matched</span>`;
+}
+
+function renderRequirementsMatch(rm){
+  const panel = document.getElementById("reqPanel");
+  if(!rm){ panel.style.display = "none"; return; }
+  panel.style.display = "block";
+  const metCount = rm.items.filter(i => i.met).length;
+  document.getElementById("reqSub").textContent =
+    `${metCount} of ${rm.items.length} requirements found on your CV.`;
+  document.getElementById("reqList").innerHTML = rm.items.map(i => `
+    <div class="check-row ${i.met ? "-pass" : "-critical"}">
+      <span class="c-icon">${i.met ? ICON_PASS : ICON_WARN}</span>
+      <div>
+        <p class="c-title">${escapeHtml(i.label)}</p>
+        <p class="c-detail">${escapeHtml(i.detail)}</p>
+      </div>
+    </div>
+  `).join("");
 }
 
 function escapeHtml(s){
@@ -570,6 +610,7 @@ checkBtn.addEventListener("click", async () => {
     document.getElementById("scoreDesc").textContent = scoreDescText(data.score);
     renderChecks(data.checks);
     renderKeywordMatch(data.keyword_match);
+    renderRequirementsMatch(data.requirements_match);
     uploadStage.style.display = "none";
     results.classList.add("-open");
     window.scrollTo({top: 0, behavior: "smooth"});
