@@ -244,6 +244,15 @@ class ProfileUpdate(BaseModel):
             raise ValueError("enter your name")
         return v.strip()
 
+    @field_validator("phone")
+    @classmethod
+    def _clean_phone(cls, v: str) -> str:
+        # Belt-and-suspenders: the wizard now composes this from a country
+        # code select + digits-only number field, but strip anything that
+        # isn't a digit/+/space anyway in case a client ever sends something
+        # freeform (or an old stray value gets re-submitted unchanged).
+        return re.sub(r"[^\d+ ]", "", v).strip()
+
 
 class HandleUpdate(BaseModel):
     handle: str

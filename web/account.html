@@ -154,6 +154,10 @@
   .handle-wrap input{border:0;padding:11px 0 11px 2px;flex:1;min-width:0}
   .handle-wrap input:focus{outline:0}
 
+  .phone-wrap{display:flex;gap:8px}
+  .phone-wrap select{flex:none;width:150px;padding-right:28px}
+  .phone-wrap input{flex:1;min-width:0}
+
   /* ---- location autocomplete (same pattern as post.html) ---- */
   .loc-wrap{position:relative}
   .loc-wrap input{width:100%}
@@ -546,7 +550,10 @@
       <p class="step-title">Get in touch</p>
       <p class="step-sub">Optional. Shown publicly on your profile so employers can reach you directly, separate from your login email.</p>
       <label class="field"><span>Phone <span class="hint">(optional)</span></span>
-        <input type="tel" id="wizardPhone" placeholder="e.g. +254 700 123 456">
+        <div class="phone-wrap">
+          <select id="wizardPhoneCode" aria-label="Country code"></select>
+          <input type="tel" id="wizardPhoneNumber" placeholder="700 123 456" inputmode="tel">
+        </div>
       </label>
       <label class="field"><span>Public contact email <span class="hint">(optional)</span></span>
         <input type="email" id="wizardContactEmail" placeholder="e.g. hello@yourname.design">
@@ -615,6 +622,65 @@ const DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Mo
 const PLACEHOLDER_OPT = '<option value="" disabled selected>Select</option>';
 const discSel = document.getElementById("wizardDiscipline");
 discSel.innerHTML = PLACEHOLDER_OPT + DISCIPLINES.map(d => `<option value="${d}">${d}</option>`).join("");
+
+/* ---------- phone: country code + number, auto-picked from location ---------- */
+const COUNTRY_CODES = [
+  {name: "Kenya", code: "+254"},
+  {name: "Nigeria", code: "+234"},
+  {name: "Ghana", code: "+233"},
+  {name: "South Africa", code: "+27"},
+  {name: "Egypt", code: "+20"},
+  {name: "Rwanda", code: "+250"},
+  {name: "Uganda", code: "+256"},
+  {name: "Tanzania", code: "+255"},
+  {name: "Ethiopia", code: "+251"},
+  {name: "Morocco", code: "+212"},
+  {name: "Senegal", code: "+221"},
+  {name: "Zambia", code: "+260"},
+  {name: "Zimbabwe", code: "+263"},
+  {name: "Botswana", code: "+267"},
+  {name: "Namibia", code: "+264"},
+  {name: "Mozambique", code: "+258"},
+  {name: "DR Congo", code: "+243"},
+  {name: "Tunisia", code: "+216"},
+  {name: "Algeria", code: "+213"},
+  {name: "United States", code: "+1"},
+  {name: "United Kingdom", code: "+44"},
+  {name: "France", code: "+33"},
+  {name: "Germany", code: "+49"},
+  {name: "India", code: "+91"},
+  {name: "United Arab Emirates", code: "+971"},
+];
+const phoneCodeSel = document.getElementById("wizardPhoneCode");
+phoneCodeSel.innerHTML = '<option value="">Code</option>' +
+  COUNTRY_CODES.map(c => `<option value="${c.code}">${c.name} (${c.code})</option>`).join("");
+
+function countryCodeForLocation(location) {
+  const loc = (location || "").toLowerCase();
+  const match = COUNTRY_CODES.find(c => loc.includes(c.name.toLowerCase()));
+  return match ? match.code : "";
+}
+
+/* Splits a stored phone string (old freeform values may have stray
+   characters, e.g. "@254700494065") back into {code, number} for editing. */
+function splitPhone(raw) {
+  const digits = (raw || "").replace(/[^\d+]/g, "").replace(/^\+/, "");
+  const byLength = [...COUNTRY_CODES].sort((a, b) => b.code.length - a.code.length);
+  for (const c of byLength) {
+    const codeDigits = c.code.slice(1);
+    if (digits.startsWith(codeDigits)) {
+      return {code: c.code, number: digits.slice(codeDigits.length)};
+    }
+  }
+  return {code: "", number: digits};
+}
+
+function composePhone() {
+  const code = document.getElementById("wizardPhoneCode").value;
+  const number = document.getElementById("wizardPhoneNumber").value.trim().replace(/[^\d]/g, "");
+  if (!number) return "";
+  return code ? `${code} ${number}` : number;
+}
 
 /* ---------- location autocomplete (same LOCATIONS list + behavior as post.html) ---------- */
 const LOCATIONS = [
@@ -1123,6 +1189,10 @@ function showStep(n) {
   document.getElementById("stepNum").textContent = n;
   document.getElementById("stepName").textContent = stepNames[n - 1];
   updateNextButtonState();
+  if (n === 3 && !phoneCodeSel.value) {
+    const guess = countryCodeForLocation(document.getElementById("wizardLocation").value);
+    if (guess) phoneCodeSel.value = guess;
+  }
   if (n === 6) {
     document.getElementById("reviewCard").innerHTML = profileCardHtml(wizardState());
     wireBioToggle(document.getElementById("reviewCard"));
@@ -1135,7 +1205,7 @@ function wizardState() {
     display_name: document.getElementById("wizardName").value.trim(),
     discipline: document.getElementById("wizardDiscipline").value,
     location: document.getElementById("wizardLocation").value.trim(),
-    phone: document.getElementById("wizardPhone").value.trim(),
+    phone: composePhone(),
     contact_email: document.getElementById("wizardContactEmail").value.trim(),
     bio: document.getElementById("wizardBio").value.trim(),
     photo_path: me ? me.photo_path : "",
@@ -1147,7 +1217,9 @@ function openWizard() {
   document.getElementById("wizardName").value = me.display_name || "";
   document.getElementById("wizardDiscipline").value = me.discipline || "";
   document.getElementById("wizardLocation").value = me.location || "";
-  document.getElementById("wizardPhone").value = me.phone || "";
+  const existingPhone = splitPhone(me.phone || "");
+  document.getElementById("wizardPhoneCode").value = existingPhone.code || countryCodeForLocation(me.location);
+  document.getElementById("wizardPhoneNumber").value = existingPhone.number;
   document.getElementById("wizardContactEmail").value = me.contact_email || "";
   document.getElementById("wizardBio").value = me.bio || "";
   document.getElementById("wizardAvatar").src = me.photo_path || "logo.png";
@@ -1185,7 +1257,7 @@ async function saveProfileFields() {
       display_name: document.getElementById("wizardName").value.trim(),
       discipline: document.getElementById("wizardDiscipline").value,
       location: document.getElementById("wizardLocation").value.trim(),
-      phone: document.getElementById("wizardPhone").value.trim(),
+      phone: composePhone(),
       contact_email: document.getElementById("wizardContactEmail").value.trim(),
       bio: document.getElementById("wizardBio").value.trim(),
     }),
