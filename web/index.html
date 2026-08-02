@@ -6,7 +6,7 @@
 <title>Kazi · Design jobs, open to Africa</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
-<script src="nav.js?v=6"></script>
+<script src="nav.js?v=7"></script>
 <style>
   /* ---- Grift (local) ---- */
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Thin.woff2") format("woff2"),url("fonts/grift/Grift-Thin.woff") format("woff");font-weight:100;font-style:normal;font-display:swap}
@@ -101,28 +101,31 @@
     backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.78)}
   .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:68px}
-  .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
   .logomark{height:22px;width:auto;flex:none;display:block}
-  .bar-spacer{flex:1}
   .bar-stat{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);
     background:var(--surface);border:1px solid var(--hairline);border-radius:999px;padding:7px 14px;
-    font-variant-numeric:tabular-nums;box-shadow:var(--shadow)}
+    font-variant-numeric:tabular-nums;box-shadow:var(--shadow);flex:none}
   .bar-stat b{color:var(--ink);font-weight:700}
   .bar-stat .livedot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotblink 2.6s ease-in-out infinite}
-  /* The centered nav (.header-center) is absolutely positioned on the
-     viewport midpoint, independent of the brand/right-icon clusters on
-     either side of it — so on medium-width desktops (a fixed-width nav
-     centered on a narrower viewport, while the two side clusters stay
-     the same width) it can run into the right-side icon cluster. Drop
-     the stat's supplementary text first, since it's the least essential
-     thing over there, before anything in the nav itself has to give. */
+  /* Below this, drop the stat's supplementary text first — it's the
+     least essential thing in the bar-right cluster — before the nav
+     itself has to give up any room. */
   @media(max-width:1500px){
     .bar-stat .stattext{display:none}
     .bar-stat{padding:7px 10px}
   }
-  .header-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    display:flex;align-items:center;gap:18px}
-  .nav-links{display:flex;align-items:center;gap:12px;white-space:nowrap}
+  /* .header-center is a real flex:1 child now (not absolutely centered
+     on the viewport independent of its siblings), so it's physically
+     bounded by whatever space brand and bar-right leave it — it can
+     never overlap them, even when the search pill expands on scroll or
+     the nav itself gets wider. justify-content centers within that
+     bounded space; overflow:hidden is the worst-case fallback (a touch
+     of clipping reads far better than nav items overlapping the icons). */
+  .header-center{flex:1;min-width:0;overflow:hidden;
+    display:flex;align-items:center;justify-content:center;gap:18px}
+  .bar-right{display:flex;align-items:center;gap:16px;flex:none}
+  .nav-links{display:flex;align-items:center;gap:24px;white-space:nowrap}
   .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
     transition:color .3s var(--ease-expo)}
   .nav-links a:hover{color:var(--ink)}
@@ -489,7 +492,6 @@
     <a class="brand" href="/">
       <img class="logomark" src="logo.png" alt="Kazi">
     </a>
-    <div class="bar-spacer"></div>
     <div class="header-center">
       <div class="header-search" id="headerSearch">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
@@ -503,24 +505,26 @@
         <a href="/cv-check" class="nav-cta">Check your CV</a>
       </nav>
     </div>
-    <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
-    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
-      <svg class="i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      <svg class="i-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-    </button>
-    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
-      <span></span><span></span>
-    </button>
-    <a href="/account" class="acct-cta" id="acctCta">Create an account</a>
-    <div class="acct-menu" id="acctMenu">
-      <button class="acct-trigger" id="acctTrigger" type="button" aria-haspopup="true" aria-expanded="false">
-        <img class="acct-avatar" id="acctAvatar" src="" alt="">
-        <span class="acct-label">Account</span>
-        <svg class="acct-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    <div class="bar-right">
+      <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
+      <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
+        <svg class="i-sun" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="i-moon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
       </button>
-      <div class="acct-dropdown" id="acctDropdown">
-        <a href="/account">My profile</a>
-        <button type="button" id="acctLogoutBtn">Log out</button>
+      <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
+        <span></span><span></span>
+      </button>
+      <a href="/account" class="acct-cta" id="acctCta">Create an account</a>
+      <div class="acct-menu" id="acctMenu">
+        <button class="acct-trigger" id="acctTrigger" type="button" aria-haspopup="true" aria-expanded="false">
+          <img class="acct-avatar" id="acctAvatar" src="" alt="">
+          <span class="acct-label">Account</span>
+          <svg class="acct-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <div class="acct-dropdown" id="acctDropdown">
+          <a href="/account">My profile</a>
+          <button type="button" id="acctLogoutBtn">Log out</button>
+        </div>
       </div>
     </div>
   </div>
@@ -535,9 +539,11 @@
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
       <a href="/designers">Find a designer</a>
-      <a href="/account" class="mm-cta-outline">Create an account</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
+  </nav>
+  <nav class="mm-nav mm-account" id="mmCta">
+    <a href="/account" class="mm-cta-outline">Create an account</a>
   </nav>
   <nav class="mm-nav mm-account" id="mmAccount" style="display:none">
     <a href="/account">My profile</a>

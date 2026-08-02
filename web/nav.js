@@ -82,6 +82,8 @@
   function initAccountMenu(){
     var menu = document.getElementById("acctMenu");
     var mmAccount = document.getElementById("mmAccount");
+    var acctCta = document.getElementById("acctCta");
+    var mmCta = document.getElementById("mmCta");
     var token = getAcctToken();
     if(!menu || !token) return;
 
@@ -98,6 +100,8 @@
         });
         menu.classList.add("-visible");
         if(mmAccount) mmAccount.style.display = "";
+        if(acctCta) acctCta.style.display = "none";
+        if(mmCta) mmCta.style.display = "none";
 
         var trigger = document.getElementById("acctTrigger");
         trigger.addEventListener("click", function(e){

@@ -6,7 +6,7 @@
 <title>Privacy Policy · Kazi</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
-<script src="nav.js?v=6"></script>
+<script src="nav.js?v=7"></script>
 <style>
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -54,7 +54,7 @@
   .bar-spacer{flex:1}
 
   .nav-links{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
-    display:flex;align-items:center;gap:20px;white-space:nowrap}
+    display:flex;align-items:center;gap:24px;white-space:nowrap}
   .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
     transition:color .3s var(--ease-expo)}
   .nav-links a:hover{color:var(--ink)}
@@ -222,9 +222,11 @@
       <a href="/">Jobs</a>
       <a href="/post">Post a job</a>
       <a href="/designers">Find a designer</a>
-      <a href="/account" class="mm-cta-outline">Create an account</a>
       <a href="mailto:hello@odana.design">Contact us</a>
       <a href="/cv-check" class="nav-cta">Check your CV</a>
+  </nav>
+  <nav class="mm-nav mm-account" id="mmCta">
+    <a href="/account" class="mm-cta-outline">Create an account</a>
   </nav>
   <nav class="mm-nav mm-account" id="mmAccount" style="display:none">
     <a href="/account">My profile</a>
