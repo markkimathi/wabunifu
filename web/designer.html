@@ -105,6 +105,8 @@
   .mm-nav a:not(.nav-cta){display:flex;align-items:center;border-bottom:1px solid var(--hairline)}
   .mm-nav a:not(.nav-cta)::after{content:"";flex:none;width:7px;height:7px;margin-left:auto;
     border-right:2px solid var(--muted);border-top:2px solid var(--muted);transform:rotate(45deg)}
+  .mm-nav:not(.mm-account) a:not(.nav-cta):nth-child(-n+3){border-radius:0}
+  .mm-nav:not(.mm-account) a:not(.nav-cta):nth-child(4){border-bottom:none}
   .mm-account{margin-top:auto;display:flex;flex-direction:column;gap:10px}
   .mm-nav button.mm-logout{display:block;width:100%;text-align:left;padding:14px 8px;margin:0 -8px;border-radius:8px;
     font-size:16px;font-weight:600;color:var(--ink);background:none;border:0;cursor:pointer;font:inherit;
