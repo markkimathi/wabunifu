@@ -222,7 +222,8 @@
     color:var(--muted);margin:0 0 2px}
   .handle-card-url{font-size:13.5px;font-weight:600;margin:0;color:var(--ink);
     overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .handle-card-url b{color:var(--brand)}
+  .handle-card-url a{color:var(--brand);text-decoration:none}
+  .handle-card-url a:hover{text-decoration:underline}
   .handle-card-edit{display:none;align-items:center;gap:10px;flex:1;min-width:0}
   .handle-card-edit .handle-wrap{flex:1;min-width:0}
   .handle-card.-editing .handle-card-view{display:none}
@@ -461,7 +462,7 @@
     <div class="handle-card" id="handleCard">
       <div class="handle-card-view" id="handleCardView">
         <p class="handle-card-label">Your profile URL</p>
-        <p class="handle-card-url">kazi.odana.design/designers/<b id="handleCardValue"></b></p>
+        <p class="handle-card-url">kazi.odana.design/designers/<a href="" id="handleCardLink" target="_blank"><b id="handleCardValue"></b></a> <span class="hint" id="handleCardPendingHint" style="display:none">(live once approved)</span></p>
       </div>
       <div class="handle-card-edit">
         <div class="handle-wrap">
@@ -1026,7 +1027,9 @@ function renderStatusBanner(m) {
 
 function renderHandleCard(m) {
   document.getElementById("handleCardValue").textContent = `@${m.handle || ""}`;
+  document.getElementById("handleCardLink").href = `/designers/${m.handle || m.id}`;
   document.getElementById("handleInput").value = m.handle || "";
+  document.getElementById("handleCardPendingHint").style.display = m.status === "approved" ? "none" : "inline";
 }
 
 function renderDashboard() {
