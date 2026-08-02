@@ -113,8 +113,8 @@
     font-size:16px;font-weight:600;color:var(--ink);text-decoration:none;
     transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
   .mm-nav a:hover{background:var(--hairline)}
-  .mm-nav a:not(.nav-cta){display:flex;align-items:center;border-bottom:1px solid var(--hairline)}
-  .mm-nav a:not(.nav-cta)::after{content:"";flex:none;width:7px;height:7px;margin-left:auto;
+  .mm-nav:not(.mm-account) a:not(.nav-cta){display:flex;align-items:center;border-bottom:1px solid var(--hairline)}
+  .mm-nav:not(.mm-account) a:not(.nav-cta)::after{content:"";flex:none;width:7px;height:7px;margin-left:auto;
     border-right:2px solid var(--muted);border-top:2px solid var(--muted);transform:rotate(45deg)}
   .mm-nav:not(.mm-account) a:not(.nav-cta):nth-child(-n+3){border-radius:0}
   .mm-nav:not(.mm-account) a:not(.nav-cta):nth-child(4){border-bottom:none}
