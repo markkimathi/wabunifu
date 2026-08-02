@@ -198,10 +198,7 @@
     cursor:pointer;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px}
   .file-chip .f-remove:hover{background:var(--hairline);color:var(--ink)}
 
-  .jd-toggle{background:none;border:0;color:var(--brand);font:inherit;font-size:13.5px;font-weight:700;
-    cursor:pointer;padding:14px 0 0;text-align:left}
-  .jd-wrap{display:none;margin-top:12px}
-  .jd-wrap.-open{display:block}
+  .jd-wrap{margin-top:14px}
   label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
   .hint{font-weight:400;color:var(--faint);font-size:12.5px}
   textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
@@ -353,10 +350,9 @@
         <button type="button" class="f-remove" id="fileRemove" aria-label="Remove file">&times;</button>
       </div>
 
-      <button type="button" class="jd-toggle" id="jdToggle">+ Paste a job description (optional)</button>
       <div class="jd-wrap" id="jdWrap">
         <label class="field">
-          <span class="field-label">Job description <span class="hint">(for a keyword match score)</span></span>
+          <span class="field-label">Job description <span class="hint">(optional — for a keyword match score)</span></span>
           <textarea id="jdInput" placeholder="Paste the job description you're applying to..."></textarea>
         </label>
       </div>
@@ -411,7 +407,6 @@ const fileChip = document.getElementById("fileChip");
 const fileName = document.getElementById("fileName");
 const fileSize = document.getElementById("fileSize");
 const fileRemove = document.getElementById("fileRemove");
-const jdToggle = document.getElementById("jdToggle");
 const jdWrap = document.getElementById("jdWrap");
 const jdInput = document.getElementById("jdInput");
 const checkBtn = document.getElementById("checkBtn");
@@ -479,11 +474,6 @@ fileRemove.addEventListener("click", clearFile);
 dropzone.addEventListener("drop", e => {
   const file = e.dataTransfer.files && e.dataTransfer.files[0];
   if(file) setFile(file);
-});
-
-jdToggle.addEventListener("click", () => {
-  const open = jdWrap.classList.toggle("-open");
-  jdToggle.textContent = open ? "− Paste a job description (optional)" : "+ Paste a job description (optional)";
 });
 
 function scoreColor(score){
@@ -594,8 +584,6 @@ checkBtn.addEventListener("click", async () => {
 resetBtn.addEventListener("click", () => {
   clearFile();
   jdInput.value = "";
-  jdWrap.classList.remove("-open");
-  jdToggle.textContent = "+ Paste a job description (optional)";
   results.classList.remove("-open");
   uploadStage.style.display = "block";
   window.scrollTo({top: 0, behavior: "smooth"});
