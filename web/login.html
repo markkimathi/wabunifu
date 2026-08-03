@@ -466,7 +466,13 @@ document.getElementById("resetPanel").addEventListener("submit", async (e) => {
 async function afterLogin() {
   try {
     const me = await api("/api/designers/me");
-    location.href = me.email_verified ? "/account" : "/signup";
+    if (!me.email_verified) {
+      location.href = "/signup";
+    } else if (!me.onboarding_completed) {
+      location.href = "/onboarding";
+    } else {
+      location.href = "/account";
+    }
   } catch (err) {
     if (err.status === 401) {
       token = "";

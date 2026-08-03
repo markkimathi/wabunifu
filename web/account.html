@@ -548,7 +548,7 @@
     </div>
     <h1>Your profile is empty</h1>
     <p class="sub">Add a photo, a bio, and links to your work so employers browsing Kazi can find you. Takes about two minutes.</p>
-    <button type="button" class="btn-primary" id="startWizardBtn">Set up your profile</button>
+    <button type="button" class="btn-primary" id="startWizardBtn">Set Up Profile</button>
   </div>
 
   <div id="dashboardFilled" style="display:none">
@@ -1116,6 +1116,10 @@ async function afterAuth() {
     location.href = "/signup";
     return;
   }
+  if (!me.onboarding_completed) {
+    location.href = "/onboarding";
+    return;
+  }
   renderDashboard();
 }
 
@@ -1403,11 +1407,12 @@ dashSidebar.addEventListener("click", (e) => {
 const dashMobileMQ = window.matchMedia("(max-width:900px)");
 dashMobileMQ.addEventListener("change", (e) => { if (!e.matches) closeDashDrawer(); });
 window.addEventListener("resize", () => { if (window.innerWidth > 900) closeDashDrawer(); });
+// This button should be unreachable in practice now (afterAuth() redirects
+// to /onboarding before renderDashboard() can ever show the empty state
+// for a not-yet-onboarded designer) — kept as a defensive fallback rather
+// than deleted, so it still does the right thing if it's ever shown.
 document.getElementById("startWizardBtn").addEventListener("click", () => {
-  document.getElementById("dashboardEmpty").style.display = "none";
-  document.getElementById("dashboardFilled").style.display = "block";
-  renderDashboardHome();
-  openEditProfile();
+  location.href = "/onboarding";
 });
 document.getElementById("editProfileBtn").addEventListener("click", () => openEditProfile());
 

@@ -42,6 +42,7 @@ from .db import (  # noqa: E402
     create_designer, get_designer, get_designer_by_email, get_designer_by_handle,
     update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
+    mark_onboarding_completed,
     list_designers, list_approved_designers, delete_designer, replace_designer_links,
     list_designer_links, create_session, get_session, delete_session, delete_sessions_for_designer,
     create_email_token, consume_email_token,
@@ -598,7 +599,8 @@ def designer_reset_password(payload: ResetPasswordIn):
 @app.get("/api/designers/me")
 def designer_me(designer: dict = Depends(require_designer)):
     return {**_designer_public(designer), "email": designer["email"],
-            "email_verified": bool(designer["email_verified"]), "status": designer["status"]}
+            "email_verified": bool(designer["email_verified"]), "status": designer["status"],
+            "onboarding_completed": bool(designer["onboarding_completed"])}
 
 
 @app.get("/api/designers/me/stats")
@@ -660,6 +662,16 @@ def designer_submit(designer: dict = Depends(require_designer)):
     if not designer["email_verified"]:
         raise HTTPException(400, "Please verify your email before submitting your profile for review.")
     set_designer_status(designer["id"], "pending")
+    return {"ok": True}
+
+
+@app.post("/api/designers/me/complete-onboarding")
+def designer_complete_onboarding(designer: dict = Depends(require_designer)):
+    """Called once, from the last step of the onboarding wizard — flips the
+    routing flag that keeps /account and /onboarding pointed at the right
+    place on future logins. Never called again after that (Edit Profile
+    doesn't touch it)."""
+    mark_onboarding_completed(designer["id"])
     return {"ok": True}
 
 
@@ -740,7 +752,7 @@ app.mount("/photos", StaticFiles(directory=str(PHOTOS_DIR)), name="photos")
 
 
 # Clean URLs: serve the .html files without the extension...
-CLEAN_PAGES = ["post", "cv-check", "account", "login", "signup", "designers", "admin", "terms", "privacy", "cookies"]
+CLEAN_PAGES = ["post", "cv-check", "account", "onboarding", "login", "signup", "designers", "admin", "terms", "privacy", "cookies"]
 for _page in CLEAN_PAGES:
     def _make_page_route(page: str):
         def _serve():

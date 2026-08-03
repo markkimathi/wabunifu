@@ -108,6 +108,7 @@ CREATE TABLE IF NOT EXISTS designers (
   years_experience TEXT NOT NULL DEFAULT '',
   availability_status TEXT NOT NULL DEFAULT '',
   skills TEXT NOT NULL DEFAULT '[]',
+  onboarding_completed INTEGER NOT NULL DEFAULT 0,
   email_verified INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
@@ -154,6 +155,7 @@ _MIGRATIONS = [
     "ALTER TABLE designers ADD COLUMN years_experience TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN availability_status TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN skills TEXT NOT NULL DEFAULT '[]'",
+    "ALTER TABLE designers ADD COLUMN onboarding_completed INTEGER NOT NULL DEFAULT 0",
 ]
 
 
@@ -177,6 +179,7 @@ def init_db() -> None:
     cleanup_stale_analytics()
     cleanup_stale_designer_tokens()
     backfill_designer_handles()
+    backfill_onboarding_completed()
 
 
 def insert_submission(data: dict) -> int:
@@ -268,6 +271,31 @@ def backfill_designer_handles() -> None:
     for row in rows:
         handle = _unique_handle(c, row["display_name"], exclude_id=row["id"])
         c.execute("UPDATE designers SET handle = ? WHERE id = ?", (handle, row["id"]))
+    if rows:
+        c.commit()
+    c.close()
+
+
+def backfill_onboarding_completed() -> None:
+    """One-time-per-startup pass: onboarding_completed defaults to 0 for
+    every row (new column), which would wrongly force every designer who
+    signed up before this flag existed back into the onboarding wizard on
+    their next login. Anyone who already has real profile data clearly
+    finished setting up their profile already, even though no explicit
+    "completed" event was ever recorded for them — flip them to 1 using
+    the same signal account.html's isProfileEmpty() uses, inverted.
+    Idempotent: only ever flips 0 -> 1, never touches rows already at 1."""
+    c = _conn()
+    rows = c.execute("""
+        SELECT id FROM designers
+        WHERE onboarding_completed = 0
+          AND (bio != '' OR location != '' OR photo_path != '' OR headline != ''
+               OR years_experience != '' OR availability_status != ''
+               OR (discipline != '' AND discipline != '[]')
+               OR (skills != '' AND skills != '[]'))
+    """).fetchall()
+    for row in rows:
+        c.execute("UPDATE designers SET onboarding_completed = 1 WHERE id = ?", (row["id"],))
     if rows:
         c.commit()
     c.close()
@@ -395,6 +423,17 @@ def set_designer_email_verified(designer_id: int) -> None:
 def set_designer_password(designer_id: int, password_hash: str) -> None:
     c = _conn()
     c.execute("UPDATE designers SET password_hash = ? WHERE id = ?", (password_hash, designer_id))
+    c.commit()
+    c.close()
+
+
+def mark_onboarding_completed(designer_id: int) -> None:
+    """Called once, from the last step of the onboarding wizard — flips the
+    routing flag that keeps a designer out of the wizard on future logins.
+    Editing an existing profile afterward (Edit Profile page) never touches
+    this; it's a one-way flag set exactly once per account."""
+    c = _conn()
+    c.execute("UPDATE designers SET onboarding_completed = 1 WHERE id = ?", (designer_id,))
     c.commit()
     c.close()
 

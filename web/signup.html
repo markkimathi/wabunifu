@@ -482,7 +482,10 @@ async function submitVerifyCode() {
       method: "POST", headers: {"Content-Type": "application/json"},
       body: JSON.stringify({code}),
     });
-    location.href = "/account";
+    // A designer can only reach onboarding_completed=true by way of the
+    // onboarding wizard, which itself requires email_verified=true to
+    // enter — so right after this, onboarding is always still pending.
+    location.href = "/onboarding";
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
@@ -528,16 +531,18 @@ document.getElementById("verifyLogoutBtn").addEventListener("click", () => {
 });
 
 /* ---------- boot: an existing session either needs to finish verifying
-   (stay here) or is already good to go (send it to the dashboard) ---------- */
+   (stay here), still needs onboarding, or is already good to go ---------- */
 async function boot() {
   if (!token) { showView("gate"); return; }
   try {
     const me = await api("/api/designers/me");
-    if (me.email_verified) {
-      location.href = "/account";
-    } else {
+    if (!me.email_verified) {
       pendingEmail = me.email;
       enterVerify(me.email);
+    } else if (!me.onboarding_completed) {
+      location.href = "/onboarding";
+    } else {
+      location.href = "/account";
     }
   } catch (err) {
     if (err.status === 401) {
