@@ -264,9 +264,11 @@
 
   .dash-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:32px;margin-bottom:20px}
   .dash-head h1{margin:0}
+  .dash-menu-toggle{display:none}
 
   .dash-shell{display:flex;gap:32px;align-items:flex-start}
   .dash-sidebar{flex:none;width:210px;position:sticky;top:84px;display:flex;flex-direction:column;gap:2px}
+  .dash-sidebar-close-row{display:none}
   .dash-nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;
     font:inherit;font-size:13.5px;font-weight:600;color:var(--ink);text-decoration:none;
     background:none;border:0;cursor:pointer;text-align:left;width:100%;
@@ -279,11 +281,35 @@
   .dash-nav-item:hover .dash-nav-icon,.dash-nav-item.active .dash-nav-icon{color:inherit}
   .dash-sidebar-divider{height:1px;background:var(--hairline);margin:8px 12px}
   .dash-main{flex:1;min-width:0}
+  .dash-drawer-backdrop{display:none}
+
+  /* ---- mobile/tablet: the sidebar becomes an off-canvas drawer that
+     slides in from the left, toggled by a menu icon above the "Your
+     profile" heading, instead of the desktop sticky column. Lives at
+     the .dash-head/.dash-shell level (outside dashHomeContent/
+     dashEditContent), so it's present no matter which of the two
+     dashboard-internal pages is showing. ---- */
   @media(max-width:900px){
-    .dash-shell{flex-direction:column;gap:8px}
-    .dash-sidebar{position:static;width:100%;flex-direction:row;flex-wrap:wrap;gap:6px}
-    .dash-nav-item{width:auto}
-    .dash-sidebar-divider{display:none}
+    .dash-head{flex-direction:column;align-items:flex-start;gap:14px}
+    .dash-menu-toggle{display:grid;place-items:center;flex:none;width:40px;height:40px;
+      border-radius:10px;background:var(--surface);border:1px solid var(--hairline-strong);
+      color:var(--ink);cursor:pointer;transition:border-color .2s var(--ease-expo),color .2s var(--ease-expo)}
+    .dash-menu-toggle:hover{border-color:var(--brand);color:var(--brand)}
+    .dash-shell{display:block}
+    .dash-drawer-backdrop{display:block;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:190;
+      opacity:0;pointer-events:none;transition:opacity .3s var(--ease-expo)}
+    .dash-drawer-backdrop.-open{opacity:1;pointer-events:auto}
+    .dash-sidebar{position:fixed;top:0;left:0;bottom:0;z-index:200;width:260px;max-width:80vw;
+      flex-direction:column;flex-wrap:nowrap;gap:2px;background:var(--surface);
+      box-shadow:var(--shadow);padding:18px 14px;overflow-y:auto;
+      transform:translateX(-100%);transition:transform .3s var(--ease-expo)}
+    .dash-sidebar.-open{transform:translateX(0)}
+    .dash-nav-item{width:100%}
+    .dash-sidebar-divider{display:block}
+    .dash-sidebar-close-row{display:flex;justify-content:flex-end;margin-bottom:6px}
+    .dash-sidebar-close{background:none;border:0;color:var(--muted);cursor:pointer;
+      width:32px;height:32px;display:grid;place-items:center;border-radius:8px}
+    .dash-sidebar-close:hover{background:var(--hairline);color:var(--ink)}
   }
 
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px}
@@ -524,10 +550,19 @@
 
   <div id="dashboardFilled" style="display:none">
     <div class="dash-head">
+      <button type="button" class="dash-menu-toggle" id="dashMenuToggle" aria-label="Open dashboard menu" aria-expanded="false">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
       <h1>Your profile</h1>
     </div>
+    <div class="dash-drawer-backdrop" id="dashDrawerBackdrop"></div>
     <div class="dash-shell">
       <nav class="dash-sidebar" aria-label="Dashboard navigation">
+        <div class="dash-sidebar-close-row">
+          <button type="button" class="dash-sidebar-close" id="dashSidebarClose" aria-label="Close menu">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
         <button type="button" class="dash-nav-item active" id="navHomeBtn">
           <span class="dash-nav-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
           <span class="dash-nav-label">Dashboard</span>
@@ -1266,6 +1301,41 @@ function showDashPage(name) {
   document.getElementById("editProfileBtn").classList.toggle("active", name === "edit");
   window.scrollTo({top: 0, behavior: "smooth"});
 }
+
+/* ---------- mobile/tablet: sidebar becomes an off-canvas drawer, opened
+   via the menu icon above "Your profile". Lives at the dash-head/
+   dash-shell level, so it's present for both dashboard-internal pages
+   (Dashboard home and Edit profile) rather than just one of them. ---------- */
+const dashMenuToggle = document.getElementById("dashMenuToggle");
+const dashSidebar = document.querySelector(".dash-sidebar");
+const dashDrawerBackdrop = document.getElementById("dashDrawerBackdrop");
+function openDashDrawer() {
+  dashSidebar.classList.add("-open");
+  dashDrawerBackdrop.classList.add("-open");
+  dashMenuToggle.setAttribute("aria-expanded", "true");
+  document.body.style.overflow = "hidden";
+}
+function closeDashDrawer() {
+  dashSidebar.classList.remove("-open");
+  dashDrawerBackdrop.classList.remove("-open");
+  dashMenuToggle.setAttribute("aria-expanded", "false");
+  document.body.style.overflow = "";
+}
+dashMenuToggle.addEventListener("click", () => {
+  if (dashSidebar.classList.contains("-open")) closeDashDrawer(); else openDashDrawer();
+});
+document.getElementById("dashSidebarClose").addEventListener("click", closeDashDrawer);
+dashDrawerBackdrop.addEventListener("click", closeDashDrawer);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDashDrawer(); });
+dashSidebar.addEventListener("click", (e) => {
+  if (e.target.closest(".dash-nav-item")) closeDashDrawer();
+});
+// Crossing back above the mobile breakpoint (resize, rotation) should
+// reset the drawer state — otherwise a stale "overflow:hidden" on body
+// could get left behind from a drawer that's no longer rendered as one.
+const dashMobileMQ = window.matchMedia("(max-width:900px)");
+dashMobileMQ.addEventListener("change", (e) => { if (!e.matches) closeDashDrawer(); });
+window.addEventListener("resize", () => { if (window.innerWidth > 900) closeDashDrawer(); });
 document.getElementById("startWizardBtn").addEventListener("click", () => {
   document.getElementById("dashboardEmpty").style.display = "none";
   document.getElementById("dashboardFilled").style.display = "block";
