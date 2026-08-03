@@ -837,8 +837,7 @@ function render(){
             <span class="srcpill">via ${j.src}</span>
           </div>
         </div>
-        <a class="apply" href="${j.url}" target="_blank" rel="noopener"
-          data-job-id="${j.id}" data-job-title="${j.t.replace(/"/g,'&quot;')}" data-job-company="${j.co.replace(/"/g,'&quot;')}">
+        <a class="apply" href="/jobs/${j.id}">
           <span class="apply-label"><span>Apply</span><span aria-hidden="true">Apply</span></span>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
         </a>
@@ -927,18 +926,10 @@ qHeader.addEventListener("input", e => setQuery(e.target.value));
 document.getElementById("sort").addEventListener("change",e=>{state.sort=e.target.value;state.page=1;render()});
 document.getElementById("clearAll").addEventListener("click",clearAll);
 
-// Apply-click tracking: delegated since job cards are re-rendered on every
-// filter/sort/page change. Doesn't block or delay the link — it opens in
-// a new tab regardless of whether the beacon lands.
-document.getElementById("list").addEventListener("click", e => {
-  const a = e.target.closest(".apply");
-  if(!a || !window.kaziTrack) return;
-  kaziTrack("/api/track/apply", {
-    job_id: a.dataset.jobId || "",
-    job_title: a.dataset.jobTitle || "",
-    company: a.dataset.jobCompany || "",
-  });
-});
+// "Apply" here now opens the in-platform job details page (not the external
+// application URL directly), so it's a page view, not an apply — the
+// /api/track/apply beacon moved to job.html's own Apply button, the click
+// that actually represents applying.
 document.getElementById("searchBtn").addEventListener("click",()=>{
   render();
   // Icon-only on mobile — just confirms/filters in place. The scroll-to-

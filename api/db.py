@@ -108,6 +108,10 @@ CREATE TABLE IF NOT EXISTS designers (
   years_experience TEXT NOT NULL DEFAULT '',
   availability_status TEXT NOT NULL DEFAULT '',
   skills TEXT NOT NULL DEFAULT '[]',
+  resume_path TEXT NOT NULL DEFAULT '',
+  resume_filename TEXT NOT NULL DEFAULT '',
+  resume_uploaded_at TEXT NOT NULL DEFAULT '',
+  resume_public INTEGER NOT NULL DEFAULT 0,
   onboarding_completed INTEGER NOT NULL DEFAULT 0,
   email_verified INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
@@ -156,6 +160,10 @@ _MIGRATIONS = [
     "ALTER TABLE designers ADD COLUMN availability_status TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN skills TEXT NOT NULL DEFAULT '[]'",
     "ALTER TABLE designers ADD COLUMN onboarding_completed INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE designers ADD COLUMN resume_path TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN resume_filename TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN resume_uploaded_at TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN resume_public INTEGER NOT NULL DEFAULT 0",
 ]
 
 
@@ -409,6 +417,36 @@ def set_designer_photo(designer_id: int, photo_path: str) -> None:
         "UPDATE designers SET photo_path = ?, status = ? WHERE id = ?",
         (photo_path, new_status, designer_id),
     )
+    c.commit()
+    c.close()
+
+
+def set_designer_resume(designer_id: int, resume_path: str, resume_filename: str, uploaded_at: str) -> None:
+    # Unlike photo/bio/discipline, a resume isn't part of what admins review
+    # for profile legitimacy (and defaults to private) — uploading or
+    # replacing one never resets an approved profile back to pending.
+    c = _conn()
+    c.execute(
+        "UPDATE designers SET resume_path = ?, resume_filename = ?, resume_uploaded_at = ? WHERE id = ?",
+        (resume_path, resume_filename, uploaded_at, designer_id),
+    )
+    c.commit()
+    c.close()
+
+
+def clear_designer_resume(designer_id: int) -> None:
+    c = _conn()
+    c.execute(
+        "UPDATE designers SET resume_path = '', resume_filename = '', resume_uploaded_at = '', resume_public = 0 WHERE id = ?",
+        (designer_id,),
+    )
+    c.commit()
+    c.close()
+
+
+def set_resume_visibility(designer_id: int, public: bool) -> None:
+    c = _conn()
+    c.execute("UPDATE designers SET resume_public = ? WHERE id = ?", (1 if public else 0, designer_id))
     c.commit()
     c.close()
 

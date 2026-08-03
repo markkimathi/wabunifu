@@ -43,6 +43,7 @@ from .db import (  # noqa: E402
     update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
     mark_onboarding_completed,
+    set_designer_resume, clear_designer_resume, set_resume_visibility,
     list_designers, list_approved_designers, delete_designer, replace_designer_links,
     list_designer_links, create_session, get_session, delete_session, delete_sessions_for_designer,
     create_email_token, consume_email_token,
@@ -93,6 +94,13 @@ ADMIN_TOKEN = os.environ.get("KAZI_ADMIN_TOKEN", "dev-only-change-me")
 # production, /data — see fly.toml), so they survive redeploys the same way
 # employer submissions already do.
 PHOTOS_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "photos"
+
+# Resumes live alongside photos on the same persistent volume, same reason.
+# Unlike photos, the original bytes are kept as-is (no re-encoding — the
+# stored file is what ats_check.analyze() reads text out of on every future
+# "Check Against Your Resume" click, so it has to stay a real PDF/DOCX).
+RESUMES_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "resumes"
+MAX_RESUME_BYTES = 5 * 1024 * 1024
 
 
 def classify_device(user_agent: str) -> str:
@@ -318,6 +326,14 @@ class AvatarSelect(BaseModel):
     photo_path: str
 
 
+class ResumeVisibility(BaseModel):
+    public: bool
+
+
+class AtsCheckIn(BaseModel):
+    job_description: str = ""
+
+
 class HandleUpdate(BaseModel):
     handle: str
 
@@ -433,6 +449,18 @@ def get_jobs_count():
     }
 
 
+# Registered after /api/jobs/count (a literal path) so "count" is never
+# mistaken for a job id, same "/me before /{identifier}" pattern used for
+# designers below.
+@app.get("/api/jobs/{job_id}")
+def get_job(job_id: str):
+    combined, _ = _combined_jobs()
+    for j in combined:
+        if j["id"] == job_id:
+            return j
+    raise HTTPException(404, "no such job")
+
+
 @app.get("/api/admin/submissions")
 def admin_list(status: str = "pending", _: None = Depends(require_admin)):
     return list_submissions(status=status if status != "all" else None)
@@ -524,7 +552,7 @@ def _designer_public(d: dict) -> dict:
     what's public. phone/contact_email ARE included here on purpose: unlike
     the login email, they're an opt-in field a designer fills in specifically
     so employers can reach them, same as the rest of the profile."""
-    return {
+    out = {
         "id": d["id"], "display_name": d["display_name"], "bio": d["bio"],
         "discipline": parse_multi_field(d["discipline"]), "location": d["location"],
         "photo_path": d["photo_path"], "created_at": d["created_at"],
@@ -535,6 +563,15 @@ def _designer_public(d: dict) -> dict:
         "skills": parse_multi_field(d.get("skills")),
         "links": list_designer_links(d["id"]),
     }
+    # Resumes are opt-in public (default private) — only surface them here
+    # (the directory/public-profile view) when the designer has switched
+    # resume_public on. designer_me() below always includes them regardless,
+    # since the owner can always see their own.
+    if d.get("resume_public") and d.get("resume_filename"):
+        out["resume_filename"] = d["resume_filename"]
+        out["resume_uploaded_at"] = d["resume_uploaded_at"]
+        out["resume_url"] = f"/api/designers/{d.get('handle') or d['id']}/resume/download"
+    return out
 
 
 @app.post("/api/designers/signup")
@@ -619,7 +656,14 @@ def designer_reset_password(payload: ResetPasswordIn):
 def designer_me(designer: dict = Depends(require_designer)):
     return {**_designer_public(designer), "email": designer["email"],
             "email_verified": bool(designer["email_verified"]), "status": designer["status"],
-            "onboarding_completed": bool(designer["onboarding_completed"])}
+            "onboarding_completed": bool(designer["onboarding_completed"]),
+            # Always present for the owner's own view, regardless of
+            # resume_public — _designer_public() only includes these when
+            # public, since that copy is also used for the public directory.
+            "resume_filename": designer.get("resume_filename", ""),
+            "resume_uploaded_at": designer.get("resume_uploaded_at", ""),
+            "resume_url": "/api/designers/me/resume/download" if designer.get("resume_path") else "",
+            "resume_public": bool(designer.get("resume_public"))}
 
 
 @app.get("/api/designers/me/stats")
@@ -688,6 +732,78 @@ def designer_select_avatar(payload: AvatarSelect, designer: dict = Depends(requi
     return {"ok": True, "photo_path": payload.photo_path}
 
 
+@app.post("/api/designers/me/resume")
+async def designer_upload_resume(file: UploadFile = File(...), designer: dict = Depends(require_designer)):
+    ext = (file.filename or "").rsplit(".", 1)[-1].lower() if "." in (file.filename or "") else ""
+    if ext not in ats_check.ALLOWED_EXTENSIONS:
+        raise HTTPException(400, "Please upload a .pdf or .docx file.")
+    data = await file.read()
+    if len(data) > MAX_RESUME_BYTES:
+        raise HTTPException(400, "Resume must be under 5MB.")
+    RESUMES_DIR.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{designer['id']}.{ext}"
+    (RESUMES_DIR / stored_name).write_bytes(data)
+    uploaded_at = datetime.now().isoformat(timespec="seconds")
+    set_designer_resume(designer["id"], f"/resumes/{stored_name}", file.filename or stored_name, uploaded_at)
+    return {"ok": True, "resume_filename": file.filename or stored_name, "resume_uploaded_at": uploaded_at}
+
+
+@app.delete("/api/designers/me/resume")
+def designer_delete_resume(designer: dict = Depends(require_designer)):
+    if designer.get("resume_path"):
+        f = RESUMES_DIR / Path(designer["resume_path"]).name
+        if f.exists():
+            f.unlink()
+    clear_designer_resume(designer["id"])
+    return {"ok": True}
+
+
+@app.put("/api/designers/me/resume/visibility")
+def designer_set_resume_visibility(payload: ResumeVisibility, designer: dict = Depends(require_designer)):
+    set_resume_visibility(designer["id"], payload.public)
+    return {"ok": True, "resume_public": payload.public}
+
+
+def _resume_file_response(d: dict) -> FileResponse:
+    f = RESUMES_DIR / Path(d["resume_path"]).name
+    if not d.get("resume_path") or not f.exists():
+        raise HTTPException(404, "No resume on file.")
+    return FileResponse(f, filename=d["resume_filename"] or f.name)
+
+
+@app.get("/api/designers/me/resume/download")
+def designer_download_own_resume(designer: dict = Depends(require_designer)):
+    return _resume_file_response(designer)
+
+
+@app.get("/api/designers/{identifier}/resume/download")
+def designer_download_public_resume(identifier: str):
+    designer = get_designer(int(identifier)) if identifier.isdigit() else None
+    if not designer:
+        designer = get_designer_by_handle(identifier)
+    if not designer or designer["status"] != "approved" or not designer.get("resume_public"):
+        raise HTTPException(404, "No public resume for this designer.")
+    return _resume_file_response(designer)
+
+
+@app.post("/api/designers/me/ats-check")
+def designer_ats_check(payload: AtsCheckIn, designer: dict = Depends(require_designer)):
+    """The authenticated 'use my saved resume' counterpart to the anonymous
+    /api/ats/check above — reads the stored file straight off disk and runs
+    it through the exact same scoring function, so results are identical in
+    shape regardless of which path produced them."""
+    if not designer.get("resume_path"):
+        raise HTTPException(404, "No saved resume. Upload one first.")
+    f = RESUMES_DIR / Path(designer["resume_path"]).name
+    if not f.exists():
+        raise HTTPException(404, "No saved resume. Upload one first.")
+    data = f.read_bytes()
+    try:
+        return ats_check.analyze(designer["resume_filename"] or f.name, data, payload.job_description)
+    except ats_check.UnsupportedFile as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
 @app.post("/api/designers/me/submit")
 def designer_submit(designer: dict = Depends(require_designer)):
     if not designer["email_verified"]:
@@ -711,6 +827,10 @@ def designer_delete_me(designer: dict = Depends(require_designer)):
     photo_file = PHOTOS_DIR / f"{designer['id']}.jpg"
     if photo_file.exists():
         photo_file.unlink()
+    if designer.get("resume_path"):
+        resume_file = RESUMES_DIR / Path(designer["resume_path"]).name
+        if resume_file.exists():
+            resume_file.unlink()
     delete_designer(designer["id"])
     return {"ok": True}
 
@@ -807,6 +927,13 @@ for _name, _target in _HTML_REDIRECTS.items():
 @app.get("/designers/{identifier}", include_in_schema=False)
 def designer_profile_page(identifier: str):
     return FileResponse(WEB_DIR / "designer.html")
+
+
+# Same pattern for a single job: /jobs/{id} always serves job.html, which
+# reads the id from location.pathname and fetches GET /api/jobs/{id} itself.
+@app.get("/jobs/{job_id}", include_in_schema=False)
+def job_details_page(job_id: str):
+    return FileResponse(WEB_DIR / "job.html")
 
 
 # Static site last: /api/* and the routes above take priority, everything

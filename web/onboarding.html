@@ -257,6 +257,11 @@
     background:var(--hairline);border:2px solid var(--hairline-strong)}
   input[type=file]{display:none}
 
+  .wizard-resume{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:10px 0}
+  .resume-chip{display:flex;align-items:center;gap:9px;font-size:13.5px;font-weight:700;
+    color:var(--brand);background:var(--brand-soft);padding:9px 14px;border-radius:10px;margin:0}
+  .resume-chip svg{flex:none}
+
   /* ---- avatar picker: same component as Edit Profile's Photo section ---- */
   .avatar-divider{display:flex;align-items:center;gap:12px;width:100%;color:var(--faint);font-size:12.5px}
   .avatar-divider::before,.avatar-divider::after{content:"";flex:1;height:1px;background:var(--hairline)}
@@ -375,6 +380,7 @@
       <div class="step-dot" data-dot="2"></div>
       <div class="step-dot" data-dot="3"></div>
       <div class="step-dot" data-dot="4"></div>
+      <div class="step-dot" data-dot="5"></div>
     </div>
 
     <!-- Step 0: Photo -->
@@ -487,6 +493,26 @@
       <p class="err" id="linksErr" style="display:none"></p>
       <div class="step-nav">
         <button type="button" class="btn-back" data-back="3">Back</button>
+        <button type="button" class="submit" id="linksNextBtn">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Resume -->
+    <div class="onboard-step" data-step="5" style="display:none">
+      <p class="step-title">Resume <span class="hint">(optional)</span></p>
+      <p class="step-sub">Upload a resume now and you'll be able to check it against any job in one click. Skip this and add one later from Edit Profile whenever you like.</p>
+      <div class="wizard-resume">
+        <button type="button" class="btn-ghost" id="wizardResumeBtn">Upload Resume</button>
+        <input type="file" id="wizardResumeInput" accept=".pdf,.docx">
+        <p class="hint">PDF or DOCX. Up to 5MB.</p>
+        <div class="resume-chip" id="wizardResumeChip" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span id="wizardResumeName"></span>
+        </div>
+        <p class="err" id="wizardResumeErr" style="display:none"></p>
+      </div>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back="4">Back</button>
         <button type="button" class="submit" id="finishBtn">Save profile</button>
       </div>
     </div>
@@ -529,7 +555,7 @@ function escapeHtml(s) {
 }
 
 /* ---------- step navigation ---------- */
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 6;
 let currentStep = 0;
 function showStep(n) {
   document.querySelectorAll(".onboard-step").forEach(el => {
@@ -982,18 +1008,56 @@ async function saveLinks() {
   });
 }
 
-/* Final step: persist links, then flip the routing flag that keeps this
-   designer out of onboarding on future logins, then hand off to the
-   dashboard. */
-document.getElementById("finishBtn").addEventListener("click", async () => {
+document.getElementById("linksNextBtn").addEventListener("click", async () => {
   const errEl = document.getElementById("linksErr");
+  errEl.style.display = "none";
+  const btn = document.getElementById("linksNextBtn");
+  btn.disabled = true;
+  try {
+    await saveLinks();
+    showStep(5);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+/* ---------- resume: uploads immediately on choose, same as the Photo step
+   — entirely optional, Save profile below advances regardless of whether
+   one was picked. ---------- */
+document.getElementById("wizardResumeBtn").addEventListener("click", () => document.getElementById("wizardResumeInput").click());
+document.getElementById("wizardResumeInput").addEventListener("change", async () => {
+  const file = document.getElementById("wizardResumeInput").files[0];
+  if (!file) return;
+  const errEl = document.getElementById("wizardResumeErr");
+  errEl.style.display = "none";
+  const fd = new FormData();
+  fd.append("file", file);
+  try {
+    const res = await api("/api/designers/me/resume", {method: "POST", body: fd});
+    me.resume_filename = res.resume_filename;
+    document.getElementById("wizardResumeName").textContent = res.resume_filename;
+    document.getElementById("wizardResumeChip").style.display = "flex";
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  }
+});
+
+/* Final step: flip the routing flag that keeps this designer out of
+   onboarding on future logins, then hand off to the dashboard. The resume
+   (if any) is already saved by the handler above — nothing left to persist
+   here, same as how the Photo step's choice needs no final save either. */
+document.getElementById("finishBtn").addEventListener("click", async () => {
+  const errEl = document.getElementById("wizardResumeErr");
   errEl.style.display = "none";
   const btn = document.getElementById("finishBtn");
   btn.disabled = true;
   const originalText = btn.textContent;
   btn.textContent = "Saving…";
   try {
-    await saveLinks();
     await api("/api/designers/me/complete-onboarding", {method: "POST"});
     location.href = "/account";
   } catch (err) {
@@ -1025,6 +1089,10 @@ function populateFromMe() {
   renderSkillChips();
   updateSkillInputState();
   renderLinkRows(me.links || []);
+  if (me.resume_filename) {
+    document.getElementById("wizardResumeName").textContent = me.resume_filename;
+    document.getElementById("wizardResumeChip").style.display = "flex";
+  }
 }
 
 /* ---------- boot: this page is onboarding only — not logged in, not

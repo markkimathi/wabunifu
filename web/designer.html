@@ -361,6 +361,7 @@ const AVAILABILITY_META = {
 };
 
 const ICON_LOCATION = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+const ICON_RESUME = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg>';
 const ICON_COPY = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
 const ICON_CHECK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
@@ -442,6 +443,9 @@ async function boot() {
           ${links.length ? `
           <p class="pc-section-label">Links</p>
           <div class="pc-links">${links.map(l => `<a class="link-btn" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${iconForLink(l)}${escapeHtml(l.label)}</a>`).join("")}</div>` : ""}
+          ${d.resume_filename ? `
+          <p class="pc-section-label">Resume</p>
+          <div class="pc-links"><a class="link-btn" href="${escapeHtml(d.resume_url || '#')}" target="_blank" rel="noopener">${ICON_RESUME}${escapeHtml(d.resume_filename)}</a></div>` : ""}
           ${d.bio ? `
           <p class="pc-section-label">Bio</p>
           <p class="pc-bio">${escapeHtml(d.bio)}</p>` : ""}
