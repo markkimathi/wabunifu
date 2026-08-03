@@ -1198,6 +1198,18 @@ function iconForLink(link) {
   return ICON_LINK_GENERIC;
 }
 
+/* Years of experience is free text (the wizard's placeholder suggests
+   "5+ years", but plenty of profiles just have a bare number like "10")
+   — strip any trailing "year(s)" the designer already typed, then always
+   append the full phrase so it never renders as a number floating with
+   no unit next to the location. */
+function formatYearsExperience(v) {
+  const cleaned = (v || "").trim().replace(/\s*years?\s*$/i, "").trim();
+  if (!cleaned) return "";
+  const unit = cleaned === "1" ? "year" : "years";
+  return `${escapeHtml(cleaned)} ${unit} of experience`;
+}
+
 function profileCardHtml(m) {
   const links = m.links || [];
   const contactRows = [
@@ -1212,10 +1224,8 @@ function profileCardHtml(m) {
       <div class="pc-name-block">
         <p class="pc-name">${escapeHtml(m.display_name || "")}</p>
         ${m.headline ? `<p class="pc-headline">${escapeHtml(m.headline)}</p>` : ""}
-        <p class="pc-meta">${[
-          m.years_experience ? escapeHtml(m.years_experience) : "",
-          `<span class="pc-meta-loc">${ICON_LOCATION}${escapeHtml(m.location || "No location set")}</span>`,
-        ].filter(Boolean).join(" · ")}</p>
+        ${m.years_experience ? `<p class="pc-meta">${formatYearsExperience(m.years_experience)}</p>` : ""}
+        <p class="pc-meta"><span class="pc-meta-loc">${ICON_LOCATION}${escapeHtml(m.location || "No location set")}</span></p>
         ${((m.discipline && m.discipline.length) || availability) ? `
         <p class="pc-section-label">Job function</p>
         <div class="pc-badges">
