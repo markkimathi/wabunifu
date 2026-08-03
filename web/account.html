@@ -250,7 +250,6 @@
   [data-theme="dark"] .err{color:#FF6B5B}
 
   /* ---- dashboard: empty + filled states ---- */
-  #dashboardWrap{display:none}
   .empty-state{max-width:480px;margin:48px auto 0;text-align:center}
   .empty-avatar{width:96px;height:96px;border-radius:50%;border:2px dashed var(--hairline-strong);
     display:grid;place-items:center;margin:0 auto 20px;color:var(--faint)}
@@ -373,28 +372,14 @@
   .danger-zone h3{margin:0 0 6px;font-size:13.5px;font-weight:800}
   .danger-zone p{margin:0 0 12px}
 
-  /* ---- wizard: step progress (ported from post.html) ---- */
-  #wizardWrap{display:none}
-  .wizard-inner{max-width:480px;margin:48px auto 0}
-  /* Tablet: the 480px cap made sense against a full desktop-width wrap,
-     but on tablet it leaves the wizard noticeably narrower than the
-     dashboard content (profile card etc.) shown on this same page —
-     let it fill the same width instead. */
-  @media(min-width:768px) and (max-width:1399px){
-    .wizard-inner{max-width:none}
-  }
-  .steps-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
-  .step-label{font-size:13px;color:var(--muted);font-weight:600}
-  .step-label b{color:var(--ink)}
-  .step-bar{display:flex;gap:6px;flex:none}
-  .step-dot{width:28px;height:4px;border-radius:999px;background:var(--hairline-strong);transition:background .3s var(--ease-expo)}
-  .step-dot.active{background:linear-gradient(90deg,var(--green),var(--brand))}
-  .step-dot.complete{background:var(--green)}
-
+  /* ---- edit profile: single-page form shown inside the dashboard shell,
+     reached via the sidebar (no more multi-step wizard takeover) ---- */
+  #dashEditContent{display:none}
   fieldset{border:0;padding:0;margin:0;min-width:0}
-  .step{display:none;flex-direction:column;gap:18px;padding:26px 0 10px}
-  .step.active{display:flex}
-  .step-title{font-size:18px;font-weight:800;margin:0}
+  .edit-section{display:flex;flex-direction:column;gap:18px;padding:22px 0;border-bottom:1px solid var(--hairline)}
+  .edit-section:first-of-type{padding-top:0}
+  .edit-section:last-of-type{border-bottom:0}
+  .step-title{font-size:16px;font-weight:800;margin:0}
   .step-sub{font-size:13.5px;color:var(--muted);margin:-10px 0 0}
 
   .wizard-photo{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
@@ -412,15 +397,12 @@
     font:inherit;font-size:13px;font-weight:700;padding:9px 16px;border-radius:10px;cursor:pointer}
   .add-link-btn:hover{border-color:var(--brand);color:var(--brand)}
 
-  .step-nav{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-bottom:40px}
+  .edit-actions{display:flex;justify-content:flex-end;align-items:center;gap:12px;padding-top:24px}
   .btn-back{background:none;border:1px solid var(--hairline-strong);color:var(--ink);font:inherit;
     font-weight:700;font-size:14.5px;padding:13px 22px;border-radius:999px;cursor:pointer;
     transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
   .btn-back:hover{border-color:var(--brand);color:var(--brand)}
-  .step-nav .submit{width:auto;margin-left:auto}
-  .wizard-close{display:block;margin:24px auto 0;background:none;border:0;color:var(--muted);
-    font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:center}
-  .wizard-close:hover{color:var(--ink)}
+  .edit-actions .submit{width:auto}
 </style>
 </head>
 <body>
@@ -532,181 +514,136 @@
         </button>
       </nav>
       <div class="dash-main">
-        <div class="completion-banner" id="completionBanner" style="display:none">
-          <div class="completion-bar"><div class="completion-fill" id="completionFill"></div></div>
-          <p id="completionText"></p>
-        </div>
-        <div id="statusBanner"></div>
-        <div class="profile-card" id="profileCard"></div>
-        <div class="handle-card" id="handleCard">
-          <div class="handle-card-view" id="handleCardView">
-            <p class="handle-card-label">Your profile URL</p>
-            <p class="handle-card-url">kazi.odana.design/designers/<a href="" id="handleCardLink" target="_blank"><b id="handleCardValue"></b></a> <span class="hint" id="handleCardPendingHint" style="display:none">(live once approved)</span></p>
+        <div id="dashHomeContent">
+          <div class="completion-banner" id="completionBanner" style="display:none">
+            <div class="completion-bar"><div class="completion-fill" id="completionFill"></div></div>
+            <p id="completionText"></p>
           </div>
-          <div class="handle-card-edit">
-            <div class="handle-wrap">
-              <span>@</span>
-              <input type="text" id="handleInput" maxlength="30" autocomplete="off">
+          <div id="statusBanner"></div>
+          <div class="profile-card" id="profileCard"></div>
+          <div class="handle-card" id="handleCard">
+            <div class="handle-card-view" id="handleCardView">
+              <p class="handle-card-label">Your profile URL</p>
+              <p class="handle-card-url">kazi.odana.design/designers/<a href="" id="handleCardLink" target="_blank"><b id="handleCardValue"></b></a> <span class="hint" id="handleCardPendingHint" style="display:none">(live once approved)</span></p>
             </div>
-            <button type="button" class="btn-ghost" id="handleSaveBtn">Save</button>
-            <button type="button" class="link-inline" id="handleCancelBtn">Cancel</button>
-          </div>
-          <button type="button" class="btn-ghost" id="handleEditBtn">Edit</button>
-        </div>
-        <p class="err" id="handleErr" style="display:none"></p>
-        <div class="stat-grid" id="statGrid">
-          <div class="stat-tile">
-            <div class="stat-top">
-              <span class="stat-icon" style="background:var(--brand-soft);color:var(--brand)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
-              </span>
+            <div class="handle-card-edit">
+              <div class="handle-wrap">
+                <span>@</span>
+                <input type="text" id="handleInput" maxlength="30" autocomplete="off">
+              </div>
+              <button type="button" class="btn-ghost" id="handleSaveBtn">Save</button>
+              <button type="button" class="link-inline" id="handleCancelBtn">Cancel</button>
             </div>
-            <div class="n" id="statViews">–</div>
-            <div class="l">Profile views</div>
+            <button type="button" class="btn-ghost" id="handleEditBtn">Edit</button>
           </div>
-          <div class="stat-tile">
-            <div class="stat-top">
-              <span class="stat-icon" style="background:var(--green-soft);color:var(--green-ink)">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              </span>
+          <p class="err" id="handleErr" style="display:none"></p>
+          <div class="stat-grid" id="statGrid">
+            <div class="stat-tile">
+              <div class="stat-top">
+                <span class="stat-icon" style="background:var(--brand-soft);color:var(--brand)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </span>
+              </div>
+              <div class="n" id="statViews">–</div>
+              <div class="l">Profile views</div>
             </div>
-            <div class="n" id="statCompletion">–</div>
-            <div class="l">Profile completion</div>
+            <div class="stat-tile">
+              <div class="stat-top">
+                <span class="stat-icon" style="background:var(--green-soft);color:var(--green-ink)">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </span>
+              </div>
+              <div class="n" id="statCompletion">–</div>
+              <div class="l">Profile completion</div>
+            </div>
+          </div>
+          <div class="danger-zone">
+            <h3>Delete account</h3>
+            <p class="hint">Permanently deletes your account, profile, and photo. This can't be undone.</p>
+            <button type="button" class="btn-ghost -danger" id="deleteBtn">Delete my account</button>
           </div>
         </div>
-        <div class="danger-zone">
-          <h3>Delete account</h3>
-          <p class="hint">Permanently deletes your account, profile, and photo. This can't be undone.</p>
-          <button type="button" class="btn-ghost -danger" id="deleteBtn">Delete my account</button>
-        </div>
+        <form id="dashEditContent">
+          <fieldset class="edit-section">
+            <p class="step-title">Photo</p>
+            <p class="step-sub">A face helps employers connect a name to your work.</p>
+            <div class="wizard-photo">
+              <img class="wizard-avatar" id="wizardAvatar" src="" alt="">
+              <button type="button" class="btn-ghost" id="wizardPhotoBtn">Upload photo</button>
+              <input type="file" id="wizardPhotoInput" accept=".jpg,.jpeg,.png,.webp">
+              <p class="hint">JPG, PNG, or WebP. Up to 3MB.</p>
+            </div>
+            <p class="err" id="wizardPhotoErr" style="display:none"></p>
+          </fieldset>
+
+          <fieldset class="edit-section">
+            <p class="step-title">About you</p>
+            <p class="step-sub">This is how you'll show up in the directory.</p>
+            <label class="field"><span>Name</span>
+              <input type="text" id="wizardName" required>
+            </label>
+            <label class="field"><span>Professional headline <span class="hint">(optional)</span></span>
+              <input type="text" id="wizardHeadline" maxlength="120" placeholder="e.g. Senior Product Designer">
+            </label>
+            <label class="field"><span>Job function</span>
+              <select id="wizardDiscipline" required></select>
+            </label>
+            <label class="field"><span>Years of experience <span class="hint">(optional)</span></span>
+              <input type="text" id="wizardYearsExperience" maxlength="20" placeholder="e.g. 5+ years">
+            </label>
+            <label class="field"><span>Availability <span class="hint">(optional)</span></span>
+              <select id="wizardAvailability">
+                <option value="">Not specified</option>
+                <option value="Available">Available</option>
+                <option value="Open to offers">Open to offers</option>
+                <option value="Not available">Not available</option>
+              </select>
+            </label>
+            <label class="field"><span>Location <span class="hint">(city, or "Remote")</span></span>
+              <div class="loc-wrap">
+                <input type="text" id="wizardLocation" placeholder="e.g. Nairobi, Kenya" autocomplete="off">
+                <div class="loc-suggest" id="locSuggest" role="listbox"></div>
+              </div>
+            </label>
+          </fieldset>
+
+          <fieldset class="edit-section">
+            <p class="step-title">Get in touch</p>
+            <p class="step-sub">Optional. Shown publicly on your profile so employers can reach you directly, separate from your login email.</p>
+            <label class="field"><span>Phone <span class="hint">(optional)</span></span>
+              <div class="phone-wrap">
+                <select id="wizardPhoneCode" aria-label="Country code"></select>
+                <input type="tel" id="wizardPhoneNumber" placeholder="700 123 456" inputmode="tel">
+              </div>
+            </label>
+            <label class="field"><span>Public contact email <span class="hint">(optional)</span></span>
+              <input type="email" id="wizardContactEmail" placeholder="e.g. hello@yourname.design">
+            </label>
+          </fieldset>
+
+          <fieldset class="edit-section">
+            <p class="step-title">Bio</p>
+            <p class="step-sub">A few sentences about you and the work you do. Optional, but profiles with a bio get more attention.</p>
+            <label class="field"><span>Bio</span>
+              <textarea id="wizardBio" placeholder="Product designer based in Nairobi, focused on fintech and mobile-first experiences..."></textarea>
+            </label>
+          </fieldset>
+
+          <fieldset class="edit-section">
+            <p class="step-title">Links</p>
+            <p class="step-sub">Portfolio, LinkedIn, Dribbble, case studies, up to 8.</p>
+            <div id="linkRows" style="display:flex;flex-direction:column;gap:10px"></div>
+            <button type="button" class="add-link-btn" id="addLinkBtn">+ Add a link</button>
+          </fieldset>
+
+          <p class="err" id="editSaveErr" style="display:none"></p>
+          <div class="edit-actions">
+            <button type="button" class="btn-back" id="editCancelBtn">Cancel</button>
+            <button type="submit" class="submit" id="editSaveBtn">Save changes</button>
+          </div>
+        </form>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- ============ VIEW: wizard (6-step profile setup) ============ -->
-<div class="wrap" id="wizardWrap">
-  <div class="wizard-inner">
-    <div class="steps-head">
-      <div class="step-label">Step <b id="stepNum">1</b> of 6 · <span id="stepName">Photo</span></div>
-      <div class="step-bar">
-        <span class="step-dot active" data-dot="1"></span>
-        <span class="step-dot" data-dot="2"></span>
-        <span class="step-dot" data-dot="3"></span>
-        <span class="step-dot" data-dot="4"></span>
-        <span class="step-dot" data-dot="5"></span>
-        <span class="step-dot" data-dot="6"></span>
-      </div>
-    </div>
-
-    <fieldset class="step active" data-step="1">
-      <p class="step-title">Add a photo</p>
-      <p class="step-sub">A face helps employers connect a name to your work. You can skip this and add it later.</p>
-      <div class="wizard-photo">
-        <img class="wizard-avatar" id="wizardAvatar" src="" alt="">
-        <button type="button" class="btn-ghost" id="wizardPhotoBtn">Upload photo</button>
-        <input type="file" id="wizardPhotoInput" accept=".jpg,.jpeg,.png,.webp">
-        <p class="hint">JPG, PNG, or WebP. Up to 3MB.</p>
-      </div>
-      <p class="err" id="wizardPhotoErr" style="display:none"></p>
-      <div class="step-nav">
-        <span></span>
-        <button type="button" class="submit" data-next>Next</button>
-      </div>
-    </fieldset>
-
-    <fieldset class="step" data-step="2">
-      <p class="step-title">About you</p>
-      <p class="step-sub">This is how you'll show up in the directory.</p>
-      <label class="field"><span>Name</span>
-        <input type="text" id="wizardName" required>
-      </label>
-      <label class="field"><span>Professional headline <span class="hint">(optional)</span></span>
-        <input type="text" id="wizardHeadline" maxlength="120" placeholder="e.g. Senior Product Designer">
-      </label>
-      <label class="field"><span>Job function</span>
-        <select id="wizardDiscipline" required></select>
-      </label>
-      <label class="field"><span>Years of experience <span class="hint">(optional)</span></span>
-        <input type="text" id="wizardYearsExperience" maxlength="20" placeholder="e.g. 5+ years">
-      </label>
-      <label class="field"><span>Availability <span class="hint">(optional)</span></span>
-        <select id="wizardAvailability">
-          <option value="">Not specified</option>
-          <option value="Available">Available</option>
-          <option value="Open to offers">Open to offers</option>
-          <option value="Not available">Not available</option>
-        </select>
-      </label>
-      <label class="field"><span>Location <span class="hint">(city, or "Remote")</span></span>
-        <div class="loc-wrap">
-          <input type="text" id="wizardLocation" placeholder="e.g. Nairobi, Kenya" autocomplete="off">
-          <div class="loc-suggest" id="locSuggest" role="listbox"></div>
-        </div>
-      </label>
-      <p class="err" id="wizardAboutErr" style="display:none"></p>
-      <div class="step-nav">
-        <button type="button" class="btn-back" data-back>Back</button>
-        <button type="button" class="submit" data-next disabled>Next</button>
-      </div>
-    </fieldset>
-
-    <fieldset class="step" data-step="3">
-      <p class="step-title">Get in touch</p>
-      <p class="step-sub">Optional. Shown publicly on your profile so employers can reach you directly, separate from your login email.</p>
-      <label class="field"><span>Phone <span class="hint">(optional)</span></span>
-        <div class="phone-wrap">
-          <select id="wizardPhoneCode" aria-label="Country code"></select>
-          <input type="tel" id="wizardPhoneNumber" placeholder="700 123 456" inputmode="tel">
-        </div>
-      </label>
-      <label class="field"><span>Public contact email <span class="hint">(optional)</span></span>
-        <input type="email" id="wizardContactEmail" placeholder="e.g. hello@yourname.design">
-      </label>
-      <p class="err" id="wizardContactErr" style="display:none"></p>
-      <div class="step-nav">
-        <button type="button" class="btn-back" data-back>Back</button>
-        <button type="button" class="submit" data-next>Next</button>
-      </div>
-    </fieldset>
-
-    <fieldset class="step" data-step="4">
-      <p class="step-title">Your bio</p>
-      <p class="step-sub">A few sentences about you and the work you do. Optional, but profiles with a bio get more attention.</p>
-      <label class="field"><span>Bio</span>
-        <textarea id="wizardBio" placeholder="Product designer based in Nairobi, focused on fintech and mobile-first experiences..."></textarea>
-      </label>
-      <p class="err" id="wizardBioErr" style="display:none"></p>
-      <div class="step-nav">
-        <button type="button" class="btn-back" data-back>Back</button>
-        <button type="button" class="submit" data-next>Next</button>
-      </div>
-    </fieldset>
-
-    <fieldset class="step" data-step="5">
-      <p class="step-title">Your links</p>
-      <p class="step-sub">Portfolio, LinkedIn, Dribbble, case studies, up to 8.</p>
-      <div id="linkRows" style="display:flex;flex-direction:column;gap:10px"></div>
-      <button type="button" class="add-link-btn" id="addLinkBtn">+ Add a link</button>
-      <p class="err" id="wizardLinksErr" style="display:none"></p>
-      <div class="step-nav">
-        <button type="button" class="btn-back" data-back>Back</button>
-        <button type="button" class="submit" data-next>Next</button>
-      </div>
-    </fieldset>
-
-    <fieldset class="step" data-step="6">
-      <p class="step-title">Review &amp; submit</p>
-      <p class="step-sub">This is what employers will see once it's approved.</p>
-      <div class="profile-card" id="reviewCard"></div>
-      <p class="err" id="wizardSubmitErr" style="display:none"></p>
-      <div class="step-nav">
-        <button type="button" class="btn-back" data-back>Back</button>
-        <button type="button" class="submit" id="wizardSubmitBtn">Submit for review</button>
-      </div>
-    </fieldset>
-
-    <button type="button" class="wizard-close" id="wizardCloseBtn">Save and finish later</button>
   </div>
 </div>
 
@@ -865,15 +802,6 @@ const TOKEN_KEY = "kazi_designer_token";
 let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) || "";
 let me = null; // last-loaded profile, refreshed by afterAuth()
 let stats = null; // last-loaded dashboard stats, refreshed by afterAuth()
-
-const dashboardWrap = document.getElementById("dashboardWrap");
-const wizardWrap = document.getElementById("wizardWrap");
-
-function showView(name) {
-  dashboardWrap.style.display = name === "dashboard" ? "block" : "none";
-  wizardWrap.style.display = name === "wizard" ? "block" : "none";
-  window.scrollTo({top: 0, behavior: "smooth"});
-}
 
 async function api(path, opts = {}) {
   const res = await fetch(path, {
@@ -1052,8 +980,32 @@ function renderHandleCard(m) {
   document.getElementById("handleCardPendingHint").style.display = m.status === "approved" ? "none" : "inline";
 }
 
+/* Populates the dashboard-home content (stats, profile card, handle card,
+   completion banner) from the current `me`/`stats`. Shared by the normal
+   render path and by "Set up your profile", which shows this same shell
+   (still mostly empty at that point) before jumping straight to Edit. */
+function renderDashboardHome() {
+  renderStatusBanner(me);
+  renderHandleCard(me);
+  document.getElementById("profileCard").innerHTML = profileCardHtml(me);
+  wireBioToggle(document.getElementById("profileCard"));
+
+  document.getElementById("statViews").textContent = stats ? stats.profile_views : "–";
+  const completion = computeCompletion(me);
+  document.getElementById("statCompletion").textContent = completion.percent + "%";
+  const bannerEl = document.getElementById("completionBanner");
+  if (completion.percent < 100) {
+    bannerEl.style.display = "block";
+    document.getElementById("completionFill").style.width = completion.percent + "%";
+    document.getElementById("completionText").textContent =
+      `Your profile is ${completion.percent}% complete. Add ${formatMissingList(completion.missing)} to finish it.`;
+  } else {
+    bannerEl.style.display = "none";
+  }
+  renderQuickActions(me);
+}
+
 function renderDashboard() {
-  showView("dashboard");
   const emptyEl = document.getElementById("dashboardEmpty");
   const filledEl = document.getElementById("dashboardFilled");
   if (isProfileEmpty(me)) {
@@ -1062,24 +1014,8 @@ function renderDashboard() {
   } else {
     emptyEl.style.display = "none";
     filledEl.style.display = "block";
-    renderStatusBanner(me);
-    renderHandleCard(me);
-    document.getElementById("profileCard").innerHTML = profileCardHtml(me);
-    wireBioToggle(document.getElementById("profileCard"));
-
-    document.getElementById("statViews").textContent = stats ? stats.profile_views : "–";
-    const completion = computeCompletion(me);
-    document.getElementById("statCompletion").textContent = completion.percent + "%";
-    const bannerEl = document.getElementById("completionBanner");
-    if (completion.percent < 100) {
-      bannerEl.style.display = "block";
-      document.getElementById("completionFill").style.width = completion.percent + "%";
-      document.getElementById("completionText").textContent =
-        `Your profile is ${completion.percent}% complete. Add ${formatMissingList(completion.missing)} to finish it.`;
-    } else {
-      bannerEl.style.display = "none";
-    }
-    renderQuickActions(me);
+    showDashPage("home");
+    renderDashboardHome();
   }
 }
 
@@ -1125,9 +1061,24 @@ document.getElementById("handleSaveBtn").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("startWizardBtn").addEventListener("click", () => openWizard());
-document.getElementById("editProfileBtn").addEventListener("click", () => openWizard());
-document.getElementById("wizardCloseBtn").addEventListener("click", async () => { await afterAuth(); });
+/* ---------- dashboard navigation: Dashboard / Edit profile are pages
+   inside the same shell (sidebar stays put), not separate full-page
+   views — this replaces the old multi-step wizard takeover. ---------- */
+function showDashPage(name) {
+  document.getElementById("dashHomeContent").style.display = name === "home" ? "block" : "none";
+  document.getElementById("dashEditContent").style.display = name === "edit" ? "block" : "none";
+  document.getElementById("navHomeBtn").classList.toggle("active", name === "home");
+  document.getElementById("editProfileBtn").classList.toggle("active", name === "edit");
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+document.getElementById("startWizardBtn").addEventListener("click", () => {
+  document.getElementById("dashboardEmpty").style.display = "none";
+  document.getElementById("dashboardFilled").style.display = "block";
+  renderDashboardHome();
+  openEditProfile();
+});
+document.getElementById("editProfileBtn").addEventListener("click", () => openEditProfile());
+document.getElementById("editCancelBtn").addEventListener("click", () => showDashPage("home"));
 
 /* ---------- quick actions: view / copy / share the public profile URL ---------- */
 function profileUrl() {
@@ -1144,9 +1095,7 @@ function flipButtonText(btn, tempText, ms = 1500) {
 function renderQuickActions(m) {
   document.getElementById("viewPublicBtn").disabled = m.status !== "approved";
 }
-document.getElementById("navHomeBtn").addEventListener("click", () => {
-  window.scrollTo({top: 0, behavior: "smooth"});
-});
+document.getElementById("navHomeBtn").addEventListener("click", () => showDashPage("home"));
 document.getElementById("viewPublicBtn").addEventListener("click", () => {
   if (me.status === "approved") window.open(profileUrl(), "_blank", "noopener");
 });
@@ -1168,62 +1117,8 @@ document.getElementById("shareProfileBtn").addEventListener("click", async (e) =
   }
 });
 
-/* ---------- wizard ---------- */
-const steps = Array.from(document.querySelectorAll(".step"));
-const dots = Array.from(document.querySelectorAll(".step-dot"));
-const stepNames = ["Photo", "About you", "Get in touch", "Bio", "Links", "Review"];
-let current = 1;
-
-function stepControls(stepEl) {
-  return Array.from(stepEl.querySelectorAll("input, select, textarea"));
-}
-function stepIsValid(stepEl) {
-  return stepControls(stepEl).every(el => el.checkValidity());
-}
-function updateNextButtonState() {
-  const stepEl = steps[current - 1];
-  const nextBtn = stepEl.querySelector("[data-next]");
-  if (nextBtn) nextBtn.disabled = !stepIsValid(stepEl);
-}
-
-function showStep(n) {
-  current = n;
-  steps.forEach(s => s.classList.toggle("active", Number(s.dataset.step) === n));
-  dots.forEach((d, i) => {
-    d.classList.toggle("active", i + 1 === n);
-    d.classList.toggle("complete", i + 1 < n);
-  });
-  document.getElementById("stepNum").textContent = n;
-  document.getElementById("stepName").textContent = stepNames[n - 1];
-  updateNextButtonState();
-  if (n === 3 && !phoneCodeSel.value) {
-    const guess = countryCodeForLocation(document.getElementById("wizardLocation").value);
-    if (guess) phoneCodeSel.value = guess;
-  }
-  if (n === 6) {
-    document.getElementById("reviewCard").innerHTML = profileCardHtml(wizardState());
-    wireBioToggle(document.getElementById("reviewCard"));
-  }
-  window.scrollTo({top: 0, behavior: "smooth"});
-}
-
-function wizardState() {
-  return {
-    display_name: document.getElementById("wizardName").value.trim(),
-    headline: document.getElementById("wizardHeadline").value.trim(),
-    discipline: document.getElementById("wizardDiscipline").value,
-    years_experience: document.getElementById("wizardYearsExperience").value.trim(),
-    availability_status: document.getElementById("wizardAvailability").value,
-    location: document.getElementById("wizardLocation").value.trim(),
-    phone: composePhone(),
-    contact_email: document.getElementById("wizardContactEmail").value.trim(),
-    bio: document.getElementById("wizardBio").value.trim(),
-    photo_path: me ? me.photo_path : "",
-    links: currentLinkRows(),
-  };
-}
-
-function openWizard() {
+/* ---------- edit profile: single page, all fields at once ---------- */
+function openEditProfile() {
   document.getElementById("wizardName").value = me.display_name || "";
   document.getElementById("wizardHeadline").value = me.headline || "";
   document.getElementById("wizardDiscipline").value = me.discipline || "";
@@ -1237,11 +1132,11 @@ function openWizard() {
   document.getElementById("wizardBio").value = me.bio || "";
   document.getElementById("wizardAvatar").src = me.photo_path || "logo.png";
   renderLinkRows(me.links || []);
-  showView("wizard");
-  showStep(1);
+  document.getElementById("editSaveErr").style.display = "none";
+  showDashPage("edit");
 }
 
-/* Step 1: photo (uploads immediately on choose, like the old single-page editor did) */
+/* Photo uploads immediately on choose, same as before — not deferred to Save */
 document.getElementById("wizardPhotoBtn").addEventListener("click", () => document.getElementById("wizardPhotoInput").click());
 document.getElementById("wizardPhotoInput").addEventListener("change", async () => {
   const file = document.getElementById("wizardPhotoInput").files[0];
@@ -1321,55 +1216,33 @@ async function saveLinks() {
   });
 }
 
-/* Next / Back wiring: each step saves its own data before advancing */
-document.querySelectorAll("[data-next]").forEach(btn => {
-  btn.addEventListener("click", async () => {
-    const stepEl = btn.closest(".step");
-    const stepNum = Number(stepEl.dataset.step);
-    const errMap = {2: "wizardAboutErr", 3: "wizardContactErr", 4: "wizardBioErr", 5: "wizardLinksErr"};
-    const errEl = errMap[stepNum] ? document.getElementById(errMap[stepNum]) : null;
-    if (errEl) errEl.style.display = "none";
-    btn.disabled = true;
-    const originalText = btn.textContent;
-    btn.textContent = "Saving…";
-    try {
-      if (stepNum === 2 || stepNum === 3 || stepNum === 4) await saveProfileFields();
-      if (stepNum === 5) await saveLinks();
-      me = {...me, ...wizardState()};
-      showStep(current + 1);
-    } catch (err) {
-      if (errEl) { errEl.textContent = err.message; errEl.style.display = "block"; }
-    } finally {
-      btn.disabled = !stepIsValid(stepEl);
-      btn.textContent = originalText;
-    }
-  });
-});
-document.querySelectorAll("[data-back]").forEach(btn => {
-  btn.addEventListener("click", () => showStep(current - 1));
-});
-
-document.querySelectorAll(".step").forEach(stepEl => {
-  stepEl.addEventListener("input", () => { if (Number(stepEl.dataset.step) === current) updateNextButtonState(); });
-  stepEl.addEventListener("change", () => { if (Number(stepEl.dataset.step) === current) updateNextButtonState(); });
-});
-
-/* Step 5: submit for review */
-document.getElementById("wizardSubmitBtn").addEventListener("click", async () => {
-  const errEl = document.getElementById("wizardSubmitErr");
+/* Save changes: one action saves profile fields + links, and explicitly
+   (re)submits for review — needed for a rejected profile to move back to
+   pending, since editing alone only does that automatically from
+   "approved" (see update_designer_profile's re-review comment). Native
+   HTML5 validation (required Name/Job function) runs on submit since
+   these are real <form>/type="submit" elements now, no manual
+   per-field checkValidity() polling needed. */
+document.getElementById("dashEditContent").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const errEl = document.getElementById("editSaveErr");
   errEl.style.display = "none";
-  const btn = document.getElementById("wizardSubmitBtn");
+  const btn = document.getElementById("editSaveBtn");
   btn.disabled = true;
-  btn.textContent = "Submitting…";
+  const originalText = btn.textContent;
+  btn.textContent = "Saving…";
   try {
+    await saveProfileFields();
+    await saveLinks();
     await api("/api/designers/me/submit", {method: "POST"});
     await afterAuth();
+    showDashPage("home");
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
   } finally {
     btn.disabled = false;
-    btn.textContent = "Submit for review";
+    btn.textContent = originalText;
   }
 });
 
