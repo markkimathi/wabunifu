@@ -674,6 +674,10 @@
               <p class="avatar-picker-title">Use an Avatar</p>
               <div class="avatar-grid" id="avatarGrid"></div>
             </div>
+            <div class="section-actions" id="photoActions" style="display:none">
+              <button type="button" class="btn-back" id="photoCancelBtn">Cancel</button>
+              <button type="button" class="submit" id="photoSaveBtn">Save</button>
+            </div>
           </fieldset>
 
           <fieldset class="edit-section">
@@ -1506,6 +1510,9 @@ function populateLinksSection() {
   renderLinkRows(me.links || []);
 }
 function populateAllSections() {
+  pendingPhoto = null;
+  document.getElementById("photoActions").style.display = "none";
+  document.getElementById("wizardPhotoInput").value = "";
   document.getElementById("wizardAvatar").src = me.photo_path || DEFAULT_AVATAR;
   renderAvatarGrid();
   populateAboutSection();
@@ -1653,37 +1660,94 @@ function openEditProfile() {
   showDashPage("edit");
 }
 
-/* Photo uploads immediately on choose, same as before — not deferred to Save */
-document.getElementById("wizardPhotoBtn").addEventListener("click", () => document.getElementById("wizardPhotoInput").click());
-document.getElementById("wizardPhotoInput").addEventListener("change", async () => {
-  const file = document.getElementById("wizardPhotoInput").files[0];
-  if (!file) return;
+/* ---------- Photo: choosing a file or clicking an avatar now stages the
+   change (preview updates, Save/Cancel appear) instead of saving
+   immediately — mirrors how every other section works. Only one of
+   {uploaded file, picked avatar} can be pending at a time; whichever was
+   chosen most recently wins, matching the already-established rule that
+   only one of upload/avatar is ever the "active" photo_path. ---------- */
+let pendingPhoto = null; // {type:"file", file:File} | {type:"avatar", path:string} | null
+function showPhotoActions(show) {
+  document.getElementById("photoActions").style.display = show ? "flex" : "none";
+}
+function stagePendingFile(file) {
+  pendingPhoto = {type: "file", file};
+  const reader = new FileReader();
+  reader.onload = () => { document.getElementById("wizardAvatar").src = reader.result; };
+  reader.readAsDataURL(file);
+  renderAvatarGrid();
+  showPhotoActions(true);
+}
+function stagePendingAvatar(path) {
+  pendingPhoto = {type: "avatar", path};
+  document.getElementById("wizardAvatar").src = path;
+  renderAvatarGrid();
+  showPhotoActions(true);
+}
+function cancelPendingPhoto() {
+  pendingPhoto = null;
+  document.getElementById("wizardPhotoInput").value = "";
+  document.getElementById("wizardPhotoErr").style.display = "none";
+  document.getElementById("wizardAvatar").src = me.photo_path || DEFAULT_AVATAR;
+  renderAvatarGrid();
+  showPhotoActions(false);
+}
+async function savePendingPhoto() {
+  if (!pendingPhoto) return;
   const errEl = document.getElementById("wizardPhotoErr");
   errEl.style.display = "none";
-  const fd = new FormData();
-  fd.append("file", file);
+  const btn = document.getElementById("photoSaveBtn");
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = "Saving…";
   try {
-    const res = await api("/api/designers/me/photo", {method: "POST", body: fd});
-    document.getElementById("wizardAvatar").src = res.photo_path + "?t=" + Date.now();
-    me.photo_path = res.photo_path;
-    renderAvatarGrid(); // an uploaded photo supersedes any picked avatar
+    if (pendingPhoto.type === "file") {
+      const fd = new FormData();
+      fd.append("file", pendingPhoto.file);
+      const res = await api("/api/designers/me/photo", {method: "POST", body: fd});
+      me.photo_path = res.photo_path;
+      document.getElementById("wizardAvatar").src = res.photo_path + "?t=" + Date.now();
+    } else {
+      await api("/api/designers/me/avatar", {
+        method: "POST", headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({photo_path: pendingPhoto.path}),
+      });
+      me.photo_path = pendingPhoto.path;
+      document.getElementById("wizardAvatar").src = pendingPhoto.path;
+    }
+    pendingPhoto = null;
+    document.getElementById("wizardPhotoInput").value = "";
+    renderAvatarGrid();
+    showPhotoActions(false);
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
+}
+document.getElementById("wizardPhotoBtn").addEventListener("click", () => document.getElementById("wizardPhotoInput").click());
+document.getElementById("wizardPhotoInput").addEventListener("change", () => {
+  const file = document.getElementById("wizardPhotoInput").files[0];
+  if (!file) return;
+  stagePendingFile(file);
 });
+document.getElementById("photoCancelBtn").addEventListener("click", cancelPendingPhoto);
+document.getElementById("photoSaveBtn").addEventListener("click", savePendingPhoto);
 
 /* ---------- avatar picker: 28 built-in avatars, Netflix-profile-style
-   grid. Selection state is derived from photo_path (whichever avatar's
-   path matches is "selected") rather than tracked separately, so
-   uploading a photo or picking an avatar automatically supersedes
-   whichever was previously active — there's only ever one photo_path. ---------- */
+   grid. "Selected" reflects the pending choice if there is one (a staged
+   avatar, or none at all if a file is staged instead), otherwise falls
+   back to the actual saved photo_path. ---------- */
 const AVATAR_COUNT = 28;
 const DEFAULT_AVATAR = "/avatars/avatar-1.png";
 function avatarPath(n) { return `/avatars/avatar-${n}.png`; }
 function renderAvatarGrid() {
   const grid = document.getElementById("avatarGrid");
-  const current = (me && me.photo_path) || DEFAULT_AVATAR;
+  const current = pendingPhoto
+    ? (pendingPhoto.type === "avatar" ? pendingPhoto.path : null)
+    : ((me && me.photo_path) || DEFAULT_AVATAR);
   grid.innerHTML = Array.from({length: AVATAR_COUNT}, (_, i) => i + 1).map(n => {
     const path = avatarPath(n);
     const selected = current === path;
@@ -1693,23 +1757,10 @@ function renderAvatarGrid() {
     </button>`;
   }).join("");
   grid.querySelectorAll(".avatar-option").forEach(btn => {
-    btn.addEventListener("click", async () => {
+    btn.addEventListener("click", () => {
       const path = btn.dataset.avatar;
       if (path === current) return;
-      const errEl = document.getElementById("wizardPhotoErr");
-      errEl.style.display = "none";
-      try {
-        await api("/api/designers/me/avatar", {
-          method: "POST", headers: {"Content-Type": "application/json"},
-          body: JSON.stringify({photo_path: path}),
-        });
-        me.photo_path = path;
-        document.getElementById("wizardAvatar").src = path;
-        renderAvatarGrid();
-      } catch (err) {
-        errEl.textContent = err.message;
-        errEl.style.display = "block";
-      }
+      stagePendingAvatar(path);
     });
   });
 }
