@@ -216,12 +216,12 @@
   .pc-skills{display:flex;flex-wrap:wrap;gap:6px}
   .pc-skill{display:inline-block;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;
     background:var(--hairline);color:var(--muted)}
-  .pc-contact{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+  .pc-contact{display:flex;flex-wrap:wrap;gap:10px}
   .pc-contact a{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;
     padding:9px 16px;border-radius:999px;border:1px solid var(--hairline-strong);color:var(--ink);
     text-decoration:none;transition:border-color .25s var(--ease-expo),color .25s var(--ease-expo)}
   .pc-contact a:hover{border-color:var(--brand);color:var(--brand)}
-  .pc-bio{font-size:15px;line-height:1.65;color:var(--ink);margin:0 0 26px;white-space:pre-wrap}
+  .pc-bio{font-size:15px;line-height:1.65;color:var(--ink);margin:0;white-space:pre-wrap}
   .pc-links{display:flex;flex-wrap:wrap;gap:10px}
   .link-btn{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:700;
     padding:10px 18px;border-radius:999px;border:1px solid var(--hairline-strong);color:var(--ink);
@@ -416,9 +416,15 @@ async function boot() {
             <p class="pc-section-label">Skills</p>
             <div class="pc-skills">${d.skills.map(s => `<span class="pc-skill">${escapeHtml(s)}</span>`).join("")}</div>` : ""}
           </div>
-          ${contactRows.length ? `<div class="pc-contact">${contactRows.join("")}</div>` : ""}
-          ${d.bio ? `<p class="pc-bio">${escapeHtml(d.bio)}</p>` : ""}
-          ${links.length ? `<div class="pc-links">${links.map(l => `<a class="link-btn" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${iconForLink(l)}${escapeHtml(l.label)}</a>`).join("")}</div>` : ""}
+          ${contactRows.length ? `
+          <p class="pc-section-label">Contact</p>
+          <div class="pc-contact">${contactRows.join("")}</div>` : ""}
+          ${links.length ? `
+          <p class="pc-section-label">Links</p>
+          <div class="pc-links">${links.map(l => `<a class="link-btn" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${iconForLink(l)}${escapeHtml(l.label)}</a>`).join("")}</div>` : ""}
+          ${d.bio ? `
+          <p class="pc-section-label">Bio</p>
+          <p class="pc-bio">${escapeHtml(d.bio)}</p>` : ""}
         </div>
       </div>
     `;
