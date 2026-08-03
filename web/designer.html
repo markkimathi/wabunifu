@@ -193,7 +193,7 @@
 
   .profile-card{border:1px solid var(--hairline);border-radius:var(--radius);
     background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
-  .pc-banner{height:120px;background:linear-gradient(135deg,var(--brand),var(--brand-light))}
+  .pc-banner{height:120px;background:linear-gradient(135deg,var(--brand),var(--brand-light));position:relative}
   .pc-body{padding:0 32px 32px}
   .pc-avatar{width:104px;height:104px;border-radius:50%;object-fit:cover;display:block;
     margin-top:-52px;background:var(--hairline);border:4px solid var(--surface);box-shadow:var(--shadow)}
@@ -201,14 +201,18 @@
   .pc-name{font-size:24px;font-weight:800;margin:0;letter-spacing:-.02em;line-height:1.2}
   .pc-headline{font-size:14.5px;font-weight:600;color:var(--muted);margin:3px 0 0}
   .pc-meta{font-size:14px;color:var(--muted);margin:4px 0 0}
-  .pc-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .pc-meta-loc{display:inline-flex;align-items:center;gap:4px;vertical-align:middle}
+  .pc-section-label{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--faint);margin:16px 0 6px}
+  .pc-badges{display:flex;flex-wrap:wrap;gap:8px}
   .pc-discipline{display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px;
     background:var(--brand-soft);color:var(--brand)}
   .pc-availability{display:inline-block;font-size:12px;font-weight:700;padding:4px 12px;border-radius:999px}
   .pc-availability.-available{background:var(--green-soft);color:var(--green-ink)}
   .pc-availability.-open{background:var(--amber-soft);color:var(--amber)}
   .pc-availability.-unavailable{background:var(--hairline);color:var(--muted)}
-  .pc-skills{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .pc-banner-availability{position:absolute;top:14px;right:16px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
+  .pc-skills{display:flex;flex-wrap:wrap;gap:6px}
   .pc-skill{display:inline-block;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;
     background:var(--hairline);color:var(--muted)}
   .pc-contact{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
@@ -234,6 +238,7 @@
     .pc-body{padding:0 20px 24px}
     .pc-avatar{width:80px;height:80px;margin-top:-40px;border-width:3px}
     .pc-name{font-size:20px}
+    .pc-banner-availability{top:10px;right:12px;font-size:11px;padding:3px 10px}
   }
 </style>
 </head>
@@ -346,6 +351,18 @@ const AVAILABILITY_META = {
   "Not available": {cls: "-unavailable", label: "Not available"},
 };
 
+const ICON_LOCATION = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+
+/* Years of experience is free text (see account.html's wizard) — strip any
+   trailing "year(s)" the designer already typed, then always append the
+   full phrase so it never renders as a bare number next to the location. */
+function formatYearsExperience(v) {
+  const cleaned = (v || "").trim().replace(/\s*years?\s*$/i, "").trim();
+  if (!cleaned) return "";
+  const unit = cleaned === "1" ? "year" : "years";
+  return `${escapeHtml(cleaned)} ${unit} of experience`;
+}
+
 function iconForLink(link) {
   let host = "";
   try { host = new URL(link.url).hostname.replace(/^www\./, "").toLowerCase(); } catch (e) {}
@@ -398,18 +415,22 @@ async function boot() {
     const availability = d.availability_status && AVAILABILITY_META[d.availability_status];
     main.innerHTML = `
       <div class="profile-card">
-        <div class="pc-banner"></div>
+        <div class="pc-banner">
+          ${availability ? `<span class="pc-availability pc-banner-availability ${availability.cls}">${availability.label}</span>` : ""}
+        </div>
         <div class="pc-body">
           <img class="pc-avatar" src="${d.photo_path ? escapeHtml(d.photo_path) : '/avatars/avatar-1.png'}" alt="">
           <div class="pc-name-block">
             <p class="pc-name">${escapeHtml(d.display_name)}</p>
             ${d.headline ? `<p class="pc-headline">${escapeHtml(d.headline)}</p>` : ""}
-            <p class="pc-meta">${[d.location, d.years_experience].filter(Boolean).map(escapeHtml).join(" · ")}</p>
-            <div class="pc-badges">
-              ${(d.discipline || []).map(x => `<span class="pc-discipline">${escapeHtml(x)}</span>`).join("")}
-              ${availability ? `<span class="pc-availability ${availability.cls}">${availability.label}</span>` : ""}
-            </div>
-            ${(d.skills && d.skills.length) ? `<div class="pc-skills">${d.skills.map(s => `<span class="pc-skill">${escapeHtml(s)}</span>`).join("")}</div>` : ""}
+            ${d.years_experience ? `<p class="pc-meta">${formatYearsExperience(d.years_experience)}</p>` : ""}
+            ${d.location ? `<p class="pc-meta"><span class="pc-meta-loc">${ICON_LOCATION}${escapeHtml(d.location)}</span></p>` : ""}
+            ${(d.discipline && d.discipline.length) ? `
+            <p class="pc-section-label">Job function</p>
+            <div class="pc-badges">${(d.discipline || []).map(x => `<span class="pc-discipline">${escapeHtml(x)}</span>`).join("")}</div>` : ""}
+            ${(d.skills && d.skills.length) ? `
+            <p class="pc-section-label">Skills</p>
+            <div class="pc-skills">${d.skills.map(s => `<span class="pc-skill">${escapeHtml(s)}</span>`).join("")}</div>` : ""}
           </div>
           ${contactRows.length ? `<div class="pc-contact">${contactRows.join("")}</div>` : ""}
           ${d.bio ? `<p class="pc-bio -clamped">${escapeHtml(d.bio)}</p><button type="button" class="pc-bio-toggle">Read more</button>` : ""}
