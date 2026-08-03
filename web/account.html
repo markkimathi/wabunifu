@@ -385,6 +385,17 @@
   .step-title{font-size:16px;font-weight:800;margin:0}
   .step-sub{font-size:13.5px;color:var(--muted);margin:-10px 0 0}
 
+  /* ---- per-section edit: each section (About you / Get in touch / Bio /
+     Links) starts locked and saves independently, instead of one big
+     form with a single Save at the bottom ---- */
+  .section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+  .section-head .section-edit-btn{flex:none}
+  .section-body{display:flex;flex-direction:column;gap:18px}
+  .section-body input:disabled,.section-body select:disabled,.section-body textarea:disabled{
+    opacity:.6;cursor:default}
+  .section-actions{display:flex;gap:10px;padding-top:2px}
+  .section-actions .submit{width:auto}
+
   .wizard-photo{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 0}
   .wizard-avatar{width:112px;height:112px;border-radius:50%;object-fit:cover;
     background:var(--hairline);border:2px solid var(--hairline-strong)}
@@ -580,7 +591,7 @@
             <button type="button" class="btn-ghost -danger" id="deleteBtn">Delete my account</button>
           </div>
         </div>
-        <form id="dashEditContent">
+        <div id="dashEditContent">
           <fieldset class="edit-section">
             <p class="step-title">Photo</p>
             <p class="step-sub">A face helps employers connect a name to your work.</p>
@@ -594,79 +605,125 @@
           </fieldset>
 
           <fieldset class="edit-section">
-            <p class="step-title">About you</p>
-            <p class="step-sub">This is how you'll show up in the directory.</p>
-            <label class="field"><span>Name</span>
-              <input type="text" id="wizardName" required>
-            </label>
-            <label class="field"><span>Professional headline <span class="hint">(optional)</span></span>
-              <input type="text" id="wizardHeadline" maxlength="120" placeholder="e.g. Senior Product Designer">
-            </label>
-            <label class="field"><span>Job function <span class="hint">(up to 5)</span></span>
-              <div class="chip-select" id="disciplineChips"></div>
-              <p class="err" id="disciplineErr" style="display:none">Choose at least one job function.</p>
-            </label>
-            <label class="field"><span>Skills <span class="hint">(up to 7 — pick from the list or add your own)</span></span>
-              <div class="tag-input" id="skillTagInput">
-                <div class="skill-chips" id="skillChips"></div>
-                <input type="text" id="skillInputField" list="skillSuggestions" placeholder="Type a skill and press Enter" autocomplete="off">
+            <div class="section-head">
+              <div>
+                <p class="step-title">About you</p>
+                <p class="step-sub">This is how you'll show up in the directory.</p>
               </div>
-              <datalist id="skillSuggestions"></datalist>
-            </label>
-            <label class="field"><span>Years of experience <span class="hint">(optional)</span></span>
-              <input type="text" id="wizardYearsExperience" maxlength="20" placeholder="e.g. 5+ years">
-            </label>
-            <label class="field"><span>Availability <span class="hint">(optional)</span></span>
-              <select id="wizardAvailability">
-                <option value="">Not specified</option>
-                <option value="Available">Available</option>
-                <option value="Open to offers">Open to offers</option>
-                <option value="Not available">Not available</option>
-              </select>
-            </label>
-            <label class="field"><span>Location <span class="hint">(city, or "Remote")</span></span>
-              <div class="loc-wrap">
-                <input type="text" id="wizardLocation" placeholder="e.g. Nairobi, Kenya" autocomplete="off">
-                <div class="loc-suggest" id="locSuggest" role="listbox"></div>
+              <button type="button" class="btn-ghost section-edit-btn" id="aboutEditBtn">Edit</button>
+            </div>
+            <div class="section-body" id="aboutSection">
+              <label class="field"><span>Name</span>
+                <input type="text" id="wizardName" required disabled>
+              </label>
+              <label class="field"><span>Professional headline <span class="hint">(optional)</span></span>
+                <input type="text" id="wizardHeadline" maxlength="120" placeholder="e.g. Senior Product Designer" disabled>
+              </label>
+              <label class="field"><span>Job function <span class="hint">(up to 5)</span></span>
+                <div class="chip-select" id="disciplineChips"></div>
+                <p class="err" id="disciplineErr" style="display:none">Choose at least one job function.</p>
+              </label>
+              <label class="field"><span>Skills <span class="hint">(up to 7 — pick from the list or add your own)</span></span>
+                <div class="tag-input" id="skillTagInput">
+                  <div class="skill-chips" id="skillChips"></div>
+                  <input type="text" id="skillInputField" list="skillSuggestions" placeholder="Type a skill and press Enter" autocomplete="off" disabled>
+                </div>
+                <datalist id="skillSuggestions"></datalist>
+              </label>
+              <label class="field"><span>Years of experience <span class="hint">(optional)</span></span>
+                <input type="text" id="wizardYearsExperience" maxlength="20" placeholder="e.g. 5+ years" disabled>
+              </label>
+              <label class="field"><span>Availability <span class="hint">(optional)</span></span>
+                <select id="wizardAvailability" disabled>
+                  <option value="">Not specified</option>
+                  <option value="Available">Available</option>
+                  <option value="Open to offers">Open to offers</option>
+                  <option value="Not available">Not available</option>
+                </select>
+              </label>
+              <label class="field"><span>Location <span class="hint">(city, or "Remote")</span></span>
+                <div class="loc-wrap">
+                  <input type="text" id="wizardLocation" placeholder="e.g. Nairobi, Kenya" autocomplete="off" disabled>
+                  <div class="loc-suggest" id="locSuggest" role="listbox"></div>
+                </div>
+              </label>
+              <p class="err" id="aboutSaveErr" style="display:none"></p>
+              <div class="section-actions" id="aboutActions" style="display:none">
+                <button type="button" class="btn-back" id="aboutCancelBtn">Cancel</button>
+                <button type="button" class="submit" id="aboutSaveBtn">Save</button>
               </div>
-            </label>
+            </div>
           </fieldset>
 
           <fieldset class="edit-section">
-            <p class="step-title">Get in touch</p>
-            <p class="step-sub">Optional. Shown publicly on your profile so employers can reach you directly, separate from your login email.</p>
-            <label class="field"><span>Phone <span class="hint">(optional)</span></span>
-              <div class="phone-wrap">
-                <select id="wizardPhoneCode" aria-label="Country code"></select>
-                <input type="tel" id="wizardPhoneNumber" placeholder="700 123 456" inputmode="tel">
+            <div class="section-head">
+              <div>
+                <p class="step-title">Get in touch</p>
+                <p class="step-sub">Optional. Shown publicly on your profile so employers can reach you directly, separate from your login email.</p>
               </div>
-            </label>
-            <label class="field"><span>Public contact email <span class="hint">(optional)</span></span>
-              <input type="email" id="wizardContactEmail" placeholder="e.g. hello@yourname.design">
-            </label>
+              <button type="button" class="btn-ghost section-edit-btn" id="contactEditBtn">Edit</button>
+            </div>
+            <div class="section-body" id="contactSection">
+              <label class="field"><span>Phone <span class="hint">(optional)</span></span>
+                <div class="phone-wrap">
+                  <select id="wizardPhoneCode" aria-label="Country code" disabled></select>
+                  <input type="tel" id="wizardPhoneNumber" placeholder="700 123 456" inputmode="tel" disabled>
+                </div>
+              </label>
+              <label class="field"><span>Public contact email <span class="hint">(optional)</span></span>
+                <input type="email" id="wizardContactEmail" placeholder="e.g. hello@yourname.design" disabled>
+              </label>
+              <p class="err" id="contactSaveErr" style="display:none"></p>
+              <div class="section-actions" id="contactActions" style="display:none">
+                <button type="button" class="btn-back" id="contactCancelBtn">Cancel</button>
+                <button type="button" class="submit" id="contactSaveBtn">Save</button>
+              </div>
+            </div>
           </fieldset>
 
           <fieldset class="edit-section">
-            <p class="step-title">Bio</p>
-            <p class="step-sub">A few sentences about you and the work you do. Optional, but profiles with a bio get more attention.</p>
-            <label class="field"><span>Bio</span>
-              <textarea id="wizardBio" placeholder="Product designer based in Nairobi, focused on fintech and mobile-first experiences..."></textarea>
-            </label>
+            <div class="section-head">
+              <div>
+                <p class="step-title">Bio</p>
+                <p class="step-sub">A few sentences about you and the work you do. Optional, but profiles with a bio get more attention.</p>
+              </div>
+              <button type="button" class="btn-ghost section-edit-btn" id="bioEditBtn">Edit</button>
+            </div>
+            <div class="section-body" id="bioSection">
+              <label class="field"><span>Bio</span>
+                <textarea id="wizardBio" placeholder="Product designer based in Nairobi, focused on fintech and mobile-first experiences..." disabled></textarea>
+              </label>
+              <p class="err" id="bioSaveErr" style="display:none"></p>
+              <div class="section-actions" id="bioActions" style="display:none">
+                <button type="button" class="btn-back" id="bioCancelBtn">Cancel</button>
+                <button type="button" class="submit" id="bioSaveBtn">Save</button>
+              </div>
+            </div>
           </fieldset>
 
           <fieldset class="edit-section">
-            <p class="step-title">Links</p>
-            <p class="step-sub">Portfolio, LinkedIn, Dribbble, case studies, up to 8.</p>
-            <div id="linkRows" style="display:flex;flex-direction:column;gap:10px"></div>
-            <button type="button" class="add-link-btn" id="addLinkBtn">+ Add a link</button>
+            <div class="section-head">
+              <div>
+                <p class="step-title">Links</p>
+                <p class="step-sub">Portfolio, LinkedIn, Dribbble, case studies, up to 8.</p>
+              </div>
+              <button type="button" class="btn-ghost section-edit-btn" id="linksEditBtn">Edit</button>
+            </div>
+            <div class="section-body" id="linksSection">
+              <div id="linkRows" style="display:flex;flex-direction:column;gap:10px"></div>
+              <button type="button" class="add-link-btn" id="addLinkBtn" style="display:none">+ Add a link</button>
+              <p class="err" id="linksSaveErr" style="display:none"></p>
+              <div class="section-actions" id="linksActions" style="display:none">
+                <button type="button" class="btn-back" id="linksCancelBtn">Cancel</button>
+                <button type="button" class="submit" id="linksSaveBtn">Save</button>
+              </div>
+            </div>
           </fieldset>
 
-          <p class="err" id="editSaveErr" style="display:none"></p>
           <div class="edit-actions">
-            <button type="button" class="btn-back" id="editCancelBtn">Cancel</button>
-            <button type="submit" class="submit" id="editSaveBtn">Save changes</button>
+            <button type="button" class="btn-back" id="editCancelBtn">Back to dashboard</button>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   </div>
@@ -685,6 +742,13 @@
 </footer>
 
 <script>
+/* ---------- per-section edit: each section (About you / Get in touch /
+   Bio / Links) starts locked and is unlocked independently via its own
+   Edit button — see setSectionEditing() further down. Declared this early
+   because renderDisciplineChips()/renderSkillChips() read it immediately
+   on script load. ---------- */
+const sectionEditing = {about: false, contact: false, bio: false, links: false};
+
 const DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
 
 /* ---------- job function: multi-select chip picker, capped at 5 ---------- */
@@ -693,9 +757,10 @@ let selectedDisciplines = [];
 function renderDisciplineChips() {
   const box = document.getElementById("disciplineChips");
   const atCap = selectedDisciplines.length >= MAX_DISCIPLINES;
+  const locked = !sectionEditing.about;
   box.innerHTML = DISCIPLINES.map(d => {
     const active = selectedDisciplines.includes(d);
-    return `<button type="button" class="chip${active ? " active" : ""}" data-d="${escapeHtml(d)}" ${!active && atCap ? "disabled" : ""}>${escapeHtml(d)}</button>`;
+    return `<button type="button" class="chip${active ? " active" : ""}" data-d="${escapeHtml(d)}" ${locked || (!active && atCap) ? "disabled" : ""}>${escapeHtml(d)}</button>`;
   }).join("");
   box.querySelectorAll(".chip").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -718,8 +783,9 @@ const DESIGN_SKILLS = ["Figma","Sketch","Adobe XD","Photoshop","Illustrator","In
 let selectedSkills = [];
 function renderSkillChips() {
   const box = document.getElementById("skillChips");
+  const locked = !sectionEditing.about;
   box.innerHTML = selectedSkills.map(s => `
-    <span class="skill-chip">${escapeHtml(s)}<button type="button" class="skill-remove" data-s="${escapeHtml(s)}" aria-label="Remove ${escapeHtml(s)}">&times;</button></span>
+    <span class="skill-chip">${escapeHtml(s)}<button type="button" class="skill-remove" data-s="${escapeHtml(s)}" aria-label="Remove ${escapeHtml(s)}" ${locked ? "disabled" : ""}>&times;</button></span>
   `).join("");
   box.querySelectorAll(".skill-remove").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -733,7 +799,8 @@ function renderSkillChips() {
 function updateSkillInputState() {
   const input = document.getElementById("skillInputField");
   const atCap = selectedSkills.length >= MAX_SKILLS;
-  input.disabled = atCap;
+  const locked = !sectionEditing.about;
+  input.disabled = locked || atCap;
   input.placeholder = atCap ? `Maximum ${MAX_SKILLS} skills` : "Type a skill and press Enter";
 }
 function updateSkillSuggestions() {
@@ -1220,28 +1287,128 @@ document.getElementById("shareProfileBtn").addEventListener("click", async (e) =
   }
 });
 
-/* ---------- edit profile: single page, all fields at once ---------- */
-function openEditProfile() {
+/* ---------- edit profile: About you / Get in touch / Bio / Links each
+   start locked (read-only) and are edited + saved independently — Edit
+   unlocks just that section's fields, Save sends the change and locks it
+   again, Cancel discards and reverts to the last-saved values. Photo
+   keeps its own always-available "Upload photo" button (unchanged; it
+   already saves immediately, no lock/unlock needed). ---------- */
+function populateAboutSection() {
   document.getElementById("wizardName").value = me.display_name || "";
   document.getElementById("wizardHeadline").value = me.headline || "";
   selectedDisciplines = [...(me.discipline || [])];
-  renderDisciplineChips();
-  document.getElementById("disciplineErr").style.display = "none";
   selectedSkills = [...(me.skills || [])];
   document.getElementById("skillInputField").value = "";
-  renderSkillChips();
-  updateSkillInputState();
   document.getElementById("wizardYearsExperience").value = me.years_experience || "";
   document.getElementById("wizardAvailability").value = me.availability_status || "";
   document.getElementById("wizardLocation").value = me.location || "";
+  renderDisciplineChips();
+  renderSkillChips();
+  updateSkillInputState();
+}
+function populateContactSection() {
   const existingPhone = splitPhone(me.phone || "");
   document.getElementById("wizardPhoneCode").value = existingPhone.code || countryCodeForLocation(me.location);
   document.getElementById("wizardPhoneNumber").value = existingPhone.number;
   document.getElementById("wizardContactEmail").value = me.contact_email || "";
+}
+function populateBioSection() {
   document.getElementById("wizardBio").value = me.bio || "";
-  document.getElementById("wizardAvatar").src = me.photo_path || "logo.png";
+}
+function populateLinksSection() {
   renderLinkRows(me.links || []);
-  document.getElementById("editSaveErr").style.display = "none";
+}
+function populateAllSections() {
+  document.getElementById("wizardAvatar").src = me.photo_path || "logo.png";
+  populateAboutSection();
+  populateContactSection();
+  populateBioSection();
+  populateLinksSection();
+}
+function repopulateSection(section) {
+  if (section === "about") populateAboutSection();
+  else if (section === "contact") populateContactSection();
+  else if (section === "bio") populateBioSection();
+  else if (section === "links") populateLinksSection();
+}
+
+const EDIT_SECTIONS = ["about", "contact", "bio", "links"];
+function setSectionEditing(section, editing) {
+  sectionEditing[section] = editing;
+  const body = document.getElementById(section + "Section");
+  body.querySelectorAll("input, select, textarea").forEach(el => { el.disabled = !editing; });
+  document.getElementById(section + "EditBtn").style.display = editing ? "none" : "inline-flex";
+  document.getElementById(section + "Actions").style.display = editing ? "flex" : "none";
+  document.getElementById(section + "SaveErr").style.display = "none";
+  if (section === "about") {
+    renderDisciplineChips();
+    renderSkillChips();
+    updateSkillInputState();
+    document.getElementById("disciplineErr").style.display = "none";
+  }
+  if (section === "links") {
+    document.querySelectorAll("#linkRows .link-remove").forEach(btn => { btn.disabled = !editing; });
+    updateAddLinkBtn();
+  }
+}
+
+async function refreshMe() {
+  me = await api("/api/designers/me");
+}
+
+async function runSectionSave(section, saveFn) {
+  const errEl = document.getElementById(section + "SaveErr");
+  errEl.style.display = "none";
+  const btn = document.getElementById(section + "SaveBtn");
+  btn.disabled = true;
+  const originalText = btn.textContent;
+  btn.textContent = "Saving…";
+  try {
+    await saveFn();
+    await api("/api/designers/me/submit", {method: "POST"});
+    await refreshMe();
+    populateAllSections();
+    setSectionEditing(section, false);
+    renderDashboardHome();
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.style.display = "block";
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+EDIT_SECTIONS.forEach(section => {
+  document.getElementById(section + "EditBtn").addEventListener("click", () => setSectionEditing(section, true));
+  document.getElementById(section + "CancelBtn").addEventListener("click", () => {
+    repopulateSection(section);
+    setSectionEditing(section, false);
+  });
+});
+
+document.getElementById("aboutSaveBtn").addEventListener("click", () => {
+  const skillInput = document.getElementById("skillInputField");
+  if (skillInput.value.trim()) { addSkill(skillInput.value); skillInput.value = ""; }
+  if (!document.getElementById("wizardName").value.trim()) {
+    const errEl = document.getElementById("aboutSaveErr");
+    errEl.textContent = "Enter your name.";
+    errEl.style.display = "block";
+    return;
+  }
+  if (!selectedDisciplines.length) {
+    document.getElementById("disciplineErr").style.display = "block";
+    return;
+  }
+  runSectionSave("about", saveProfileFields);
+});
+document.getElementById("contactSaveBtn").addEventListener("click", () => runSectionSave("contact", saveProfileFields));
+document.getElementById("bioSaveBtn").addEventListener("click", () => runSectionSave("bio", saveProfileFields));
+document.getElementById("linksSaveBtn").addEventListener("click", () => runSectionSave("links", saveLinks));
+
+function openEditProfile() {
+  populateAllSections();
+  EDIT_SECTIONS.forEach(s => setSectionEditing(s, false));
   showDashPage("edit");
 }
 
@@ -1302,12 +1469,13 @@ function renderLinkRows(links) {
 function addLinkRow(label = "", url = "") {
   const box = document.getElementById("linkRows");
   if (box.children.length >= MAX_LINKS) return;
+  const locked = !sectionEditing.links;
   const row = document.createElement("div");
   row.className = "link-row";
   row.innerHTML = `
-    <input class="label-input" placeholder="Portfolio" value="${escapeHtml(label)}">
-    <input placeholder="https://..." value="${escapeHtml(url)}">
-    <button type="button" class="link-remove" aria-label="Remove link">&times;</button>
+    <input class="label-input" placeholder="Portfolio" value="${escapeHtml(label)}" ${locked ? "disabled" : ""}>
+    <input placeholder="https://..." value="${escapeHtml(url)}" ${locked ? "disabled" : ""}>
+    <button type="button" class="link-remove" aria-label="Remove link" ${locked ? "disabled" : ""}>&times;</button>
   `;
   row.querySelector(".link-remove").addEventListener("click", () => { row.remove(); updateAddLinkBtn(); });
   box.appendChild(row);
@@ -1315,7 +1483,8 @@ function addLinkRow(label = "", url = "") {
 }
 function updateAddLinkBtn() {
   const box = document.getElementById("linkRows");
-  document.getElementById("addLinkBtn").style.display = box.children.length >= MAX_LINKS ? "none" : "inline-block";
+  document.getElementById("addLinkBtn").style.display =
+    (sectionEditing.links && box.children.length < MAX_LINKS) ? "inline-block" : "none";
 }
 document.getElementById("addLinkBtn").addEventListener("click", () => addLinkRow());
 
@@ -1325,44 +1494,6 @@ async function saveLinks() {
     body: JSON.stringify({links: currentLinkRows()}),
   });
 }
-
-/* Save changes: one action saves profile fields + links, and explicitly
-   (re)submits for review — needed for a rejected profile to move back to
-   pending, since editing alone only does that automatically from
-   "approved" (see update_designer_profile's re-review comment). Native
-   HTML5 validation (required Name/Job function) runs on submit since
-   these are real <form>/type="submit" elements now, no manual
-   per-field checkValidity() polling needed. */
-document.getElementById("dashEditContent").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const errEl = document.getElementById("editSaveErr");
-  errEl.style.display = "none";
-  const skillInput = document.getElementById("skillInputField");
-  if (skillInput.value.trim()) { addSkill(skillInput.value); skillInput.value = ""; }
-  const disciplineErrEl = document.getElementById("disciplineErr");
-  if (!selectedDisciplines.length) {
-    disciplineErrEl.style.display = "block";
-    return;
-  }
-  disciplineErrEl.style.display = "none";
-  const btn = document.getElementById("editSaveBtn");
-  btn.disabled = true;
-  const originalText = btn.textContent;
-  btn.textContent = "Saving…";
-  try {
-    await saveProfileFields();
-    await saveLinks();
-    await api("/api/designers/me/submit", {method: "POST"});
-    await afterAuth();
-    showDashPage("home");
-  } catch (err) {
-    errEl.textContent = err.message;
-    errEl.style.display = "block";
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
-  }
-});
 
 /* ---------- delete account / logout ---------- */
 document.getElementById("deleteBtn").addEventListener("click", async () => {
