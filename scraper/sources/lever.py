@@ -26,6 +26,9 @@ def to_common(raw: dict, company: str, slug: str) -> dict:
     desc = html.unescape(re.sub(r"<[^>]+>", " ", raw.get("descriptionPlain", raw.get("description", "")) or ""))
     workplace = cats.get("commitment", "")  # sometimes carries "Remote"/"Full-time"
     loc = cats.get("location", "")
+    # `description` (unlike descriptionPlain, preferred above for
+    # classification) is real markup — kept intact for desc_format.py.
+    desc_html = html.unescape(raw.get("description", "") or "")
     return {
         "title": raw.get("text", "").strip(),
         "company": company,
@@ -33,6 +36,7 @@ def to_common(raw: dict, company: str, slug: str) -> dict:
         "location": loc,
         # Not truncated — see greenhouse.py's to_common for why.
         "body": f"{workplace} {desc}",
+        "body_html": desc_html,
         "url": raw.get("hostedUrl", raw.get("applyUrl", "")),
         "source": "Lever",
         "updated_at": "",  # Lever createdAt is epoch ms; run.py fills a date if empty

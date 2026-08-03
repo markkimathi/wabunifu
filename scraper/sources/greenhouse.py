@@ -33,7 +33,8 @@ def to_common(raw: dict, company: str, token: str) -> dict:
     # them, so tags never got stripped and leftover entities like &mdash;
     # broke pay-range extraction. unescape() twice, then strip tags.
     raw_content = raw.get("content", "") or ""
-    content = re.sub(r"<[^>]+>", " ", html.unescape(html.unescape(raw_content)))
+    unescaped = html.unescape(html.unescape(raw_content))
+    content = re.sub(r"<[^>]+>", " ", unescaped)
     loc = (raw.get("location") or {}).get("name", "")
     return {
         "title": raw.get("title", "").strip(),
@@ -46,6 +47,10 @@ def to_common(raw: dict, company: str, token: str) -> dict:
         # extract_salary() ever saw them. This body is only used internally
         # for classification/salary extraction, never shown to users.
         "body": content,
+        # Real markup, kept intact for desc_format.py to turn into the
+        # structured HTML actually shown to users (see body's comment
+        # above for why this stays separate from the flattened text).
+        "body_html": unescaped,
         "url": raw.get("absolute_url", ""),
         "source": "Greenhouse",
         "updated_at": raw.get("updated_at", "")[:10],

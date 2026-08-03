@@ -11,7 +11,6 @@ Flow:  fetch -> filter to design roles -> tag discipline/level/eligibility
 from __future__ import annotations
 import argparse
 import json
-import re
 import sys
 from datetime import date, datetime
 from pathlib import Path
@@ -23,14 +22,9 @@ from pipeline.classify import classify_discipline, classify_level
 from pipeline.eligibility import infer_eligibility
 from pipeline.normalize import normalize_work_type, clean_location, guess_country, extract_salary
 from pipeline.dedupe import dedupe
+from desc_format import format_description
 
 OUT = Path(__file__).parent.parent / "web" / "jobs.json"
-
-# `body` is already fetched in full for salary/eligibility classification
-# (see greenhouse.py's to_common) — reuse it as the public description
-# instead of re-fetching anything. Capped generously; this is a display
-# limit, not a truncation of what classification already saw in full.
-MAX_DESC_CHARS = 6000
 
 
 def build_job(common: dict) -> Job | None:
@@ -54,12 +48,8 @@ def build_job(common: dict) -> Job | None:
     if not posted and common.get("created_ms"):
         posted = datetime.fromtimestamp(common["created_ms"] / 1000).date().isoformat()
 
-    desc = re.sub(r"\s+", " ", body).strip()
-    if len(desc) > MAX_DESC_CHARS:
-        # Trim to the last whole word inside the cap rather than slicing
-        # mid-word — a hard cut reads as broken/buggy at the display layer.
-        desc = desc[:MAX_DESC_CHARS].rsplit(" ", 1)[0] + "…"
-    desc = desc or None
+    body_html = common.get("body_html", "")
+    desc_html, desc_text = format_description(body_html or body, is_html=bool(body_html))
 
     return Job(
         title=title.strip(),
@@ -73,7 +63,8 @@ def build_job(common: dict) -> Job | None:
         level=classify_level(title),
         eligibility=eligibility,
         salary=salary,
-        desc=desc,
+        desc=desc_html or None,
+        desc_text=desc_text or None,
         posted_at=posted or date.today().isoformat(),
     )
 

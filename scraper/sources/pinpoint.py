@@ -48,7 +48,8 @@ def _extract_location(description: str) -> str:
 
 def to_common(raw: dict, company: str, token: str) -> dict:
     """Map a Pinpoint RSS item into the neutral shape the pipeline consumes."""
-    body = html.unescape(re.sub(r"<[^>]+>", " ", raw.get("content") or raw.get("description") or ""))
+    raw_html = raw.get("content") or raw.get("description") or ""
+    body = html.unescape(re.sub(r"<[^>]+>", " ", raw_html))
     return {
         "title": raw.get("title", ""),
         "company": company,
@@ -56,6 +57,8 @@ def to_common(raw: dict, company: str, token: str) -> dict:
         "location": _extract_location(raw.get("description", "")),
         # Not truncated — see greenhouse.py's to_common for why.
         "body": body,
+        # Real markup (RSS content:encoded), kept intact for desc_format.py.
+        "body_html": html.unescape(raw_html),
         "url": raw.get("link", ""),
         "source": "Pinpoint",
         "updated_at": _parse_rfc822_date(raw.get("pubDate", "")),

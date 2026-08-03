@@ -236,8 +236,26 @@
   .job-section h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
     color:var(--faint);margin:0 0 14px}
   /* Optimal reading measure for the actual prose, independent of the wider
-     card/actions above — this is the "optimize for reading" requirement. */
-  .job-desc{font-size:15.5px;line-height:1.7;color:var(--ink);white-space:pre-wrap;max-width:74ch;margin:0}
+     card/actions above — this is the "optimize for reading" requirement.
+     desc is our own sanitized/reformatted HTML (see scraper/desc_format.py),
+     never raw source markup, so it's safe to render unescaped — this block
+     is what gives it a clear typographic hierarchy instead of one flat run. */
+  .job-desc{font-size:15.5px;line-height:1.7;color:var(--ink);max-width:74ch}
+  .job-desc > *:first-child{margin-top:0}
+  .job-desc > *:last-child{margin-bottom:0}
+  .job-desc h2{font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--ink);margin:28px 0 10px}
+  .job-desc h3{font-size:16.5px;font-weight:700;color:var(--ink);margin:24px 0 8px}
+  .job-desc h4{font-size:14.5px;font-weight:700;color:var(--ink);margin:20px 0 6px}
+  .job-desc p{margin:0 0 16px}
+  .job-desc ul,.job-desc ol{margin:0 0 16px;padding-left:22px}
+  .job-desc li{margin-bottom:7px;line-height:1.6}
+  .job-desc li:last-child{margin-bottom:0}
+  .job-desc li > ul,.job-desc li > ol{margin-top:7px}
+  .job-desc strong,.job-desc b{font-weight:700}
+  .job-desc em,.job-desc i{font-style:italic}
+  .job-desc a{color:var(--brand);font-weight:600;text-decoration:none}
+  .job-desc a:hover{text-decoration:underline}
+  .job-desc hr{border:0;border-top:1px solid var(--hairline);margin:24px 0}
   .job-source{font-size:13px;color:var(--muted);margin:0}
   .job-source a{color:var(--brand);font-weight:600;text-decoration:none}
   .job-source a:hover{text-decoration:underline}
@@ -522,7 +540,7 @@ function jobCardHtml(j) {
       ${j.desc ? `
       <div class="job-section">
         <h2>Job description</h2>
-        <p class="job-desc">${escapeHtml(j.desc)}</p>
+        <div class="job-desc">${j.desc}</div>
       </div>` : ""}
       ${(j.src || j.url) ? `
       <div class="job-section">

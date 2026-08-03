@@ -27,7 +27,8 @@ def fetch(token: str) -> list[dict]:
 
 def to_common(raw: dict, company: str, token: str) -> dict:
     """Map an Ashby job into the neutral shape the pipeline consumes."""
-    desc = html.unescape(re.sub(r"<[^>]+>", " ", raw.get("descriptionHtml", "") or ""))
+    raw_html = raw.get("descriptionHtml", "") or ""
+    desc = html.unescape(re.sub(r"<[^>]+>", " ", raw_html))
     workplace = raw.get("workplaceType", "") or ""
     remote_flag = bool(raw.get("isRemote"))
     return {
@@ -37,6 +38,8 @@ def to_common(raw: dict, company: str, token: str) -> dict:
         "location": raw.get("location", ""),
         # Not truncated — see greenhouse.py's to_common for why.
         "body": f"{workplace} {desc}",
+        # Real markup, kept intact for desc_format.py.
+        "body_html": html.unescape(raw_html),
         "url": raw.get("jobUrl", raw.get("applyUrl", "")),
         "source": "Ashby",
         "updated_at": (raw.get("publishedAt") or "")[:10],

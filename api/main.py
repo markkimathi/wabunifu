@@ -35,6 +35,7 @@ from pydantic import BaseModel, field_validator
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "scraper"))
 from models import Job, DISCIPLINES, ELIGIBILITY, MAX_AGE_DAYS  # noqa: E402  (reuse the canonical schema)
+from desc_format import format_description  # noqa: E402
 
 from .db import (  # noqa: E402
     init_db, insert_submission, list_submissions, get_submission, set_status,
@@ -409,15 +410,19 @@ def _combined_jobs() -> tuple[list[dict], str | None]:
         generated_at = data.get("generated_at")
 
     approved = list_submissions(status="approved")
-    employer_jobs = [
-        Job(
-            title=s["title"], company=s["company"], url=s["url"], source="Direct",
-            location=s["location"], work_type=s["work_type"], discipline=s["discipline"],
-            level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
-            desc=s.get("description"), posted_at=s["created_at"][:10],
-        ).to_web()
-        for s in approved
-    ]
+    employer_jobs = []
+    for s in approved:
+        # Employer submissions come from a plain <textarea> — always
+        # heuristically reformatted, never treated as real HTML.
+        desc_html, desc_text = format_description(s.get("description", ""), is_html=False)
+        employer_jobs.append(
+            Job(
+                title=s["title"], company=s["company"], url=s["url"], source="Direct",
+                location=s["location"], work_type=s["work_type"], discipline=s["discipline"],
+                level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
+                desc=desc_html or None, desc_text=desc_text or None, posted_at=s["created_at"][:10],
+            ).to_web()
+        )
 
     # Enforced again here (not just at scrape time) so the cutoff holds live
     # even if a scrape run is skipped, and so it also applies to employer

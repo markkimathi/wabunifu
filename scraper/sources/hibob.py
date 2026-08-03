@@ -34,6 +34,16 @@ def to_common(raw: dict, company: str, token: str) -> dict:
     parts = [raw.get(k, "") for k in ("description", "requirements", "responsibilities")]
     body = html.unescape(re.sub(r"<[^>]+>", " ", " ".join(p or "" for p in parts)))
     workspace = raw.get("workspaceType", "") or ""
+    # Unlike a single combined content blob, HiBob splits real markup
+    # across three separate fields — that's free structure the other
+    # sources don't hand us, so surface it as its own headed sections
+    # instead of losing the split when everything gets concatenated.
+    labeled = [
+        ("Description", raw.get("description", "")),
+        ("Requirements", raw.get("requirements", "")),
+        ("Responsibilities", raw.get("responsibilities", "")),
+    ]
+    body_html = "".join(f"<h3>{label}</h3>{html.unescape(text)}" for label, text in labeled if text)
     return {
         "title": raw.get("title", "").strip(),
         "company": company,
@@ -41,6 +51,7 @@ def to_common(raw: dict, company: str, token: str) -> dict:
         "location": raw.get("site", "") or raw.get("country", ""),
         # Not truncated — see greenhouse.py's to_common for why.
         "body": f"{workspace} {body}",
+        "body_html": body_html,
         "url": f"https://{token}.careers.hibob.com/jobs/{raw.get('id', '')}/apply",
         "source": "HiBob",
         "updated_at": (raw.get("publishedAt") or "")[:10],

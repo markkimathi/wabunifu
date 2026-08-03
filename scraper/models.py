@@ -35,7 +35,8 @@ class Job:
     level: str = "Mid"       # Junior | Mid | Senior | Lead
     eligibility: str = "check"   # one of ELIGIBILITY
     salary: str | None = None    # raw string if disclosed, else None
-    desc: str | None = None      # role description, if the source provides one
+    desc: str | None = None      # role description as safe structured HTML — see desc_format.py
+    desc_text: str | None = None # short plain-text teaser derived from desc, for card previews
     posted_at: str = ""      # ISO date "YYYY-MM-DD"
     id: str = field(default="")
 
@@ -75,6 +76,7 @@ class Job:
             "days": self.days_ago(),
             "url": self.url,
             "desc": self.desc,
+            "desc_text": self.desc_text,
         }
 
     def to_dict(self) -> dict:

@@ -793,6 +793,9 @@ function hasPay(j){ return j.pay!=="Not disclosed"; }
 function fallbackDesc(j){
   return `${j.level} ${j.cat.toLowerCase()} role at ${j.co}, ${j.work.toLowerCase()}.`;
 }
+function escapeHtml(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 
 function render(){
   let rows = JOBS.filter(passes);
@@ -842,7 +845,7 @@ function render(){
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg>
         </a>
       </div>
-      <p class="c-desc">${j.desc || fallbackDesc(j)}</p>
+      <p class="c-desc">${escapeHtml(j.desc_text || fallbackDesc(j))}</p>
       <div class="c-tags">
         <span class="elig ${e.cls}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
