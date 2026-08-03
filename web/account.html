@@ -455,11 +455,13 @@
     font:inherit;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:999px;cursor:pointer}
   .chip-select .chip.active{background:var(--brand);border-color:var(--brand);color:#fff}
   .chip-select .chip:disabled{opacity:.4;cursor:not-allowed}
+  .tag-input-wrap{position:relative}
   .tag-input{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:9px 12px;
     border:1px solid var(--hairline-strong);border-radius:10px;background:var(--surface)}
   .tag-input input{flex:1;min-width:140px;border:0;outline:0;background:none;font:inherit;
     font-size:14px;color:var(--ink);padding:4px}
   .tag-input input:disabled{opacity:.5}
+  .skill-chips{display:flex;flex-wrap:wrap;gap:6px}
   .skill-chip{display:inline-flex;align-items:center;gap:5px;background:var(--brand-soft);color:var(--brand);
     font-size:12.5px;font-weight:700;padding:5px 6px 5px 12px;border-radius:999px}
   .skill-remove{background:none;border:0;color:inherit;cursor:pointer;font-size:15px;line-height:1;padding:0 3px}
@@ -672,11 +674,13 @@
                   <p class="err" id="disciplineErr" style="display:none">Choose at least one job function.</p>
                 </label>
                 <label class="field"><span>Skills <span class="hint">(up to 7 — pick from the list or add your own)</span></span>
-                  <div class="tag-input" id="skillTagInput">
-                    <div class="skill-chips" id="skillChips"></div>
-                    <input type="text" id="skillInputField" list="skillSuggestions" placeholder="Type a skill and press Enter" autocomplete="off" disabled>
+                  <div class="tag-input-wrap">
+                    <div class="tag-input" id="skillTagInput">
+                      <div class="skill-chips" id="skillChips"></div>
+                      <input type="text" id="skillInputField" placeholder="Type a skill and press Enter" autocomplete="off" disabled>
+                    </div>
+                    <div class="loc-suggest" id="skillSuggest" role="listbox"></div>
                   </div>
-                  <datalist id="skillSuggestions"></datalist>
                 </label>
                 <label class="field"><span>Years of experience <span class="hint">(optional)</span></span>
                   <input type="text" id="wizardYearsExperience" maxlength="20" placeholder="e.g. 5+ years" disabled>
@@ -831,8 +835,11 @@ function renderDisciplineChips() {
 }
 renderDisciplineChips();
 
-/* ---------- skills: tag input with datalist suggestions, capped at 7,
-   free text allowed so a designer can add one that isn't in the list ---------- */
+/* ---------- skills: tag input capped at 7, with the same custom
+   suggestion-dropdown behavior as the location field (filter-as-you-type,
+   click or arrow keys + Enter to choose, Escape/outside-click to close)
+   — free text is still allowed so a designer can add one that isn't
+   in the list. ---------- */
 const MAX_SKILLS = 7;
 const DESIGN_SKILLS = ["Figma","Sketch","Adobe XD","Photoshop","Illustrator","InDesign","After Effects","Premiere Pro","Blender","Cinema 4D","Framer","Webflow","InVision","Principle","ProtoPie","Miro","Wireframing","Prototyping","User Research","Usability Testing","User Interviews","A/B Testing","Information Architecture","Interaction Design","Visual Design","Typography","Color Theory","Design Systems","Design Tokens","Accessibility","Responsive Design","Mobile Design","Web Design","Branding","Logo Design","Illustration","Icon Design","3D Design","Motion Graphics","UI Animation","Data Visualization","Print Design","Packaging Design","Design Thinking","HTML/CSS","Copywriting"];
 let selectedSkills = [];
@@ -849,7 +856,6 @@ function renderSkillChips() {
       updateSkillInputState();
     });
   });
-  updateSkillSuggestions();
 }
 function updateSkillInputState() {
   const input = document.getElementById("skillInputField");
@@ -857,11 +863,6 @@ function updateSkillInputState() {
   const locked = !sectionEditing.about;
   input.disabled = locked || atCap;
   input.placeholder = atCap ? `Maximum ${MAX_SKILLS} skills` : "Type a skill and press Enter";
-}
-function updateSkillSuggestions() {
-  const list = document.getElementById("skillSuggestions");
-  const remaining = DESIGN_SKILLS.filter(s => !selectedSkills.some(sel => sel.toLowerCase() === s.toLowerCase()));
-  list.innerHTML = remaining.map(s => `<option value="${escapeHtml(s)}"></option>`).join("");
 }
 function addSkill(raw) {
   const value = raw.trim().slice(0, 40);
@@ -872,20 +873,70 @@ function addSkill(raw) {
   updateSkillInputState();
 }
 const skillInputField = document.getElementById("skillInputField");
-skillInputField.addEventListener("keydown", (e) => {
-  if (e.key === "Enter" || e.key === ",") {
-    e.preventDefault();
-    addSkill(skillInputField.value);
-    skillInputField.value = "";
-  } else if (e.key === "Backspace" && !skillInputField.value && selectedSkills.length) {
-    selectedSkills.pop();
-    renderSkillChips();
-    updateSkillInputState();
+(function(){
+  const box = document.getElementById("skillSuggest");
+  let items = [];
+  let activeIdx = -1;
+
+  function highlight(){
+    Array.from(box.children).forEach((el, i) => el.classList.toggle("-active", i === activeIdx));
   }
-});
-skillInputField.addEventListener("blur", () => {
-  if (skillInputField.value.trim()) { addSkill(skillInputField.value); skillInputField.value = ""; }
-});
+  function close(){
+    items = []; activeIdx = -1;
+    box.classList.remove("-open");
+    box.innerHTML = "";
+  }
+  function open(matches){
+    items = matches;
+    activeIdx = -1;
+    if(!matches.length){ close(); return; }
+    box.innerHTML = matches.map((m, i) => `<button type="button" class="loc-opt" data-i="${i}" role="option">${escapeHtml(m)}</button>`).join("");
+    box.classList.add("-open");
+  }
+  function filter(q){
+    q = q.trim().toLowerCase();
+    if(!q){ close(); return; }
+    const remaining = DESIGN_SKILLS.filter(s => !selectedSkills.some(sel => sel.toLowerCase() === s.toLowerCase()));
+    open(remaining.filter(s => s.toLowerCase().includes(q)).slice(0, 8));
+  }
+  function choose(i){
+    addSkill(items[i]);
+    skillInputField.value = "";
+    close();
+    skillInputField.focus();
+  }
+
+  skillInputField.addEventListener("input", () => filter(skillInputField.value));
+  skillInputField.addEventListener("focus", () => { if(skillInputField.value.trim()) filter(skillInputField.value); });
+  box.addEventListener("mousedown", e => {
+    const btn = e.target.closest(".loc-opt");
+    if(btn) choose(+btn.dataset.i);
+  });
+  skillInputField.addEventListener("keydown", (e) => {
+    if(box.classList.contains("-open")){
+      if(e.key === "ArrowDown"){ e.preventDefault(); activeIdx = Math.min(activeIdx + 1, items.length - 1); highlight(); return; }
+      if(e.key === "ArrowUp"){ e.preventDefault(); activeIdx = Math.max(activeIdx - 1, 0); highlight(); return; }
+      if(e.key === "Escape"){ close(); return; }
+      if(e.key === "Enter" && activeIdx >= 0){ e.preventDefault(); choose(activeIdx); return; }
+    }
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      addSkill(skillInputField.value);
+      skillInputField.value = "";
+      close();
+    } else if (e.key === "Backspace" && !skillInputField.value && selectedSkills.length) {
+      selectedSkills.pop();
+      renderSkillChips();
+      updateSkillInputState();
+    }
+  });
+  skillInputField.addEventListener("blur", () => {
+    if (skillInputField.value.trim()) { addSkill(skillInputField.value); skillInputField.value = ""; }
+  });
+  document.addEventListener("click", e => {
+    if(!e.target.closest(".tag-input-wrap")) close();
+  });
+})();
 renderSkillChips();
 updateSkillInputState();
 
