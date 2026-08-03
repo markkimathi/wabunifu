@@ -207,6 +207,9 @@
   .pc-availability.-available{background:var(--green-soft);color:var(--green-ink)}
   .pc-availability.-open{background:var(--amber-soft);color:var(--amber)}
   .pc-availability.-unavailable{background:var(--hairline);color:var(--muted)}
+  .pc-skills{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+  .pc-skill{display:inline-block;font-size:12px;font-weight:600;padding:4px 11px;border-radius:999px;
+    background:var(--hairline);color:var(--muted)}
   .pc-contact{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
   .pc-contact a{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;font-weight:600;
     padding:9px 16px;border-radius:999px;border:1px solid var(--hairline-strong);color:var(--ink);
@@ -402,9 +405,10 @@ async function boot() {
             ${d.headline ? `<p class="pc-headline">${escapeHtml(d.headline)}</p>` : ""}
             <p class="pc-meta">${[d.location, d.years_experience].filter(Boolean).map(escapeHtml).join(" · ")}</p>
             <div class="pc-badges">
-              ${d.discipline ? `<span class="pc-discipline">${escapeHtml(d.discipline)}</span>` : ""}
+              ${(d.discipline || []).map(x => `<span class="pc-discipline">${escapeHtml(x)}</span>`).join("")}
               ${availability ? `<span class="pc-availability ${availability.cls}">${availability.label}</span>` : ""}
             </div>
+            ${(d.skills && d.skills.length) ? `<div class="pc-skills">${d.skills.map(s => `<span class="pc-skill">${escapeHtml(s)}</span>`).join("")}</div>` : ""}
           </div>
           ${contactRows.length ? `<div class="pc-contact">${contactRows.join("")}</div>` : ""}
           ${d.bio ? `<p class="pc-bio -clamped">${escapeHtml(d.bio)}</p><button type="button" class="pc-bio-toggle">Read more</button>` : ""}

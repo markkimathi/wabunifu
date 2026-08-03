@@ -25,6 +25,7 @@ GeoIP lookup, see geoip.py, then the IP itself is discarded). Rows older than
 ANALYTICS_RETENTION_DAYS are deleted on startup; see cleanup_stale_analytics.
 """
 from __future__ import annotations
+import json
 import os
 import re
 import secrets
@@ -106,6 +107,7 @@ CREATE TABLE IF NOT EXISTS designers (
   headline TEXT NOT NULL DEFAULT '',
   years_experience TEXT NOT NULL DEFAULT '',
   availability_status TEXT NOT NULL DEFAULT '',
+  skills TEXT NOT NULL DEFAULT '[]',
   email_verified INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
@@ -151,6 +153,7 @@ _MIGRATIONS = [
     "ALTER TABLE designers ADD COLUMN headline TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN years_experience TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN availability_status TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN skills TEXT NOT NULL DEFAULT '[]'",
 ]
 
 
@@ -305,6 +308,21 @@ def get_designer_by_handle(handle: str) -> dict | None:
     return dict(row) if row else None
 
 
+def parse_multi_field(value: str | None) -> list[str]:
+    """discipline/skills are stored as a JSON array of strings. Falls back to
+    treating the raw value as a single legacy item for rows written before
+    either field held more than one value (a plain discipline string)."""
+    if not value:
+        return []
+    try:
+        parsed = json.loads(value)
+    except (json.JSONDecodeError, TypeError):
+        return [value]
+    if isinstance(parsed, list):
+        return [str(x) for x in parsed]
+    return [value]
+
+
 class HandleTaken(Exception):
     """Raised by update_designer_profile when another designer already
     holds the requested handle — kept as a distinct exception so main.py
@@ -312,9 +330,10 @@ class HandleTaken(Exception):
 
 
 def update_designer_profile(
-    designer_id: int, *, display_name: str, bio: str, discipline: str, location: str,
+    designer_id: int, *, display_name: str, bio: str, discipline: list[str], location: str,
     phone: str = "", contact_email: str = "",
     headline: str = "", years_experience: str = "", availability_status: str = "",
+    skills: list[str] | None = None,
 ) -> None:
     c = _conn()
     # Editing an approved profile sends it back for re-review, same as a job
@@ -325,9 +344,10 @@ def update_designer_profile(
     c.execute(
         "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, "
         "phone = ?, contact_email = ?, headline = ?, years_experience = ?, "
-        "availability_status = ?, status = ? WHERE id = ?",
-        (display_name, bio, discipline, location, phone, contact_email,
-         headline, years_experience, availability_status, new_status, designer_id),
+        "availability_status = ?, skills = ?, status = ? WHERE id = ?",
+        (display_name, bio, json.dumps(discipline), location, phone, contact_email,
+         headline, years_experience, availability_status, json.dumps(skills or []),
+         new_status, designer_id),
     )
     c.commit()
     c.close()
@@ -400,17 +420,17 @@ def list_designers(status: str | None = None) -> list[dict]:
 
 def list_approved_designers(discipline: str | None = None) -> list[dict]:
     c = _conn()
-    if discipline:
-        rows = c.execute(
-            "SELECT * FROM designers WHERE status = 'approved' AND discipline = ? ORDER BY created_at DESC",
-            (discipline,),
-        ).fetchall()
-    else:
-        rows = c.execute(
-            "SELECT * FROM designers WHERE status = 'approved' ORDER BY created_at DESC"
-        ).fetchall()
+    rows = c.execute(
+        "SELECT * FROM designers WHERE status = 'approved' ORDER BY created_at DESC"
+    ).fetchall()
     c.close()
-    return [dict(r) for r in rows]
+    result = [dict(r) for r in rows]
+    # discipline is stored as a JSON array (a designer can have up to 5), so
+    # this can no longer be a SQL equality filter — match if the requested
+    # value is any one of the designer's disciplines.
+    if discipline:
+        result = [r for r in result if discipline in parse_multi_field(r.get("discipline"))]
+    return result
 
 
 def delete_designer(designer_id: int) -> None:

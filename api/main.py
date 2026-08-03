@@ -40,7 +40,7 @@ from .db import (  # noqa: E402
     init_db, insert_submission, list_submissions, get_submission, set_status,
     log_pageview, log_search, log_apply_click, get_analytics_summary, count_profile_views,
     create_designer, get_designer, get_designer_by_email, get_designer_by_handle,
-    update_designer_profile, update_designer_handle, HandleTaken,
+    update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
     list_designers, list_approved_designers, delete_designer, replace_designer_links,
     list_designer_links, create_session, get_session, delete_session, delete_sessions_for_designer,
@@ -57,6 +57,8 @@ WORK_TYPES = {"Remote", "Hybrid", "On-site"}
 LEVELS = {"Junior", "Mid", "Senior", "Lead"}
 MAX_LINKS = 8
 AVAILABILITY_STATUSES = ["Available", "Open to offers", "Not available"]
+MAX_DESIGNER_DISCIPLINES = 5
+MAX_DESIGNER_SKILLS = 7
 
 # Designer profile handles (the @name used in public profile URLs instead of
 # a numeric id). Must start with a letter — this also guarantees a handle
@@ -233,7 +235,8 @@ class VerifyCodeIn(BaseModel):
 class ProfileUpdate(BaseModel):
     display_name: str
     bio: str = ""
-    discipline: str = ""
+    discipline: list[str] = []
+    skills: list[str] = []
     location: str = ""
     phone: str = ""
     contact_email: str = ""
@@ -247,6 +250,33 @@ class ProfileUpdate(BaseModel):
         if not v or not v.strip():
             raise ValueError("enter your name")
         return v.strip()
+
+    @field_validator("discipline")
+    @classmethod
+    def _valid_discipline_list(cls, v: list[str]) -> list[str]:
+        cleaned = []
+        for item in v:
+            item = item.strip()
+            if item and item not in cleaned:
+                cleaned.append(item)
+        if len(cleaned) > MAX_DESIGNER_DISCIPLINES:
+            raise ValueError(f"choose up to {MAX_DESIGNER_DISCIPLINES} job functions")
+        return cleaned
+
+    @field_validator("skills")
+    @classmethod
+    def _valid_skills_list(cls, v: list[str]) -> list[str]:
+        cleaned = []
+        seen = set()
+        for item in v:
+            item = item.strip()[:40]
+            key = item.lower()
+            if item and key not in seen:
+                seen.add(key)
+                cleaned.append(item)
+        if len(cleaned) > MAX_DESIGNER_SKILLS:
+            raise ValueError(f"choose up to {MAX_DESIGNER_SKILLS} skills")
+        return cleaned
 
     @field_validator("phone")
     @classmethod
@@ -476,12 +506,13 @@ def _designer_public(d: dict) -> dict:
     so employers can reach them, same as the rest of the profile."""
     return {
         "id": d["id"], "display_name": d["display_name"], "bio": d["bio"],
-        "discipline": d["discipline"], "location": d["location"],
+        "discipline": parse_multi_field(d["discipline"]), "location": d["location"],
         "photo_path": d["photo_path"], "created_at": d["created_at"],
         "phone": d.get("phone", ""), "contact_email": d.get("contact_email", ""),
         "handle": d.get("handle", ""),
         "headline": d.get("headline", ""), "years_experience": d.get("years_experience", ""),
         "availability_status": d.get("availability_status", ""),
+        "skills": parse_multi_field(d.get("skills")),
         "links": list_designer_links(d["id"]),
     }
 
@@ -580,7 +611,8 @@ def designer_stats(designer: dict = Depends(require_designer)):
 
 @app.put("/api/designers/me")
 def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_designer)):
-    if payload.discipline and payload.discipline not in DISCIPLINES:
+    bad = [d for d in payload.discipline if d not in DISCIPLINES]
+    if bad:
         raise HTTPException(400, f"discipline must be one of {DISCIPLINES}")
     if payload.availability_status and payload.availability_status not in AVAILABILITY_STATUSES:
         raise HTTPException(400, f"availability_status must be one of {AVAILABILITY_STATUSES}")
@@ -589,7 +621,7 @@ def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_
         discipline=payload.discipline, location=payload.location.strip()[:200],
         phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
         headline=payload.headline, years_experience=payload.years_experience,
-        availability_status=payload.availability_status,
+        availability_status=payload.availability_status, skills=payload.skills,
     )
     return {"ok": True}
 
@@ -649,7 +681,12 @@ def designers_directory(discipline: str = ""):
 @app.get("/api/admin/designers")
 def admin_list_designers(status: str = "pending", _: None = Depends(require_admin)):
     rows = list_designers(status=status if status != "all" else None)
-    return [{**d, "links": list_designer_links(d["id"])} for d in rows]
+    return [{
+        **d,
+        "discipline": parse_multi_field(d["discipline"]),
+        "skills": parse_multi_field(d.get("skills")),
+        "links": list_designer_links(d["id"]),
+    } for d in rows]
 
 
 @app.post("/api/admin/designers/{designer_id}/approve")

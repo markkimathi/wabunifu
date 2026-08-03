@@ -880,7 +880,8 @@ function renderDesigners(rows, status) {
     <div class="item" data-id="${d.id}">
       <div>
         <h3>${escapeHtml(d.display_name)}${d.handle ? ` <span style="font-weight:400;color:var(--muted)">@${escapeHtml(d.handle)}</span>` : ""}</h3>
-        <p class="meta"><b>${escapeHtml(d.email)}</b> · ${escapeHtml(d.discipline || "No discipline set")} · ${escapeHtml(d.location || "No location set")}</p>
+        <p class="meta"><b>${escapeHtml(d.email)}</b> · ${escapeHtml((d.discipline && d.discipline.length) ? d.discipline.join(", ") : "No discipline set")} · ${escapeHtml(d.location || "No location set")}</p>
+        ${d.skills && d.skills.length ? `<p class="meta">Skills: ${escapeHtml(d.skills.join(", "))}</p>` : ""}
         <div class="badges">
           <span>${d.email_verified ? "Email verified" : "Email not verified"}</span>
         </div>
