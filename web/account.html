@@ -379,9 +379,10 @@
      reached via the sidebar (no more multi-step wizard takeover) ---- */
   #dashEditContent{display:none}
   fieldset{border:0;padding:0;margin:0;min-width:0}
-  .edit-section{display:flex;flex-direction:column;gap:18px;padding:22px 0;border-bottom:1px solid var(--hairline)}
-  .edit-section:first-of-type{padding-top:0}
-  .edit-section:last-of-type{border-bottom:0}
+  .edit-section{display:flex;flex-direction:column;gap:18px;padding:22px 24px;
+    border:1px solid var(--hairline);border-radius:var(--radius);background:var(--surface);
+    box-shadow:var(--shadow);margin-bottom:18px}
+  .edit-section:last-of-type{margin-bottom:0}
   .step-title{font-size:16px;font-weight:800;margin:0}
   .step-sub{font-size:13.5px;color:var(--muted);margin:6px 0 0}
 
