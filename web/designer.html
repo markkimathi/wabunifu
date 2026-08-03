@@ -199,7 +199,19 @@
     margin-top:-52px;background:var(--hairline);border:4px solid var(--surface);box-shadow:var(--shadow);
     position:relative;z-index:1}
   .pc-name-block{margin:14px 0 22px}
+  .pc-name-row{display:flex;align-items:center;gap:10px}
   .pc-name{font-size:24px;font-weight:800;margin:0;letter-spacing:-.02em;line-height:1.2}
+  .pc-copy-btn{position:relative;flex:none;width:32px;height:32px;padding:0;border-radius:50%;
+    background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
+    display:grid;place-items:center;color:var(--muted);
+    transition:border-color .25s var(--ease-expo),color .25s var(--ease-expo)}
+  .pc-copy-btn:hover{border-color:var(--brand);color:var(--brand)}
+  .pc-copy-btn.-copied{border-color:var(--green-ink);color:var(--green-ink)}
+  .pc-copy-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);
+    background:var(--ink);color:var(--canvas);font-size:11.5px;font-weight:700;padding:4px 9px;
+    border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;
+    transition:opacity .2s var(--ease-expo),transform .2s var(--ease-expo)}
+  .pc-copy-btn.-copied .pc-copy-tip{opacity:1;transform:translateX(-50%) translateY(0)}
   .pc-headline{font-size:14.5px;font-weight:600;color:var(--muted);margin:3px 0 0}
   .pc-meta{font-size:14px;color:var(--muted);margin:4px 0 0}
   .pc-meta-loc{display:inline-flex;align-items:center;gap:4px;vertical-align:middle}
@@ -349,6 +361,8 @@ const AVAILABILITY_META = {
 };
 
 const ICON_LOCATION = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
+const ICON_COPY = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const ICON_CHECK = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
 
 /* Years of experience is free text (see account.html's wizard) — strip any
    trailing "year(s)" the designer already typed, then always append the
@@ -405,7 +419,13 @@ async function boot() {
         <div class="pc-body">
           <img class="pc-avatar" src="${d.photo_path ? escapeHtml(d.photo_path) : '/avatars/avatar-1.png'}" alt="">
           <div class="pc-name-block">
-            <p class="pc-name">${escapeHtml(d.display_name)}</p>
+            <div class="pc-name-row">
+              <p class="pc-name">${escapeHtml(d.display_name)}</p>
+              <button type="button" class="pc-copy-btn" id="pcCopyBtn" aria-label="Copy profile link">
+                ${ICON_COPY}
+                <span class="pc-copy-tip">Copied!</span>
+              </button>
+            </div>
             ${d.headline ? `<p class="pc-headline">${escapeHtml(d.headline)}</p>` : ""}
             ${d.years_experience ? `<p class="pc-meta">${formatYearsExperience(d.years_experience)}</p>` : ""}
             ${d.location ? `<p class="pc-meta"><span class="pc-meta-loc">${ICON_LOCATION}${escapeHtml(d.location)}</span></p>` : ""}
@@ -428,6 +448,36 @@ async function boot() {
         </div>
       </div>
     `;
+    const copyBtn = document.getElementById("pcCopyBtn");
+    function legacyCopy(text) {
+      const ta = document.createElement("textarea");
+      ta.value = text;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand("copy"); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+    copyBtn.addEventListener("click", () => {
+      const showCopied = () => {
+        copyBtn.classList.add("-copied");
+        copyBtn.innerHTML = `${ICON_CHECK}<span class="pc-copy-tip">Copied!</span>`;
+        setTimeout(() => {
+          copyBtn.classList.remove("-copied");
+          copyBtn.innerHTML = `${ICON_COPY}<span class="pc-copy-tip">Copied!</span>`;
+        }, 1600);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(location.href).then(showCopied, () => {
+          legacyCopy(location.href);
+          showCopied();
+        });
+      } else {
+        legacyCopy(location.href);
+        showCopied();
+      }
+    });
   } catch (e) {
     main.innerHTML = `<div class="empty"><h3>Profile not found</h3><p>This designer's profile isn't available. <a href="/designers">Browse all designers</a></p></div>`;
   }
