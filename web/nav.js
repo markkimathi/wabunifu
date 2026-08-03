@@ -94,7 +94,7 @@
         return res.json();
       })
       .then(function(me){
-        document.getElementById("acctAvatar").src = me.photo_path || "/logo.png";
+        document.getElementById("acctAvatar").src = me.photo_path || "/avatars/avatar-1.png";
         document.querySelectorAll('a[href="/account"]').forEach(function(a){
           if(menu.contains(a) || (mmAccount && mmAccount.contains(a))) return;
           a.style.display = "none";

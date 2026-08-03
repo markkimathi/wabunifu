@@ -61,6 +61,21 @@ AVAILABILITY_STATUSES = ["Available", "Open to offers", "Not available"]
 MAX_DESIGNER_DISCIPLINES = 5
 MAX_DESIGNER_SKILLS = 7
 
+# Built-in avatars a designer can pick instead of uploading a photo — served
+# straight out of web/avatars (avatar-1.png .. avatar-28.png). avatar-1.png
+# doubles as the default shown everywhere a designer hasn't set photo_path
+# at all (frontend applies that fallback; the backend just stores whatever
+# path, uploaded or picked, was last set).
+AVATAR_COUNT = 28
+DEFAULT_AVATAR_PATH = "/avatars/avatar-1.png"
+
+
+def _valid_avatar_path(path: str) -> bool:
+    if not path.startswith("/avatars/avatar-") or not path.endswith(".png"):
+        return False
+    middle = path[len("/avatars/avatar-"):-len(".png")]
+    return middle.isdigit() and 1 <= int(middle) <= AVATAR_COUNT
+
 # Designer profile handles (the @name used in public profile URLs instead of
 # a numeric id). Must start with a letter — this also guarantees a handle
 # can never be all-digits, so a lookup can always tell a handle from an id
@@ -297,6 +312,10 @@ class ProfileUpdate(BaseModel):
     @classmethod
     def _clean_years_experience(cls, v: str) -> str:
         return v.strip()[:20]
+
+
+class AvatarSelect(BaseModel):
+    photo_path: str
 
 
 class HandleUpdate(BaseModel):
@@ -655,6 +674,18 @@ async def designer_upload_photo(file: UploadFile = File(...), designer: dict = D
     (PHOTOS_DIR / photo_path).write_bytes(jpeg_bytes)
     set_designer_photo(designer["id"], f"/photos/{photo_path}")
     return {"ok": True, "photo_path": f"/photos/{photo_path}"}
+
+
+@app.post("/api/designers/me/avatar")
+def designer_select_avatar(payload: AvatarSelect, designer: dict = Depends(require_designer)):
+    """Picking a built-in avatar reuses set_designer_photo() — same column,
+    same re-review-on-approved-edit behavior as an uploaded photo. Selecting
+    one here naturally supersedes a previously uploaded photo (and vice
+    versa) since photo_path only ever holds one value at a time."""
+    if not _valid_avatar_path(payload.photo_path):
+        raise HTTPException(400, "Not a valid avatar.")
+    set_designer_photo(designer["id"], payload.photo_path)
+    return {"ok": True, "photo_path": payload.photo_path}
 
 
 @app.post("/api/designers/me/submit")

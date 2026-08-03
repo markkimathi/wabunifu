@@ -6,7 +6,7 @@
 <title>Your profile · Kazi</title>
 <link rel="icon" type="image/png" href="favicon.png">
 <script src="theme.js?v=6"></script>
-<script src="nav.js?v=9"></script>
+<script src="nav.js?v=10"></script>
 <style>
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -443,6 +443,24 @@
     background:var(--hairline);border:2px solid var(--hairline-strong)}
   input[type=file]{display:none}
 
+  /* ---- avatar picker: Netflix-style grid of built-in avatars, alongside
+     the upload option. Selection is derived purely from photo_path (no
+     separate "selected" state to track) — whichever avatar's path matches
+     the designer's current photo_path is the one shown as active. ---- */
+  .avatar-divider{display:flex;align-items:center;gap:12px;width:100%;color:var(--faint);font-size:12.5px}
+  .avatar-divider::before,.avatar-divider::after{content:"";flex:1;height:1px;background:var(--hairline)}
+  .avatar-picker-title{font-size:13.5px;font-weight:700;margin:0;align-self:flex-start;color:var(--ink)}
+  .avatar-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(56px,1fr));gap:12px;width:100%}
+  .avatar-option{position:relative;border-radius:50%;cursor:pointer;padding:0;border:2px solid transparent;
+    background:none;aspect-ratio:1;overflow:hidden;transition:border-color .2s var(--ease-expo)}
+  .avatar-option img{width:100%;height:100%;object-fit:cover;border-radius:50%;display:block}
+  .avatar-option:hover{border-color:var(--hairline-strong)}
+  .avatar-option.-selected{border-color:var(--brand)}
+  .avatar-option.-selected::after{content:"";position:absolute;inset:0;border-radius:50%;background:rgba(255,255,255,.18)}
+  .avatar-check{position:absolute;bottom:0;right:0;width:18px;height:18px;border-radius:50%;
+    background:#fff;color:var(--brand);display:none;align-items:center;justify-content:center;box-shadow:var(--shadow)}
+  .avatar-option.-selected .avatar-check{display:flex}
+
   .link-row{display:flex;gap:8px;align-items:flex-start}
   .link-row input{flex:1;min-width:0}
   .link-row input.label-input{flex:0 0 110px}
@@ -648,11 +666,14 @@
             <p class="step-sub">A face helps employers connect a name to your work.</p>
             <div class="wizard-photo">
               <img class="wizard-avatar" id="wizardAvatar" src="" alt="">
-              <button type="button" class="btn-ghost" id="wizardPhotoBtn">Upload photo</button>
+              <button type="button" class="btn-ghost" id="wizardPhotoBtn">Upload Image</button>
               <input type="file" id="wizardPhotoInput" accept=".jpg,.jpeg,.png,.webp">
               <p class="hint">JPG, PNG, or WebP. Up to 3MB.</p>
+              <p class="err" id="wizardPhotoErr" style="display:none"></p>
+              <div class="avatar-divider"><span>or</span></div>
+              <p class="avatar-picker-title">Use an Avatar</p>
+              <div class="avatar-grid" id="avatarGrid"></div>
             </div>
-            <p class="err" id="wizardPhotoErr" style="display:none"></p>
           </fieldset>
 
           <fieldset class="edit-section">
@@ -1224,7 +1245,7 @@ function profileCardHtml(m) {
   return `
     <div class="pc-banner"></div>
     <div class="pc-body">
-      <img class="pc-avatar" src="${m.photo_path ? escapeHtml(m.photo_path) : 'logo.png'}" alt="">
+      <img class="pc-avatar" src="${m.photo_path ? escapeHtml(m.photo_path) : '/avatars/avatar-1.png'}" alt="">
       <div class="pc-name-block">
         <p class="pc-name">${escapeHtml(m.display_name || "")}</p>
         ${m.headline ? `<p class="pc-headline">${escapeHtml(m.headline)}</p>` : ""}
@@ -1485,7 +1506,8 @@ function populateLinksSection() {
   renderLinkRows(me.links || []);
 }
 function populateAllSections() {
-  document.getElementById("wizardAvatar").src = me.photo_path || "logo.png";
+  document.getElementById("wizardAvatar").src = me.photo_path || DEFAULT_AVATAR;
+  renderAvatarGrid();
   populateAboutSection();
   populateContactSection();
   populateBioSection();
@@ -1644,11 +1666,53 @@ document.getElementById("wizardPhotoInput").addEventListener("change", async () 
     const res = await api("/api/designers/me/photo", {method: "POST", body: fd});
     document.getElementById("wizardAvatar").src = res.photo_path + "?t=" + Date.now();
     me.photo_path = res.photo_path;
+    renderAvatarGrid(); // an uploaded photo supersedes any picked avatar
   } catch (err) {
     errEl.textContent = err.message;
     errEl.style.display = "block";
   }
 });
+
+/* ---------- avatar picker: 28 built-in avatars, Netflix-profile-style
+   grid. Selection state is derived from photo_path (whichever avatar's
+   path matches is "selected") rather than tracked separately, so
+   uploading a photo or picking an avatar automatically supersedes
+   whichever was previously active — there's only ever one photo_path. ---------- */
+const AVATAR_COUNT = 28;
+const DEFAULT_AVATAR = "/avatars/avatar-1.png";
+function avatarPath(n) { return `/avatars/avatar-${n}.png`; }
+function renderAvatarGrid() {
+  const grid = document.getElementById("avatarGrid");
+  const current = (me && me.photo_path) || DEFAULT_AVATAR;
+  grid.innerHTML = Array.from({length: AVATAR_COUNT}, (_, i) => i + 1).map(n => {
+    const path = avatarPath(n);
+    const selected = current === path;
+    return `<button type="button" class="avatar-option${selected ? " -selected" : ""}" data-avatar="${path}" aria-label="Avatar ${n}">
+      <img src="${path}" alt="">
+      <span class="avatar-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    </button>`;
+  }).join("");
+  grid.querySelectorAll(".avatar-option").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const path = btn.dataset.avatar;
+      if (path === current) return;
+      const errEl = document.getElementById("wizardPhotoErr");
+      errEl.style.display = "none";
+      try {
+        await api("/api/designers/me/avatar", {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({photo_path: path}),
+        });
+        me.photo_path = path;
+        document.getElementById("wizardAvatar").src = path;
+        renderAvatarGrid();
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = "block";
+      }
+    });
+  });
+}
 
 /* Steps 2, 3, 4: About you / Get in touch / Bio all save via PUT /me, so
    Next on any of them just re-sends the full current form state —
