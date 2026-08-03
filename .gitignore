@@ -2,4 +2,5 @@ __pycache__/
 *.pyc
 scraper/kazi.db
 api/kazi_submissions.db
+api/photos/
 .DS_Store

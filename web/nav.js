@@ -119,10 +119,17 @@
         });
 
         function doLogout(){
-          fetch("/api/designers/logout", {method: "POST", headers: {"Authorization": "Bearer " + token}})
-            .catch(function(){});
-          clearAcctToken();
-          location.href = "/";
+          window.showConfirmDialog({
+            title: "Log out?",
+            description: "You'll need to sign in again to access your account.",
+            confirmLabel: "Log out"
+          }).then(function(ok){
+            if(!ok) return;
+            fetch("/api/designers/logout", {method: "POST", headers: {"Authorization": "Bearer " + token}})
+              .catch(function(){});
+            clearAcctToken();
+            location.href = "/";
+          });
         }
         document.getElementById("acctLogoutBtn").addEventListener("click", doLogout);
         var mmLogoutBtn = document.getElementById("mmLogoutBtn");
