@@ -532,6 +532,28 @@
         </button>
       </nav>
       <div class="dash-main">
+        <div class="completion-banner" id="completionBanner" style="display:none">
+          <div class="completion-bar"><div class="completion-fill" id="completionFill"></div></div>
+          <p id="completionText"></p>
+        </div>
+        <div id="statusBanner"></div>
+        <div class="profile-card" id="profileCard"></div>
+        <div class="handle-card" id="handleCard">
+          <div class="handle-card-view" id="handleCardView">
+            <p class="handle-card-label">Your profile URL</p>
+            <p class="handle-card-url">kazi.odana.design/designers/<a href="" id="handleCardLink" target="_blank"><b id="handleCardValue"></b></a> <span class="hint" id="handleCardPendingHint" style="display:none">(live once approved)</span></p>
+          </div>
+          <div class="handle-card-edit">
+            <div class="handle-wrap">
+              <span>@</span>
+              <input type="text" id="handleInput" maxlength="30" autocomplete="off">
+            </div>
+            <button type="button" class="btn-ghost" id="handleSaveBtn">Save</button>
+            <button type="button" class="link-inline" id="handleCancelBtn">Cancel</button>
+          </div>
+          <button type="button" class="btn-ghost" id="handleEditBtn">Edit</button>
+        </div>
+        <p class="err" id="handleErr" style="display:none"></p>
         <div class="stat-grid" id="statGrid">
           <div class="stat-tile">
             <div class="stat-top">
@@ -551,28 +573,6 @@
             <div class="n" id="statCompletion">–</div>
             <div class="l">Profile completion</div>
           </div>
-        </div>
-        <div class="handle-card" id="handleCard">
-          <div class="handle-card-view" id="handleCardView">
-            <p class="handle-card-label">Your profile URL</p>
-            <p class="handle-card-url">kazi.odana.design/designers/<a href="" id="handleCardLink" target="_blank"><b id="handleCardValue"></b></a> <span class="hint" id="handleCardPendingHint" style="display:none">(live once approved)</span></p>
-          </div>
-          <div class="handle-card-edit">
-            <div class="handle-wrap">
-              <span>@</span>
-              <input type="text" id="handleInput" maxlength="30" autocomplete="off">
-            </div>
-            <button type="button" class="btn-ghost" id="handleSaveBtn">Save</button>
-            <button type="button" class="link-inline" id="handleCancelBtn">Cancel</button>
-          </div>
-          <button type="button" class="btn-ghost" id="handleEditBtn">Edit</button>
-        </div>
-        <p class="err" id="handleErr" style="display:none"></p>
-        <div id="statusBanner"></div>
-        <div class="profile-card" id="profileCard"></div>
-        <div class="completion-banner" id="completionBanner" style="display:none">
-          <div class="completion-bar"><div class="completion-fill" id="completionFill"></div></div>
-          <p id="completionText"></p>
         </div>
         <div class="danger-zone">
           <h3>Delete account</h3>
