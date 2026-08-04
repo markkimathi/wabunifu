@@ -52,7 +52,7 @@
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
-  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
+  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;width:100%;padding:0 24px}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
   .logomark{height:20px;width:auto;flex:none;display:block}
   .bar-stat{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);
@@ -200,11 +200,11 @@
 
   .profile-card{border:1px solid var(--hairline);border-radius:var(--radius);
     background:var(--surface);box-shadow:var(--shadow);overflow:hidden}
-  .pc-banner{height:120px;background:linear-gradient(135deg,var(--brand),var(--brand-light));position:relative}
+  .pc-banner{height:120px;background:linear-gradient(135deg,var(--brand),var(--brand-light));position:relative;z-index:1}
   .pc-body{padding:0 32px 32px}
   .pc-avatar{width:104px;height:104px;border-radius:50%;object-fit:cover;display:block;
     margin-top:-52px;background:var(--hairline);border:4px solid var(--surface);box-shadow:var(--shadow);
-    position:relative;z-index:1}
+    position:relative;z-index:2}
   .pc-name-block{margin:14px 0 22px}
   .pc-name-row{display:flex;align-items:center;gap:10px}
   .pc-name{font-size:24px;font-weight:800;margin:0;letter-spacing:-.02em;line-height:1.2}
