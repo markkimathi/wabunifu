@@ -77,6 +77,9 @@
     --shadow-lift:0 4px 10px rgba(0,0,0,.4), 0 18px 34px -14px rgba(0,0,0,.65);
   }
   *{box-sizing:border-box}
+  html{overflow-x:hidden}
+  body{overflow-wrap:break-word}
+  img,svg,video{max-width:100%;height:auto}
   #pageLoader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
     background:var(--canvas);transition:opacity .35s var(--ease-io),visibility .35s var(--ease-io)}
   #pageLoader.-hide{opacity:0;visibility:hidden;pointer-events:none}
