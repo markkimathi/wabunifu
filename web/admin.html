@@ -52,7 +52,7 @@
   .wrap{width:100%;max-width:960px;margin:0 auto;padding:0 24px}
   @media(min-width:768px){.wrap{padding:0 32px}}
   @media(min-width:1280px){.wrap{padding:0 48px}}
-  #appWrap.wrap{max-width:none}
+  #appWrap.wrap{max-width:1600px;margin:0 auto}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
@@ -234,7 +234,7 @@
   .item h3{margin:0 0 4px;font-size:16.5px;font-weight:700}
   .item .meta{font-size:13px;color:var(--muted);margin:0 0 8px}
   .item .meta b{color:var(--ink)}
-  .item .desc{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0 0 8px;white-space:pre-wrap;
+  .item .desc{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere;
     max-width:60ch}
   .item .badges{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
   .item .badges span{background:var(--green-soft);color:var(--green-ink);padding:3px 9px;border-radius:999px;font-weight:600}

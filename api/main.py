@@ -784,7 +784,8 @@ def designer_update_project(project_id: int, payload: ProjectIn, designer: dict 
     )
     if not updated:
         raise HTTPException(404, "No such project.")
-    return {"ok": True}
+    project = next(p for p in list_designer_projects(designer["id"]) if p["id"] == project_id)
+    return {"ok": True, **project}
 
 
 @app.delete("/api/designers/me/projects/{project_id}")

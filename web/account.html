@@ -52,7 +52,7 @@
      and shrink-wraps to its content instead — without this, each .wrap's
      rendered width silently followed whatever was inside it (e.g. the OTP
      boxes' fixed width) rather than the max-width below. */
-  .wrap{width:100%;padding:0 24px}
+  .wrap{width:100%;max-width:1600px;margin:0 auto;padding:0 24px}
   @media(min-width:768px){.wrap{padding:0 32px}}
   @media(min-width:1280px){.wrap{padding:0 48px}}
 
@@ -209,7 +209,7 @@
   /* ---- shared form bits (wizard) ---- */
   label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink);max-width:560px}
   .hint{font-weight:400;color:var(--faint);font-size:12.5px}
-  input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
+  input,select,textarea{width:100%;font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
     border-radius:10px;padding:11px 13px;color:var(--ink);background:var(--surface);
     transition:border-color .2s var(--ease-expo)}
   @media(max-width:600px){input,select,textarea{font-size:16px}}
@@ -378,7 +378,7 @@
     padding:8px 14px;border-radius:999px;border:1px solid var(--hairline-strong);color:var(--ink);
     text-decoration:none;transition:border-color .25s var(--ease-expo),color .25s var(--ease-expo)}
   .pc-contact a:hover{border-color:var(--brand);color:var(--brand)}
-  .pc-bio{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 6px;white-space:pre-wrap}
+  .pc-bio{font-size:14px;line-height:1.6;color:var(--ink);margin:0 0 6px;white-space:pre-wrap;overflow-wrap:anywhere}
   .pc-bio.-clamped{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
   .pc-bio-toggle{background:none;border:0;color:var(--brand);font:inherit;font-size:13px;font-weight:700;
     cursor:pointer;padding:0;margin:0 0 16px;display:none}

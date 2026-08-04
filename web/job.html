@@ -51,7 +51,7 @@
      stretched to the 1200px header width either — long job-description
      prose at that line length is genuinely hard to read. The description
      text itself gets its own narrower measure below (see .job-desc). */
-  .wrap{width:100%;padding:0 24px}
+  .wrap{width:100%;max-width:1600px;margin:0 auto;padding:0 24px}
   @media(min-width:768px){.wrap{padding:0 32px}}
   @media(min-width:1280px){.wrap{padding:0 48px}}
 
@@ -242,7 +242,10 @@
      desc is our own sanitized/reformatted HTML (see scraper/desc_format.py),
      never raw source markup, so it's safe to render unescaped — this block
      is what gives it a clear typographic hierarchy instead of one flat run. */
-  .job-desc{font-size:15.5px;line-height:1.7;color:var(--ink);max-width:74ch}
+  .job-desc{font-size:15.5px;line-height:1.7;color:var(--ink);max-width:74ch;overflow-wrap:anywhere}
+  .job-desc img{max-width:100%;height:auto}
+  .job-desc table{display:block;max-width:100%;overflow-x:auto}
+  .job-desc pre{white-space:pre-wrap;overflow-wrap:anywhere}
   .job-desc > *:first-child{margin-top:0}
   .job-desc > *:last-child{margin-bottom:0}
   .job-desc h2{font-size:19px;font-weight:800;letter-spacing:-.01em;color:var(--ink);margin:28px 0 10px}

@@ -45,7 +45,7 @@
     font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
   body > .wrap{flex:1}
   a{color:inherit}
-  .wrap{width:100%;padding:0 24px}
+  .wrap{width:100%;max-width:1600px;margin:0 auto;padding:0 24px}
   @media(min-width:768px){.wrap{padding:0 32px}}
   @media(min-width:1280px){.wrap{padding:0 48px}}
 
@@ -210,7 +210,9 @@
   .chip:hover{border-color:var(--brand);color:var(--brand)}
   .chip.active:hover{color:var(--canvas)}
 
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:18px;padding-bottom:60px}
+  .grid{display:grid;grid-template-columns:1fr;gap:18px;padding-bottom:60px}
+  @media(min-width:600px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(min-width:1024px){.grid{grid-template-columns:repeat(3,1fr)}}
   .dcard{border:1px solid var(--hairline);border-radius:var(--radius);padding:22px;background:var(--surface);
     box-shadow:var(--shadow);display:flex;flex-direction:column;gap:12px;text-decoration:none;color:inherit;
     transition:border-color .25s var(--ease-expo),transform .25s var(--ease-expo)}
