@@ -44,7 +44,9 @@
     font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
   body > .wrap{flex:1}
   a{color:inherit}
-  .wrap{max-width:640px;margin:0 auto;padding:0 24px}
+  .wrap{width:100%;max-width:960px;margin:0 auto;padding:0 24px}
+  @media(min-width:768px){.wrap{padding:0 32px}}
+  @media(min-width:1280px){.wrap{padding:0 48px}}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
@@ -204,7 +206,7 @@
   form{padding:28px 0 90px;display:flex;flex-direction:column;gap:18px}
   fieldset{border:0;padding:0;margin:0;min-width:0}
   .row2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-  label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink)}
+  label.field{display:flex;flex-direction:column;gap:7px;font-size:13.5px;font-weight:600;color:var(--ink);max-width:560px}
   .hint{font-weight:400;color:var(--faint);font-size:12.5px}
   .req{color:var(--brand);font-weight:700}
   input,select,textarea{font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);

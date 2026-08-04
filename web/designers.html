@@ -45,7 +45,9 @@
     font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
   body > .wrap{flex:1}
   a{color:inherit}
-  .wrap{max-width:1180px;margin:0 auto;padding:0 24px}
+  .wrap{width:100%;padding:0 24px}
+  @media(min-width:768px){.wrap{padding:0 32px}}
+  @media(min-width:1280px){.wrap{padding:0 48px}}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
     -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
