@@ -9,14 +9,14 @@
 <script src="/nav.js?v=10"></script>
 <script src="/confirm-dialog.js?v=1"></script>
 <style>
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Bold.woff2") format("woff2"),url("fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Regular.woff2") format("woff2"),url("/fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Medium.woff2") format("woff2"),url("/fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("/fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Bold.woff2") format("woff2"),url("/fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("/fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
 
   :root{
-    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
+    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#757575; --faint:#82828299;
     --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-light:#AA52ED; --brand-soft:#F1E7FA;
     --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
     --amber:#F25C05; --amber-soft:#FDE6D8;
@@ -54,7 +54,7 @@
   .wrap{width:100%;max-width:900px;margin:0 auto;padding:0 24px}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
-    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
+    -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
   .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}

@@ -10,14 +10,14 @@
 <script src="confirm-dialog.js?v=1"></script>
 <script src="featured-projects.js?v=1"></script>
 <style>
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Bold.woff2") format("woff2"),url("fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Regular.woff2") format("woff2"),url("/fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Medium.woff2") format("woff2"),url("/fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("/fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Bold.woff2") format("woff2"),url("/fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("/fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
 
   :root{
-    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#828282; --faint:#82828299;
+    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#757575; --faint:#82828299;
     --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-light:#AA52ED; --brand-soft:#F1E7FA;
     --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
     --amber:#F25C05; --amber-soft:#FDE6D8;
@@ -55,7 +55,7 @@
   .wrap{width:100%;max-width:640px;margin:0 auto;padding:0 24px}
 
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
-    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
+    -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
   .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
   .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
@@ -354,7 +354,8 @@
 
   .profile-card{border:1px solid var(--hairline);border-radius:var(--radius);
     background:var(--surface);box-shadow:var(--shadow);margin-bottom:22px;overflow:hidden}
-  .pc-banner{height:84px;background:linear-gradient(135deg,var(--brand),var(--brand-light))}
+  .pc-banner{height:84px;background:linear-gradient(135deg,var(--brand),var(--brand-light));position:relative}
+  .pc-banner-availability{position:absolute;top:14px;right:16px;box-shadow:0 2px 8px rgba(0,0,0,.18)}
   .pc-body{padding:0 26px 26px}
   .pc-avatar{width:88px;height:88px;border-radius:50%;object-fit:cover;display:block;
     margin-top:-42px;background:var(--hairline);border:4px solid var(--surface);box-shadow:var(--shadow)}
@@ -1308,7 +1309,9 @@ function profileCardHtml(m) {
   ].filter(Boolean);
   const availability = m.availability_status && AVAILABILITY_META[m.availability_status];
   return `
-    <div class="pc-banner"></div>
+    <div class="pc-banner">
+      ${availability ? `<span class="pc-availability pc-banner-availability ${availability.cls}">${availability.label}</span>` : ""}
+    </div>
     <div class="pc-body">
       <img class="pc-avatar" src="${m.photo_path ? escapeHtml(m.photo_path) : '/avatars/avatar-1.png'}" alt="">
       <div class="pc-name-block">
@@ -1316,11 +1319,10 @@ function profileCardHtml(m) {
         ${m.headline ? `<p class="pc-headline">${escapeHtml(m.headline)}</p>` : ""}
         ${m.years_experience ? `<p class="pc-meta">${formatYearsExperience(m.years_experience)}</p>` : ""}
         <p class="pc-meta"><span class="pc-meta-loc">${ICON_LOCATION}${escapeHtml(m.location || "No location set")}</span></p>
-        ${((m.discipline && m.discipline.length) || availability) ? `
+        ${(m.discipline && m.discipline.length) ? `
         <p class="pc-section-label">Job function</p>
         <div class="pc-badges">
-          ${(m.discipline || []).map(d => `<span class="pc-discipline">${escapeHtml(d)}</span>`).join("")}
-          ${availability ? `<span class="pc-availability ${availability.cls}">${availability.label}</span>` : ""}
+          ${m.discipline.map(d => `<span class="pc-discipline">${escapeHtml(d)}</span>`).join("")}
         </div>` : ""}
         ${(m.skills && m.skills.length) ? `
         <p class="pc-section-label">Skills</p>

@@ -10,31 +10,31 @@
 <script src="confirm-dialog.js?v=1"></script>
 <style>
   /* ---- Grift (local) ---- */
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Thin.woff2") format("woff2"),url("fonts/grift/Grift-Thin.woff") format("woff");font-weight:100;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ThinItalic.woff2") format("woff2"),url("fonts/grift/Grift-ThinItalic.woff") format("woff");font-weight:100;font-style:italic;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraLight.woff2") format("woff2"),url("fonts/grift/Grift-ExtraLight.woff") format("woff");font-weight:200;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraLightItalic.woff2") format("woff2"),url("fonts/grift/Grift-ExtraLightItalic.woff") format("woff");font-weight:200;font-style:italic;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Light.woff2") format("woff2"),url("fonts/grift/Grift-Light.woff") format("woff");font-weight:300;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-LightItalic.woff2") format("woff2"),url("fonts/grift/Grift-LightItalic.woff") format("woff");font-weight:300;font-style:italic;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Italic.woff2") format("woff2"),url("fonts/grift/Grift-Italic.woff") format("woff");font-weight:400;font-style:italic;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-MediumItalic.woff2") format("woff2"),url("fonts/grift/Grift-MediumItalic.woff") format("woff");font-weight:500;font-style:italic;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-SemiBoldItalic.woff2") format("woff2"),url("fonts/grift/Grift-SemiBoldItalic.woff") format("woff");font-weight:600;font-style:italic;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Bold.woff2") format("woff2"),url("fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-BoldItalic.woff2") format("woff2"),url("fonts/grift/Grift-BoldItalic.woff") format("woff");font-weight:700;font-style:italic;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-ExtraBoldItalic.woff2") format("woff2"),url("fonts/grift/Grift-ExtraBoldItalic.woff") format("woff");font-weight:800;font-style:italic;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-Black.woff2") format("woff2"),url("fonts/grift/Grift-Black.woff") format("woff");font-weight:900;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("fonts/grift/Grift-BlackItalic.woff2") format("woff2"),url("fonts/grift/Grift-BlackItalic.woff") format("woff");font-weight:900;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Thin.woff2") format("woff2"),url("/fonts/grift/Grift-Thin.woff") format("woff");font-weight:100;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ThinItalic.woff2") format("woff2"),url("/fonts/grift/Grift-ThinItalic.woff") format("woff");font-weight:100;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ExtraLight.woff2") format("woff2"),url("/fonts/grift/Grift-ExtraLight.woff") format("woff");font-weight:200;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ExtraLightItalic.woff2") format("woff2"),url("/fonts/grift/Grift-ExtraLightItalic.woff") format("woff");font-weight:200;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Light.woff2") format("woff2"),url("/fonts/grift/Grift-Light.woff") format("woff");font-weight:300;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-LightItalic.woff2") format("woff2"),url("/fonts/grift/Grift-LightItalic.woff") format("woff");font-weight:300;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Regular.woff2") format("woff2"),url("/fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Italic.woff2") format("woff2"),url("/fonts/grift/Grift-Italic.woff") format("woff");font-weight:400;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Medium.woff2") format("woff2"),url("/fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-MediumItalic.woff2") format("woff2"),url("/fonts/grift/Grift-MediumItalic.woff") format("woff");font-weight:500;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("/fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-SemiBoldItalic.woff2") format("woff2"),url("/fonts/grift/Grift-SemiBoldItalic.woff") format("woff");font-weight:600;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Bold.woff2") format("woff2"),url("/fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-BoldItalic.woff2") format("woff2"),url("/fonts/grift/Grift-BoldItalic.woff") format("woff");font-weight:700;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("/fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ExtraBoldItalic.woff2") format("woff2"),url("/fonts/grift/Grift-ExtraBoldItalic.woff") format("woff");font-weight:800;font-style:italic;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Black.woff2") format("woff2"),url("/fonts/grift/Grift-Black.woff") format("woff");font-weight:900;font-style:normal;font-display:swap}
+  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-BlackItalic.woff2") format("woff2"),url("/fonts/grift/Grift-BlackItalic.woff") format("woff");font-weight:900;font-style:italic;font-display:swap}
 
   :root{
     --canvas:#FFFFFF;
     --surface:#FFFFFF;
     --tag-bg:#EEEEEE;
     --ink:#0B1623;
-    --muted:#828282;
+    --muted:#757575;
     --faint:#82828299;
     --hairline:#EEEEEE;
     --hairline-strong:#D2D0D0;
@@ -99,7 +99,7 @@
 
   /* ---- top bar ---- */
   header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.82);
-    backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline);
+    -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline);
     transform:translateZ(0);-webkit-transform:translateZ(0)}
   [data-theme="dark"] header.bar{background:rgba(11,20,32,.78)}
   .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:68px}
