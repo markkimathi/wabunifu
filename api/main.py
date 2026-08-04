@@ -48,10 +48,13 @@ from .db import (  # noqa: E402
     list_designers, list_approved_designers, delete_designer, replace_designer_links,
     list_designer_links, create_session, get_session, delete_session, delete_sessions_for_designer,
     create_email_token, consume_email_token,
+    list_designer_projects, count_designer_projects, create_designer_project,
+    update_designer_project, set_project_image, delete_designer_project, reorder_designer_projects,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
 from . import photo as photo_module  # noqa: E402
+from . import project_image as project_image_module  # noqa: E402
 from . import email as email_module  # noqa: E402
 
 WEB_DIR = ROOT / "web"
@@ -102,6 +105,12 @@ PHOTOS_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "ka
 # "Check Against Your Resume" click, so it has to stay a real PDF/DOCX).
 RESUMES_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "resumes"
 MAX_RESUME_BYTES = 5 * 1024 * 1024
+
+# Featured-project cover images, same volume, same reason — unlike photos
+# and resumes (one file per designer, fixed name) a designer can have up to
+# MAX_PROJECTS covers at once, so files are named "{designer_id}_{project_id}.jpg".
+PROJECTS_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "projects"
+MAX_PROJECTS = 6
 
 
 def classify_device(user_agent: str) -> str:
@@ -378,6 +387,42 @@ class LinksUpdate(BaseModel):
         return v
 
 
+class ProjectIn(BaseModel):
+    title: str
+    description: str = ""
+    url: str = ""
+    category: str = ""
+
+    @field_validator("title")
+    @classmethod
+    def _valid_title(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("every project needs a title")
+        return v.strip()[:80]
+
+    @field_validator("description")
+    @classmethod
+    def _clean_description(cls, v: str) -> str:
+        return (v or "").strip()[:300]
+
+    @field_validator("url")
+    @classmethod
+    def _valid_url(cls, v: str) -> str:
+        v = (v or "").strip()
+        if v and not v.startswith("http://") and not v.startswith("https://"):
+            raise ValueError("project links must start with http:// or https://")
+        return v[:500]
+
+    @field_validator("category")
+    @classmethod
+    def _clean_category(cls, v: str) -> str:
+        return (v or "").strip()[:40]
+
+
+class ProjectReorder(BaseModel):
+    ids: list[int]
+
+
 def require_admin(authorization: str = Header(default="")) -> None:
     token = authorization.removeprefix("Bearer ").strip()
     if not token or token != ADMIN_TOKEN:
@@ -567,6 +612,7 @@ def _designer_public(d: dict) -> dict:
         "availability_status": d.get("availability_status", ""),
         "skills": parse_multi_field(d.get("skills")),
         "links": list_designer_links(d["id"]),
+        "projects": list_designer_projects(d["id"]),
     }
     # Resumes are opt-in public (default private) — only surface them here
     # (the directory/public-profile view) when the designer has switched
@@ -711,6 +757,66 @@ def designer_update_links(payload: LinksUpdate, designer: dict = Depends(require
     return {"ok": True}
 
 
+@app.post("/api/designers/me/projects")
+def designer_create_project(payload: ProjectIn, designer: dict = Depends(require_designer)):
+    if count_designer_projects(designer["id"]) >= MAX_PROJECTS:
+        raise HTTPException(400, f"You can feature up to {MAX_PROJECTS} projects.")
+    project_id = create_designer_project(
+        designer["id"], payload.title, payload.description, payload.url, payload.category
+    )
+    return {"ok": True, "id": project_id, "title": payload.title, "description": payload.description,
+            "url": payload.url, "category": payload.category, "image_path": ""}
+
+
+# Registered before /projects/{project_id} (a literal path) so "reorder"
+# is never mistaken for a project id, same "/me before /{identifier}"
+# pattern used throughout this file.
+@app.put("/api/designers/me/projects/reorder")
+def designer_reorder_projects(payload: ProjectReorder, designer: dict = Depends(require_designer)):
+    reorder_designer_projects(designer["id"], payload.ids)
+    return {"ok": True}
+
+
+@app.put("/api/designers/me/projects/{project_id}")
+def designer_update_project(project_id: int, payload: ProjectIn, designer: dict = Depends(require_designer)):
+    updated = update_designer_project(
+        designer["id"], project_id, payload.title, payload.description, payload.url, payload.category
+    )
+    if not updated:
+        raise HTTPException(404, "No such project.")
+    return {"ok": True}
+
+
+@app.delete("/api/designers/me/projects/{project_id}")
+def designer_delete_project(project_id: int, designer: dict = Depends(require_designer)):
+    project = next((p for p in list_designer_projects(designer["id"]) if p["id"] == project_id), None)
+    if not project:
+        raise HTTPException(404, "No such project.")
+    if project.get("image_path"):
+        f = PROJECTS_DIR / Path(project["image_path"]).name
+        if f.exists():
+            f.unlink()
+    delete_designer_project(designer["id"], project_id)
+    return {"ok": True}
+
+
+@app.post("/api/designers/me/projects/{project_id}/image")
+async def designer_upload_project_image(project_id: int, file: UploadFile = File(...), designer: dict = Depends(require_designer)):
+    if not any(p["id"] == project_id for p in list_designer_projects(designer["id"])):
+        raise HTTPException(404, "No such project.")
+    data = await file.read()
+    try:
+        jpeg_bytes = project_image_module.process_project_image(data)
+    except project_image_module.UnsupportedImage as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{designer['id']}_{project_id}.jpg"
+    (PROJECTS_DIR / stored_name).write_bytes(jpeg_bytes)
+    image_path = f"/project-images/{stored_name}"
+    set_project_image(designer["id"], project_id, image_path)
+    return {"ok": True, "image_path": image_path}
+
+
 @app.post("/api/designers/me/photo")
 async def designer_upload_photo(file: UploadFile = File(...), designer: dict = Depends(require_designer)):
     data = await file.read()
@@ -836,6 +942,11 @@ def designer_delete_me(designer: dict = Depends(require_designer)):
         resume_file = RESUMES_DIR / Path(designer["resume_path"]).name
         if resume_file.exists():
             resume_file.unlink()
+    for project in list_designer_projects(designer["id"]):
+        if project.get("image_path"):
+            image_file = PROJECTS_DIR / Path(project["image_path"]).name
+            if image_file.exists():
+                image_file.unlink()
     delete_designer(designer["id"])
     return {"ok": True}
 
@@ -854,6 +965,7 @@ def admin_list_designers(status: str = "pending", _: None = Depends(require_admi
         "discipline": parse_multi_field(d["discipline"]),
         "skills": parse_multi_field(d.get("skills")),
         "links": list_designer_links(d["id"]),
+        "projects": list_designer_projects(d["id"]),
     } for d in rows]
 
 
@@ -905,6 +1017,11 @@ def designer_public_profile(identifier: str):
 # exist at mount time, same reason db.py's _conn() creates DB.parent first.
 PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/photos", StaticFiles(directory=str(PHOTOS_DIR)), name="photos")
+
+# Same reasoning for featured-project cover images — public by default
+# (unlike resumes), so a plain static mount is fine.
+PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/project-images", StaticFiles(directory=str(PROJECTS_DIR)), name="project-images")
 
 
 # Clean URLs: serve the .html files without the extension...

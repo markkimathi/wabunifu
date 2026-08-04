@@ -8,6 +8,7 @@
 <script src="theme.js?v=6"></script>
 <script src="nav.js?v=10"></script>
 <script src="confirm-dialog.js?v=1"></script>
+<script src="featured-projects.js?v=1"></script>
 <style>
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Regular.woff2") format("woff2"),url("fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
   @font-face{font-family:Grift;src:url("fonts/grift/Grift-Medium.woff2") format("woff2"),url("fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
@@ -381,6 +382,7 @@
       <div class="step-dot" data-dot="3"></div>
       <div class="step-dot" data-dot="4"></div>
       <div class="step-dot" data-dot="5"></div>
+      <div class="step-dot" data-dot="6"></div>
     </div>
 
     <!-- Step 0: Photo -->
@@ -513,6 +515,18 @@
       </div>
       <div class="step-nav">
         <button type="button" class="btn-back" data-back="4">Back</button>
+        <button type="button" class="submit" id="resumeNextBtn">Next</button>
+      </div>
+    </div>
+
+    <!-- Step 6: Featured Projects -->
+    <div class="onboard-step" data-step="6" style="display:none">
+      <p class="step-title">Featured Projects <span class="hint">(optional)</span></p>
+      <p class="step-sub">Add up to 6 projects to showcase your best work. Skip this and add projects later from your Dashboard or Edit Profile.</p>
+      <div id="onboardProjectsGrid"></div>
+      <p class="err" id="finishErr" style="display:none"></p>
+      <div class="step-nav">
+        <button type="button" class="btn-back" data-back="5">Back</button>
         <button type="button" class="submit" id="finishBtn">Save profile</button>
       </div>
     </div>
@@ -555,7 +569,7 @@ function escapeHtml(s) {
 }
 
 /* ---------- step navigation ---------- */
-const TOTAL_STEPS = 6;
+const TOTAL_STEPS = 7;
 let currentStep = 0;
 function showStep(n) {
   document.querySelectorAll(".onboard-step").forEach(el => {
@@ -1046,12 +1060,28 @@ document.getElementById("wizardResumeInput").addEventListener("change", async ()
   }
 });
 
+/* ---------- Featured Projects: optional, same shared component and grid
+   as the Featured Projects tab / Edit Profile in account.html — each
+   add/edit/delete/reorder saves immediately, so there's nothing extra to
+   persist when the step is skipped. ---------- */
+function renderOnboardingProjects() {
+  FeaturedProjects.mount(document.getElementById("onboardProjectsGrid"), {
+    projects: me.projects || [],
+    variant: "manage",
+    onChange: (list) => { me.projects = list; },
+  });
+}
+document.getElementById("resumeNextBtn").addEventListener("click", () => {
+  renderOnboardingProjects();
+  showStep(6);
+});
+
 /* Final step: flip the routing flag that keeps this designer out of
    onboarding on future logins, then hand off to the dashboard. The resume
    (if any) is already saved by the handler above — nothing left to persist
    here, same as how the Photo step's choice needs no final save either. */
 document.getElementById("finishBtn").addEventListener("click", async () => {
-  const errEl = document.getElementById("wizardResumeErr");
+  const errEl = document.getElementById("finishErr");
   errEl.style.display = "none";
   const btn = document.getElementById("finishBtn");
   btn.disabled = true;

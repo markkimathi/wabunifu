@@ -128,6 +128,18 @@ CREATE TABLE IF NOT EXISTS designer_links (
 );
 CREATE INDEX IF NOT EXISTS idx_designer_links_designer ON designer_links(designer_id);
 
+CREATE TABLE IF NOT EXISTS designer_projects (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  url TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL DEFAULT '',
+  image_path TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_designer_projects_designer ON designer_projects(designer_id);
+
 CREATE TABLE IF NOT EXISTS designer_sessions (
   token TEXT PRIMARY KEY,
   designer_id INTEGER NOT NULL,
@@ -513,6 +525,7 @@ def list_approved_designers(discipline: str | None = None) -> list[dict]:
 def delete_designer(designer_id: int) -> None:
     c = _conn()
     c.execute("DELETE FROM designer_links WHERE designer_id = ?", (designer_id,))
+    c.execute("DELETE FROM designer_projects WHERE designer_id = ?", (designer_id,))
     c.execute("DELETE FROM designer_sessions WHERE designer_id = ?", (designer_id,))
     c.execute("DELETE FROM designer_email_tokens WHERE designer_id = ?", (designer_id,))
     c.execute("DELETE FROM designers WHERE id = ?", (designer_id,))
@@ -541,6 +554,93 @@ def list_designer_links(designer_id: int) -> list[dict]:
     ).fetchall()
     c.close()
     return [dict(r) for r in rows]
+
+
+def list_designer_projects(designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT id, title, description, url, category, image_path FROM designer_projects "
+        "WHERE designer_id = ? ORDER BY sort_order",
+        (designer_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def count_designer_projects(designer_id: int) -> int:
+    c = _conn()
+    n = c.execute(
+        "SELECT COUNT(*) FROM designer_projects WHERE designer_id = ?", (designer_id,)
+    ).fetchone()[0]
+    c.close()
+    return n
+
+
+def create_designer_project(designer_id: int, title: str, description: str, url: str, category: str) -> int:
+    c = _conn()
+    n = c.execute(
+        "SELECT COUNT(*) FROM designer_projects WHERE designer_id = ?", (designer_id,)
+    ).fetchone()[0]
+    cur = c.execute(
+        "INSERT INTO designer_projects (designer_id, title, description, url, category, sort_order) "
+        "VALUES (?, ?, ?, ?, ?, ?)",
+        (designer_id, title, description, url, category, n),
+    )
+    project_id = cur.lastrowid
+    c.commit()
+    c.close()
+    return project_id
+
+
+def update_designer_project(designer_id: int, project_id: int, title: str, description: str, url: str, category: str) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "UPDATE designer_projects SET title = ?, description = ?, url = ?, category = ? "
+        "WHERE id = ? AND designer_id = ?",
+        (title, description, url, category, project_id, designer_id),
+    )
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def set_project_image(designer_id: int, project_id: int, image_path: str) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "UPDATE designer_projects SET image_path = ? WHERE id = ? AND designer_id = ?",
+        (image_path, project_id, designer_id),
+    )
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def delete_designer_project(designer_id: int, project_id: int) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "DELETE FROM designer_projects WHERE id = ? AND designer_id = ?", (project_id, designer_id)
+    )
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
+
+
+def reorder_designer_projects(designer_id: int, ordered_ids: list[int]) -> None:
+    """ordered_ids is the caller's desired final order — sort_order is
+    reassigned 0..n by position, and any row not in the list (shouldn't
+    happen from a trusted caller, but ownership is still enforced per
+    row) is simply left untouched rather than erroring."""
+    c = _conn()
+    for i, project_id in enumerate(ordered_ids):
+        c.execute(
+            "UPDATE designer_projects SET sort_order = ? WHERE id = ? AND designer_id = ?",
+            (i, project_id, designer_id),
+        )
+    c.commit()
+    c.close()
 
 
 def create_session(designer_id: int) -> str:
