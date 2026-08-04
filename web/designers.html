@@ -370,7 +370,7 @@ function renderGrid() {
         </div>
       </div>
       ${d.bio ? `<p class="dcard-bio">${escapeHtml(d.bio)}</p>` : ""}
-      ${d.projects && d.projects.length ? `<div class="fp-grid -compact">${d.projects.slice(0,6).map(p => renderProjectCard(p, "compact")).join("")}</div>` : ""}
+      ${d.projects && d.projects.length ? `<div class="fp-grid -compact">${d.projects.slice(0,3).map((p, i, shown) => renderProjectCard(p, "compact", i === shown.length - 1 && d.projects.length > 3 ? {moreCount: d.projects.length - 3} : {})).join("")}</div>` : ""}
       ${d.links && d.links.length ? `<div class="dcard-links">${d.links.slice(0,3).map(l => `<span>${escapeHtml(l.label)}</span>`).join("")}</div>` : ""}
     </a>
   `).join("");

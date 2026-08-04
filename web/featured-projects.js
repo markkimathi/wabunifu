@@ -88,7 +88,12 @@
     var cover = '<div class="fp-cover">' + coverInner(project) + '</div>';
 
     if (variant === "compact") {
-      return '<div class="fp-card -compact">' + cover + title + '</div>';
+      // Images only — no title/description/link — and optionally a "+N"
+      // overlay on the last visible tile when the designer has more
+      // projects than this grid shows (see designers.html, which caps
+      // this variant at 3 and passes moreCount on the final one).
+      var overlay = meta.moreCount ? '<div class="fp-more-overlay">+' + meta.moreCount + '</div>' : "";
+      return '<div class="fp-card -compact">' + '<div class="fp-cover">' + coverInner(project) + overlay + '</div>' + '</div>';
     }
 
     if (variant === "public") {
@@ -135,7 +140,13 @@
     + ".fp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}"
     + "@media(max-width:820px){.fp-grid{grid-template-columns:repeat(2,1fr)}}"
     + "@media(max-width:520px){.fp-grid{grid-template-columns:1fr}}"
-    + ".fp-grid.-compact{gap:6px}"
+    // .-compact adds a class beyond plain .fp-grid, so this specificity
+    // (0,2,0) beats the two viewport media queries above (0,1,0) at every
+    // width — the dcard thumbnail row stays 3-up on mobile/tablet/desktop
+    // instead of collapsing to 2 or 1 columns like the other grids.
+    + ".fp-grid.-compact{gap:6px;grid-template-columns:repeat(3,1fr)}"
+    + ".fp-more-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);color:#fff;"
+    + "display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}"
     + ".fp-card{display:flex;flex-direction:column;border:1px solid var(--hairline,#eee);border-radius:var(--radius,16px);"
     + "background:var(--surface,#fff);overflow:hidden}"
     + ".fp-card.-compact{border:0;background:none}"
