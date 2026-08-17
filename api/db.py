@@ -155,6 +155,51 @@ CREATE TABLE IF NOT EXISTS designer_email_tokens (
   used INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS companies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL UNIQUE,
+  website TEXT NOT NULL DEFAULT '',
+  blurb TEXT NOT NULL DEFAULT '',
+  logo_path TEXT NOT NULL DEFAULT '',
+  eligibility TEXT NOT NULL DEFAULT '',
+  eligibility_note TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_companies_status ON companies(status);
+
+CREATE TABLE IF NOT EXISTS employers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_id INTEGER NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  password_hash TEXT NOT NULL,
+  full_name TEXT NOT NULL,
+  role_title TEXT NOT NULL DEFAULT '',
+  team_role TEXT NOT NULL DEFAULT 'owner',
+  is_pending_approval INTEGER NOT NULL DEFAULT 0,
+  invited_by_employer_id INTEGER,
+  email_verified INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_employers_company ON employers(company_id);
+
+CREATE TABLE IF NOT EXISTS employer_sessions (
+  token TEXT PRIMARY KEY,
+  employer_id INTEGER NOT NULL,
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS employer_email_tokens (
+  token TEXT PRIMARY KEY,
+  employer_id INTEGER NOT NULL,
+  purpose TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  used INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
 """
 
 # Columns added after the table first shipped. A fresh database gets them
@@ -198,6 +243,7 @@ def init_db() -> None:
     c.close()
     cleanup_stale_analytics()
     cleanup_stale_designer_tokens()
+    cleanup_stale_employer_tokens()
     backfill_designer_handles()
     backfill_onboarding_completed()
 
@@ -731,6 +777,266 @@ def cleanup_stale_designer_tokens() -> None:
     c = _conn()
     c.execute("DELETE FROM designer_sessions WHERE expires_at < ?", (now,))
     c.execute("DELETE FROM designer_email_tokens WHERE expires_at < ?", (now,))
+    c.commit()
+    c.close()
+
+
+# ---------------------------------------------------------------------------
+# Employer accounts and companies. Same review-queue model as designers
+# (companies.status: pending/approved/rejected) sitting on top of real
+# per-account auth (mirrors designer_sessions/designer_email_tokens exactly).
+# One company can hold several employer accounts (a "team"); the first
+# employer created at signup is always team_role='owner'. Everyone else
+# arrives through a team_invites row (see create_team_invite et al below).
+# ---------------------------------------------------------------------------
+
+def _slugify_company(name: str) -> str:
+    """Same construction as _slugify_handle above, applied to a company name
+    instead of a designer's display name."""
+    base = re.sub(r"[^a-z0-9]", "", name.lower())
+    if not base or not base[0].isalpha():
+        base = "company" + base
+    base = base[:30]
+    while len(base) < 3:
+        base += "0"
+    return base
+
+
+def _unique_company_slug(c: sqlite3.Connection, name: str, exclude_id: int | None = None) -> str:
+    base = _slugify_company(name)
+    candidate = base
+    n = 2
+    while True:
+        row = c.execute(
+            "SELECT id FROM companies WHERE lower(slug) = ?", (candidate,)
+        ).fetchone()
+        if not row or row["id"] == exclude_id:
+            return candidate
+        candidate = f"{base}{n}"[:30]
+        n += 1
+
+
+def create_company(name: str, website: str = "", blurb: str = "",
+                    eligibility: str = "", eligibility_note: str = "") -> int:
+    c = _conn()
+    slug = _unique_company_slug(c, name)
+    cur = c.execute(
+        "INSERT INTO companies (name, slug, website, blurb, eligibility, eligibility_note, status, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, 'pending', ?)",
+        (name, slug, website, blurb, eligibility, eligibility_note,
+         datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    company_id = cur.lastrowid
+    c.close()
+    return company_id
+
+
+def get_company(company_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM companies WHERE id = ?", (company_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def get_company_by_slug(slug: str) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM companies WHERE lower(slug) = ?", (slug.lower(),)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def get_company_by_domain(domain: str) -> dict | None:
+    """Matches a company whose website host equals `domain` exactly — used at
+    employer signup to steer someone toward requesting a team invite instead
+    of silently creating a second company for the same organisation. A bare
+    substring match would false-positive (e.g. "aflutterwave.com"), so this
+    strips scheme/www/path the same way api/main.py's email-domain check does
+    and compares the whole host."""
+    c = _conn()
+    rows = c.execute("SELECT * FROM companies WHERE status != 'rejected'").fetchall()
+    c.close()
+    for row in rows:
+        host = re.sub(r"^https?://", "", row["website"] or "", flags=re.I)
+        host = re.sub(r"^www\.", "", host, flags=re.I).split("/")[0].lower()
+        if host and host == domain.lower():
+            return dict(row)
+    return None
+
+
+def create_employer(company_id: int, email: str, password_hash: str, full_name: str,
+                     role_title: str = "", team_role: str = "owner",
+                     is_pending_approval: bool = False,
+                     invited_by_employer_id: int | None = None) -> int:
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO employers (company_id, email, password_hash, full_name, role_title, "
+        "team_role, is_pending_approval, invited_by_employer_id, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (company_id, email, password_hash, full_name, role_title, team_role,
+         1 if is_pending_approval else 0, invited_by_employer_id,
+         datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    employer_id = cur.lastrowid
+    c.close()
+    return employer_id
+
+
+def get_employer(employer_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM employers WHERE id = ?", (employer_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def get_employer_by_email(email: str) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM employers WHERE email = ?", (email,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def list_employers_for_company(company_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM employers WHERE company_id = ? ORDER BY created_at", (company_id,)
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def count_company_owners(company_id: int, exclude_id: int | None = None) -> int:
+    """Used to block the last owner of a company from deleting their own
+    account (api/main.py returns a 400 instead) — there is no ownership
+    transfer endpoint in this version, so this is a deliberate wall."""
+    c = _conn()
+    row = c.execute(
+        "SELECT COUNT(*) FROM employers WHERE company_id = ? AND team_role = 'owner' AND id != ?",
+        (company_id, exclude_id or -1),
+    ).fetchone()
+    c.close()
+    return row[0]
+
+
+def set_employer_email_verified(employer_id: int) -> None:
+    c = _conn()
+    c.execute("UPDATE employers SET email_verified = 1 WHERE id = ?", (employer_id,))
+    c.commit()
+    c.close()
+
+
+def set_employer_password(employer_id: int, password_hash: str) -> None:
+    c = _conn()
+    c.execute("UPDATE employers SET password_hash = ? WHERE id = ?", (password_hash, employer_id))
+    c.commit()
+    c.close()
+
+
+def update_employer_profile(employer_id: int, full_name: str, role_title: str) -> None:
+    c = _conn()
+    c.execute(
+        "UPDATE employers SET full_name = ?, role_title = ? WHERE id = ?",
+        (full_name, role_title, employer_id),
+    )
+    c.commit()
+    c.close()
+
+
+def approve_pending_employer(employer_id: int) -> None:
+    c = _conn()
+    c.execute("UPDATE employers SET is_pending_approval = 0 WHERE id = ?", (employer_id,))
+    c.commit()
+    c.close()
+
+
+def delete_employer(employer_id: int) -> None:
+    c = _conn()
+    c.execute("DELETE FROM employer_sessions WHERE employer_id = ?", (employer_id,))
+    c.execute("DELETE FROM employer_email_tokens WHERE employer_id = ?", (employer_id,))
+    c.execute("DELETE FROM employers WHERE id = ?", (employer_id,))
+    c.commit()
+    c.close()
+
+
+def create_employer_session(employer_id: int) -> str:
+    token = secrets.token_urlsafe(32)
+    now = datetime.now(timezone.utc)
+    c = _conn()
+    c.execute(
+        "INSERT INTO employer_sessions (token, employer_id, expires_at, created_at) VALUES (?, ?, ?, ?)",
+        (token, employer_id, (now + timedelta(days=SESSION_DAYS)).isoformat(timespec="seconds"),
+         now.isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+    return token
+
+
+def get_employer_session(token: str) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM employer_sessions WHERE token = ?", (token,)).fetchone()
+    c.close()
+    if not row:
+        return None
+    if row["expires_at"] < datetime.now(timezone.utc).isoformat(timespec="seconds"):
+        return None
+    return dict(row)
+
+
+def delete_employer_session(token: str) -> None:
+    c = _conn()
+    c.execute("DELETE FROM employer_sessions WHERE token = ?", (token,))
+    c.commit()
+    c.close()
+
+
+def delete_employer_sessions_for_employer(employer_id: int) -> None:
+    c = _conn()
+    c.execute("DELETE FROM employer_sessions WHERE employer_id = ?", (employer_id,))
+    c.commit()
+    c.close()
+
+
+def create_employer_email_token(employer_id: int, purpose: str) -> str:
+    now = datetime.now(timezone.utc)
+    if purpose == "verify":
+        token = f"{secrets.randbelow(1_000_000):06d}"
+        expires_at = now + timedelta(minutes=VERIFY_CODE_MINUTES)
+    else:
+        token = secrets.token_urlsafe(32)
+        expires_at = now + timedelta(hours=RESET_TOKEN_HOURS)
+    c = _conn()
+    c.execute(
+        "INSERT INTO employer_email_tokens (token, employer_id, purpose, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (token, employer_id, purpose, expires_at.isoformat(timespec="seconds"),
+         now.isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+    return token
+
+
+def consume_employer_email_token(token: str, purpose: str) -> int | None:
+    c = _conn()
+    row = c.execute(
+        "SELECT * FROM employer_email_tokens WHERE token = ? AND purpose = ?", (token, purpose)
+    ).fetchone()
+    if not row or row["used"] or row["expires_at"] < datetime.now(timezone.utc).isoformat(timespec="seconds"):
+        c.close()
+        return None
+    c.execute("UPDATE employer_email_tokens SET used = 1 WHERE token = ?", (token,))
+    c.commit()
+    c.close()
+    return row["employer_id"]
+
+
+def cleanup_stale_employer_tokens() -> None:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    c = _conn()
+    c.execute("DELETE FROM employer_sessions WHERE expires_at < ?", (now,))
+    c.execute("DELETE FROM employer_email_tokens WHERE expires_at < ?", (now,))
     c.commit()
     c.close()
 

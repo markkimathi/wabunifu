@@ -83,3 +83,41 @@ def send_password_reset_email(email: str, token: str) -> None:
         <p>This link expires in 1 hour. If you didn't request this, you can ignore this email. Your password won't change.</p>
         """,
     )
+
+
+def send_employer_verification_email(email: str, code: str) -> None:
+    send_email(
+        email,
+        "Your Kazi verification code",
+        f"""
+        <p>Enter this code to verify your email and finish setting up your company on Kazi:</p>
+        <p style="font-size:32px;font-weight:700;letter-spacing:.14em;margin:20px 0">{code}</p>
+        <p>This code expires in 15 minutes. If you didn't set up a Kazi hiring account, you can ignore this email.</p>
+        """,
+    )
+
+
+def send_employer_password_reset_email(email: str, token: str) -> None:
+    link = f"{SITE_URL}/pp-auth.html?role=employer&token={token}"
+    send_email(
+        email,
+        "Reset your password for Kazi",
+        f"""
+        <p>We got a request to reset the password on your Kazi hiring account.</p>
+        <p><a href="{link}">Choose a new password</a></p>
+        <p>This link expires in 1 hour. If you didn't request this, you can ignore this email. Your password won't change.</p>
+        """,
+    )
+
+
+def send_team_invite_email(email: str, company_name: str, inviter_name: str, token: str) -> None:
+    link = f"{SITE_URL}/pp-invite.html?token={token}"
+    send_email(
+        email,
+        f"{inviter_name} invited you to {company_name} on Kazi",
+        f"""
+        <p>{inviter_name} invited you to post roles for {company_name} on Kazi.</p>
+        <p><a href="{link}">See the invite</a></p>
+        <p>This link expires in 5 days. If you weren't expecting this, you can ignore this email.</p>
+        """,
+    )

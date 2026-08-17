@@ -50,6 +50,13 @@ from .db import (  # noqa: E402
     create_email_token, consume_email_token,
     list_designer_projects, count_designer_projects, create_designer_project,
     update_designer_project, set_project_image, delete_designer_project, reorder_designer_projects,
+    create_company, get_company, get_company_by_slug, get_company_by_domain,
+    create_employer, get_employer, get_employer_by_email, list_employers_for_company,
+    count_company_owners, set_employer_email_verified, set_employer_password,
+    update_employer_profile, approve_pending_employer, delete_employer,
+    create_employer_session, get_employer_session, delete_employer_session,
+    delete_employer_sessions_for_employer,
+    create_employer_email_token, consume_employer_email_token,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -423,6 +430,82 @@ class ProjectReorder(BaseModel):
     ids: list[int]
 
 
+# ---------------------------------------------------------------------------
+# Employer accounts. Mirrors the designer models above field-for-field where
+# the shape matches (email/password validation, honeypot); EmployerSignup
+# is a single flat payload for the whole onboarding wizard (company + first
+# employer are created together, since one can't exist without the other)
+# rather than a bare display_name like DesignerSignup — everything else on a
+# designer account is added later via PUT /me, but a company has no
+# "unowned" state to sit in between signup and the first PUT.
+# ---------------------------------------------------------------------------
+
+class EmployerSignup(BaseModel):
+    email: str
+    password: str
+    full_name: str
+    role_title: str = ""
+    company_name: str
+    company_website: str = ""
+    company_blurb: str = ""
+    eligibility: str = ""
+    eligibility_note: str = ""
+    honeypot: str = ""
+
+    @field_validator("email")
+    @classmethod
+    def _valid_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("enter a valid email address")
+        return v
+
+    @field_validator("password")
+    @classmethod
+    def _valid_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("password must be at least 8 characters")
+        return v
+
+    @field_validator("full_name")
+    @classmethod
+    def _valid_full_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("enter your name")
+        return v.strip()
+
+    @field_validator("company_name")
+    @classmethod
+    def _valid_company_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("enter the company name")
+        return v.strip()[:120]
+
+    @field_validator("eligibility")
+    @classmethod
+    def _valid_eligibility(cls, v: str) -> str:
+        if v and v not in ELIGIBILITY:
+            raise ValueError(f"eligibility must be one of {sorted(ELIGIBILITY)}")
+        return v
+
+
+class EmployerLogin(BaseModel):
+    email: str
+    password: str
+
+
+class EmployerProfileUpdate(BaseModel):
+    full_name: str
+    role_title: str = ""
+
+    @field_validator("full_name")
+    @classmethod
+    def _valid_full_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("enter your name")
+        return v.strip()
+
+
 def require_admin(authorization: str = Header(default="")) -> None:
     token = authorization.removeprefix("Bearer ").strip()
     if not token or token != ADMIN_TOKEN:
@@ -438,6 +521,32 @@ def require_designer(authorization: str = Header(default="")) -> dict:
     if not designer:
         raise HTTPException(401, "invalid session")
     return designer
+
+
+def require_employer(authorization: str = Header(default="")) -> dict:
+    token = authorization.removeprefix("Bearer ").strip()
+    session = get_employer_session(token) if token else None
+    if not session:
+        raise HTTPException(401, "invalid or expired session")
+    employer = get_employer(session["employer_id"])
+    if not employer:
+        raise HTTPException(401, "invalid session")
+    return employer
+
+
+def require_employer_role(*allowed: str):
+    """Gates write endpoints by team_role. A pending (not-yet-approved)
+    teammate is blocked from every write regardless of the proposed role
+    they were invited at — approval has to land first. Permission model:
+    owner does everything; can_post manages listings/applicants and can send
+    invites (their invitees always need an owner's approval) but can't touch
+    the company record or approve/remove teammates; can_view is read-only
+    everywhere, enforced simply by never being in an `allowed` list."""
+    def _dep(employer: dict = Depends(require_employer)) -> dict:
+        if employer["is_pending_approval"] or employer["team_role"] not in allowed:
+            raise HTTPException(403, "not permitted for this account")
+        return employer
+    return _dep
 
 
 @app.post("/api/submissions")
@@ -949,6 +1058,135 @@ def designer_delete_me(designer: dict = Depends(require_designer)):
             if image_file.exists():
                 image_file.unlink()
     delete_designer(designer["id"])
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Employer accounts: signup/login/password-reset, profile editing. Real
+# per-account auth (require_employer), same shape as the designer section
+# above but sitting on the companies/employers tables instead. Company CRUD,
+# team invites, listings and applicants land in later milestones — this
+# section is just an employer's own account lifecycle.
+# ---------------------------------------------------------------------------
+
+def _employer_public(e: dict) -> dict:
+    """Strip the login email/password_hash before this reaches a response
+    that isn't the owner's own /me view — mirrors _designer_public()."""
+    return {
+        "id": e["id"], "full_name": e["full_name"], "role_title": e.get("role_title", ""),
+        "team_role": e["team_role"], "created_at": e["created_at"],
+    }
+
+
+@app.post("/api/employers/signup")
+def employer_signup(payload: EmployerSignup, background: BackgroundTasks):
+    if payload.honeypot:
+        return {"ok": True}
+    if get_employer_by_email(payload.email):
+        raise HTTPException(400, "An account with this email already exists.")
+    domain = re.sub(r"^https?://", "", payload.company_website or "", flags=re.I)
+    domain = re.sub(r"^www\.", "", domain, flags=re.I).split("/")[0].lower()
+    if domain:
+        existing = get_company_by_domain(domain)
+        if existing:
+            raise HTTPException(
+                400,
+                f"{existing['name']} is already on Kazi. Ask a teammate there to invite you instead.",
+            )
+    company_id = create_company(
+        payload.company_name, payload.company_website, payload.company_blurb,
+        payload.eligibility, payload.eligibility_note,
+    )
+    password_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
+    employer_id = create_employer(
+        company_id, payload.email, password_hash, payload.full_name, payload.role_title,
+        team_role="owner", is_pending_approval=False,
+    )
+    token = create_employer_email_token(employer_id, "verify")
+    background.add_task(email_module.send_employer_verification_email, payload.email, token)
+    session_token = create_employer_session(employer_id)
+    return {"ok": True, "token": session_token}
+
+
+@app.post("/api/employers/login")
+def employer_login(payload: EmployerLogin):
+    employer = get_employer_by_email(payload.email.strip().lower())
+    if not employer or not bcrypt.checkpw(payload.password.encode(), employer["password_hash"].encode()):
+        raise HTTPException(401, "Incorrect email or password.")
+    return {"ok": True, "token": create_employer_session(employer["id"])}
+
+
+@app.post("/api/employers/logout")
+def employer_logout(authorization: str = Header(default="")):
+    token = authorization.removeprefix("Bearer ").strip()
+    if token:
+        delete_employer_session(token)
+    return {"ok": True}
+
+
+@app.post("/api/employers/me/verify-email")
+def employer_verify_email(payload: VerifyCodeIn, employer: dict = Depends(require_employer)):
+    employer_id = consume_employer_email_token(payload.code.strip(), "verify")
+    if not employer_id or employer_id != employer["id"]:
+        raise HTTPException(400, "That code is incorrect or has expired.")
+    set_employer_email_verified(employer_id)
+    return {"ok": True}
+
+
+@app.post("/api/employers/me/resend-verification")
+def employer_resend_verification(background: BackgroundTasks, employer: dict = Depends(require_employer)):
+    if employer["email_verified"]:
+        return {"ok": True}
+    token = create_employer_email_token(employer["id"], "verify")
+    background.add_task(email_module.send_employer_verification_email, employer["email"], token)
+    return {"ok": True}
+
+
+@app.post("/api/employers/forgot-password")
+def employer_forgot_password(payload: ForgotPasswordIn, background: BackgroundTasks):
+    employer = get_employer_by_email(payload.email.strip().lower())
+    if employer:
+        token = create_employer_email_token(employer["id"], "reset")
+        background.add_task(email_module.send_employer_password_reset_email, employer["email"], token)
+    return {"ok": True}
+
+
+@app.post("/api/employers/reset-password")
+def employer_reset_password(payload: ResetPasswordIn):
+    employer_id = consume_employer_email_token(payload.token, "reset")
+    if not employer_id:
+        raise HTTPException(400, "This reset link is invalid or has expired.")
+    password_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
+    set_employer_password(employer_id, password_hash)
+    delete_employer_sessions_for_employer(employer_id)
+    return {"ok": True}
+
+
+@app.get("/api/employers/me")
+def employer_me(employer: dict = Depends(require_employer)):
+    company = get_company(employer["company_id"])
+    return {
+        **_employer_public(employer), "email": employer["email"],
+        "email_verified": bool(employer["email_verified"]),
+        "is_pending_approval": bool(employer["is_pending_approval"]),
+        "company": company,
+    }
+
+
+@app.put("/api/employers/me")
+def employer_update_me(payload: EmployerProfileUpdate, employer: dict = Depends(require_employer)):
+    update_employer_profile(employer["id"], payload.full_name, payload.role_title)
+    return {"ok": True}
+
+
+@app.delete("/api/employers/me")
+def employer_delete_me(employer: dict = Depends(require_employer)):
+    # No ownership-transfer flow exists yet, so the last owner of a company
+    # can't delete their own account out from under a company with no one
+    # left to run it — a deliberate wall, not a gap.
+    if employer["team_role"] == "owner" and count_company_owners(employer["company_id"], exclude_id=employer["id"]) == 0:
+        raise HTTPException(400, "You're the only owner here — add another owner or contact us before closing this account.")
+    delete_employer(employer["id"])
     return {"ok": True}
 
 
