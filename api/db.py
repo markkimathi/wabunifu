@@ -30,6 +30,7 @@ import os
 import re
 import secrets
 import sqlite3
+import statistics
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -345,6 +346,22 @@ CREATE TABLE IF NOT EXISTS question_follows (
   UNIQUE(question_id, designer_id)
 );
 CREATE INDEX IF NOT EXISTS idx_question_follows_question ON question_follows(question_id);
+
+CREATE TABLE IF NOT EXISTS pay_submissions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  discipline TEXT NOT NULL,
+  level TEXT NOT NULL,
+  market TEXT NOT NULL,
+  raw_currency TEXT NOT NULL DEFAULT '',
+  raw_amount REAL NOT NULL DEFAULT 0,
+  amount_monthly_usd REAL NOT NULL,
+  outlier_check TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_pay_submissions_status ON pay_submissions(status);
+CREATE INDEX IF NOT EXISTS idx_pay_submissions_group ON pay_submissions(discipline, level, market);
 """
 
 # Columns added after the table first shipped. A fresh database gets them
@@ -1919,6 +1936,85 @@ def list_work_worth_reading(limit: int = 12) -> list[dict]:
     ).fetchall()
     c.close()
     return [dict(r) for r in rows]
+
+
+def get_pay_median(discipline: str, level: str, market: str) -> float | None:
+    """Median of accepted amount_monthly_usd for this exact group — used to
+    compute a new submission's outlier_check at insert time. None means no
+    accepted data yet for this group (first submission, nothing to compare)."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT amount_monthly_usd FROM pay_submissions WHERE status = 'accepted' AND discipline = ? AND level = ? AND market = ?",
+        (discipline, level, market),
+    ).fetchall()
+    c.close()
+    if not rows:
+        return None
+    return statistics.median(r["amount_monthly_usd"] for r in rows)
+
+
+def create_pay_submission(designer_id: int, discipline: str, level: str, market: str,
+                           raw_currency: str, raw_amount: float, amount_monthly_usd: float,
+                           outlier_check: str) -> int:
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO pay_submissions (designer_id, discipline, level, market, raw_currency, raw_amount, "
+        "amount_monthly_usd, outlier_check, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)",
+        (designer_id, discipline, level, market, raw_currency, raw_amount, amount_monthly_usd,
+         outlier_check, datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    submission_id = cur.lastrowid
+    c.close()
+    return submission_id
+
+
+def list_pay_ranges(discipline: str | None = None, market: str | None = None) -> list[dict]:
+    """Real aggregate over accepted submissions, grouped by
+    (discipline, level, market) — never selects designer_id (Phase 8
+    Decision 2: pay data stays anonymous in every response)."""
+    c = _conn()
+    query = "SELECT discipline, level, market, amount_monthly_usd FROM pay_submissions WHERE status = 'accepted'"
+    params: list = []
+    if discipline:
+        query += " AND discipline = ?"
+        params.append(discipline)
+    if market:
+        query += " AND market = ?"
+        params.append(market)
+    rows = c.execute(query, params).fetchall()
+    c.close()
+    groups: dict[tuple, list] = {}
+    for r in rows:
+        key = (r["discipline"], r["level"], r["market"])
+        groups.setdefault(key, []).append(r["amount_monthly_usd"])
+    out = []
+    for (disc, level, mkt), amounts in groups.items():
+        out.append({
+            "discipline": disc, "level": level, "market": mkt, "count": len(amounts),
+            "min": min(amounts), "max": max(amounts), "median": statistics.median(amounts),
+        })
+    out.sort(key=lambda g: (g["discipline"], g["level"]))
+    return out
+
+
+def list_pay_submissions(status: str | None = None) -> list[dict]:
+    c = _conn()
+    if status:
+        rows = c.execute(
+            "SELECT * FROM pay_submissions WHERE status = ? ORDER BY created_at DESC", (status,)
+        ).fetchall()
+    else:
+        rows = c.execute("SELECT * FROM pay_submissions ORDER BY created_at DESC").fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def set_pay_submission_status(submission_id: int, status: str) -> None:
+    c = _conn()
+    c.execute("UPDATE pay_submissions SET status = ? WHERE id = ?", (status, submission_id))
+    c.commit()
+    c.close()
 
 
 # ---------------------------------------------------------------------------

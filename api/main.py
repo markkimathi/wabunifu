@@ -71,6 +71,7 @@ from .db import (  # noqa: E402
     create_question, list_questions, get_question, set_accepted_reply, set_question_status,
     create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
     count_stale_questions, get_reply_leaderboard, list_work_worth_reading,
+    get_pay_median, create_pay_submission, list_pay_ranges,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -87,6 +88,18 @@ MAX_LINKS = 8
 AVAILABILITY_STATUSES = ["Available", "Open to offers", "Not available"]
 MAX_DESIGNER_DISCIPLINES = 5
 MAX_DESIGNER_SKILLS = 7
+
+# Pay resources: a separate, deliberately simpler 2-value market split from
+# job ELIGIBILITY's 3-tier vocabulary (kenya/africa/world/check) — pay data
+# only needs to distinguish "paid by an African company" from "paid by a
+# global/remote one", not the finer eligibility-for-applicants distinctions.
+PAY_MARKETS = {"African company", "Global remote"}
+# Static, approximate monthly conversion rates to USD — not a live FX feed.
+# Good enough for a rough pay-transparency comparison; revisit periodically.
+PAY_CURRENCY_TO_USD = {
+    "USD": 1.0, "KES": 0.0077, "NGN": 0.00062, "ZAR": 0.055,
+    "EUR": 1.09, "GBP": 1.27, "GHS": 0.067, "EGP": 0.020,
+}
 
 # Built-in avatars a designer can pick instead of uploading a photo — served
 # straight out of web/avatars (avatar-1.png .. avatar-28.png). avatar-1.png
@@ -731,6 +744,50 @@ class ReplyIn(BaseModel):
 
 class ReplyAccept(BaseModel):
     reply_id: Optional[int] = None
+
+
+class PaySubmissionIn(BaseModel):
+    discipline: str
+    level: str
+    market: str
+    currency: str
+    amount: float
+
+    @field_validator("discipline")
+    @classmethod
+    def _valid_discipline(cls, v: str) -> str:
+        if v not in DISCIPLINES:
+            raise ValueError(f"discipline must be one of {DISCIPLINES}")
+        return v
+
+    @field_validator("level")
+    @classmethod
+    def _valid_level(cls, v: str) -> str:
+        if v not in LEVELS:
+            raise ValueError(f"level must be one of {LEVELS}")
+        return v
+
+    @field_validator("market")
+    @classmethod
+    def _valid_market(cls, v: str) -> str:
+        if v not in PAY_MARKETS:
+            raise ValueError(f"market must be one of {PAY_MARKETS}")
+        return v
+
+    @field_validator("currency")
+    @classmethod
+    def _valid_currency(cls, v: str) -> str:
+        v = (v or "").upper().strip()
+        if v not in PAY_CURRENCY_TO_USD:
+            raise ValueError(f"currency must be one of {sorted(PAY_CURRENCY_TO_USD)}")
+        return v
+
+    @field_validator("amount")
+    @classmethod
+    def _valid_amount(cls, v: float) -> float:
+        if v <= 0 or v > 10_000_000:
+            raise ValueError("amount must be a positive, realistic monthly figure")
+        return v
 
 
 def require_admin(authorization: str = Header(default="")) -> None:
@@ -1976,6 +2033,34 @@ def community_work_worth_reading():
     return {"work": list_work_worth_reading()}
 
 
+# ---------------------------------------------------------------------------
+# Resources: anonymous pay-range aggregates. designer_id is stored on
+# pay_submissions purely for anti-abuse/dedup and must never appear in any
+# response here — list_pay_ranges() enforces that by never selecting it.
+# ---------------------------------------------------------------------------
+
+@app.get("/api/resources/pay-ranges")
+def resources_pay_ranges(discipline: str = "", market: str = ""):
+    return {"ranges": list_pay_ranges(discipline=discipline or None, market=market or None)}
+
+
+@app.post("/api/resources/pay-submissions")
+def resources_submit_pay(payload: PaySubmissionIn, designer: dict = Depends(require_designer)):
+    usd = payload.amount * PAY_CURRENCY_TO_USD[payload.currency]
+    median = get_pay_median(payload.discipline, payload.level, payload.market)
+    if median is None:
+        outlier_check = "First submission for this group — nothing to compare yet."
+    elif usd > median * 1.6:
+        outlier_check = f"Well above the current median (${median:,.0f}/mo) for this group."
+    elif usd < median * 0.5:
+        outlier_check = f"Well below the current median (${median:,.0f}/mo) for this group."
+    else:
+        outlier_check = f"Within range of the current median (${median:,.0f}/mo)."
+    create_pay_submission(designer["id"], payload.discipline, payload.level, payload.market,
+                           payload.currency, payload.amount, usd, outlier_check)
+    return {"ok": True}
+
+
 @app.get("/api/designers")
 def designers_directory(discipline: str = ""):
     rows = list_approved_designers(discipline=discipline or None)
@@ -2136,6 +2221,11 @@ def community_page():
 @app.get("/community/{item_id}", include_in_schema=False)
 def community_detail_page(item_id: str):
     return FileResponse(WEB_DIR / "pp-community-detail.html")
+
+
+@app.get("/resources", include_in_schema=False)
+def resources_page():
+    return FileResponse(WEB_DIR / "pp-resources.html")
 
 
 # Static site last: /api/* and the routes above take priority, everything

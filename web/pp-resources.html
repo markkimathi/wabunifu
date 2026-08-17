@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resources · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  .hero{padding:28px 0 24px;border-bottom:1px solid var(--c-border)}
+  .hero h1{margin:0 0 12px;font-size:var(--pp-display-size);line-height:1.0;letter-spacing:-0.04em;font-weight:800;max-width:22ch}
+  .hero p{margin:0;font-size:17px;line-height:1.55;color:var(--c-text-muted);max-width:62ch}
+
+  section.block{padding:40px 0;border-bottom:1px solid var(--c-border)}
+  section.block:last-of-type{border-bottom:none}
+  .block-head{margin-bottom:22px;max-width:66ch}
+  .block-head h2{margin:0 0 8px;font-size:26px;font-weight:700;letter-spacing:-0.024em}
+  .block-head p{margin:0;font-size:15px;line-height:1.55;color:var(--c-text-muted)}
+
+  .pay-filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+  .pay-filters select{height:40px;padding:0 12px;border-radius:var(--pp-radius-md);border:1px solid var(--c-border-strong);
+    background:var(--c-surface);color:var(--c-text);font-family:var(--pp-font);font-size:14px}
+
+  .pay-table{width:100%;border-collapse:collapse;font-size:14.5px}
+  .pay-table th{text-align:left;font-size:11.5px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;
+    color:var(--c-text-faint);padding:0 14px 10px;border-bottom:1px solid var(--c-border)}
+  .pay-table td{padding:13px 14px;border-bottom:1px solid var(--c-surface-inset)}
+  .pay-table tr:last-child td{border-bottom:none}
+  .pay-table td.-num{font-variant-numeric:tabular-nums;text-align:right}
+  .pay-table-wrap{overflow-x:auto;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg)}
+  .pay-table-wrap .pay-table{min-width:560px}
+
+  .add-number{margin-top:22px;padding:22px;border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken);border:1px solid var(--c-border)}
+  .add-number h3{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.016em}
+  .add-number .notice{margin:0 0 16px;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle);max-width:60ch}
+  .add-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+  .add-select{height:40px;padding:0 12px;border-radius:var(--pp-radius-md);border:1px solid var(--c-border-strong);
+    background:var(--c-surface);color:var(--c-text);font-family:var(--pp-font);font-size:14px}
+  .add-msg{font-size:13.5px;margin-top:10px}
+  .add-msg.-error{color:var(--c-bad-text)}
+  .add-msg.-ok{color:var(--c-good-text)}
+  .market-chips{display:flex;gap:8px}
+
+  .resume-panel{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:32px;align-items:start}
+  @media(max-width:900px){.resume-panel{grid-template-columns:1fr}}
+  .file-chip{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--pp-radius-lg);
+    background:var(--c-surface);border:1px solid var(--c-border)}
+  .file-chip .f-icon{color:var(--c-text-faint);flex:none}
+  .file-chip .f-name{font-size:14px;font-weight:600}
+  .file-chip .f-size{font-size:12.5px;color:var(--c-text-faint)}
+  .file-chip .f-remove{margin-left:auto;border:none;background:transparent;font-size:20px;line-height:1;
+    color:var(--c-text-faint);cursor:pointer;padding:4px 8px}
+
+  .score-panel{display:flex;align-items:center;gap:18px;margin-bottom:20px}
+  .score-ring{width:84px;height:84px;flex:none}
+  .score-ring circle{transition:stroke-dashoffset .6s ease}
+  .score-ring text{font-size:22px;font-weight:800;fill:var(--c-text);font-family:var(--pp-font)}
+  .score-label{margin:0 0 3px;font-size:17px;font-weight:700}
+  .score-desc{margin:0;font-size:13.5px;line-height:1.5;color:var(--c-text-subtle)}
+
+  .check-row{display:flex;gap:11px;align-items:flex-start;padding:13px 0;border-bottom:1px solid var(--c-surface-inset)}
+  .check-row:last-child{border-bottom:none}
+  .check-row .c-icon{width:22px;height:22px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center}
+  .check-row.-pass .c-icon{background:var(--c-good-bg);color:var(--c-good-text)}
+  .check-row.-warning .c-icon{background:var(--pp-gold-200);color:var(--pp-gold-800)}
+  .check-row.-critical .c-icon{background:var(--c-bad-bg);color:var(--c-bad-text)}
+  .check-row .c-title{margin:0;font-size:14.5px;font-weight:600}
+  .check-row .c-detail{margin:2px 0 0;font-size:13.5px;line-height:1.5;color:var(--c-text-subtle)}
+  .check-row .c-fix{margin:6px 0 0;font-size:13px;line-height:1.5;color:var(--c-text-subtle)}
+
+  .kw-panel{margin-top:20px;padding-top:20px;border-top:1px solid var(--c-border)}
+  .kw-panel h3{margin:0 0 4px;font-size:16px;font-weight:700}
+  .kw-sub{margin:0 0 12px;font-size:13.5px;color:var(--c-text-subtle)}
+  .kw-group-label{margin:0 0 8px;font-size:12.5px;font-weight:600;color:var(--c-text-faint)}
+  .kw-pills{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .kw-pill{display:inline-flex;padding:5px 11px;border-radius:var(--pp-radius-sm);background:var(--c-surface-inset);
+    color:var(--c-text-muted);font-size:12.5px}
+  .kw-pill.-match{background:var(--c-good-bg);color:var(--c-good-text)}
+
+  .guides-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+  @media(max-width:900px){.guides-grid{grid-template-columns:1fr 1fr}}
+  @media(max-width:639px){.guides-grid{grid-template-columns:1fr}}
+  .guide-card{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px dashed var(--c-border-strong)}
+  .guide-card h3{margin:0 0 6px;font-size:16px;font-weight:700}
+  .guide-card p{margin:0;font-size:13.5px;line-height:1.55;color:var(--c-text-faint)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="resources"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Resources"}]'></nav>
+
+<main>
+  <div class="wrap hero">
+    <h1>Real numbers, and real answers</h1>
+    <p>What designers across Africa are actually paid, a straight check of your CV against ATS software, and guides written by people who've done the thing.</p>
+  </div>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="block-head">
+        <h2>Pay ranges, collected</h2>
+        <p>Self-reported by designers, moderated before it's published. No company names, no way to trace a number back to a person.</p>
+      </div>
+
+      <div class="pay-filters">
+        <select id="filterDiscipline"><option value="">All disciplines</option></select>
+        <select id="filterMarket"><option value="">All markets</option></select>
+      </div>
+
+      <div id="payTableArea"></div>
+
+      <div class="add-number">
+        <h3>Add your number</h3>
+        <p class="notice">Your name, handle, and photo are never attached to this — we only ever publish the aggregate, and moderate every submission before it counts toward the numbers above.</p>
+        <div class="add-grid">
+          <select id="addDiscipline" class="add-select"></select>
+          <select id="addLevel" class="add-select"></select>
+          <select id="addMarket" class="add-select"></select>
+          <select id="addCurrency" class="add-select"></select>
+          <label class="pp-field-input" style="height:40px">
+            <input type="number" id="addAmount" placeholder="Monthly amount" min="1" step="1">
+          </label>
+        </div>
+        <button class="pp-btn pp-btn-primary" id="addSubmitBtn" type="button">Submit</button>
+        <p class="add-msg" id="addMsg"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="block-head">
+        <h2>Check your CV against ATS software</h2>
+        <p>Most companies run applications through parsing software before a person ever sees them. This checks the same things that software checks.</p>
+      </div>
+
+      <div class="resume-panel">
+        <div>
+          <div class="pp-dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload your CV">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="margin:0 auto"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <p>Drop your CV here, or click to browse</p>
+            <span>PDF or DOCX, up to 3MB</span>
+            <input type="file" id="fileInput" accept=".pdf,.docx" style="display:none">
+          </div>
+          <div class="file-chip" id="fileChip" style="display:none;margin-top:12px">
+            <span class="f-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            <span><span class="f-name" id="fileName"></span><br><span class="f-size" id="fileSize"></span></span>
+            <button type="button" class="f-remove" id="fileRemove" aria-label="Remove file">&times;</button>
+          </div>
+
+          <label class="pp-field" style="margin-top:16px">
+            <span class="pp-field-label">Job description <span style="font-weight:400;color:var(--c-text-faint)">(optional, for a keyword match score)</span></span>
+            <textarea class="pp-textarea" id="jdInput" rows="4" placeholder="Paste the job description you're applying to…"></textarea>
+          </label>
+
+          <p class="add-msg -error" id="resumeErr" style="display:none"></p>
+
+          <div style="margin-top:16px">
+            <button class="pp-btn pp-btn-primary" id="checkBtn" type="button" disabled>Check my CV</button>
+          </div>
+
+          <div id="results" style="display:none;margin-top:28px;padding-top:24px;border-top:1px solid var(--c-border)">
+            <div class="score-panel">
+              <svg class="score-ring" id="scoreRing" viewBox="0 0 100 100"></svg>
+              <div>
+                <p class="score-label" id="scoreLabel"></p>
+                <p class="score-desc" id="scoreDesc"></p>
+              </div>
+            </div>
+            <div id="checkList"></div>
+            <div class="kw-panel" id="kwPanel" style="display:none">
+              <h3>Keyword match</h3>
+              <p class="kw-sub" id="kwSub"></p>
+              <p class="kw-group-label">Missing — in the job description, not in your CV</p>
+              <div class="kw-pills" id="kwPillsMissing"></div>
+              <p class="kw-group-label">Matched — in both</p>
+              <div class="kw-pills" id="kwPillsMatched"></div>
+            </div>
+            <div class="kw-panel" id="reqPanel" style="display:none">
+              <h3>Experience &amp; qualifications match</h3>
+              <p class="kw-sub" id="reqSub"></p>
+              <div id="reqList"></div>
+            </div>
+            <div style="margin-top:20px">
+              <button class="pp-btn pp-btn-tertiary" id="resetBtn" type="button">Check another CV</button>
+            </div>
+          </div>
+        </div>
+
+        <aside style="padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken);border:1px solid var(--c-border)">
+          <h3 style="margin:0 0 8px;font-size:15.5px;font-weight:700">Nothing is stored</h3>
+          <p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--c-text-subtle)">Your CV is parsed in memory to run this check and never saved anywhere — not even if you're signed in. Run it as many times as you like.</p>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="wrap">
+      <div class="block-head">
+        <h2>Guides</h2>
+        <p>Short, specific write-ups from people doing the work — pricing, contracts, portfolios, negotiating remote offers.</p>
+      </div>
+      <div class="guides-grid">
+        <div class="guide-card"><h3>Coming soon</h3><p>The first guides are being written now — check back shortly.</p></div>
+        <div class="guide-card"><h3>Coming soon</h3><p>The first guides are being written now — check back shortly.</p></div>
+        <div class="guide-card"><h3>Coming soon</h3><p>The first guides are being written now — check back shortly.</p></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var DISCIPLINES = ["Product Design", "UX Design", "UI Design", "Brand Design",
+    "Motion Design", "Design Systems", "UX Research", "Graphic Design",
+    "Game Design", "Sound Design", "Instructional Design", "Fashion Design", "Interior Design"];
+  var LEVELS = ["Junior", "Mid", "Senior", "Lead"];
+  var MARKETS = ["African company", "Global remote"];
+  var CURRENCIES = ["USD", "KES", "NGN", "ZAR", "EUR", "GBP", "GHS", "EGP"];
+
+  function token(){ return localStorage.getItem("kazi_designer_token"); }
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function fmtUsd(n){ return "$" + Math.round(n).toLocaleString(); }
+
+  // ---- Pay ranges ----
+  var payFilters = { discipline: "", market: "" };
+
+  function fillSelect(el, options, withAll){
+    el.innerHTML = (withAll ? '<option value="">' + withAll + '</option>' : "") +
+      options.map(function(o){ return '<option value="' + escapeHtml(o) + '">' + escapeHtml(o) + '</option>'; }).join("");
+  }
+
+  async function loadPayRanges(){
+    var area = document.getElementById("payTableArea");
+    area.innerHTML = '<p style="font-size:14px;color:var(--c-text-faint)">Loading…</p>';
+    try {
+      var qs = new URLSearchParams();
+      if (payFilters.discipline) qs.set("discipline", payFilters.discipline);
+      if (payFilters.market) qs.set("market", payFilters.market);
+      var res = await fetch("/api/resources/pay-ranges?" + qs.toString(), { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      var ranges = data.ranges || [];
+      if (!ranges.length) {
+        area.innerHTML = '<div class="pp-empty"><h3>No published numbers yet</h3>' +
+          '<p>Be the first to add yours below — it takes a minute and helps everyone negotiate better.</p></div>';
+        return;
+      }
+      area.innerHTML = '<div class="pay-table-wrap"><table class="pay-table"><thead><tr>' +
+        '<th>Discipline</th><th>Level</th><th>Market</th><th style="text-align:right">Low</th><th style="text-align:right">Median</th><th style="text-align:right">High</th><th style="text-align:right">Reports</th>' +
+        '</tr></thead><tbody>' +
+        ranges.map(function(r){
+          return "<tr><td>" + escapeHtml(r.discipline) + "</td><td>" + escapeHtml(r.level) + "</td><td>" + escapeHtml(r.market) + "</td>" +
+            '<td class="-num">' + fmtUsd(r.min) + '</td><td class="-num">' + fmtUsd(r.median) + '</td><td class="-num">' + fmtUsd(r.max) + '</td>' +
+            '<td class="-num">' + r.count + "</td></tr>";
+        }).join("") + "</tbody></table></div>";
+    } catch (e) {
+      area.innerHTML = '<div class="pp-empty"><h3>Couldn\'t load the ranges</h3><p>Try again in a moment.</p></div>';
+    }
+  }
+
+  // ---- Add your number ----
+  async function submitPay(){
+    var msg = document.getElementById("addMsg");
+    msg.className = "add-msg"; msg.textContent = "";
+    var t = token();
+    if (!t) { location.href = "pp-auth.html?view=signin&next=" + encodeURIComponent("/resources"); return; }
+    var amount = parseFloat(document.getElementById("addAmount").value);
+    if (!amount || amount <= 0) { msg.className = "add-msg -error"; msg.textContent = "Enter a monthly amount."; return; }
+    var btn = document.getElementById("addSubmitBtn");
+    btn.disabled = true;
+    try {
+      var res = await fetch("/api/resources/pay-submissions", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + t },
+        body: JSON.stringify({
+          discipline: document.getElementById("addDiscipline").value,
+          level: document.getElementById("addLevel").value,
+          market: document.getElementById("addMarket").value,
+          currency: document.getElementById("addCurrency").value,
+          amount: amount
+        })
+      });
+      if (!res.ok) throw new Error("bad status");
+      msg.className = "add-msg -ok";
+      msg.textContent = "Thanks — this goes into the numbers above once it's moderated.";
+      document.getElementById("addAmount").value = "";
+    } catch (e) {
+      msg.className = "add-msg -error";
+      msg.textContent = "Couldn't submit that just now — try again.";
+    }
+    btn.disabled = false;
+  }
+
+  // ---- Résumé check (ported from cv-check.html) ----
+  var dropzone = document.getElementById("dropzone");
+  var fileInput = document.getElementById("fileInput");
+  var fileChip = document.getElementById("fileChip");
+  var checkBtn = document.getElementById("checkBtn");
+  var resumeErr = document.getElementById("resumeErr");
+  var results = document.getElementById("results");
+  var MAX_BYTES = 3 * 1024 * 1024;
+  var selectedFile = null;
+
+  function humanSize(bytes){
+    if (bytes < 1024) return bytes + " B";
+    if (bytes < 1024 * 1024) return Math.round(bytes / 1024) + " KB";
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+  }
+  function showResumeError(msg){ resumeErr.textContent = msg; resumeErr.style.display = "block"; }
+  function clearResumeError(){ resumeErr.style.display = "none"; }
+
+  function setFile(file){
+    clearResumeError();
+    if (!file) return;
+    var ext = file.name.split(".").pop().toLowerCase();
+    if (["pdf", "docx"].indexOf(ext) === -1) { showResumeError("Please choose a .pdf or .docx file."); return; }
+    if (file.size > MAX_BYTES) { showResumeError("That file is larger than 3MB."); return; }
+    selectedFile = file;
+    document.getElementById("fileName").textContent = file.name;
+    document.getElementById("fileSize").textContent = humanSize(file.size);
+    fileChip.style.display = "flex";
+    dropzone.style.display = "none";
+    checkBtn.disabled = false;
+  }
+  function clearFile(){
+    selectedFile = null;
+    fileInput.value = "";
+    fileChip.style.display = "none";
+    dropzone.style.display = "block";
+    checkBtn.disabled = true;
+  }
+
+  dropzone.addEventListener("click", function(){ fileInput.click(); });
+  dropzone.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " ") { e.preventDefault(); fileInput.click(); } });
+  fileInput.addEventListener("change", function(){ setFile(fileInput.files[0]); });
+  document.getElementById("fileRemove").addEventListener("click", clearFile);
+  ["dragenter", "dragover"].forEach(function(evt){
+    dropzone.addEventListener(evt, function(e){ e.preventDefault(); });
+  });
+  dropzone.addEventListener("drop", function(e){
+    e.preventDefault();
+    var file = e.dataTransfer.files && e.dataTransfer.files[0];
+    if (file) setFile(file);
+  });
+
+  function scoreColor(score){
+    if (score >= 85) return "var(--c-good-text)";
+    if (score >= 65) return "var(--pp-gold-800)";
+    if (score >= 45) return "var(--pp-gold-800)";
+    return "var(--c-bad-text)";
+  }
+  function scoreLabelText(score){
+    if (score >= 85) return "Excellent";
+    if (score >= 65) return "Good";
+    if (score >= 45) return "Needs work";
+    return "Poor";
+  }
+  function scoreDescText(score){
+    if (score >= 85) return "Your CV is in great shape for ATS software to read correctly.";
+    if (score >= 65) return "Solid, but a few fixes below would make it more reliably parsed.";
+    if (score >= 45) return "Several issues below could cause an ATS to misread or drop parts of your CV.";
+    return "Multiple issues below are likely causing ATS software to misread your CV.";
+  }
+  function renderScoreRing(score){
+    var r = 40, c = 2 * Math.PI * r;
+    var offset = c - (score / 100) * c;
+    var color = scoreColor(score);
+    document.getElementById("scoreRing").innerHTML =
+      '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="var(--c-surface-inset)" stroke-width="9"></circle>' +
+      '<circle cx="50" cy="50" r="' + r + '" fill="none" stroke="' + color + '" stroke-width="9" stroke-linecap="round" ' +
+      'stroke-dasharray="' + c + '" stroke-dashoffset="' + offset + '" transform="rotate(-90 50 50)"></circle>' +
+      '<text x="50" y="56" text-anchor="middle">' + score + '</text>';
+  }
+  var ICON_PASS = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+  var ICON_WARN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>';
+
+  function renderChecks(checks){
+    document.getElementById("checkList").innerHTML = checks.map(function(c){
+      var cls = c.passed ? "-pass" : (c.severity === "critical" ? "-critical" : "-warning");
+      var icon = c.passed ? ICON_PASS : ICON_WARN;
+      return '<div class="check-row ' + cls + '"><span class="c-icon">' + icon + '</span><div>' +
+        '<p class="c-title">' + escapeHtml(c.title) + '</p><p class="c-detail">' + escapeHtml(c.detail) + '</p>' +
+        (!c.passed ? '<p class="c-fix"><b>How to fix:</b> ' + escapeHtml(c.fix) + '</p>' : "") + '</div></div>';
+    }).join("");
+  }
+  function renderKeywordMatch(km){
+    var panel = document.getElementById("kwPanel");
+    if (!km) { panel.style.display = "none"; return; }
+    panel.style.display = "block";
+    document.getElementById("kwSub").textContent = km.score + "% of the job description's key terms appear in your CV.";
+    document.getElementById("kwPillsMissing").innerHTML = km.missing.length
+      ? km.missing.map(function(w){ return '<span class="kw-pill">' + escapeHtml(w) + '</span>'; }).join("")
+      : '<span class="kw-pill -match">Nothing major missing</span>';
+    document.getElementById("kwPillsMatched").innerHTML = km.matched.length
+      ? km.matched.map(function(w){ return '<span class="kw-pill -match">' + escapeHtml(w) + '</span>'; }).join("")
+      : '<span class="kw-pill">None of the key terms matched</span>';
+  }
+  function renderRequirementsMatch(rm){
+    var panel = document.getElementById("reqPanel");
+    if (!rm) { panel.style.display = "none"; return; }
+    panel.style.display = "block";
+    var metCount = rm.items.filter(function(i){ return i.met; }).length;
+    document.getElementById("reqSub").textContent = metCount + " of " + rm.items.length + " requirements found on your CV.";
+    document.getElementById("reqList").innerHTML = rm.items.map(function(i){
+      return '<div class="check-row ' + (i.met ? "-pass" : "-critical") + '"><span class="c-icon">' + (i.met ? ICON_PASS : ICON_WARN) + '</span>' +
+        '<div><p class="c-title">' + escapeHtml(i.label) + '</p><p class="c-detail">' + escapeHtml(i.detail) + '</p></div></div>';
+    }).join("");
+  }
+
+  checkBtn.addEventListener("click", async function(){
+    if (!selectedFile) return;
+    clearResumeError();
+    checkBtn.disabled = true;
+    checkBtn.textContent = "Analyzing…";
+    var fd = new FormData();
+    fd.append("file", selectedFile);
+    fd.append("job_description", document.getElementById("jdInput").value.trim());
+    try {
+      var res = await fetch("/api/ats/check", { method: "POST", body: fd });
+      if (!res.ok) {
+        var body = await res.json().catch(function(){ return {}; });
+        throw new Error(body.detail || "Request failed (" + res.status + ")");
+      }
+      var data = await res.json();
+      renderScoreRing(data.score);
+      var label = document.getElementById("scoreLabel");
+      label.textContent = scoreLabelText(data.score) + " (" + data.score + "/100)";
+      label.style.color = scoreColor(data.score);
+      document.getElementById("scoreDesc").textContent = scoreDescText(data.score);
+      renderChecks(data.checks);
+      renderKeywordMatch(data.keyword_match);
+      renderRequirementsMatch(data.requirements_match);
+      results.style.display = "block";
+      results.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      showResumeError("Couldn't analyze that file: " + e.message);
+    }
+    checkBtn.disabled = false;
+    checkBtn.textContent = "Check my CV";
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    clearFile();
+    document.getElementById("jdInput").value = "";
+    results.style.display = "none";
+  });
+
+  function init(){
+    fillSelect(document.getElementById("filterDiscipline"), DISCIPLINES, "All disciplines");
+    fillSelect(document.getElementById("filterMarket"), MARKETS, "All markets");
+    document.getElementById("filterDiscipline").addEventListener("change", function(e){ payFilters.discipline = e.target.value; loadPayRanges(); });
+    document.getElementById("filterMarket").addEventListener("change", function(e){ payFilters.market = e.target.value; loadPayRanges(); });
+
+    fillSelect(document.getElementById("addDiscipline"), DISCIPLINES);
+    fillSelect(document.getElementById("addLevel"), LEVELS);
+    fillSelect(document.getElementById("addMarket"), MARKETS);
+    fillSelect(document.getElementById("addCurrency"), CURRENCIES);
+    document.getElementById("addSubmitBtn").addEventListener("click", submitPay);
+
+    loadPayRanges();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
