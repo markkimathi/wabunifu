@@ -1,0 +1,259 @@
+/* Path & Pixel primitives: buttons, fields, cards, eligibility badge,
+   chips, tabs, avatars, empty state. Phase 3 of the migration (see
+   README's "Suggested build order") — pure CSS, no JS, built on
+   tokens.css custom properties so every value stays in step with the
+   design system. Not yet wired into any live page.
+
+   Import alongside tokens.css: <link rel="stylesheet" href="tokens.css">
+   then <link rel="stylesheet" href="pp-primitives.css">. */
+
+/* -----------------------------------------------------------------
+   BUTTONS
+   Never more than one primary button in a view. Height 44px default
+   (40px compact, 52px large), the 44px floor is also the minimum
+   touch target so it never shrinks further on mobile.
+   ----------------------------------------------------------------- */
+.pp-btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  height:var(--pp-control-height);padding:0 20px;border-radius:var(--pp-radius-lg);
+  font-family:var(--pp-font);font-size:var(--pp-button-size);font-weight:var(--pp-button-weight);
+  letter-spacing:-0.005em;white-space:nowrap;cursor:pointer;border:none;
+  text-decoration:none;transition:background var(--pp-duration) var(--pp-ease),border-color var(--pp-duration) var(--pp-ease);
+}
+.pp-btn:disabled,.pp-btn[aria-disabled="true"]{cursor:not-allowed}
+.pp-btn-sm{height:var(--pp-control-height-sm);padding:0 16px;font-size:14px;border-radius:var(--pp-radius-md)}
+.pp-btn-lg{height:var(--pp-control-height-cta);padding:0 28px;font-size:17px}
+.pp-btn-block{width:100%}
+
+.pp-btn-primary{background:var(--c-accent);color:var(--c-on-accent)}
+.pp-btn-primary:hover{background:var(--c-accent-hover)}
+.pp-btn-primary:active{background:var(--pp-gold-700)}
+.pp-btn-primary:disabled{background:var(--c-surface-inset);color:var(--c-border-hover)}
+
+.pp-btn-secondary{background:var(--c-surface);color:var(--c-text);border:1px solid var(--c-border-strong)}
+.pp-btn-secondary:hover{background:var(--c-bg-sunken);border-color:var(--c-border-hover)}
+.pp-btn-secondary:active{background:var(--c-surface-inset)}
+.pp-btn-secondary:disabled{background:var(--c-surface);color:var(--c-border-strong);border-color:var(--c-border)}
+
+/* A text action beside another button — same height/label/radius/padding
+   as its neighbour, just without the fill or border. Not a link. */
+.pp-btn-tertiary{background:transparent;color:var(--c-text-muted);padding:0 14px}
+.pp-btn-tertiary:hover{background:var(--c-surface-inset);color:var(--c-text)}
+.pp-btn-tertiary:active{background:var(--c-border)}
+.pp-btn-tertiary:disabled{color:var(--c-border-strong)}
+
+/* Self-inverting on purpose: --c-text/--c-bg are opposite ends of the
+   theme's own contrast pair, so this reads as "ink" in light mode
+   (#0A0A0A fill, white label) without literally using --pp-ink, which
+   equals the dark-theme page background and would make the button
+   disappear — one of the design system's own documented dark-mode
+   exceptions ("an ink button" is not a plain token swap). */
+.pp-btn-dark{background:var(--c-text);color:var(--c-bg)}
+.pp-btn-dark:hover{filter:brightness(.85)}
+
+/* Destructive: outline by default, never gold. The solid-red fill is a
+   press/active state here, not a separate variant — the confirm dialog's
+   own "Close account"-style button (permanently solid) is a different
+   component, see pp-confirm.js's .pp-cf-btn-confirm.-danger. */
+.pp-btn-danger{background:var(--c-surface);color:var(--c-bad-text);border:1px solid var(--c-bad-border)}
+.pp-btn-danger:hover{background:var(--c-bad-bg);border-color:var(--c-bad-text)}
+.pp-btn-danger:active{background:var(--c-bad-text);border-color:var(--c-bad-text);color:var(--pp-white)}
+
+.pp-btn-icon{width:44px;height:44px;padding:0;border-radius:var(--pp-radius-lg);
+  background:var(--c-surface);color:var(--c-text);border:1px solid var(--c-border-strong)}
+.pp-btn-icon:hover{background:var(--c-bg-sunken);border-color:var(--c-border-hover)}
+.pp-btn-icon.-saved{background:var(--pp-gold-200);border-color:var(--pp-gold-400);color:var(--pp-gold)}
+.pp-btn-icon.-ghost{background:transparent;border:none}
+.pp-btn-icon.-ghost:hover{background:var(--c-surface-inset)}
+
+.pp-btn .pp-spinner{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;
+  border-top-color:transparent;display:inline-block;animation:pp-spin .7s linear infinite;flex:none}
+@keyframes pp-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.pp-btn .pp-spinner{animation:none}}
+
+/* -----------------------------------------------------------------
+   FIELDS
+   Label above field, always visible. The border/focus treatment sits
+   on the WRAPPER (.pp-field-input), never the bare <input> — applying
+   it to the input directly is the most common implementation error.
+   ----------------------------------------------------------------- */
+.pp-field{display:flex;flex-direction:column;gap:7px}
+.pp-field-label{font-size:13px;font-weight:600;color:var(--c-text)}
+.pp-field.-error .pp-field-label{color:var(--c-bad-text)}
+.pp-field-help{font-size:12.5px;color:var(--c-text-faint)}
+.pp-field-error{font-size:12.5px;color:var(--c-bad-text);display:flex;align-items:center;gap:6px}
+
+.pp-field-input{
+  display:flex;align-items:center;gap:10px;height:var(--pp-control-height);padding:0 14px;
+  border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-lg);background:var(--c-surface);
+}
+.pp-field-input:focus-within{border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+.pp-field.-error .pp-field-input{border:1.5px solid var(--c-bad);background:var(--c-bad-bg)}
+.pp-field.-disabled .pp-field-input{border-color:var(--c-border);background:var(--c-bg-sunken)}
+
+.pp-field-input input,.pp-field-input select{
+  border:none;outline:none;background:transparent;flex:1;min-width:0;
+  font-family:var(--pp-font);font-size:15px;color:var(--c-text);height:100%;
+}
+.pp-field-input input::placeholder{color:var(--c-text-faint)}
+.pp-field-input input:disabled{color:var(--c-icon)}
+.pp-field-input svg{flex:none;color:var(--c-text-faint)}
+.pp-field-input kbd{font-family:var(--pp-font-mono);font-size:11px;padding:3px 6px;
+  border:1px solid var(--c-border);border-radius:5px;color:var(--c-text-faint)}
+
+.pp-textarea{padding:12px 14px;border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-lg);
+  background:var(--c-surface);font-family:var(--pp-font);font-size:15px;line-height:1.55;
+  color:var(--c-text);resize:vertical;width:100%}
+.pp-textarea:focus{outline:none;border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+
+.pp-check-row,.pp-radio-row{display:flex;align-items:center;gap:10px;font-size:14.5px;cursor:pointer}
+.pp-check-row input,.pp-radio-row input{width:18px;height:18px;accent-color:var(--pp-gold);cursor:pointer;flex:none}
+.pp-check-row .pp-check-count{margin-left:auto;font-size:12.5px;color:var(--c-text-faint);font-variant-numeric:tabular-nums}
+.pp-check-row.-disabled,.pp-radio-row.-disabled{color:var(--c-border-hover);cursor:not-allowed}
+
+/* Toggle: the whole row is the tap target, not just the switch. Every
+   toggle should carry a one-line consequence beneath its label
+   (that copy is the caller's job, not this primitive's). */
+.pp-toggle-row{display:flex;align-items:center;gap:12px;font-size:14.5px;cursor:pointer}
+.pp-toggle{width:42px;height:24px;border-radius:var(--pp-radius-full);background:var(--c-border-strong);
+  position:relative;flex:none;display:inline-block;transition:background var(--pp-duration) var(--pp-ease)}
+.pp-toggle::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;
+  background:var(--pp-white);box-shadow:0 1px 2px rgba(10,10,10,.25);transition:left var(--pp-duration) var(--pp-ease)}
+.pp-toggle-row input{position:absolute;opacity:0;width:1px;height:1px}
+.pp-toggle-row input:checked + .pp-toggle{background:var(--pp-gold)}
+.pp-toggle-row input:checked + .pp-toggle::after{left:21px}
+.pp-toggle-row input:focus-visible + .pp-toggle{outline:var(--pp-focus-outline);outline-offset:var(--pp-focus-offset)}
+
+.pp-dropzone{border:1.5px dashed var(--c-border-strong);border-radius:var(--pp-radius-lg);padding:22px;
+  text-align:center;background:var(--c-bg-sunken)}
+.pp-dropzone svg{color:var(--c-text-faint)}
+.pp-dropzone p{margin:8px 0 2px;font-size:14px;font-weight:600;color:var(--c-text)}
+.pp-dropzone span{font-size:12.5px;color:var(--c-text-faint)}
+
+/* -----------------------------------------------------------------
+   ELIGIBILITY BADGE — the product's signature. Green carries the
+   signal and nothing else; it is never reused for anything but this.
+   Only two visual states: the two positive tiers ("Open across
+   Africa", "Global remote") share one green treatment, and "Worth
+   checking" is the dashed neutral. Never gold here.
+   ----------------------------------------------------------------- */
+.pp-elig{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;border-radius:var(--pp-radius-sm);
+  font-size:13px;font-weight:600;white-space:nowrap}
+.pp-elig .pp-elig-dot{width:7px;height:7px;border-radius:50%;flex:none}
+.pp-elig.-positive{background:var(--c-good-bg);color:var(--c-good-text);border:1px solid var(--c-good-border)}
+.pp-elig.-positive .pp-elig-dot{background:var(--c-good)}
+.pp-elig.-check{background:var(--c-surface);color:var(--c-text-subtle);border:1px dashed var(--c-border-strong)}
+
+/* -----------------------------------------------------------------
+   CHIPS — skills/disciplines stay quiet; only the eligibility badge
+   above is allowed a filled signal colour.
+   ----------------------------------------------------------------- */
+.pp-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:var(--pp-radius-sm);
+  font-size:13px;font-weight:500;background:var(--c-surface-inset);color:var(--c-text-muted)}
+.pp-chip.-outline{background:var(--c-surface);border:1px solid var(--c-border-strong);color:var(--c-text-muted)}
+.pp-chip.-dark{background:var(--c-text);color:var(--c-bg)}
+.pp-chip.-removable{cursor:pointer}
+.pp-chip .pp-chip-x{display:inline-flex;color:currentColor;opacity:.8}
+.pp-chip.-removable:hover .pp-chip-x{opacity:1}
+
+/* Status pills: rounder, smaller — for state, not for filtering. */
+.pp-status{display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:var(--pp-radius-full);
+  font-size:12.5px;font-weight:600}
+.pp-status.-good{background:var(--c-good-bg);color:var(--c-good-text)}
+.pp-status.-new{background:var(--pp-gold-200);color:var(--pp-gold-800)}
+.pp-status.-neutral{background:var(--c-surface-inset);color:var(--c-text-subtle)}
+/* --pp-ink-raised, not --pp-ink: this carries gold text, which needs a
+   dark ground specifically (gold is unreadable on a light fill), so it
+   can't self-invert like the white-text ink elements below. Using the
+   static "raised ink" step instead of true ink keeps it a shade lighter
+   than the dark-theme page background, rather than exactly matching it. */
+.pp-status.-featured{background:var(--pp-ink-raised);color:var(--pp-gold)}
+
+/* -----------------------------------------------------------------
+   CARDS — four content types (job / profile / portfolio / company)
+   share one container: white, 1px border, 8px radius. Hover darkens
+   the border rather than lifting; shadow is reserved for things that
+   genuinely float (modals, sheets, toasts), never a resting card.
+   ----------------------------------------------------------------- */
+.pp-card{border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface);
+  display:flex;flex-direction:column;gap:14px;padding:22px;
+  transition:border-color var(--pp-duration) var(--pp-ease),box-shadow var(--pp-duration) var(--pp-ease)}
+a.pp-card,.pp-card.-clickable{cursor:pointer;text-decoration:none;color:inherit}
+a.pp-card:hover,.pp-card.-clickable:hover{border-color:var(--c-border-hover);box-shadow:0 4px 12px rgba(10,10,10,.07)}
+/* Portfolio-style: edge-to-edge cover image, no card padding — the
+   body below the cover carries its own padding instead. */
+.pp-card.-cover{padding:0;overflow:hidden}
+.pp-card.-cover .pp-card-cover{aspect-ratio:4/3;background:var(--c-surface-inset);border-bottom:1px solid var(--c-border)}
+.pp-card.-cover .pp-card-body{padding:18px}
+.pp-card-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding-top:12px;border-top:1px solid var(--c-surface-inset)}
+.pp-card-row{display:flex;align-items:flex-start;gap:14px}
+.pp-card-tags{display:flex;flex-wrap:wrap;gap:7px}
+/* Square company/job "mark" tile — initial or logo placeholder. */
+.pp-card-mark{width:44px;height:44px;border-radius:var(--pp-radius-md);background:var(--pp-ink-raised);color:var(--pp-gold);
+  flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:17px;font-weight:800}
+.pp-card-mark.-logo{background:var(--c-surface-inset);color:var(--c-text-subtle);border:1px solid var(--c-border);
+  font-size:11px;font-weight:600}
+
+/* -----------------------------------------------------------------
+   TABS — underline on desktop, never a pill. Below 768px the same
+   tabs become a scrolling chip row instead (never both tabs and
+   filters on one page).
+   ----------------------------------------------------------------- */
+.pp-tabs{display:flex;align-items:center;gap:2px;border-bottom:1px solid var(--c-border)}
+.pp-tab{padding:12px 14px;font-size:15.5px;font-weight:500;color:var(--c-text-subtle);
+  border:none;background:none;cursor:pointer;margin-bottom:-1px;border-bottom:2px solid transparent;
+  font-family:var(--pp-font)}
+.pp-tab .pp-tab-count{margin-left:7px;font-size:13px;color:var(--c-text-faint)}
+.pp-tab.-active{color:var(--c-text);font-weight:600;border-bottom-color:var(--pp-gold)}
+
+.pp-tabs-scroll{display:flex;gap:8px;overflow-x:auto}
+.pp-tab-chip{padding:9px 15px;border-radius:var(--pp-radius-full);background:var(--c-surface);
+  color:var(--c-text-muted);border:1px solid var(--c-border-strong);font-size:14.5px;font-weight:500;
+  white-space:nowrap;cursor:pointer;font-family:var(--pp-font);flex:none}
+.pp-tab-chip .pp-tab-count{margin-left:6px;opacity:.7}
+.pp-tab-chip.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
+
+/* Sort: a segmented pair, dark fill marks the active option. */
+.pp-sort{display:flex;gap:6px}
+.pp-sort-opt{height:36px;padding:0 13px;border-radius:var(--pp-radius-md);background:var(--c-surface);
+  color:var(--c-text-muted);border:1px solid var(--c-border-strong);font-size:13.5px;font-weight:500;
+  cursor:pointer;font-family:var(--pp-font);display:inline-flex;align-items:center}
+.pp-sort-opt.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text);font-weight:600}
+
+/* -----------------------------------------------------------------
+   AVATARS — sizes 28/40/56/88px. Initials fall back to a tint chosen
+   deterministically from the name (see pp-avatar-tint() below).
+   ----------------------------------------------------------------- */
+.pp-avatar{border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+  font-weight:700;flex:none;border:1px solid var(--c-border);background:var(--c-surface-inset);color:var(--c-text-subtle)}
+.pp-avatar.-xs{width:28px;height:28px;font-size:11px}
+.pp-avatar.-sm{width:40px;height:40px;font-size:14px}
+.pp-avatar.-md{width:56px;height:56px;font-size:19px}
+.pp-avatar.-lg{width:88px;height:88px;font-size:28px}
+.pp-avatar.-tint-gold{background:var(--pp-gold-300);border-color:var(--pp-gold-400);color:var(--pp-gold-800)}
+.pp-avatar.-tint-green{background:var(--c-good-bg);border-color:var(--c-good-border);color:var(--c-good-text)}
+.pp-avatar.-tint-dark{background:var(--pp-ink-raised);border-color:var(--pp-ink-raised);color:var(--pp-gold)}
+
+/* Overlapping stack — each avatar after the first gets a white ring
+   and pulls left; a trailing "+N" tile uses the dark tint. */
+.pp-avatar-stack{display:flex;align-items:center}
+.pp-avatar-stack .pp-avatar{border:2px solid var(--c-surface);margin-left:-12px}
+.pp-avatar-stack .pp-avatar:first-child{margin-left:0}
+
+.pp-avatar-wrap{position:relative;display:inline-block}
+.pp-avatar-status{position:absolute;bottom:1px;right:1px;width:14px;height:14px;border-radius:50%;
+  background:var(--c-good);border:2.5px solid var(--c-surface)}
+
+/* -----------------------------------------------------------------
+   EMPTY STATE — names what goes there and offers the action that
+   fills it. No shrugging illustrations.
+   ----------------------------------------------------------------- */
+.pp-empty{padding:40px 28px;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);
+  background:var(--c-surface);text-align:center}
+.pp-empty-icon{width:52px;height:52px;border-radius:var(--pp-radius-md);background:var(--pp-gold-200);
+  border:1px solid var(--pp-gold-400);margin:0 auto 16px;display:flex;align-items:center;justify-content:center;
+  color:var(--pp-gold-800)}
+.pp-empty h3{margin:0 0 7px;font-size:19px;font-weight:700;letter-spacing:-0.015em;color:var(--c-text)}
+.pp-empty p{margin:0 0 20px;font-size:14px;line-height:1.55;color:var(--c-text-subtle);
+  max-width:34ch;margin-left:auto;margin-right:auto}

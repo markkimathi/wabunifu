@@ -42,7 +42,11 @@
   ];
 
   var STYLE = ""
-    + ".pp-foot-full{background:var(--pp-ink);color:var(--pp-text-faint-on-dark,#D2D2D6)}"
+    // --c-surface-dark, not --pp-ink: same value (#0A0A0A) but names the
+    // intent — "a band that was already ink stays the page ground" is one
+    // of the design system's documented dark-mode exceptions, so blending
+    // into the dark-theme page background here is correct, not a bug.
+    + ".pp-foot-full{background:var(--c-surface-dark);color:var(--pp-text-faint-on-dark,#D2D2D6)}"
     + ".pp-foot-full-cols{max-width:var(--pp-container);margin:0 auto;padding:56px var(--pp-page-margin) 40px;"
     + "display:grid;grid-template-columns:minmax(0,1.4fr) repeat(3,minmax(0,1fr));gap:48px}"
     + "@media(max-width:767px){.pp-foot-full-cols{grid-template-columns:1fr 1fr;gap:22px 16px;padding:32px 16px 24px}}"
