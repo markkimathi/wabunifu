@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Join the team · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  @media(max-width:1023px){main{grid-template-columns:1fr}}
+  a{color:inherit}
+
+  .form-side{display:flex;flex-direction:column;padding:40px clamp(24px,5vw,64px)}
+  .form-inner{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:440px;width:100%;margin:0 auto}
+  .value-side{background:var(--pp-ink);color:var(--pp-white);padding:56px;display:flex;flex-direction:column;
+    justify-content:center;position:relative;overflow:hidden}
+  @media(max-width:1023px){.value-side{display:none}}
+  .value-side h2{margin:0 0 16px;font-size:30px;line-height:1.16;letter-spacing:-0.024em;font-weight:700;max-width:20ch}
+  .value-side p{margin:0 0 26px;font-size:15.5px;line-height:1.6;color:var(--pp-text-faint-on-dark,#D2D2D6);max-width:40ch}
+  .value-side ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+  .value-side li{display:flex;gap:12px;font-size:15px;line-height:1.5;color:var(--pp-text-faint-on-dark,#D2D2D6)}
+  .value-side li svg{flex:none;color:var(--pp-gold);margin-top:2px}
+
+  .invite-badge{display:inline-flex;align-items:center;gap:10px;margin-bottom:22px}
+  .invite-badge .mark{width:36px;height:36px;flex:none;border-radius:9px;background:var(--pp-ink-raised);color:var(--pp-gold);
+    display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800}
+  .invite-badge .txt{font-size:13.5px;font-weight:600;color:var(--c-text-subtle)}
+
+  h1{margin:0 0 10px;font-size:38px;line-height:1.04;letter-spacing:-0.034em;font-weight:800}
+  .sub{margin:0 0 26px;font-size:16px;line-height:1.55;color:var(--c-text-subtle)}
+
+  .field-block{margin-bottom:16px}
+  .field-block .pp-field-label{display:block;margin-bottom:7px}
+  .field-block .pp-field-input{height:50px;border-radius:11px}
+  .field-block .pp-field-input input{font-size:15.5px}
+  .toggle-eye{width:32px;height:32px;flex:none;border:none;border-radius:8px;background:transparent;
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--c-text-subtle)}
+  .toggle-eye:hover{background:var(--c-surface-inset)}
+  .email-note{margin:0 0 26px;font-size:13.5px;color:var(--c-text-subtle)}
+  .cta-row{display:flex;gap:10px;margin-bottom:18px}
+  .cta-row .pp-btn-primary{flex:1}
+  .approval-note{margin:0;font-size:13.5px;line-height:1.6;color:var(--c-text-faint)}
+
+  .msg-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+  .msg-icon.-wait{background:var(--pp-gold-200);color:var(--pp-gold-800)}
+  .msg-icon.-good{background:var(--c-good-bg);color:var(--c-good-text)}
+  .msg-icon.-neutral{background:var(--c-surface-inset);color:var(--c-text-subtle)}
+  .msg-facts{display:flex;flex-direction:column;margin:0 0 28px}
+  .msg-facts span{padding:12px 0;border-top:1px solid var(--c-border);font-size:15px;line-height:1.5;color:var(--c-text-muted)}
+
+  .mark-row{padding:32px clamp(24px,5vw,64px) 0}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-shell="focused"></div>
+
+<main>
+  <div class="form-side">
+    <div class="form-inner" id="formArea"></div>
+  </div>
+  <div class="value-side" id="valueSide"></div>
+</main>
+<div id="pp-footer" data-variant="legal"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script src="pp-confirm.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var ICON = {
+    check: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>',
+    checkSm: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>',
+    clock: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7.5V12l3 2"></path></svg>',
+    x: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
+    eyeOpen: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+    eyeClosed: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"></path><path d="M9.5 6a8.6 8.6 0 012.5-.4c6 0 9.5 6.4 9.5 6.4a17 17 0 01-2.7 3.4"></path><path d="M6.3 8.2A16.7 16.7 0 002.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5"></path></svg>'
+  };
+
+  var params = new URLSearchParams(location.search);
+  var company = (params.get("company") || "").trim();
+  var inviter = (params.get("inviter") || "").trim();
+  var email = (params.get("email") || "").trim();
+  var needsApproval = params.get("approval") !== "auto";
+
+  var companyLabel = company || "this team";
+  var inviterLabel = inviter || "Someone on the team";
+  var emailLabel = email || "the email address on this invite";
+
+  var state = { view: "invite", name: "", pw: "", pwVisible: false };
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  var MESSAGES = {
+    waiting: {
+      icon: "-wait", iconSvg: ICON.clock,
+      title: "Someone has to approve you",
+      body: "You're on " + escapeHtml(companyLabel) + "'s team page as pending. Whoever owns the account has been asked, and most approvals land the same day.",
+      facts: [
+        "Your name and password are saved — you won't fill this in twice.",
+        "Nothing you post is visible to " + escapeHtml(companyLabel) + " until you're approved, because you can't post yet.",
+        "This is a local demo of that wait — Kazi doesn't have real invite accounts yet."
+      ],
+      action: "Look around Kazi", href: "index.html"
+    },
+    joined: {
+      icon: "-good", iconSvg: ICON.check,
+      title: "You can post roles now",
+      body: "You're on the " + escapeHtml(companyLabel) + " account with the same access as whoever invited you. Post a role, and applicants go straight to your own page.",
+      facts: [
+        "Your first listing starts with eligibility already answered.",
+        "Kazi never sits between you and a candidate, and never charges per hire.",
+        "This is a local demo of that handoff — nothing here was actually saved to an account."
+      ],
+      action: "Post a role", href: "/post" + (company ? "?company=" + encodeURIComponent(company) : "")
+    },
+    declined: {
+      icon: "-neutral", iconSvg: ICON.x,
+      title: "Nothing was created",
+      body: "We told " + escapeHtml(inviterLabel) + " the invite was declined, not why. No account exists at " + escapeHtml(emailLabel) + ", and that address is off the " + escapeHtml(companyLabel) + " team.",
+      facts: [
+        "The link is dead — opening it again would show this same page.",
+        "You can still join Kazi as a designer, with your own email."
+      ],
+      action: "Back to Kazi", href: "index.html"
+    }
+  };
+
+  function ready(pw){
+    return state.name.trim().length > 1 && state.pw.length >= 8;
+  }
+
+  function renderForm(){
+    var r = ready();
+    return '<div class="invite-badge"><span class="mark">' + (company ? company.slice(0,1).toUpperCase() : "?") + '</span>' +
+      '<span class="txt">' + escapeHtml(inviterLabel) + ' invited you' + (inviter ? "" : "") + '</span></div>' +
+      '<h1>Post roles at ' + escapeHtml(companyLabel) + '</h1>' +
+      '<p class="sub">' + escapeHtml(companyLabel) + ' is already on Kazi, so there’s no company to set up and no eligibility questions to answer — that work carries over to everything you post.</p>' +
+      '<form id="inviteForm">' +
+        '<div class="field-block"><label class="pp-field-label" for="fName">Your name</label>' +
+          '<div class="pp-field-input"><input id="fName" type="text" placeholder="How you want to appear to applicants" value="' + escapeHtml(state.name) + '"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label" for="fPw">A password</label>' +
+          '<div class="pp-field-input"><input id="fPw" type="' + (state.pwVisible ? "text" : "password") + '" placeholder="Eight characters or more" value="' + escapeHtml(state.pw) + '">' +
+            '<button type="button" class="toggle-eye" id="toggleEye" aria-label="' + (state.pwVisible ? "Hide password" : "Show password") + '">' + (state.pwVisible ? ICON.eyeClosed : ICON.eyeOpen) + '</button></div></div>' +
+        '<p class="email-note">Your email, <strong>' + escapeHtml(emailLabel) + '</strong>, is already on the invite.</p>' +
+        '<div class="cta-row">' +
+          '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg"' + (r ? "" : " disabled") + '>Join ' + escapeHtml(companyLabel) + '</button>' +
+          '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-lg" id="notMineBtn">Not my company</button>' +
+        '</div>' +
+      '</form>' +
+      '<p class="approval-note">' + (needsApproval
+        ? "Whoever owns the " + escapeHtml(companyLabel) + " account approves new people. You won't be able to post until they do."
+        : escapeHtml(inviterLabel) + " can add people directly, so you're in as soon as you join.") + '</p>';
+  }
+
+  function renderMessage(){
+    var m = MESSAGES[state.view];
+    return '<span class="msg-icon ' + m.icon + '">' + m.iconSvg + '</span>' +
+      '<h1>' + m.title + '</h1>' +
+      '<p class="sub">' + m.body + '</p>' +
+      '<div class="msg-facts">' + m.facts.map(function(f){ return '<span>' + f + '</span>'; }).join("") + '</div>' +
+      '<a href="' + m.href + '" class="pp-btn pp-btn-primary pp-btn-lg">' + m.action + '</a>';
+  }
+
+  function renderValueSide(){
+    return '<h2>Being invited skips company setup</h2>' +
+      '<p>Kazi asks the eligibility question once per company, not once per person. Joining an existing team means it’s already answered.</p>' +
+      '<ul>' +
+        '<li>' + ICON.check + '<span>No company page to fill in — you inherit the one that already exists.</span></li>' +
+        '<li>' + ICON.check + '<span>No eligibility question — every role you post carries the same answer.</span></li>' +
+        '<li>' + ICON.check + '<span>Your own designer profile, if you have one, is untouched.</span></li>' +
+      '</ul>';
+  }
+
+  function render(){
+    document.getElementById("formArea").innerHTML = state.view === "invite" ? renderForm() : renderMessage();
+    document.getElementById("valueSide").innerHTML = renderValueSide();
+    wire();
+  }
+
+  function wire(){
+    var form = document.getElementById("inviteForm");
+    if (form) form.addEventListener("submit", function(e){
+      e.preventDefault();
+      if (!ready()) return;
+      state.view = needsApproval ? "waiting" : "joined";
+      render();
+    });
+    var fName = document.getElementById("fName");
+    if (fName) fName.addEventListener("input", function(){
+      state.name = fName.value;
+      var btn = document.querySelector("#inviteForm .pp-btn-primary");
+      if (btn) btn.disabled = !ready();
+    });
+    var fPw = document.getElementById("fPw");
+    if (fPw) fPw.addEventListener("input", function(){
+      state.pw = fPw.value;
+      var btn = document.querySelector("#inviteForm .pp-btn-primary");
+      if (btn) btn.disabled = !ready();
+    });
+    var eyeBtn = document.getElementById("toggleEye");
+    if (eyeBtn) eyeBtn.addEventListener("click", function(){ state.pwVisible = !state.pwVisible; render(); document.getElementById("fPw").focus(); });
+
+    var notMineBtn = document.getElementById("notMineBtn");
+    if (notMineBtn) notMineBtn.addEventListener("click", async function(){
+      var ok = await window.showPPConfirm({
+        title: "Tell " + inviterLabel + " this isn’t your company?",
+        description: "No account is created and the invite dies. " + inviterLabel + " sees that it was declined, not why. Your email address is removed from the " + companyLabel + " account.",
+        confirmLabel: "Decline the invite",
+        safeLabel: "Go back to the invite",
+        danger: true
+      });
+      if (ok) { state.view = "declined"; render(); }
+    });
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

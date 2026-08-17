@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Set up hiring · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1;display:flex;justify-content:center;padding:0 var(--pp-page-margin) 64px}
+  a{color:inherit}
+  .wizard{max-width:600px;width:100%;padding-top:8px}
+
+  .dots{display:flex;gap:8px;margin-bottom:32px}
+  .dot{flex:1;height:4px;border-radius:999px;background:var(--c-surface-inset)}
+  .dot.-done{background:var(--pp-gold)}
+  .dot.-active{background:var(--c-text)}
+
+  .step-kicker{display:block;font-size:11px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;
+    color:var(--c-text-faint);margin-bottom:12px}
+  .step-title{margin:0 0 8px;font-size:34px;line-height:1.06;letter-spacing:-0.03em;font-weight:800}
+  .step-sub{margin:0 0 26px;font-size:16px;line-height:1.55;color:var(--c-text-subtle)}
+  .step-nav{display:flex;align-items:center;gap:12px;margin-top:28px;padding-top:22px;border-top:1px solid var(--c-border)}
+  .gate-note{flex:1;font-size:13.5px;color:var(--c-text-faint);text-align:right}
+
+  /* Chooser */
+  .choice-primary{display:flex;flex-direction:column;align-items:flex-start;gap:10px;width:100%;text-align:left;
+    padding:28px;border:2px solid var(--pp-gold);border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken);
+    cursor:pointer;font-family:var(--pp-font);margin-bottom:14px}
+  .choice-primary .big{font-size:26px;font-weight:800;letter-spacing:-0.024em;color:var(--c-text)}
+  .choice-primary .note{font-size:15px;line-height:1.55;color:var(--c-text-subtle)}
+  .choice-secondary{display:flex;align-items:center;gap:14px;width:100%;padding:18px 20px;border:1px solid var(--c-border-strong);
+    border-radius:var(--pp-radius-lg);background:var(--c-surface);cursor:pointer;font-family:var(--pp-font);text-align:left;color:var(--c-text)}
+  .choice-secondary:hover{border-color:var(--c-border-hover);background:var(--c-bg-sunken)}
+  .choice-secondary .big{font-size:17px;font-weight:700;letter-spacing:-0.015em;flex:none}
+  .choice-secondary .note{flex:1;min-width:0;font-size:14.5px;color:var(--c-text-subtle)}
+
+  /* Gate step */
+  .gate-point{display:flex;gap:12px;align-items:flex-start;padding:16px;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-md);background:var(--c-surface);margin-bottom:10px}
+  .gate-point .tick{width:20px;height:20px;flex:none;margin-top:1px;border-radius:50%;background:var(--pp-gold);
+    display:inline-flex;align-items:center;justify-content:center}
+  .gate-point p{margin:0;font-size:15px;line-height:1.55}
+  .gate-aside{padding:16px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);border:1px solid var(--c-border);
+    font-size:14px;line-height:1.6;color:var(--c-text-subtle)}
+  .gate-aside a{color:var(--c-accent-text);font-weight:600;text-decoration:none}
+
+  /* Form fields (shared) */
+  .field-block{margin-bottom:16px}
+  .field-block .pp-field-label{display:block;margin-bottom:7px}
+  .field-block .pp-field-input{height:52px;border-radius:12px}
+  .field-block .pp-field-input input{font-size:15.5px}
+  .char-count{font-size:12.5px;font-weight:500;color:var(--c-text-faint);font-variant-numeric:tabular-nums}
+  .field-top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px}
+  .field-hint{margin:8px 0 0;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)}
+  .field-hint.-ok{color:var(--c-good-text)}
+  .field-hint.-bad{color:var(--c-bad-text)}
+  .match-tag{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:var(--c-good-text)}
+
+  /* Eligibility picker */
+  .reach-opt{display:flex;align-items:flex-start;gap:14px;width:100%;text-align:left;padding:18px;
+    border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border-strong);
+    cursor:pointer;font-family:var(--pp-font);margin-bottom:10px}
+  .reach-opt.-active{border-color:var(--pp-gold);background:var(--c-bg-sunken)}
+  .reach-opt .dot{width:19px;height:19px;flex:none;margin-top:3px;border-radius:50%;border:2px solid var(--c-border-strong)}
+  .reach-opt.-active .dot{border-color:var(--pp-gold);background:var(--pp-gold)}
+  .reach-opt .body{flex:1;min-width:0}
+  .reach-opt .pp-elig{margin-bottom:8px}
+  .reach-opt .label{display:block;font-size:16px;font-weight:600;margin-bottom:4px}
+  .reach-opt .note{display:block;font-size:14px;line-height:1.55;color:var(--c-text-subtle)}
+
+  /* Handoff */
+  .handoff-icon{width:52px;height:52px;border-radius:14px;background:var(--pp-gold);display:flex;align-items:center;
+    justify-content:center;margin-bottom:22px;color:var(--c-text)}
+  .carry-card{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);margin-bottom:16px}
+  .carry-card h3{margin:0 0 14px;font-size:15.5px;font-weight:700;letter-spacing:-0.01em}
+  .carry-row{display:flex;gap:12px;align-items:flex-start;padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--c-surface-inset)}
+  .carry-row:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+  .carry-row .tick{width:18px;height:18px;flex:none;margin-top:2px;border-radius:50%;background:var(--pp-gold);
+    display:inline-flex;align-items:center;justify-content:center}
+  .carry-row p{margin:0}
+  .carry-row .lbl{font-size:14.5px;font-weight:600}
+  .carry-row .val{font-size:13.5px;color:var(--c-text-faint);margin-top:2px}
+  .handoff-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+  .dash-note{padding:16px 18px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);border:1px solid var(--c-border);
+    font-size:13.5px;line-height:1.6;color:var(--c-text-subtle)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-shell="focused"></div>
+
+<main><div class="wizard" id="wizard"></div></main>
+
+<div id="pp-footer" data-variant="legal"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var TOTAL_STEPS = 5;
+  var ICON = {
+    check: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>',
+    arrow: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>',
+    doc: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--c-bg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>'
+  };
+
+  var REACH = [
+    { key: "africa", tag: "Open across Africa", positive: true,
+      label: "We can hire anywhere on the continent",
+      note: "Through an entity, or a contractor arrangement. Pick this only once you've actually checked with whoever runs payroll." },
+    { key: "world", tag: "Global remote", positive: true,
+      label: "Anywhere in the world",
+      note: "No location requirement, subject to timezone overlap." },
+    { key: "check", tag: "Worth checking", positive: false,
+      label: "Only where we already have an office",
+      note: "Honest and useful — designers elsewhere see it labelled and don't spend an afternoon applying for nothing." }
+  ];
+
+  var GATE_POINTS = [
+    "Your designer profile, saved roles and community history stay exactly as they are.",
+    "One eligibility answer here, and every role you post inherits it.",
+    "Applications always go to your own site — Kazi never sits between you and a candidate."
+  ];
+
+  var state = {
+    step: 0,
+    name: "", site: "", blurb: "",
+    reach: null, how: "",
+    role: "", email: ""
+  };
+  var view = "flow"; // "flow" | "handoff"
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function siteDomain(){
+    return (state.site || "").trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").split("/")[0].toLowerCase();
+  }
+  function emailDomain(){ return (state.email.split("@")[1] || "").toLowerCase(); }
+  function emailMatches(){
+    var d = siteDomain(), e = emailDomain();
+    return d.length > 2 && e.length > 2 && d === e;
+  }
+
+  function dotsHtml(){
+    var out = "";
+    for (var i = 0; i < TOTAL_STEPS; i++) {
+      out += '<div class="dot' + (i === state.step ? " -active" : (i < state.step ? " -done" : "")) + '"></div>';
+    }
+    return '<div class="dots">' + out + '</div>';
+  }
+
+  function stepNav(opts){
+    opts = opts || {};
+    var ok = opts.ok !== false;
+    return '<div class="step-nav">' +
+      (state.step > 0 ? '<button type="button" class="pp-btn pp-btn-tertiary" id="backBtn">Back</button>' : "") +
+      '<span class="gate-note" id="gateNote">' + (ok ? "" : escapeHtml(opts.note || "")) + '</span>' +
+      '<button type="button" class="pp-btn pp-btn-primary" id="nextBtn"' + (ok ? "" : " disabled") + '>' + (opts.label || "Continue") + '</button>' +
+    '</div>';
+  }
+
+  function renderChooser(){
+    return '<span class="step-kicker">Step 1 of ' + TOTAL_STEPS + '</span>' +
+      '<h1 class="step-title">Who are you joining as?</h1>' +
+      '<p class="step-sub">This sets what you see first. You can add the other side later.</p>' +
+      '<button type="button" class="choice-primary" id="pickHiring">' +
+        '<span class="pp-status -new">' + ICON.check + ' Selected</span>' +
+        '<span class="big">I’m hiring</span>' +
+        '<span class="note">Post a role and see who can actually apply before you shortlist.</span>' +
+      '</button>' +
+      '<a href="pp-auth.html?view=signup" class="choice-secondary">' +
+        '<span class="big">I’m a designer</span>' +
+        '<span class="note">Build a profile and get roles you can actually apply for.</span>' +
+        ICON.arrow +
+      '</a>';
+  }
+
+  function renderGate(){
+    return '<span class="step-kicker">Step 2 of ' + TOTAL_STEPS + '</span>' +
+      '<h1 class="step-title">What hiring here means</h1>' +
+      '<p class="step-sub">Three steps from here and you can post. Two of these are things designers will hold you to.</p>' +
+      GATE_POINTS.map(function(p){
+        return '<div class="gate-point"><span class="tick">' + ICON.check + '</span><p>' + escapeHtml(p) + '</p></div>';
+      }).join("") +
+      '<div class="gate-aside">Joining a company that already hires on Kazi? A colleague can send you an invite instead of setting this up twice — <a href="pp-invite.html">see how that works</a>.</div>' +
+      stepNav({ label: "Continue" });
+  }
+
+  function renderCompany(){
+    var ok = state.name.trim().length > 1 && state.site.trim().length > 3 && state.blurb.trim().length > 12;
+    var note = !state.name.trim() ? "Add the company name" : (!state.site.trim() ? "Add the website" : "A line about the company");
+    return '<span class="step-kicker">Step 3 of ' + TOTAL_STEPS + '</span>' +
+      '<h1 class="step-title">Which company?</h1>' +
+      '<p class="step-sub">This becomes the company page every role you post links back to.</p>' +
+      '<div class="field-block"><label class="pp-field-label" for="fName">Company name</label>' +
+        '<div class="pp-field-input"><input id="fName" type="text" placeholder="e.g. Flutterwave" value="' + escapeHtml(state.name) + '"></div></div>' +
+      '<div class="field-block"><label class="pp-field-label" for="fSite">Website</label>' +
+        '<div class="pp-field-input"><input id="fSite" type="text" placeholder="e.g. flutterwave.com" value="' + escapeHtml(state.site) + '"></div></div>' +
+      '<div class="field-block"><div class="field-top"><label class="pp-field-label" for="fBlurb" style="margin:0">One line about the company</label>' +
+        '<span class="char-count" id="blurbCount">' + state.blurb.length + ' / 140</span></div>' +
+        '<textarea id="fBlurb" class="pp-textarea" rows="2" maxlength="140" placeholder="What you do, in the words a designer would use.">' + escapeHtml(state.blurb) + '</textarea></div>' +
+      stepNav({ ok: ok, note: note, label: "Continue" });
+  }
+
+  function renderEligibility(){
+    var ok = !!state.reach && (state.reach === "check" || state.how.trim().length > 10);
+    var needsHow = state.reach === "africa" || state.reach === "world";
+    var note = !state.reach ? "Pick one" : "Say how that works";
+    return '<span class="step-kicker">Step 4 of ' + TOTAL_STEPS + '</span>' +
+      '<h1 class="step-title">Who can you actually employ?</h1>' +
+      '<p class="step-sub">Answer once and it prefills every role you post. You can still change it per listing.</p>' +
+      REACH.map(function(r){
+        var active = state.reach === r.key;
+        return '<button type="button" class="reach-opt' + (active ? " -active" : "") + '" data-reach="' + r.key + '">' +
+          '<span class="dot"></span>' +
+          '<span class="body">' +
+            '<span class="pp-elig ' + (r.positive ? "-positive" : "-check") + '"><span class="pp-elig-dot"></span>' + r.tag + '</span>' +
+            '<span class="label">' + r.label + '</span>' +
+            '<span class="note">' + r.note + '</span>' +
+          '</span>' +
+        '</button>';
+      }).join("") +
+      (needsHow ?
+        '<div class="field-block" style="margin-top:6px"><label class="pp-field-label" for="fHow">How does that work in practice?</label>' +
+          '<textarea id="fHow" class="pp-textarea" rows="3" placeholder="Entities in Kenya and Nigeria, contractors through a payroll partner elsewhere.">' + escapeHtml(state.how) + '</textarea>' +
+          '<p class="field-hint">Name the countries. This is the single thing designers read before deciding whether to spend an afternoon applying.</p></div>'
+        : "") +
+      stepNav({ ok: ok, note: note, label: "Continue" });
+  }
+
+  function renderIdentity(){
+    var eOk = emailMatches();
+    var filled = state.email.indexOf("@") > 0;
+    var ok = state.role.trim().length > 1 && eOk;
+    var note = !state.role.trim() ? "Add your role" : (!filled ? "Add your work email" : "The email should match the company domain");
+    var hint = !filled
+      ? "A free email address won’t do here — it needs to be at the company."
+      : (eOk ? "That matches " + escapeHtml(siteDomain()) + "." : "That doesn’t match " + escapeHtml(siteDomain() || "the website you gave") + " yet.");
+    return '<span class="step-kicker">Step 5 of ' + TOTAL_STEPS + '</span>' +
+      '<h1 class="step-title">And who are you there?</h1>' +
+      '<p class="step-sub">A work email that matches the company domain is how a listing gets tied to a real employer, not a login screen we check for you.</p>' +
+      '<div class="field-block"><label class="pp-field-label" for="fRole">Your role there</label>' +
+        '<div class="pp-field-input"><input id="fRole" type="text" placeholder="e.g. Design Lead" value="' + escapeHtml(state.role) + '"></div></div>' +
+      '<div class="field-block"><label class="pp-field-label" for="fEmail">Work email</label>' +
+        '<div class="pp-field-input"><input id="fEmail" type="email" placeholder="you@company.com" value="' + escapeHtml(state.email) + '">' +
+        (eOk ? '<span class="match-tag">' + ICON.check + 'Matches the domain</span>' : "") + '</div>' +
+        '<p class="field-hint' + (filled && !eOk ? " -bad" : (eOk ? " -ok" : "")) + '">' + hint + '</p></div>' +
+      stepNav({ ok: ok, note: note, label: "Finish and post a role" });
+  }
+
+  function renderHandoff(){
+    var reachMeta = REACH.filter(function(r){ return r.key === state.reach; })[0];
+    var company = state.name.trim() || "Your company";
+    var carried = [
+      { label: "Company", value: (state.name.trim() || "—") + (state.site.trim() ? " · " + state.site.trim() : "") },
+      { label: "Who can take the role", value: reachMeta ? reachMeta.tag : "—" },
+      { label: "How you hire abroad", value: state.how.trim() || (state.reach === "check" ? "Not applicable — office-only" : "—") },
+      { label: "Posting as", value: (state.role.trim() || "—") + (state.email.trim() ? " · " + state.email.trim() : "") }
+    ];
+    var qs = new URLSearchParams();
+    if (state.name.trim()) qs.set("company", state.name.trim());
+    if (state.reach) qs.set("eligibility", state.reach);
+    return '<span class="handoff-icon">' + ICON.doc + '</span>' +
+      '<h1 class="step-title" style="font-size:38px">' + escapeHtml(company) + ' is set up. Now the role.</h1>' +
+      '<p class="step-sub">We’ll carry what you entered into the posting form, so eligibility is already answered.</p>' +
+      '<div class="carry-card"><h3>Carried over</h3>' +
+        carried.map(function(c){
+          return '<div class="carry-row"><span class="tick">' + ICON.check + '</span><p><span class="lbl">' + escapeHtml(c.label) + '</span><span class="val">' + escapeHtml(c.value) + '</span></p></div>';
+        }).join("") +
+      '</div>' +
+      '<div class="handoff-ctas">' +
+        '<a href="/post' + (qs.toString() ? "?" + qs.toString() : "") + '" class="pp-btn pp-btn-primary pp-btn-lg">Continue posting the role</a>' +
+        '<button type="button" class="pp-btn pp-btn-secondary pp-btn-lg" disabled aria-disabled="true" title="Kazi doesn’t have a hiring dashboard yet">Hiring dashboard</button>' +
+      '</div>' +
+      '<div class="dash-note">There’s no hiring dashboard on Kazi yet — everything happens through the listing itself, the same as posting a role today. If you also have a designer profile, it’s untouched.</div>';
+  }
+
+  function render(){
+    var w = document.getElementById("wizard");
+    if (view === "handoff") { w.innerHTML = renderHandoff(); wireHandoff(); return; }
+    var body = "";
+    if (state.step === 0) body = renderChooser();
+    else if (state.step === 1) body = renderGate();
+    else if (state.step === 2) body = renderCompany();
+    else if (state.step === 3) body = renderEligibility();
+    else body = renderIdentity();
+    w.innerHTML = dotsHtml() + body;
+    wireFlow();
+  }
+
+  function goStep(n){ state.step = n; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+
+  function wireFlow(){
+    var backBtn = document.getElementById("backBtn");
+    if (backBtn) backBtn.addEventListener("click", function(){ goStep(state.step - 1); });
+
+    var pickHiring = document.getElementById("pickHiring");
+    if (pickHiring) pickHiring.addEventListener("click", function(){ goStep(1); });
+
+    var nextBtn = document.getElementById("nextBtn");
+    if (nextBtn) nextBtn.addEventListener("click", function(){
+      if (state.step === 4) { view = "handoff"; render(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+      goStep(state.step + 1);
+    });
+
+    var fName = document.getElementById("fName");
+    if (fName) fName.addEventListener("input", function(){ state.name = fName.value; refreshGate(); });
+    var fSite = document.getElementById("fSite");
+    if (fSite) fSite.addEventListener("input", function(){ state.site = fSite.value; refreshGate(); });
+    var fBlurb = document.getElementById("fBlurb");
+    if (fBlurb) fBlurb.addEventListener("input", function(){
+      state.blurb = fBlurb.value.slice(0, 140);
+      document.getElementById("blurbCount").textContent = state.blurb.length + " / 140";
+      refreshGate();
+    });
+
+    var reachBtns = document.querySelectorAll("[data-reach]");
+    reachBtns.forEach(function(btn){
+      btn.addEventListener("click", function(){ state.reach = btn.getAttribute("data-reach"); render(); });
+    });
+    var fHow = document.getElementById("fHow");
+    if (fHow) fHow.addEventListener("input", function(){ state.how = fHow.value; refreshGate(); });
+
+    var fRole = document.getElementById("fRole");
+    if (fRole) fRole.addEventListener("input", function(){ state.role = fRole.value; refreshGate(); });
+    var fEmail = document.getElementById("fEmail");
+    if (fEmail) fEmail.addEventListener("input", function(){ state.email = fEmail.value; render(); });
+  }
+
+  // Re-render just enough to refresh the gate note / Next button without
+  // losing focus on text inputs (a full render() on every keystroke would).
+  function refreshGate(){
+    var ok, note, nextBtn = document.getElementById("nextBtn"), gateNote = document.getElementById("gateNote");
+    if (state.step === 2) {
+      ok = state.name.trim().length > 1 && state.site.trim().length > 3 && state.blurb.trim().length > 12;
+      note = !state.name.trim() ? "Add the company name" : (!state.site.trim() ? "Add the website" : "A line about the company");
+    } else if (state.step === 3) {
+      ok = !!state.reach && (state.reach === "check" || state.how.trim().length > 10);
+      note = !state.reach ? "Pick one" : "Say how that works";
+    } else if (state.step === 4) {
+      var eOk = emailMatches(), filled = state.email.indexOf("@") > 0;
+      ok = state.role.trim().length > 1 && eOk;
+      note = !state.role.trim() ? "Add your role" : (!filled ? "Add your work email" : "The email should match the company domain");
+    }
+    if (nextBtn) nextBtn.disabled = !ok;
+    if (gateNote) gateNote.textContent = ok ? "" : (note || "");
+  }
+
+  function wireHandoff(){}
+
+  render();
+})();
+</script>
+</body>
+</html>

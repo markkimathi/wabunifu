@@ -512,6 +512,24 @@ discSel.innerHTML = PLACEHOLDER_OPT + DISCIPLINES.map(d => `<option value="${d}"
 const eligSel = document.getElementById("eligibility");
 eligSel.innerHTML = PLACEHOLDER_OPT + ELIGIBILITY.map(e => `<option value="${e.v}">${e.l}</option>`).join("");
 
+// Optional handoff from pp-employer-onboarding.html's "Continue posting
+// the role" link — carries the company name and eligibility answer over
+// so that work isn't repeated. Both params are optional; the form works
+// exactly as before when neither is present.
+(function prefillFromHandoff(){
+  const params = new URLSearchParams(location.search);
+  const company = params.get("company");
+  const eligibility = params.get("eligibility");
+  if (company) {
+    const companyInput = document.querySelector('#jobForm [name="company"]');
+    if (companyInput) { companyInput.value = company; companyInput.dispatchEvent(new Event("input", {bubbles:true})); }
+  }
+  if (eligibility && ELIGIBILITY.some(e => e.v === eligibility)) {
+    eligSel.value = eligibility;
+    eligSel.dispatchEvent(new Event("change", {bubbles:true}));
+  }
+})();
+
 /* ---------- location autocomplete (custom dropdown, not native <datalist>) ---------- */
 const LOCATIONS = [
   "Remote", "Worldwide Remote",
