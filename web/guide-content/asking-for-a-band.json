@@ -1,0 +1,49 @@
+{
+  "slug": "asking-for-a-band",
+  "topic": "Pay",
+  "title": "How to ask a company what their band is",
+  "dek": "One sentence, sent at the right moment, gets you a number most of the time. Here's the sentence, when to send it, and what to do with whatever comes back.",
+  "read_minutes": 6,
+  "updated": "2026-08-01",
+  "sections": [
+    {
+      "anchor": "why",
+      "heading": "Why ask early",
+      "body": "Most designers ask too late. By the time an offer is on the table you've spent hours on a take-home and a couple of calls, and the number you hear is the one you argue against rather than the one you chose to go after. Asking early costs you nothing and saves you the afternoon."
+    },
+    {
+      "anchor": "when",
+      "heading": "When to ask",
+      "body": "After the company has shown interest and before you do unpaid work. In practice that's the reply to a recruiter's first message, or the last two minutes of the intro call. Both are moments where the question reads as organised rather than pushy.\n\nIf the listing already carries a range, skip all of this and check it against the pay ranges table. Roles here show a range when the company gave us one."
+    },
+    {
+      "anchor": "sentence",
+      "heading": "The sentence",
+      "body": "Send this as its own short message. No preamble about how excited you are, no apology for asking.",
+      "quote": "Before we go further, could you tell me the band for this role? I want to be sure we're in the same range before I put time into the exercise.",
+      "body_after": "It works because it gives a reason that serves both sides, and because it asks for the band rather than the offer. Bands are internal facts recruiters are usually allowed to share. Offers are decisions they usually aren't."
+    },
+    {
+      "anchor": "refuse",
+      "heading": "If they say they don't share bands",
+      "body": "Some won't. Then invert it, and name your own using the pay ranges table so the number is defensible rather than hopeful.",
+      "quote": "Understood. For a mid-level product design role I'm looking at $3,200 to $4,000 a month. If that sits inside your band, I'm happy to carry on.",
+      "body_after": "A recruiter who can't say yes to that will usually say something almost as useful — that the top of their band is lower, or that it depends on level. Either answer tells you whether to spend the afternoon."
+    },
+    {
+      "anchor": "number",
+      "heading": "What to do with the number",
+      "list": [
+        "Compare it against the pay ranges table for your discipline, level, and market — not against a single anecdote from a friend.",
+        "If it's below range, decide before the interview whether that's a dealbreaker, so you're not deciding under pressure later.",
+        "If it's within range, you can spend the rest of the process on the work itself instead of wondering."
+      ]
+    },
+    {
+      "anchor": "avoid",
+      "heading": "What not to do",
+      "body": "Don't give a single figure when you're asked what you want — a single figure becomes a ceiling. Don't quote a number you can't explain. And don't name a former salary; in most of Africa it isn't a question you're obliged to answer, and it anchors you to whatever you were underpaid last."
+    }
+  ],
+  "related": ["pricing-your-first-freelance-project"]
+}

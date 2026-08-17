@@ -2218,6 +2218,13 @@ def community_page():
     return FileResponse(WEB_DIR / "pp-community.html")
 
 
+# Registered before /community/{item_id} so "rules" is never swallowed as
+# a session/question id — same care as /api/jobs/count vs /api/jobs/{job_id}.
+@app.get("/community/rules", include_in_schema=False)
+def community_rules_page():
+    return FileResponse(WEB_DIR / "pp-house-rules.html")
+
+
 @app.get("/community/{item_id}", include_in_schema=False)
 def community_detail_page(item_id: str):
     return FileResponse(WEB_DIR / "pp-community-detail.html")
@@ -2226,6 +2233,11 @@ def community_detail_page(item_id: str):
 @app.get("/resources", include_in_schema=False)
 def resources_page():
     return FileResponse(WEB_DIR / "pp-resources.html")
+
+
+@app.get("/resources/{slug}", include_in_schema=False)
+def resources_guide_page(slug: str):
+    return FileResponse(WEB_DIR / "pp-guide.html")
 
 
 # Static site last: /api/* and the routes above take priority, everything

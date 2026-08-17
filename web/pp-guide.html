@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guide · Path & Pixel</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  .g-head{padding:30px 0 34px;border-bottom:1px solid var(--c-border)}
+  .g-topic{display:flex;align-items:baseline;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+  .g-topic span:first-child{font-size:11px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;color:var(--pp-gold-800)}
+  .g-topic span:last-child{font-size:13.5px;color:var(--c-text-faint)}
+  .g-head h1{margin:0 0 14px;font-size:44px;line-height:1.0;letter-spacing:-0.04em;font-weight:800;max-width:26ch}
+  .g-head p{margin:0;font-size:18px;line-height:1.5;color:var(--c-text-muted);max-width:70ch}
+
+  .g-layout{padding:36px 0 64px;display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:56px;align-items:start}
+  @media(max-width:900px){.g-layout{grid-template-columns:1fr}}
+
+  article{max-width:66ch}
+  article h2{margin:32px 0 12px;font-size:25px;line-height:1.16;letter-spacing:-0.024em;font-weight:700}
+  article h2:first-child{margin-top:0}
+  article p{margin:0 0 16px;font-size:17px;line-height:1.7;color:var(--c-text-muted)}
+  article p:first-of-type{color:var(--c-text)}
+  article blockquote{margin:0 0 16px;padding:22px 24px;border-left:3px solid var(--pp-gold);background:var(--pp-gold-100)}
+  /* .g-quote-text (not the descendant selector "article blockquote p")
+     because that lone <p> is also :first-of-type among article's <p>s —
+     "article p:first-of-type{color:var(--c-text)}" below has higher
+     specificity (0,1,2 vs 0,0,3) and would win, putting theme-aware text
+     on this always-light static surface and going invisible in dark mode. */
+  article blockquote .g-quote-text{margin:0;font-size:19px;line-height:1.55;letter-spacing:-0.01em;color:var(--pp-gold-900)}
+  article ul{margin:0 0 16px;padding:0;list-style:none;display:flex;flex-direction:column;gap:0}
+  article ul li{display:flex;gap:14px;padding:13px 0;border-top:1px solid var(--c-border)}
+  article ul li .n{flex:none;width:22px;font-size:14px;font-weight:700;color:var(--pp-gold-800);font-variant-numeric:tabular-nums}
+  article ul li p{margin:0;font-size:16px;line-height:1.6;color:var(--c-text)}
+
+  .g-foot{padding-top:24px;border-top:1px solid var(--c-border)}
+  .g-foot p{margin:0 0 14px;font-size:15.5px;line-height:1.6;color:var(--c-text-muted)}
+
+  .toc-label{display:block;font-size:11px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;
+    color:var(--c-text-faint);margin-bottom:12px}
+  .rail{position:sticky;top:100px;display:flex;flex-direction:column;gap:28px}
+  .toc-list{display:flex;flex-direction:column}
+  .toc-btn{text-align:left;border:none;background:transparent;font-family:var(--pp-font);font-size:14px;
+    line-height:1.4;padding:8px 0 8px 12px;border-left:2px solid var(--c-border);color:var(--c-text-faint);cursor:pointer}
+  .toc-btn.-active{border-left-color:var(--pp-gold);color:var(--c-text);font-weight:600}
+  .related-link{display:block;padding:11px 0;border-bottom:1px solid var(--c-surface-inset)}
+  .related-link:last-child{border-bottom:none}
+  .related-link .t{display:block;font-size:14.5px;font-weight:600;line-height:1.35;margin-bottom:3px}
+  .related-link .m{display:block;font-size:12px;color:var(--c-text-faint)}
+
+  .skel{padding:60px 0;color:var(--c-text-faint)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="resources"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Resources","href":"/resources"},{"label":"Loading…"}]'></nav>
+
+<main>
+  <div class="wrap"><div class="skel" id="loadingArea">Loading…</div></div>
+
+  <div id="guideArea" style="display:none">
+    <div class="wrap g-head">
+      <div class="g-topic"><span id="gTopic"></span><span id="gMeta"></span></div>
+      <h1 id="gTitle"></h1>
+      <p id="gDek"></p>
+    </div>
+
+    <div class="wrap g-layout">
+      <article id="gBody"></article>
+
+      <aside class="rail">
+        <div>
+          <span class="toc-label">In this guide</span>
+          <div class="toc-list" id="tocList"></div>
+        </div>
+        <div id="relatedBlock" style="display:none">
+          <span class="toc-label">Next</span>
+          <div id="relatedList"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+
+  <div class="wrap" id="notFoundArea" style="display:none;padding:64px 0">
+    <div class="pp-empty">
+      <h3>This guide isn't here</h3>
+      <p>It may have moved, or the link's just wrong.</p>
+      <a class="pp-btn pp-btn-primary" href="/resources">Back to Resources</a>
+    </div>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="/pp-nav.js"></script>
+<script src="/pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function paragraphs(text){
+    return (text || "").split("\n").filter(Boolean).map(function(p){ return "<p>" + escapeHtml(p) + "</p>"; }).join("");
+  }
+
+  function slugFromPath(){
+    var parts = location.pathname.split("/").filter(Boolean);
+    return parts[parts.length - 1] || "";
+  }
+
+  function renderArticle(guide){
+    var html = "";
+    (guide.sections || []).forEach(function(s){
+      html += '<h2 id="' + escapeHtml(s.anchor) + '" data-section="' + escapeHtml(s.anchor) + '">' + escapeHtml(s.heading) + "</h2>";
+      html += paragraphs(s.body);
+      if (s.quote) html += '<blockquote><p class="g-quote-text">' + escapeHtml(s.quote) + "</p></blockquote>";
+      if (s.body_after) html += paragraphs(s.body_after);
+      if (s.list) {
+        html += "<ul>" + s.list.map(function(item, i){
+          return '<li><span class="n">' + (i + 1) + '</span><p>' + escapeHtml(item) + "</p></li>";
+        }).join("") + "</ul>";
+      }
+    });
+    document.getElementById("gBody").innerHTML = html;
+  }
+
+  function renderToc(guide){
+    var toc = document.getElementById("tocList");
+    toc.innerHTML = (guide.sections || []).map(function(s){
+      return '<button type="button" class="toc-btn" data-target="' + escapeHtml(s.anchor) + '">' + escapeHtml(s.heading) + "</button>";
+    }).join("");
+    var buttons = toc.querySelectorAll(".toc-btn");
+    buttons.forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var target = document.getElementById(btn.getAttribute("data-target"));
+        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    var headings = Array.from(document.querySelectorAll("article h2[data-section]"));
+    if (!headings.length || !("IntersectionObserver" in window)) return;
+    var observer = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if (!entry.isIntersecting) return;
+        var anchor = entry.target.getAttribute("data-section");
+        buttons.forEach(function(b){ b.classList.toggle("-active", b.getAttribute("data-target") === anchor); });
+      });
+    }, { rootMargin: "-15% 0px -70% 0px", threshold: 0 });
+    headings.forEach(function(h){ observer.observe(h); });
+  }
+
+  async function renderRelated(guide){
+    var slugs = guide.related || [];
+    if (!slugs.length) return;
+    var items = [];
+    for (var i = 0; i < slugs.length; i++) {
+      try {
+        var res = await fetch("/guide-content/" + slugs[i] + ".json", { cache: "no-store" });
+        if (res.ok) {
+          var g = await res.json();
+          items.push({ slug: g.slug, title: g.title, read_minutes: g.read_minutes });
+        }
+      } catch (e) {}
+    }
+    if (!items.length) return;
+    document.getElementById("relatedBlock").style.display = "";
+    document.getElementById("relatedList").innerHTML = items.map(function(g){
+      return '<a class="related-link" href="/resources/' + encodeURIComponent(g.slug) + '">' +
+        '<span class="t">' + escapeHtml(g.title) + '</span><span class="m">' + g.read_minutes + ' min read</span></a>';
+    }).join("");
+  }
+
+  async function init(){
+    var slug = slugFromPath();
+    if (!slug) {
+      document.getElementById("loadingArea").style.display = "none";
+      document.getElementById("notFoundArea").style.display = "";
+      return;
+    }
+    try {
+      var res = await fetch("/guide-content/" + slug + ".json", { cache: "no-store" });
+      if (!res.ok) throw new Error("404");
+      var guide = await res.json();
+
+      document.getElementById("pp-breadcrumbs").setAttribute("data-crumbs",
+        JSON.stringify([{ label: "Resources", href: "/resources" }, { label: guide.title }]));
+      document.title = guide.title + " · Path & Pixel";
+
+      document.getElementById("gTopic").textContent = guide.topic || "";
+      var updated = guide.updated ? new Date(guide.updated + "T00:00:00").toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" }) : "";
+      document.getElementById("gMeta").textContent = guide.read_minutes + " min read" + (updated ? " · Updated " + updated : "");
+      document.getElementById("gTitle").textContent = guide.title;
+      document.getElementById("gDek").textContent = guide.dek || "";
+
+      renderArticle(guide);
+      renderToc(guide);
+      renderRelated(guide);
+
+      document.getElementById("loadingArea").style.display = "none";
+      document.getElementById("guideArea").style.display = "";
+    } catch (e) {
+      document.getElementById("loadingArea").style.display = "none";
+      document.getElementById("notFoundArea").style.display = "";
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

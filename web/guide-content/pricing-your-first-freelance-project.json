@@ -1,0 +1,43 @@
+{
+  "slug": "pricing-your-first-freelance-project",
+  "topic": "Freelancing",
+  "title": "Pricing your first freelance project",
+  "dek": "Hourly feels safer, but it usually costs you money the moment you get fast. A flat fee, scoped properly, protects you instead.",
+  "read_minutes": 5,
+  "updated": "2026-08-10",
+  "sections": [
+    {
+      "anchor": "why-not-hourly",
+      "heading": "Why hourly punishes speed",
+      "body": "If you bill hourly, getting better at your job lowers your income. A logo that takes an experienced designer four hours and a junior designer twelve hours is worth the same to the client either way — but hourly billing pays the junior more for the same result. A flat fee breaks that link."
+    },
+    {
+      "anchor": "scoping",
+      "heading": "Scope it before you price it",
+      "body": "A flat fee only works if the scope is written down. Before naming a number, get the client to agree on: what's being delivered, how many rounds of revisions are included, and what counts as a new request versus a revision.",
+      "list": [
+        "Deliverables — the exact files and formats the client will receive.",
+        "Revision rounds — a number, not \"until you're happy\".",
+        "Timeline — when you'll deliver, and what you need from them to hit it.",
+        "What's out of scope — say it explicitly, so a mid-project addition becomes a new quote, not a favour."
+      ]
+    },
+    {
+      "anchor": "estimate",
+      "heading": "Estimate like a freelancer, not an employee",
+      "body": "Estimate the hours honestly, then add a buffer — 20% is a reasonable starting point for a first project with a new client, since you don't yet know how they communicate, how fast they respond, or how many stakeholders will weigh in. Multiply by the day-rate you'd want as an employee doing the same work, not a discounted \"friends rate\"."
+    },
+    {
+      "anchor": "saying-it",
+      "heading": "Saying the number",
+      "body": "State the fee for the scope you agreed, not a range. A range invites a client to anchor on the low end.",
+      "quote": "For the scope above — three concepts, two rounds of revisions, final files in your brand system — the fee is $900, due half up front."
+    },
+    {
+      "anchor": "deposit",
+      "heading": "Always take a deposit",
+      "body": "Fifty percent up front is standard for a first project with a new client. It filters out clients who were never going to pay, and it means you're not financing someone else's business with your own time."
+    }
+  ],
+  "related": ["asking-for-a-band"]
+}

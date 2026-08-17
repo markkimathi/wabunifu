@@ -87,9 +87,15 @@
   .guides-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
   @media(max-width:900px){.guides-grid{grid-template-columns:1fr 1fr}}
   @media(max-width:639px){.guides-grid{grid-template-columns:1fr}}
-  .guide-card{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px dashed var(--c-border-strong)}
-  .guide-card h3{margin:0 0 6px;font-size:16px;font-weight:700}
+  .guide-card{display:block;padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);
+    border:1px solid var(--c-border);text-decoration:none;color:inherit}
+  .guide-card:hover{border-color:var(--c-border-hover)}
+  .guide-card .topic{display:block;font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;
+    color:var(--pp-gold-800);margin-bottom:9px}
+  .guide-card h3{margin:0 0 6px;font-size:16.5px;font-weight:700;letter-spacing:-0.014em;line-height:1.3}
   .guide-card p{margin:0;font-size:13.5px;line-height:1.55;color:var(--c-text-faint)}
+  .guide-card.-empty{border-style:dashed;border-color:var(--c-border-strong)}
+  .guide-card.-empty h3{color:var(--c-text-subtle)}
 </style>
 </head>
 <body>
@@ -209,11 +215,7 @@
         <h2>Guides</h2>
         <p>Short, specific write-ups from people doing the work — pricing, contracts, portfolios, negotiating remote offers.</p>
       </div>
-      <div class="guides-grid">
-        <div class="guide-card"><h3>Coming soon</h3><p>The first guides are being written now — check back shortly.</p></div>
-        <div class="guide-card"><h3>Coming soon</h3><p>The first guides are being written now — check back shortly.</p></div>
-        <div class="guide-card"><h3>Coming soon</h3><p>The first guides are being written now — check back shortly.</p></div>
-      </div>
+      <div class="guides-grid" id="guidesGrid"></div>
     </div>
   </section>
 </main>
@@ -464,6 +466,32 @@
     results.style.display = "none";
   });
 
+  // Flat JSON files, not a database table (Phase 8 plan: content is
+  // team-authored and changes rarely). This list is the one place to
+  // update when a new guide file is added under web/guide-content/.
+  var GUIDE_SLUGS = ["asking-for-a-band", "pricing-your-first-freelance-project"];
+
+  async function loadGuides(){
+    var grid = document.getElementById("guidesGrid");
+    var guides = [];
+    for (var i = 0; i < GUIDE_SLUGS.length; i++) {
+      try {
+        var res = await fetch("/guide-content/" + GUIDE_SLUGS[i] + ".json", { cache: "no-store" });
+        if (res.ok) guides.push(await res.json());
+      } catch (e) {}
+    }
+    if (!guides.length) {
+      grid.innerHTML = '<div class="guide-card -empty"><h3>Coming soon</h3><p>The first guides are being written now — check back shortly.</p></div>';
+      return;
+    }
+    grid.innerHTML = guides.map(function(g){
+      return '<a class="guide-card" href="/resources/' + encodeURIComponent(g.slug) + '">' +
+        '<span class="topic">' + escapeHtml(g.topic || "") + '</span>' +
+        '<h3>' + escapeHtml(g.title) + '</h3>' +
+        '<p>' + g.read_minutes + ' min read</p></a>';
+    }).join("");
+  }
+
   function init(){
     fillSelect(document.getElementById("filterDiscipline"), DISCIPLINES, "All disciplines");
     fillSelect(document.getElementById("filterMarket"), MARKETS, "All markets");
@@ -477,6 +505,7 @@
     document.getElementById("addSubmitBtn").addEventListener("click", submitPay);
 
     loadPayRanges();
+    loadGuides();
   }
 
   document.addEventListener("DOMContentLoaded", init);

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>House Rules · Path & Pixel</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  article{padding:36px 0 64px}
+  .hr-updated{display:inline-block;padding:5px 12px;border-radius:999px;background:var(--c-surface-inset);
+    color:var(--c-text-muted);font-size:12.5px;font-weight:600;margin-bottom:18px}
+  article h1{margin:0 0 16px;font-size:48px;line-height:1.02;letter-spacing:-0.04em;font-weight:800;max-width:24ch}
+  article > .dek{margin:0 0 40px;font-size:20px;line-height:1.5;color:var(--c-text-muted);max-width:70ch}
+
+  .rules{display:flex;flex-direction:column;gap:36px;margin-bottom:52px}
+  .rule{display:flex;gap:22px;align-items:flex-start}
+  .rule .n{flex:none;width:40px;font-size:30px;line-height:1;font-weight:800;letter-spacing:-0.04em;
+    color:var(--pp-gold);font-variant-numeric:tabular-nums}
+  .rule h3{margin:0 0 8px;font-size:23px;line-height:1.18;letter-spacing:-0.022em;font-weight:700}
+  .rule p{margin:0 0 8px;font-size:16.5px;line-height:1.65;color:var(--c-text)}
+  .rule p:last-child{margin:0;color:var(--c-text-subtle);font-size:15.5px}
+
+  .breaks{padding-top:26px;border-top:1px solid var(--c-border);margin-bottom:40px}
+  .breaks h2{margin:0 0 10px;font-size:23px;line-height:1.18;letter-spacing:-0.022em;font-weight:700}
+  .breaks > p{margin:0 0 16px;font-size:15.5px;line-height:1.65;color:var(--c-text-muted)}
+  .step{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--c-surface-inset)}
+  .step .label{width:84px;flex:none;font-size:14px;font-weight:700;color:var(--pp-gold-800)}
+  .step p{margin:0;flex:1;min-width:0;font-size:15.5px;line-height:1.6;color:var(--c-text)}
+  .breaks .note{margin:16px 0 0;font-size:14.5px;line-height:1.6;color:var(--c-text-faint)}
+
+  .foot-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:36px;padding-top:24px;border-top:1px solid var(--c-border)}
+  @media(max-width:639px){.foot-grid{grid-template-columns:1fr}}
+  .foot-grid h4{margin:0 0 8px;font-size:18px;font-weight:700;letter-spacing:-0.018em}
+  .foot-grid p{margin:0 0 14px;font-size:14.5px;line-height:1.6;color:var(--c-text-muted)}
+  .disagree h4{color:var(--c-good-text)}
+  .disagree a{font-size:14px;font-weight:600;color:var(--c-good-text)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="community"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Community","href":"/community"},{"label":"House rules"}]'></nav>
+
+<main>
+  <article class="wrap">
+    <span class="hr-updated">Last changed 17 August 2026</span>
+    <h1>Six rules, and why each one is here</h1>
+    <p class="dek">Most communities for designers turn into a feed, then into an argument, then into nothing. These are the rules we think stop that. If one of them is wrong, we'd rather hear it than keep it.</p>
+
+    <div class="rules">
+      <div class="rule"><span class="n">01</span><div>
+        <h3>Answer the question that was actually asked</h3>
+        <p>If someone asks how to price a project, answer that — not a lecture on why they should have asked something else.</p>
+        <p>Specific questions get specific answers. That's the whole reason this exists instead of a general chat.</p>
+      </div></div>
+      <div class="rule"><span class="n">02</span><div>
+        <h3>A real number beats an opinion</h3>
+        <p>"I charged $900 for a similar scope in 2025" is worth more here than "you should charge more."</p>
+        <p>If you don't have a number or a direct experience to add, a vote is often more useful than a reply.</p>
+      </div></div>
+      <div class="rule"><span class="n">03</span><div>
+        <h3>No recruiting in the replies</h3>
+        <p>If you're hiring, post a role. Don't DM someone who just answered a question to pitch them a job.</p>
+        <p>People stop answering questions honestly the moment answering becomes a sales funnel.</p>
+      </div></div>
+      <div class="rule"><span class="n">04</span><div>
+        <h3>Critique the work, not the person</h3>
+        <p>"This hierarchy is hard to scan" is feedback. "You clearly didn't think about hierarchy" is not — say the first one.</p>
+        <p>Portfolio reviews only work if people keep bringing real work to them.</p>
+      </div></div>
+      <div class="rule"><span class="n">05</span><div>
+        <h3>Sessions have seats for a reason</h3>
+        <p>Book a seat you intend to use. Cancel if you can't make it — someone on the waitlist gets it the moment you do.</p>
+        <p>A no-show costs a real seat that would've gone to someone else.</p>
+      </div></div>
+      <div class="rule"><span class="n">06</span><div>
+        <h3>Pay data stays anonymous, always</h3>
+        <p>Never post a number in a way that identifies the company or the person who reported it, even if you know both.</p>
+        <p>The pay ranges only stay honest if nobody has to worry about being traced back.</p>
+      </div></div>
+    </div>
+
+    <div class="breaks">
+      <h2>What happens when someone breaks one</h2>
+      <p>Three steps, in order. A person decides each one, and we tell you which rule and which post.</p>
+      <div class="step"><span class="label">1. Reviewed</span><p>A report goes to a person on the team, not a filter — usually within a day.</p></div>
+      <div class="step"><span class="label">2. Decided</span><p>The content is kept, removed, or the account gets a note, depending on what actually happened.</p></div>
+      <div class="step"><span class="label">3. Explained</span><p>If something of yours is removed, you're told which rule and which post — never a silent removal.</p></div>
+      <p class="note">Removal is rare, and it's never silent. You keep your profile, your work, and your saved roles either way, because your career isn't ours to take.</p>
+    </div>
+
+    <div class="foot-grid">
+      <div>
+        <h4>Report something</h4>
+        <p>Every post and reply has a report control. It goes to a person, not a filter.</p>
+        <button class="pp-btn pp-btn-secondary" id="reportInfoBtn" type="button">How reporting works</button>
+      </div>
+      <div class="disagree">
+        <h4>Disagree with a rule?</h4>
+        <p>Say so in Community. We've changed rules before because someone argued well.</p>
+        <a href="/community">Start a thread →</a>
+      </div>
+    </div>
+  </article>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="/pp-nav.js"></script>
+<script src="/pp-footer.js"></script>
+<script src="/pp-toast.js"></script>
+<script>
+(function(){
+  "use strict";
+  document.getElementById("reportInfoBtn").addEventListener("click", function(){
+    showPPToast("Tap report on any reply, question, or message. It goes to a person on the team, who reviews it within a day and tells you what happened.", { duration: 6000 });
+  });
+})();
+</script>
+</body>
+</html>

@@ -233,6 +233,7 @@
 
 <script src="/pp-nav.js"></script>
 <script src="/pp-footer.js"></script>
+<script src="/pp-toast.js"></script>
 <script>
 (function(){
   "use strict";
@@ -361,8 +362,7 @@
       var copyBtn = document.getElementById("copyLinkBtn");
       if (copyBtn) copyBtn.addEventListener("click", function(){
         navigator.clipboard.writeText(session.joining_link).then(function(){
-          copyBtn.textContent = "Copied";
-          setTimeout(function(){ copyBtn.textContent = "Copy"; }, 1800);
+          showPPToast("Joining link copied");
         });
       });
     } else if (status === "waitlisted") {
