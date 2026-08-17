@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>People · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit;text-decoration:none}
+
+  .hero{padding:20px 0 0}
+  .hero h1{margin:0 0 14px;font-size:var(--pp-display-size);line-height:1.0;letter-spacing:-0.04em;font-weight:800;max-width:20ch}
+  .hero p{margin:0 0 24px;font-size:17px;line-height:1.55;color:var(--c-text-muted);max-width:62ch}
+  .hero-search{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+  .hero-search .pp-field-input{flex:1;min-width:280px;height:52px}
+  .hero-search .pp-field-input input{font-size:16px}
+
+  .layout{padding:0 0 64px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:24px;align-items:start}
+  @media(max-width:1023px){.layout{grid-template-columns:1fr}}
+
+  .rail{border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);
+    padding:20px;display:flex;flex-direction:column;gap:22px;position:sticky;top:84px}
+  @media(max-width:1023px){.rail{position:static}}
+  .rail-head{display:flex;align-items:center;justify-content:space-between}
+  .rail-head span{font-size:15px;font-weight:700}
+  .rail-reset{border:none;background:transparent;font-family:var(--pp-font);font-size:13.5px;font-weight:600;
+    color:var(--c-accent-text);cursor:pointer;padding:4px}
+  .rail-group{display:flex;flex-direction:column;gap:10px}
+  .rail-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-faint)}
+  .rail-divider{height:1px;background:var(--c-surface-inset)}
+  .rail-chips{display:flex;flex-wrap:wrap;gap:7px}
+  .rail-chip{padding:6px 12px;border-radius:999px;font-family:var(--pp-font);font-size:13.5px;font-weight:500;
+    cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
+  .rail-chip.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
+
+  .results-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+  .results-count{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .results-count>span{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  .active-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border:none;border-radius:6px;
+    font-family:var(--pp-font);font-size:12.5px;font-weight:600;cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted)}
+
+  .people-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px}
+  @media(max-width:1023px){.people-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:639px){.people-grid{grid-template-columns:1fr}}
+  .person-card{padding:22px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);
+    display:flex;flex-direction:column;gap:14px}
+  .person-card:hover{border-color:var(--c-border-hover)}
+  .person-head{display:flex;align-items:flex-start;gap:12px}
+  .person-head h4{margin:0;font-size:20px;font-weight:700;letter-spacing:-0.02em;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .person-head p{margin:2px 0 0;font-size:13.5px;color:var(--c-text-subtle)}
+  .person-line{margin:0;font-size:14.5px;line-height:1.55;color:var(--c-text-subtle);flex:1;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+  .person-thumbs{display:flex;gap:6px}
+  .person-thumbs .t{flex:1;aspect-ratio:4/3;border-radius:8px;background:var(--c-surface-inset);overflow:hidden}
+  .person-thumbs .t img{width:100%;height:100%;object-fit:cover;display:block}
+  .person-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:12px;border-top:1px solid var(--c-surface-inset)}
+
+  .invite-band{margin:0 0 56px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;padding:28px 32px;
+    border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken)}
+  .invite-band h3{margin:0 0 7px;font-size:22px;font-weight:700;letter-spacing:-0.018em}
+  .invite-band p{margin:0;font-size:15px;line-height:1.6;color:var(--c-text-muted);max-width:62ch}
+
+  .state-panel{padding:64px 32px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);text-align:center}
+  .state-panel h3{margin:0 0 7px;font-size:21px;font-weight:700;letter-spacing:-0.018em}
+  .state-panel p{margin:0 0 20px;font-size:15px;line-height:1.55;color:var(--c-text-subtle);max-width:46ch;margin-left:auto;margin-right:auto}
+  .state-icon{width:44px;height:44px;border-radius:50%;background:var(--c-bad-bg);color:var(--c-bad-text);
+    display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+
+  .skeleton-card{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);
+    display:flex;flex-direction:column;gap:12px}
+  .skeleton-block{background:var(--c-surface-inset);border-radius:5px;animation:pp-pulse 1.4s ease-in-out infinite}
+  @keyframes pp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  @media(prefers-reduced-motion:reduce){.skeleton-block{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="people"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"People"}]'></nav>
+
+<main>
+  <div class="wrap hero">
+    <h1>Designers building across Africa</h1>
+    <p id="heroSub">Loading the directory…</p>
+    <div class="hero-search">
+      <label class="pp-field-input" style="flex:1;min-width:280px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input type="text" id="searchInput" placeholder="Payments, design systems, motion, Nairobi…">
+      </label>
+      <button class="pp-btn pp-btn-primary pp-btn-lg" id="searchBtn" type="button">Search</button>
+    </div>
+  </div>
+
+  <div class="wrap layout">
+    <aside class="rail">
+      <div class="rail-head"><span>Filters</span><button class="rail-reset" id="resetFilters" type="button">Reset</button></div>
+      <div class="rail-group">
+        <span class="rail-label">Discipline</span>
+        <div class="rail-chips" id="disciplineFilters"></div>
+      </div>
+      <div class="rail-divider"></div>
+      <div class="rail-group">
+        <span class="rail-label">Open to</span>
+        <div id="availabilityFilters"></div>
+      </div>
+      <div class="rail-divider"></div>
+      <div class="rail-group">
+        <span class="rail-label">Based in</span>
+        <div id="cityFilters"></div>
+      </div>
+      <div class="rail-divider"></div>
+      <div class="rail-group">
+        <label class="pp-toggle-row">
+          <input type="checkbox" id="portfolioOnly">
+          <span class="pp-toggle"></span>
+          Portfolio only
+        </label>
+      </div>
+    </aside>
+
+    <div>
+      <div class="results-head">
+        <div class="results-count" id="resultsCount"></div>
+      </div>
+      <div id="peopleArea"></div>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="invite-band">
+      <div style="flex:1;min-width:280px">
+        <h3>Not in this directory yet?</h3>
+        <p>Listing yourself is free, and always will be. Companies search here before they even post a role.</p>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;flex:none">
+        <a class="pp-btn pp-btn-primary" href="pp-onboarding.html">Create your profile</a>
+        <a href="pp-signin.html" style="font-size:15px;font-weight:600;color:var(--c-accent-text)">Sign in</a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var ICONS = {
+    alert: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.5"></path><circle cx="12" cy="12" r="9"></circle></svg>',
+    search: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>',
+    x: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>'
+  };
+
+  // Matches AVAILABILITY_STATUSES in api/main.py exactly — these are real
+  // enum values the backend validates against, not display labels to invent.
+  var AVAIL_LABELS = {
+    "Available": "Available", "Open to offers": "Open to offers",
+    "Not available": "Not available", "": "Availability not set"
+  };
+  var AVAIL_POSITIVE = { "Available": true, "Open to offers": true };
+
+  var state = {
+    all: [], loaded: false, failed: false, query: "",
+    disciplines: new Set(), availability: new Set(), cities: new Set(), portfolioOnly: false
+  };
+
+  function initialsOf(name){
+    return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
+  }
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  var TINTS = ["-tint-gold", "-tint-green", "-tint-dark", ""];
+  function tintFor(id){ return TINTS[id % TINTS.length]; }
+
+  function matchesFilters(p){
+    if (state.disciplines.size && !(p.discipline || []).some(function(d){ return state.disciplines.has(d); })) return false;
+    if (state.availability.size && !state.availability.has(p.availability_status || "")) return false;
+    if (state.cities.size && !state.cities.has(p.location)) return false;
+    if (state.portfolioOnly && !(p.projects && p.projects.length)) return false;
+    if (state.query) {
+      var q = state.query.toLowerCase();
+      var hay = [p.display_name, p.headline, p.bio, p.location].concat(p.discipline || [], p.skills || []).join(" ").toLowerCase();
+      if (hay.indexOf(q) === -1) return false;
+    }
+    return true;
+  }
+
+  function renderFilterRail(){
+    var disciplines = Array.from(new Set(state.all.reduce(function(acc, p){ return acc.concat(p.discipline || []); }, []))).sort();
+    var discBox = document.getElementById("disciplineFilters");
+    discBox.innerHTML = disciplines.map(function(d){
+      return '<button type="button" class="rail-chip' + (state.disciplines.has(d) ? " -active" : "") + '" data-disc="' + escapeHtml(d) + '">' + escapeHtml(d) + '</button>';
+    }).join("");
+    discBox.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var d = btn.getAttribute("data-disc");
+        if (state.disciplines.has(d)) state.disciplines.delete(d); else state.disciplines.add(d);
+        renderFilterRail(); renderResults();
+      });
+    });
+
+    var availBox = document.getElementById("availabilityFilters");
+    var availValues = Array.from(new Set(state.all.map(function(p){ return p.availability_status || ""; })));
+    availBox.innerHTML = availValues.map(function(v){
+      var count = state.all.filter(function(p){ return (p.availability_status || "") === v; }).length;
+      return '<label class="pp-check-row"><input type="checkbox" data-avail="' + escapeHtml(v) + '"' +
+        (state.availability.has(v) ? " checked" : "") + '>' + (AVAIL_LABELS[v] || escapeHtml(v)) +
+        '<span class="pp-check-count">' + count + '</span></label>';
+    }).join("");
+    availBox.querySelectorAll("input").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var v = cb.getAttribute("data-avail");
+        if (cb.checked) state.availability.add(v); else state.availability.delete(v);
+        renderResults();
+      });
+    });
+
+    var cities = Array.from(new Set(state.all.map(function(p){ return p.location; }).filter(Boolean))).sort();
+    var cityBox = document.getElementById("cityFilters");
+    cityBox.innerHTML = cities.slice(0, 8).map(function(c){
+      var count = state.all.filter(function(p){ return p.location === c; }).length;
+      return '<label class="pp-check-row"><input type="checkbox" data-city="' + escapeHtml(c) + '"' +
+        (state.cities.has(c) ? " checked" : "") + '>' + escapeHtml(c) +
+        '<span class="pp-check-count">' + count + '</span></label>';
+    }).join("");
+    cityBox.querySelectorAll("input").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var c = cb.getAttribute("data-city");
+        if (cb.checked) state.cities.add(c); else state.cities.delete(c);
+        renderResults();
+      });
+    });
+  }
+
+  function activeChipsHtml(){
+    var chips = [];
+    state.disciplines.forEach(function(d){ chips.push(d); });
+    state.availability.forEach(function(v){ chips.push(AVAIL_LABELS[v] || v); });
+    state.cities.forEach(function(c){ chips.push(c); });
+    if (!chips.length) return "";
+    return chips.map(function(label){ return '<span class="active-chip">' + escapeHtml(label) + '</span>'; }).join("");
+  }
+
+  function personCard(p, idx){
+    var thumbs = (p.projects || []).slice(0, 3);
+    return '<a class="person-card" href="pp-profile.html?id=' + encodeURIComponent(p.handle || p.id) + '">' +
+      '<div class="person-head">' +
+        (p.photo_path
+          ? '<img src="' + escapeHtml(p.photo_path) + '" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none">'
+          : '<span class="pp-avatar -md ' + tintFor(p.id) + '">' + initialsOf(p.display_name) + '</span>') +
+        '<div style="flex:1;min-width:0"><h4>' + escapeHtml(p.display_name) + '</h4>' +
+          '<p>' + escapeHtml(p.headline || (p.discipline || [])[0] || "Designer") + (p.location ? " · " + escapeHtml(p.location) : "") + '</p></div>' +
+      '</div>' +
+      '<p class="person-line">' + escapeHtml(p.bio || "") + '</p>' +
+      (thumbs.length
+        ? '<div class="person-thumbs">' + thumbs.map(function(pr){
+            return '<div class="t">' + (pr.image_path ? '<img src="' + escapeHtml(pr.image_path) + '" alt="">' : "") + '</div>';
+          }).join("") + '</div>'
+        : "") +
+      '<div class="person-foot">' +
+        '<span class="pp-status' + (AVAIL_POSITIVE[p.availability_status] ? " -good" : " -neutral") + '">' +
+          escapeHtml(AVAIL_LABELS[p.availability_status || ""] || "Availability not set") + '</span>' +
+        '<span style="font-size:12.5px;color:var(--c-text-faint)">' + (p.projects || []).length + ' project' + ((p.projects || []).length === 1 ? "" : "s") + '</span>' +
+      '</div>' +
+    '</a>';
+  }
+
+  function renderResults(){
+    var area = document.getElementById("peopleArea");
+
+    if (!state.loaded && !state.failed) {
+      document.getElementById("resultsCount").innerHTML = "";
+      area.innerHTML = '<div class="people-grid">' + Array.from({ length: 6 }).map(function(){
+        return '<div class="skeleton-card" aria-hidden="true">' +
+          '<span class="skeleton-block" style="width:56px;height:56px;border-radius:12px"></span>' +
+          '<span class="skeleton-block" style="height:17px;width:70%"></span>' +
+          '<span class="skeleton-block" style="height:13px;width:50%"></span>' +
+          '<span class="skeleton-block" style="height:13px;width:90%"></span>' +
+          '<span class="skeleton-block" style="height:44px;width:100%;border-radius:10px;margin-top:4px"></span></div>';
+      }).join("") + '</div>';
+      return;
+    }
+
+    if (state.failed) {
+      document.getElementById("resultsCount").innerHTML = "";
+      area.innerHTML = '<div class="state-panel" role="alert">' +
+        '<span class="state-icon">' + ICONS.alert + '</span>' +
+        '<h3>The directory didn\'t load</h3>' +
+        '<p>Your filters are still here. This was the request for the profiles themselves.</p>' +
+        '<button type="button" class="pp-btn pp-btn-primary" id="retryBtn">Load the directory again</button></div>';
+      document.getElementById("retryBtn").addEventListener("click", loadPeople);
+      return;
+    }
+
+    var filtered = state.all.filter(matchesFilters);
+    var label = filtered.length + (filtered.length === 1 ? " designer" : " designers");
+    document.getElementById("resultsCount").innerHTML = '<span>' + label + '</span>' + activeChipsHtml();
+
+    if (!filtered.length) {
+      area.innerHTML = '<div class="state-panel">' +
+        '<span class="empty-icon" style="margin:0 auto 16px">' + ICONS.search + '</span>' +
+        '<h3>Nobody matches all of that yet</h3>' +
+        '<p>There are ' + state.all.length + ' designers listed, so it\'s worth trying again with fewer filters.</p>' +
+        '<button type="button" class="pp-btn pp-btn-primary" id="clearBtn">Clear all filters</button></div>';
+      document.getElementById("clearBtn").addEventListener("click", resetFilters);
+      return;
+    }
+
+    area.innerHTML = '<div class="people-grid">' + filtered.map(personCard).join("") + '</div>';
+  }
+
+  function resetFilters(){
+    state.disciplines = new Set();
+    state.availability = new Set();
+    state.cities = new Set();
+    state.query = "";
+    state.portfolioOnly = false;
+    document.getElementById("searchInput").value = "";
+    document.getElementById("portfolioOnly").checked = false;
+    renderFilterRail();
+    renderResults();
+  }
+
+  async function loadPeople(){
+    state.loaded = false;
+    state.failed = false;
+    renderResults();
+    try {
+      var res = await fetch("/api/designers", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      state.all = data.designers || [];
+      state.loaded = true;
+      document.getElementById("heroSub").textContent =
+        state.all.length.toLocaleString() + " profile" + (state.all.length === 1 ? "" : "s") +
+        ", every one written by the designer themselves, so you're hearing from them and not from a recruiter's summary.";
+      renderFilterRail();
+    } catch (e) {
+      state.failed = true;
+    }
+    renderResults();
+  }
+
+  function init(){
+    document.getElementById("resetFilters").addEventListener("click", resetFilters);
+    document.getElementById("portfolioOnly").addEventListener("change", function(e){
+      state.portfolioOnly = e.target.checked; renderResults();
+    });
+    var searchInput = document.getElementById("searchInput");
+    function runSearch(){ state.query = searchInput.value.trim(); renderResults(); }
+    document.getElementById("searchBtn").addEventListener("click", runSearch);
+    searchInput.addEventListener("keydown", function(e){ if (e.key === "Enter") runSearch(); });
+    loadPeople();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

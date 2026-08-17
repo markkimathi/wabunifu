@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Case study · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container-read);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  .layout{padding:28px 0 72px}
+  .cover{width:100%;aspect-ratio:16/9;border-radius:var(--pp-radius-lg);background:var(--c-surface-inset);
+    border:1px solid var(--c-border);overflow:hidden;margin-bottom:28px}
+  .cover img{width:100%;height:100%;object-fit:cover;display:block}
+  .title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:12px}
+  h1{margin:0;font-size:var(--pp-h1-size);line-height:1.08;letter-spacing:-0.03em;font-weight:800;max-width:24ch}
+  .cat{margin-bottom:20px}
+  .body-text{max-width:var(--pp-measure-read);font-size:18px;line-height:1.7;color:var(--c-text-muted);margin-bottom:32px}
+
+  .credit-card{display:flex;align-items:center;gap:14px;padding:20px 22px;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-lg);background:var(--c-surface);margin-bottom:40px;text-decoration:none;color:inherit}
+  .credit-card:hover{border-color:var(--c-border-hover)}
+  .credit-card .name{font-size:16px;font-weight:700}
+  .credit-card .sub{font-size:13.5px;color:var(--c-text-subtle)}
+  .credit-card .go{margin-left:auto;color:var(--c-border-strong)}
+
+  .more{max-width:var(--pp-measure-read)}
+  .more h3{margin:0 0 16px;font-size:22px;font-weight:700;letter-spacing:-0.02em}
+  .more-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  @media(max-width:639px){.more-grid{grid-template-columns:1fr}}
+  .more-item{text-decoration:none;color:inherit}
+  .more-item .cover-sm{aspect-ratio:4/3;border-radius:var(--pp-radius-sm);background:var(--c-surface-inset);
+    border:1px solid var(--c-border);overflow:hidden;margin-bottom:8px}
+  .more-item .cover-sm img{width:100%;height:100%;object-fit:cover;display:block}
+  .more-item .t{font-size:14px;font-weight:600;line-height:1.35}
+
+  .state-panel{padding:64px 24px;text-align:center}
+  .state-panel h3{margin:0 0 8px;font-size:22px;font-weight:700}
+  .state-panel p{margin:0 0 20px;font-size:15px;color:var(--c-text-subtle)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="people"></div>
+<nav id="pp-breadcrumbs"></nav>
+
+<main>
+  <div class="wrap"><div class="layout" id="content"><div class="state-panel"><p>Loading project…</p></div></div></div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var ICONS = {
+    ext: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"></path></svg>',
+    chevron: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>'
+  };
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function initialsOf(name){
+    return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
+  }
+
+  var params = new URLSearchParams(location.search);
+  var designerId = params.get("designer");
+  var projectId = params.get("project");
+
+  async function load(){
+    var content = document.getElementById("content");
+    if (!designerId || !projectId) { content.innerHTML = notFound("No project specified."); return; }
+    var designer;
+    try {
+      var res = await fetch("/api/designers/" + encodeURIComponent(designerId), { cache: "no-store" });
+      if (!res.ok) throw new Error("not found");
+      designer = await res.json();
+    } catch (e) {
+      content.innerHTML = notFound("This project isn't available."); return;
+    }
+    var project = (designer.projects || []).filter(function(p){ return String(p.id) === String(projectId); })[0];
+    if (!project) { content.innerHTML = notFound("This project isn't available."); return; }
+    render(designer, project);
+  }
+
+  function notFound(msg){
+    return '<div class="state-panel"><h3>Project not found</h3><p>' + escapeHtml(msg) + '</p>' +
+      '<a class="pp-btn pp-btn-primary" href="pp-people.html">Browse the directory</a></div>';
+  }
+
+  function render(designer, project){
+    document.title = project.title + " · " + designer.display_name + " · Path & Pixel";
+    var crumbs = document.getElementById("pp-breadcrumbs");
+    crumbs.setAttribute("data-crumbs", JSON.stringify([
+      { label: "People", href: "pp-people.html" },
+      { label: designer.display_name, href: "pp-profile.html?id=" + encodeURIComponent(designerId) },
+      { label: project.title }
+    ]));
+    PathPixelNav.renderBreadcrumbs(crumbs);
+
+    var others = (designer.projects || []).filter(function(p){ return String(p.id) !== String(project.id); }).slice(0, 3);
+
+    document.getElementById("content").innerHTML =
+      '<div class="cover">' + (project.image_path ? '<img src="' + escapeHtml(project.image_path) + '" alt="">' : "") + '</div>' +
+      '<div class="title-row"><h1>' + escapeHtml(project.title) + '</h1>' +
+        (project.url ? '<a class="pp-btn pp-btn-secondary" href="' + escapeHtml(project.url) + '" target="_blank" rel="noopener" style="flex:none">View live' + ICONS.ext + '</a>' : "") +
+      '</div>' +
+      (project.category ? '<div class="cat"><span class="pp-chip">' + escapeHtml(project.category) + '</span></div>' : "") +
+      (project.description ? '<p class="body-text">' + escapeHtml(project.description) + '</p>' : "") +
+      '<a class="credit-card" href="pp-profile.html?id=' + encodeURIComponent(designerId) + '">' +
+        (designer.photo_path
+          ? '<img src="' + escapeHtml(designer.photo_path) + '" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover">'
+          : '<span class="pp-avatar -sm">' + initialsOf(designer.display_name) + '</span>') +
+        '<span><span class="name" style="display:block">' + escapeHtml(designer.display_name) + '</span>' +
+          '<span class="sub">' + escapeHtml(designer.headline || (designer.discipline || [])[0] || "Designer") + '</span></span>' +
+        '<span class="go">' + ICONS.chevron + '</span>' +
+      '</a>' +
+      (others.length
+        ? '<div class="more"><h3>More from ' + escapeHtml(designer.display_name) + '</h3><div class="more-grid">' +
+            others.map(function(p){
+              return '<a class="more-item" href="pp-case-study.html?designer=' + encodeURIComponent(designerId) + '&project=' + encodeURIComponent(p.id) + '">' +
+                '<div class="cover-sm">' + (p.image_path ? '<img src="' + escapeHtml(p.image_path) + '" alt="">' : "") + '</div>' +
+                '<div class="t">' + escapeHtml(p.title) + '</div></a>';
+            }).join("") +
+          '</div></div>'
+        : "");
+  }
+
+  document.addEventListener("DOMContentLoaded", load);
+})();
+</script>
+</body>
+</html>

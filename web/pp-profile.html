@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Profile · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  .layout{padding:28px 0 72px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:56px;align-items:start}
+  @media(max-width:1023px){.layout{grid-template-columns:1fr;gap:0}}
+
+  .head-row{display:flex;align-items:flex-start;gap:28px;margin-bottom:26px;flex-wrap:wrap}
+  .head-row .photo{width:132px;height:132px;border-radius:var(--pp-radius-xl);object-fit:cover;flex:none}
+  .head-row h1{margin:0 0 6px;font-size:44px;line-height:1.05;letter-spacing:-0.036em;font-weight:800}
+  .head-row .meta{margin:0 0 14px;font-size:18px;color:var(--c-text-muted)}
+  .head-tags{display:flex;flex-wrap:wrap;gap:8px}
+  .bio{margin:0 0 28px;font-size:18px;line-height:1.6;color:var(--c-text);max-width:64ch}
+
+  aside.side{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(var(--pp-header-height) + 24px)}
+  @media(max-width:1023px){aside.side{position:static;padding-top:8px}}
+  .side .pp-btn{flex:1}
+  .side-row{display:flex;gap:10px}
+  .side-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .side-card h4{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-faint)}
+  .contact-row{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;margin-bottom:9px}
+  .contact-row:last-child{margin-bottom:0}
+  .contact-row span:first-child{color:var(--c-text-subtle)}
+  .contact-row a{font-weight:600;text-decoration:none;color:var(--c-accent-text)}
+  .link-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--c-border);border-radius:10px;
+    text-decoration:none;color:inherit;margin-bottom:8px}
+  .link-item:last-child{margin-bottom:0}
+  .link-item:hover{background:var(--c-bg-sunken);border-color:var(--c-border-hover)}
+  .link-icon{width:34px;height:34px;flex:none;border-radius:8px;background:var(--c-surface-inset);
+    display:inline-flex;align-items:center;justify-content:center;color:var(--c-text-muted)}
+  .link-item .label{display:block;font-size:15px;font-weight:600;line-height:1.3}
+  .link-item .url{display:block;font-size:12.5px;color:var(--c-text-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .link-item svg.ext{flex:none;color:var(--c-border-strong)}
+
+  .tabs-bar{position:sticky;top:56px;z-index:var(--pp-z-sticky);background:var(--c-bg);margin-bottom:32px}
+  @media(min-width:1024px){.tabs-bar{top:var(--pp-header-height)}}
+
+  .work-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  @media(max-width:639px){.work-grid{grid-template-columns:1fr}}
+  .work-card{cursor:pointer;text-decoration:none;color:inherit}
+  .work-cover{aspect-ratio:4/3;background:var(--c-surface-inset);overflow:hidden;border-radius:var(--pp-radius-md) var(--pp-radius-md) 0 0;border:1px solid var(--c-border);border-bottom:none}
+  .work-cover img{width:100%;height:100%;object-fit:cover;display:block}
+  .work-body{padding:20px;border:1px solid var(--c-border);border-top:none;border-radius:0 0 var(--pp-radius-md) var(--pp-radius-md)}
+  .work-body h4{margin:0 0 6px;font-size:19px;font-weight:700;letter-spacing:-0.018em;line-height:1.25}
+  .work-body p{margin:0;font-size:14px;line-height:1.55;color:var(--c-text-subtle)}
+
+  .about-block{max-width:820px}
+  .about-block h3{margin:0 0 14px;font-size:24px;font-weight:600;letter-spacing:-0.016em}
+  .about-skills{display:flex;flex-wrap:wrap;gap:8px}
+
+  .state-panel{padding:64px 24px;text-align:center}
+  .state-panel h3{margin:0 0 8px;font-size:22px;font-weight:700}
+  .state-panel p{margin:0 0 20px;font-size:15px;color:var(--c-text-subtle)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="people"></div>
+<nav id="pp-breadcrumbs"></nav>
+
+<main>
+  <div class="wrap" id="content"><div class="state-panel"><p>Loading profile…</p></div></div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var ICONS = {
+    share: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"></path></svg>',
+    globe: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"></path></svg>',
+    ext: '<svg class="ext" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"></path></svg>',
+    download: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5"></path><path d="M4 20h16"></path></svg>',
+    project: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.8"></circle><path d="M21 16l-5.5-5.5L6 20"></path></svg>'
+  };
+
+  var PLATFORM_ICON = {
+    linkedin: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05a3.74 3.74 0 0 1 3.37-1.85c3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"/></svg>',
+    dribbble: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12s5.37 12 12 12 12-5.37 12-12S18.63 0 12 0zm7.94 5.53a10.17 10.17 0 0 1 2.3 6.36c-.34-.07-3.7-.75-7.1-.32-.07-.17-.14-.34-.22-.52-.21-.5-.45-1-.7-1.48 3.75-1.53 5.46-3.73 5.72-4.04zm-1.4-1.26c-.22.31-1.75 2.38-5.36 3.73a51.6 51.6 0 0 0-3.8-5.93 10.2 10.2 0 0 1 9.16 2.2zM7.6 2.85a60.6 60.6 0 0 1 3.77 5.86C6.62 9.98 2.44 9.95 1.99 9.95a10.2 10.2 0 0 1 5.6-7.1zM1.76 12.01v-.31c.44.01 5.36.07 10.42-1.45.29.56.56 1.13.81 1.7l-.4.12c-5.23 1.69-8.01 6.3-8.24 6.69a10.17 10.17 0 0 1-2.6-6.75zm4.02 8.02c.15-.3 2.13-4.08 7.85-6.07l.06-.02a42.4 42.4 0 0 1 2.18 7.75 10.16 10.16 0 0 1-10.09-1.66zm11.83.68a43.8 43.8 0 0 0-1.98-7.28c3.2-.51 6.02.32 6.37.43a10.18 10.18 0 0 1-4.39 6.85z"/></svg>',
+    behance: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M7.8 5.7c.59 0 1.12.05 1.6.16.49.1.9.27 1.24.5.34.24.61.55.8.94.19.39.29.87.29 1.45 0 .62-.14 1.13-.42 1.55-.29.41-.7.75-1.26 1.02.76.22 1.32.6 1.69 1.15.38.55.56 1.2.56 1.97 0 .63-.12 1.17-.36 1.62a3.1 3.1 0 0 1-.97 1.12c-.4.29-.87.5-1.4.64-.53.13-1.06.2-1.62.2H0V5.7h7.8zM15.55 6.46h5.83v1.42h-5.83zM7.45 9.5c.48 0 .88-.11 1.19-.34.31-.23.46-.6.46-1.12 0-.29-.05-.52-.15-.71a1.11 1.11 0 0 0-.41-.43 1.73 1.73 0 0 0-.59-.21 4 4 0 0 0-.69-.06H3.43V9.5zm.22 5.24c.27 0 .52-.03.77-.08.24-.05.45-.14.64-.26.18-.12.33-.28.44-.49.1-.21.15-.48.15-.81 0-.65-.18-1.11-.55-1.39a2.3 2.3 0 0 0-1.44-.4H3.43v3.43zM16.58 15.6c.45.44 1.09.66 1.93.66.6 0 1.12-.15 1.55-.46.44-.3.7-.62.8-.95h2.61c-.42 1.29-1.06 2.22-1.93 2.77-.86.56-1.9.84-3.14.84-.86 0-1.63-.14-2.32-.42a4.7 4.7 0 0 1-1.76-1.17 5.28 5.28 0 0 1-1.12-1.84 6.8 6.8 0 0 1-.39-2.35c0-.83.14-1.6.4-2.31a5.4 5.4 0 0 1 1.15-1.85 5.28 5.28 0 0 1 1.76-1.23c.68-.3 1.44-.45 2.28-.45.94 0 1.75.19 2.45.55.7.36 1.27.85 1.71 1.45.45.6.77 1.3.97 2.06.2.78.27 1.58.21 2.43h-7.75c0 .87.3 1.7.74 2.13zm3.41-6.01c-.36-.39-.95-.6-1.63-.6-.45 0-.83.08-1.12.23-.3.15-.54.34-.72.56-.19.22-.32.47-.4.73-.07.26-.12.48-.13.67h4.8c-.09-.76-.35-1.21-.8-1.59z"/></svg>',
+    instagram: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.16c3.2 0 3.58.01 4.85.07 3.25.15 4.77 1.69 4.92 4.92.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.15 3.23-1.66 4.77-4.92 4.92-1.27.06-1.64.07-4.85.07s-3.58-.01-4.85-.07c-3.26-.15-4.77-1.7-4.92-4.92-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85C2.35 3.86 3.87 2.33 7.15 2.23c1.27-.06 1.65-.07 4.85-.07zm0 6.05a5.79 5.79 0 100 11.58 5.79 5.79 0 000-11.58zm0 9.55a3.76 3.76 0 110-7.52 3.76 3.76 0 010 7.52zm6.02-9.78a1.35 1.35 0 11-2.7 0 1.35 1.35 0 012.7 0z"/></svg>',
+    twitter: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.46l8.6-9.83L0 1.15h7.59l5.24 6.93zM17.61 20.64h2.04L6.49 3.24H4.3z"/></svg>',
+    github: '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.38 7.86 10.9.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.36-3.87-1.36-.53-1.33-1.29-1.69-1.29-1.69-1.05-.72.08-.7.08-.7 1.17.08 1.78 1.2 1.78 1.2 1.03 1.77 2.71 1.26 3.37.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.7 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.18 1.18a11 11 0 015.8 0c2.2-1.49 3.17-1.18 3.17-1.18.64 1.59.24 2.76.12 3.05.74.81 1.18 1.84 1.18 3.1 0 4.43-2.7 5.4-5.27 5.68.42.36.78 1.07.78 2.17v3.21c0 .31.21.67.8.56A10.52 10.52 0 0023.5 12C23.5 5.65 18.35.5 12 .5z"/></svg>'
+  };
+  function linkIcon(label){
+    var key = (label || "").toLowerCase();
+    for (var k in PLATFORM_ICON) if (key.indexOf(k) !== -1) return PLATFORM_ICON[k];
+    return ICONS.globe;
+  }
+
+  // Matches AVAILABILITY_STATUSES in api/main.py exactly.
+  var AVAIL_META = {
+    "Available": { label: "Available", positive: true },
+    "Open to offers": { label: "Open to offers", positive: true },
+    "Not available": { label: "Not available", positive: false },
+    "": { label: "Availability not set", positive: false }
+  };
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function initialsOf(name){
+    return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
+  }
+
+  var identifier = new URLSearchParams(location.search).get("id");
+  var designer = null;
+
+  async function loadProfile(){
+    var content = document.getElementById("content");
+    if (!identifier) { content.innerHTML = notFoundHtml("No profile specified."); return; }
+    try {
+      var res = await fetch("/api/designers/" + encodeURIComponent(identifier), { cache: "no-store" });
+      if (!res.ok) throw new Error("not found");
+      designer = await res.json();
+    } catch (e) {
+      content.innerHTML = notFoundHtml("This profile isn't public, or doesn't exist.");
+      return;
+    }
+    renderProfile();
+  }
+
+  function notFoundHtml(msg){
+    return '<div class="state-panel"><h3>Profile not found</h3><p>' + escapeHtml(msg) + '</p>' +
+      '<a class="pp-btn pp-btn-primary" href="pp-people.html">Browse the directory</a></div>';
+  }
+
+  var currentTab = "work";
+
+  function renderProfile(){
+    document.title = designer.display_name + " · Path & Pixel";
+    var crumbs = document.getElementById("pp-breadcrumbs");
+    crumbs.setAttribute("data-crumbs", JSON.stringify([{ label: "People", href: "pp-people.html" }, { label: designer.display_name }]));
+    PathPixelNav.renderBreadcrumbs(crumbs);
+
+    var avail = AVAIL_META[designer.availability_status || ""] || AVAIL_META[""];
+    var discChips = (designer.discipline || []).map(function(d){ return '<span class="pp-chip">' + escapeHtml(d) + '</span>'; }).join("");
+
+    document.getElementById("content").innerHTML =
+      '<div class="layout">' +
+        '<div style="grid-column:1;grid-row:1">' +
+          '<div class="head-row">' +
+            (designer.photo_path
+              ? '<img class="photo" src="' + escapeHtml(designer.photo_path) + '" alt="">'
+              : '<span class="pp-avatar -lg" style="border-radius:var(--pp-radius-xl);width:132px;height:132px;font-size:40px">' + initialsOf(designer.display_name) + '</span>') +
+            '<div style="flex:1;min-width:280px">' +
+              '<h1>' + escapeHtml(designer.display_name) + '</h1>' +
+              '<p class="meta">' + [designer.headline, designer.location, designer.years_experience ? designer.years_experience + " years" : ""]
+                .filter(Boolean).map(escapeHtml).join(" · ") + '</p>' +
+              '<div class="head-tags">' +
+                '<span class="pp-status' + (avail.positive ? " -good" : " -neutral") + '">' + avail.label + '</span>' +
+                discChips +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          (designer.bio ? '<p class="bio">' + escapeHtml(designer.bio) + '</p>' : "") +
+        '</div>' +
+
+        '<aside class="side" style="grid-column:2;grid-row:1 / span 2">' +
+          '<div class="side-row">' +
+            '<button type="button" class="pp-btn pp-btn-secondary" id="shareBtn">' + ICONS.share + 'Share</button>' +
+          '</div>' +
+          (designer.phone || designer.contact_email ? contactCardHtml() : "") +
+          (linksCardHtml()) +
+        '</aside>' +
+
+        '<div style="grid-column:1;grid-row:2">' +
+          '<div class="pp-tabs tabs-bar" id="tabsBar">' +
+            '<button type="button" class="pp-tab -active" data-tab="work">Work<span class="pp-tab-count">' + (designer.projects || []).length + '</span></button>' +
+            (designer.skills && designer.skills.length ? '<button type="button" class="pp-tab" data-tab="about">About</button>' : "") +
+          '</div>' +
+          '<div id="tabPanel"></div>' +
+        '</div>' +
+      '</div>';
+
+    wireInteractions();
+    renderTabPanel();
+  }
+
+  function contactCardHtml(){
+    return '<div class="side-card"><h4>Contact</h4>' +
+      (designer.contact_email ? '<div class="contact-row"><span>Email</span><a href="mailto:' + escapeHtml(designer.contact_email) + '">' + escapeHtml(designer.contact_email) + '</a></div>' : "") +
+      (designer.phone ? '<div class="contact-row"><span>Phone</span><a href="tel:' + escapeHtml(designer.phone) + '">' + escapeHtml(designer.phone) + '</a></div>' : "") +
+    '</div>';
+  }
+
+  function linksCardHtml(){
+    var links = designer.links || [];
+    var resumeBtn = designer.resume_url
+      ? '<button type="button" class="pp-btn pp-btn-dark" style="margin-top:' + (links.length ? "14px" : "0") + ';width:100%" id="resumeBtn">' + ICONS.download + 'Download résumé</button>'
+      : "";
+    if (!links.length && !resumeBtn) return "";
+    return '<div class="side-card"><h4>Elsewhere</h4>' +
+      links.map(function(l){
+        var host = "";
+        try { host = new URL(l.url).host.replace(/^www\./, ""); } catch (e) { host = l.url; }
+        return '<a class="link-item" href="' + escapeHtml(l.url) + '" target="_blank" rel="noopener">' +
+          '<span class="link-icon">' + linkIcon(l.label) + '</span>' +
+          '<span style="flex:1;min-width:0"><span class="label">' + escapeHtml(l.label) + '</span><span class="url">' + escapeHtml(host) + '</span></span>' +
+          ICONS.ext +
+        '</a>';
+      }).join("") +
+      resumeBtn +
+    '</div>';
+  }
+
+  function renderTabPanel(){
+    var panel = document.getElementById("tabPanel");
+    if (currentTab === "work") {
+      var projects = designer.projects || [];
+      if (!projects.length) {
+        panel.innerHTML = '<div class="pp-empty" style="max-width:420px">' +
+          '<div class="pp-empty-icon">' + ICONS.project + '</div>' +
+          '<h3>No projects yet</h3><p>' + escapeHtml(designer.display_name) + ' hasn\'t added any featured work.</p></div>';
+        return;
+      }
+      panel.innerHTML = '<div class="work-grid">' + projects.map(function(p){
+        return '<a class="work-card" href="pp-case-study.html?designer=' + encodeURIComponent(identifier) + '&project=' + encodeURIComponent(p.id) + '">' +
+          '<div class="work-cover">' + (p.image_path ? '<img src="' + escapeHtml(p.image_path) + '" alt="">' : "") + '</div>' +
+          '<div class="work-body"><h4>' + escapeHtml(p.title) + '</h4>' +
+            (p.description ? '<p>' + escapeHtml(p.description) + '</p>' : "") + '</div>' +
+        '</a>';
+      }).join("") + '</div>';
+    } else {
+      panel.innerHTML = '<div class="about-block"><h3>Skills</h3><div class="about-skills">' +
+        (designer.skills || []).map(function(s){ return '<span class="pp-chip">' + escapeHtml(s) + '</span>'; }).join("") +
+      '</div></div>';
+    }
+  }
+
+  function wireInteractions(){
+    document.querySelectorAll("#tabsBar [data-tab]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        currentTab = btn.getAttribute("data-tab");
+        document.querySelectorAll("#tabsBar [data-tab]").forEach(function(b){ b.classList.toggle("-active", b === btn); });
+        renderTabPanel();
+      });
+    });
+
+    document.getElementById("shareBtn").addEventListener("click", function(){
+      var url = location.href;
+      if (navigator.share) {
+        navigator.share({ title: designer.display_name, url: url }).catch(function(){});
+      } else {
+        navigator.clipboard.writeText(url).then(function(){
+          var btn = document.getElementById("shareBtn");
+          var original = btn.innerHTML;
+          btn.textContent = "Link copied";
+          setTimeout(function(){ btn.innerHTML = original; }, 2000);
+        });
+      }
+    });
+
+    var resumeBtn = document.getElementById("resumeBtn");
+    if (resumeBtn) resumeBtn.addEventListener("click", function(){ window.open(designer.resume_url, "_blank"); });
+  }
+
+  document.addEventListener("DOMContentLoaded", loadProfile);
+})();
+</script>
+</body>
+</html>
