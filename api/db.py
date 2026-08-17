@@ -1899,6 +1899,28 @@ def get_reply_leaderboard(days: int = 30, limit: int = 10) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def list_work_worth_reading(limit: int = 12) -> list[dict]:
+    """One project per approved designer — their single most recent
+    (highest-id) upload — ordered newest first. No admin curation: this is
+    a real recency query, not an editorial pick (see Phase 8 Decision 1)."""
+    c = _conn()
+    rows = c.execute(
+        """
+        SELECT d.id AS designer_id, d.display_name, d.handle, d.photo_path, d.location, d.discipline,
+               p.id AS project_id, p.title, p.description, p.category, p.image_path
+        FROM designer_projects p
+        JOIN designers d ON d.id = p.designer_id
+        WHERE d.status = 'approved'
+          AND p.id = (SELECT MAX(p2.id) FROM designer_projects p2 WHERE p2.designer_id = p.designer_id)
+        ORDER BY p.id DESC
+        LIMIT ?
+        """,
+        (limit,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
 # ---------------------------------------------------------------------------
 # Analytics: pageviews, searches, apply-clicks, and the aggregate summary
 # the admin dashboard reads. No personal data stored — see module docstring.

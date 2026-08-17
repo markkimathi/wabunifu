@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit;text-decoration:none}
+
+  .hero{padding:28px 0 0;display:flex;align-items:flex-end;justify-content:space-between;gap:32px;flex-wrap:wrap;
+    padding-bottom:24px;border-bottom:1px solid var(--c-border)}
+  .hero-copy{max-width:56ch}
+  .hero h1{margin:0 0 12px;font-size:var(--pp-display-size);line-height:1.0;letter-spacing:-0.04em;font-weight:800;text-wrap:balance}
+  .hero p{margin:0;font-size:17px;line-height:1.55;color:var(--c-text-muted)}
+
+  .tabs-row{padding:0 0 0}
+  .layout{padding:20px 0 64px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:40px;align-items:start}
+  @media(max-width:1023px){.layout{grid-template-columns:1fr}}
+
+  .rail{position:sticky;top:84px;display:flex;flex-direction:column;gap:16px}
+  @media(max-width:1023px){.rail{position:static}}
+  .rail-card{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border)}
+  .rail-card h3{margin:0 0 4px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em}
+  .rail-card p{margin:0 0 14px;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)}
+  .rail-dark{background:var(--pp-ink);color:var(--pp-white)}
+  .rail-dark h3{color:var(--pp-white)}
+  .rail-dark p{color:var(--pp-ink-200,var(--c-text-muted))}
+  .rail-dark a{color:var(--pp-gold);font-size:14px;font-weight:600}
+
+  .seat-row{display:flex;gap:11px;align-items:flex-start;padding:13px;border-radius:var(--pp-radius-md);
+    background:var(--pp-gold-100);border:1px solid var(--pp-gold-300)}
+  .seat-date{width:34px;height:34px;flex:none;border-radius:8px;background:var(--pp-gold);display:inline-flex;
+    flex-direction:column;align-items:center;justify-content:center;line-height:1}
+  .seat-date span:first-child{font-size:10.5px;font-weight:700;color:var(--pp-ink)}
+  .seat-date span:last-child{font-size:14px;font-weight:800;color:var(--pp-ink)}
+  .seat-info p{margin:0}
+  .seat-info p:first-child{font-size:14px;font-weight:600;line-height:1.35;color:var(--pp-ink)}
+  .seat-info p:last-child{font-size:12.5px;color:var(--pp-gold-800)}
+
+  .helper-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--c-surface-inset)}
+  .helper-row:last-child{border-bottom:none}
+  .helper-name{flex:1;min-width:0}
+  .helper-name p{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .helper-name p:first-child{font-size:14.5px;font-weight:600}
+  .helper-name p:last-child{font-size:12.5px;color:var(--c-text-faint)}
+
+  .session-card{display:flex;border-radius:var(--pp-radius-lg);background:var(--c-surface);
+    border:1px solid var(--c-border);overflow:hidden}
+  .session-date{width:96px;flex:none;padding:18px 0;display:flex;flex-direction:column;align-items:center;
+    gap:2px;background:var(--c-bg-sunken);border-right:1px solid var(--c-border)}
+  .session-date .m{font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--c-text-faint)}
+  .session-date .d{font-size:30px;font-weight:800;letter-spacing:-0.03em;line-height:1.05;font-variant-numeric:tabular-nums}
+  .session-date .t{font-size:12.5px;color:var(--c-text-subtle)}
+  .session-body{flex:1;min-width:0;padding:18px 22px}
+  .session-top{display:flex;align-items:center;gap:9px;margin-bottom:7px;flex-wrap:wrap}
+  .session-body h3{margin:0 0 6px;font-size:19px;font-weight:700;letter-spacing:-0.018em}
+  .session-body>p{margin:0 0 14px;font-size:14.5px;line-height:1.55;color:var(--c-text-muted);max-width:60ch}
+  .session-foot{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .session-host{display:flex;align-items:center;gap:8px}
+  .session-host span:last-child{font-size:13.5px;color:var(--c-text-muted)}
+  .seat-note{font-size:13.5px;font-weight:600}
+  .seat-note.-tight{color:var(--pp-gold-800)}
+  .seat-note.-full{color:var(--c-bad-text)}
+
+  .thread-card{border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);overflow:hidden}
+  .thread-btn{width:100%;display:flex;gap:14px;align-items:flex-start;padding:18px 20px;border:none;
+    background:transparent;font-family:var(--pp-font);cursor:pointer;text-align:left;color:var(--c-text)}
+  .thread-btn:hover{background:var(--c-bg-sunken)}
+  .thread-main{flex:1;min-width:0}
+  .thread-meta{display:flex;align-items:center;gap:9px;margin-bottom:5px;flex-wrap:wrap}
+  .thread-meta .who{font-size:13px;color:var(--c-text-faint)}
+  .thread-title{display:block;font-size:17px;font-weight:700;letter-spacing:-0.016em;line-height:1.3;margin-bottom:5px}
+  .thread-excerpt{display:block;font-size:14.5px;line-height:1.55;color:var(--c-text-muted);max-width:66ch;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .thread-replies{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;padding-left:6px}
+  .thread-replies .n{font-size:18px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+  .thread-replies .l{font-size:11px;color:var(--c-text-faint)}
+
+  .work-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:639px){.work-grid{grid-template-columns:1fr}}
+  .work-card{border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);overflow:hidden}
+  .work-card:hover{border-color:var(--c-border-hover)}
+  .work-shot{aspect-ratio:16/10;background:var(--c-surface-inset);overflow:hidden}
+  .work-shot img{width:100%;height:100%;object-fit:cover;display:block}
+  .work-body{padding:16px 18px 18px}
+  .work-body h3{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.016em;line-height:1.25}
+  .work-body>p{margin:0 0 14px;font-size:14px;line-height:1.55;color:var(--c-text-muted)}
+  .work-foot{display:flex;align-items:center;gap:10px}
+  .work-foot .info{flex:1;min-width:0}
+  .work-foot .info p{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .work-foot .info p:first-child{font-size:14px;font-weight:600}
+  .work-foot .info p:last-child{font-size:12.5px;color:var(--c-text-faint)}
+
+  .composer-overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;
+    align-items:flex-start;justify-content:center;padding:80px 20px;overflow-y:auto}
+  .composer{width:100%;max-width:600px;border-radius:var(--pp-radius-lg);background:var(--c-surface);
+    box-shadow:0 24px 64px rgba(0,0,0,.3);overflow:hidden}
+  .composer-head{padding:20px 22px;border-bottom:1px solid var(--c-border);display:flex;align-items:flex-start;gap:14px}
+  .composer-head h3{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:-0.018em}
+  .composer-head p{margin:0;font-size:13.5px;color:var(--c-text-subtle)}
+  .composer-body{padding:20px 22px;display:flex;flex-direction:column;gap:14px}
+  .composer-foot{padding:16px 22px;border-top:1px solid var(--c-border);background:var(--c-bg-sunken);
+    display:flex;align-items:center;gap:12px}
+  .composer-foot .msg{font-size:13.5px;color:var(--c-bad-text);flex:1}
+
+  .skeleton-row{padding:18px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);
+    display:flex;gap:14px;align-items:flex-start}
+  .skeleton-block{background:var(--c-surface-inset);border-radius:5px;animation:pp-pulse 1.4s ease-in-out infinite}
+  @keyframes pp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  @media(prefers-reduced-motion:reduce){.skeleton-block{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="community"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Community"}]'></nav>
+
+<main>
+  <div class="wrap hero">
+    <div class="hero-copy">
+      <h1>Somewhere to ask, and someone to ask</h1>
+      <p>Reviews you can book, questions answered by people doing the work, and the projects worth stopping on this month.</p>
+    </div>
+    <button class="pp-btn pp-btn-primary pp-btn-lg" id="askBtn" type="button">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
+      Ask the community
+    </button>
+  </div>
+
+  <div class="wrap tabs-row">
+    <div class="pp-tabs" id="tabsRow" style="margin-top:20px"></div>
+  </div>
+
+  <div class="wrap layout">
+    <div id="feedArea" style="min-width:0"></div>
+
+    <aside class="rail">
+      <div class="rail-card rail-dark">
+        <h3>How this stays useful</h3>
+        <p>There's no feed here and no follower counts on show. Sessions have seats, questions get answers, and work gets read properly.</p>
+        <a href="/community/rules">Read the house rules →</a>
+      </div>
+
+      <div class="rail-card">
+        <h3>Your seats</h3>
+        <p id="seatSummary">Sign in to book a session.</p>
+        <div id="seatList" style="display:flex;flex-direction:column;gap:10px"></div>
+      </div>
+
+      <div class="rail-card">
+        <h3>People answering things</h3>
+        <p>Most useful replies this month.</p>
+        <div id="helperList"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<div class="composer-overlay" id="composerOverlay" style="display:none">
+  <div class="composer">
+    <div class="composer-head">
+      <div style="flex:1;min-width:0">
+        <h3>Ask the community</h3>
+        <p>Specific questions get specific answers.</p>
+      </div>
+      <button class="pp-btn-icon -ghost" id="composerClose" type="button" aria-label="Close">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <div class="composer-body">
+      <label class="pp-field">
+        <span class="pp-field-label">Your question</span>
+        <span class="pp-field-input"><input type="text" id="qTitle" placeholder="How do you price a first freelance project?" maxlength="200"></span>
+      </label>
+      <label class="pp-field">
+        <span class="pp-field-label">Context — what have you tried, and where are you stuck?</span>
+        <textarea class="pp-textarea" id="qBody" rows="4" maxlength="8000"></textarea>
+      </label>
+      <div>
+        <span class="pp-field-label" style="display:block;margin-bottom:9px">Topic</span>
+        <div style="display:flex;flex-wrap:wrap;gap:8px" id="topicChips"></div>
+      </div>
+    </div>
+    <div class="composer-foot">
+      <span class="msg" id="composerMsg"></span>
+      <button class="pp-btn pp-btn-tertiary" id="composerCancel" type="button">Cancel</button>
+      <button class="pp-btn pp-btn-primary" id="composerPost" type="button">Post question</button>
+    </div>
+  </div>
+</div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var TOPICS = ["Money", "Portfolio", "Freelancing", "Getting hired", "Tools", "Other"];
+  var TINTS = ["-tint-gold", "-tint-green", "-tint-dark", ""];
+  function tintFor(id){ return TINTS[id % TINTS.length]; }
+  function token(){ return localStorage.getItem("kazi_designer_token"); }
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function initialsOf(name){
+    return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
+  }
+  var MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  function dateParts(iso){
+    var d = new Date(iso + "T00:00:00");
+    if (isNaN(d.getTime())) return { m: "", d: "" };
+    return { m: MONTHS[d.getMonth()], d: d.getDate() };
+  }
+  function timeAgo(iso){
+    var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 3600) return Math.max(1, Math.round(diff / 60)) + "m ago";
+    if (diff < 86400) return Math.round(diff / 3600) + "h ago";
+    return Math.round(diff / 86400) + "d ago";
+  }
+
+  var state = {
+    tab: "sessions",
+    sessions: { loaded: false, failed: false, items: [] },
+    questions: { loaded: false, failed: false, items: [] },
+    work: { loaded: false, failed: false, items: [] },
+    mySeats: [], leaderboard: []
+  };
+
+  var TABS = [
+    { key: "sessions", label: "Happening" },
+    { key: "questions", label: "Questions" },
+    { key: "work", label: "Work worth reading" }
+  ];
+
+  function renderTabs(){
+    document.getElementById("tabsRow").innerHTML = TABS.map(function(t){
+      var bucket = state[t.key];
+      var count = bucket.loaded ? bucket.items.length : null;
+      return '<button type="button" class="pp-tab' + (state.tab === t.key ? " -active" : "") + '" data-tab="' + t.key + '">' +
+        escapeHtml(t.label) + (count !== null ? '<span class="pp-tab-count">' + count + '</span>' : "") + '</button>';
+    }).join("");
+    document.querySelectorAll("#tabsRow .pp-tab").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.tab = btn.getAttribute("data-tab");
+        renderTabs();
+        renderFeed();
+        if (state.tab === "questions" && !state.questions.loaded && !state.questions.failed) loadQuestions();
+        if (state.tab === "work" && !state.work.loaded && !state.work.failed) loadWork();
+      });
+    });
+  }
+
+  function skeletonHtml(n){
+    return '<div style="display:flex;flex-direction:column;gap:12px" aria-busy="true">' + Array.from({ length: n || 3 }).map(function(){
+      return '<div class="skeleton-row"><span class="skeleton-block" style="width:44px;height:44px;border-radius:10px"></span>' +
+        '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:9px">' +
+        '<span class="skeleton-block" style="height:16px;width:60%"></span>' +
+        '<span class="skeleton-block" style="height:13px;width:40%"></span></div></div>';
+    }).join("") + '</div>';
+  }
+
+  function failedHtml(retry){
+    return '<div class="pp-empty" role="alert">' +
+      '<span class="pp-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.5"></path><circle cx="12" cy="12" r="9"></circle></svg></span>' +
+      '<h3>This tab didn\'t load</h3><p>Your booked sessions and any draft question are saved. This was just the request for the list.</p>' +
+      '<button type="button" class="pp-btn pp-btn-primary" id="' + retry + '">Load this tab again</button></div>';
+  }
+
+  function sessionSeatNote(s){
+    var left = s.seats - s.seats_taken;
+    if (left <= 0) return { label: s.seats_waitlisted ? (s.seats_waitlisted + " on waitlist") : "Full", cls: "-full" };
+    if (left <= 2) return { label: left + " seat" + (left === 1 ? "" : "s") + " left", cls: "-tight" };
+    return { label: left + " seats left", cls: "" };
+  }
+
+  function sessionCard(s){
+    var dp = dateParts(s.session_date);
+    var seat = sessionSeatNote(s);
+    return '<a class="session-card" href="/community/s-' + s.id + '" style="text-decoration:none;color:inherit">' +
+      '<div class="session-date"><span class="m">' + dp.m + '</span><span class="d">' + dp.d + '</span><span class="t">' + escapeHtml(s.time) + '</span></div>' +
+      '<div class="session-body">' +
+        '<div class="session-top"><span class="pp-chip">' + escapeHtml(s.kind || "Session") + '</span><span style="font-size:13px;color:var(--c-text-faint)">' + escapeHtml(s.length) + '</span></div>' +
+        '<h3>' + escapeHtml(s.title) + '</h3><p>' + escapeHtml(s.blurb) + '</p>' +
+        '<div class="session-foot">' +
+          '<div class="session-host"><span class="pp-avatar -xs ' + tintFor(s.id) + '">' + escapeHtml(s.host_initials || initialsOf(s.host)) + '</span><span>' + escapeHtml(s.host) + '</span></div>' +
+          '<span class="seat-note' + seat.cls + '">' + seat.label + '</span>' +
+        '</div>' +
+      '</div></a>';
+  }
+
+  function questionCard(q){
+    return '<a class="thread-card" href="/community/q-' + q.id + '" style="text-decoration:none;color:inherit;display:block">' +
+      '<div class="thread-btn">' +
+        '<span class="pp-avatar -sm ' + tintFor(q.designer_id) + '">' + (q.author_photo ? '<img src="' + escapeHtml(q.author_photo) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : escapeHtml(initialsOf(q.author_name))) + '</span>' +
+        '<span class="thread-main">' +
+          '<span class="thread-meta"><span class="pp-chip -outline">' + escapeHtml(q.topic || "General") + '</span><span class="who">' + escapeHtml(q.author_name) + ' · ' + timeAgo(q.created_at) + '</span></span>' +
+          '<span class="thread-title">' + escapeHtml(q.title) + '</span>' +
+          '<span class="thread-excerpt">' + escapeHtml(q.body) + '</span>' +
+        '</span>' +
+        '<span class="thread-replies"><span class="n">' + q.reply_count + '</span><span class="l">replies</span></span>' +
+      '</div></a>';
+  }
+
+  function workCard(w){
+    return '<article class="work-card">' +
+      '<div class="work-shot">' + (w.image_path ? '<img src="' + escapeHtml(w.image_path) + '" alt="">' : '') + '</div>' +
+      '<div class="work-body">' +
+        '<div style="display:flex;align-items:center;gap:9px;margin-bottom:9px"><span class="pp-chip" style="background:var(--pp-gold-200);color:var(--pp-gold-800)">Featured</span><span style="font-size:13px;color:var(--c-text-faint)">' + escapeHtml(w.category || "") + '</span></div>' +
+        '<h3>' + escapeHtml(w.title) + '</h3><p>' + escapeHtml(w.description || "") + '</p>' +
+        '<div class="work-foot">' +
+          '<span class="pp-avatar -sm ' + tintFor(w.designer_id) + '">' + (w.photo_path ? '<img src="' + escapeHtml(w.photo_path) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : escapeHtml(initialsOf(w.display_name))) + '</span>' +
+          '<div class="info"><p>' + escapeHtml(w.display_name) + '</p><p>' + escapeHtml(w.location || "") + '</p></div>' +
+          '<a class="pp-btn pp-btn-secondary pp-btn-sm" href="/designers/' + encodeURIComponent(w.handle || w.designer_id) + '">View profile</a>' +
+        '</div>' +
+      '</div></article>';
+  }
+
+  function renderFeed(){
+    var area = document.getElementById("feedArea");
+    var bucket = state[state.tab];
+
+    if (!bucket.loaded && !bucket.failed) { area.innerHTML = skeletonHtml(); return; }
+    if (bucket.failed) {
+      area.innerHTML = failedHtml("retryTab");
+      document.getElementById("retryTab").addEventListener("click", function(){
+        if (state.tab === "sessions") loadSessions();
+        if (state.tab === "questions") loadQuestions();
+        if (state.tab === "work") loadWork();
+      });
+      return;
+    }
+
+    if (!bucket.items.length) {
+      var copy = {
+        sessions: ["No sessions on the calendar yet", "Check back soon — new sessions get posted regularly."],
+        questions: ["No questions yet", "Be the first to ask something the community can actually help with."],
+        work: ["Nothing to feature yet", "Once designers add featured projects to their profiles, the best ones show up here."]
+      }[state.tab];
+      area.innerHTML = '<div class="pp-empty"><h3>' + copy[0] + '</h3><p>' + copy[1] + '</p></div>';
+      return;
+    }
+
+    if (state.tab === "sessions") area.innerHTML = '<div style="display:flex;flex-direction:column;gap:14px">' + bucket.items.map(sessionCard).join("") + '</div>';
+    else if (state.tab === "questions") area.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' + bucket.items.map(questionCard).join("") + '</div>';
+    else {
+      area.innerHTML = '<p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:var(--c-text-muted);max-width:66ch">' +
+        'Real, recent work from approved profiles — one piece per designer, newest first.</p>' +
+        '<div class="work-grid">' + bucket.items.map(workCard).join("") + '</div>';
+    }
+  }
+
+  function renderSidebar(){
+    var seatBox = document.getElementById("seatList");
+    var summary = document.getElementById("seatSummary");
+    if (!token()) {
+      summary.textContent = "Sign in to book a session.";
+      seatBox.innerHTML = "";
+      return;
+    }
+    if (!state.mySeats.length) {
+      summary.textContent = "Book one above and it'll show up here with your joining link.";
+      seatBox.innerHTML = "";
+    } else {
+      summary.textContent = state.mySeats.length + " upcoming session" + (state.mySeats.length === 1 ? "" : "s") + ".";
+      seatBox.innerHTML = state.mySeats.map(function(m){
+        var dp = dateParts(m.session_date);
+        return '<a class="seat-row" href="/community/s-' + m.session_id + '" style="text-decoration:none;color:inherit">' +
+          '<span class="seat-date"><span>' + dp.m + '</span><span>' + dp.d + '</span></span>' +
+          '<div class="seat-info"><p>' + escapeHtml(m.title) + '</p><p>' + escapeHtml(m.time) + (m.status === "waitlisted" ? " · Waitlisted" : "") + '</p></div></a>';
+      }).join("");
+    }
+
+    var helperBox = document.getElementById("helperList");
+    if (!state.leaderboard.length) {
+      helperBox.innerHTML = '<p style="margin:0;font-size:13.5px;color:var(--c-text-faint)">Nobody\'s answered a question yet this month.</p>';
+    } else {
+      helperBox.innerHTML = state.leaderboard.map(function(p){
+        return '<a class="helper-row" href="/designers/' + encodeURIComponent(p.handle || p.designer_id) + '" style="text-decoration:none;color:inherit">' +
+          '<span class="pp-avatar -sm ' + tintFor(p.designer_id) + '">' + (p.photo_path ? '<img src="' + escapeHtml(p.photo_path) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : escapeHtml(initialsOf(p.display_name))) + '</span>' +
+          '<div class="helper-name"><p>' + escapeHtml(p.display_name) + '</p><p>' + p.n + ' repl' + (p.n === 1 ? "y" : "ies") + '</p></div></a>';
+      }).join("");
+    }
+  }
+
+  async function loadSessions(){
+    state.sessions.loaded = false; state.sessions.failed = false;
+    if (state.tab === "sessions") renderFeed();
+    try {
+      var res = await fetch("/api/community/sessions?status=upcoming", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      state.sessions.items = data.sessions || [];
+      state.sessions.loaded = true;
+    } catch (e) { state.sessions.failed = true; }
+    renderTabs();
+    if (state.tab === "sessions") renderFeed();
+  }
+
+  async function loadQuestions(){
+    state.questions.loaded = false; state.questions.failed = false;
+    if (state.tab === "questions") renderFeed();
+    try {
+      var res = await fetch("/api/community/questions", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      state.questions.items = data.questions || [];
+      state.questions.loaded = true;
+    } catch (e) { state.questions.failed = true; }
+    renderTabs();
+    if (state.tab === "questions") renderFeed();
+  }
+
+  async function loadWork(){
+    state.work.loaded = false; state.work.failed = false;
+    if (state.tab === "work") renderFeed();
+    try {
+      var res = await fetch("/api/community/work-worth-reading", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      state.work.items = data.work || [];
+      state.work.loaded = true;
+    } catch (e) { state.work.failed = true; }
+    renderTabs();
+    if (state.tab === "work") renderFeed();
+  }
+
+  async function loadSidebar(){
+    try {
+      var res = await fetch("/api/community/leaderboard", { cache: "no-store" });
+      if (res.ok) { var data = await res.json(); state.leaderboard = data.leaderboard || []; }
+    } catch (e) {}
+    var t = token();
+    if (t) {
+      try {
+        var res2 = await fetch("/api/designers/me/community-sessions", { headers: { "Authorization": "Bearer " + t } });
+        if (res2.ok) { var d2 = await res2.json(); state.mySeats = d2.sessions || []; }
+      } catch (e) {}
+    }
+    renderSidebar();
+  }
+
+  function openComposer(){
+    if (!token()) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent("/community"); return; }
+    document.getElementById("composerOverlay").style.display = "flex";
+    document.getElementById("qTitle").value = "";
+    document.getElementById("qBody").value = "";
+    document.getElementById("composerMsg").textContent = "";
+    composerTopic = "";
+    renderTopicChips();
+  }
+  function closeComposer(){ document.getElementById("composerOverlay").style.display = "none"; }
+
+  var composerTopic = "";
+  function renderTopicChips(){
+    document.getElementById("topicChips").innerHTML = TOPICS.map(function(t){
+      return '<button type="button" class="pp-tab-chip' + (composerTopic === t ? " -active" : "") + '" data-topic="' + escapeHtml(t) + '">' + escapeHtml(t) + '</button>';
+    }).join("");
+    document.querySelectorAll("#topicChips button").forEach(function(btn){
+      btn.addEventListener("click", function(){ composerTopic = btn.getAttribute("data-topic"); renderTopicChips(); });
+    });
+  }
+
+  async function postQuestion(){
+    var title = document.getElementById("qTitle").value.trim();
+    var body = document.getElementById("qBody").value.trim();
+    var msg = document.getElementById("composerMsg");
+    if (!title || !body) { msg.textContent = "A title and some context are both required."; return; }
+    var t = token();
+    if (!t) { location.href = "/pp-auth.html?view=signin"; return; }
+    var btn = document.getElementById("composerPost");
+    btn.disabled = true; msg.textContent = "";
+    try {
+      var res = await fetch("/api/community/questions", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + t },
+        body: JSON.stringify({ title: title, body: body, topic: composerTopic })
+      });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      closeComposer();
+      location.href = "/community/q-" + data.question_id;
+    } catch (e) {
+      msg.textContent = "Couldn't post that just now — try again.";
+      btn.disabled = false;
+    }
+  }
+
+  function init(){
+    renderTabs();
+    renderFeed();
+    document.getElementById("askBtn").addEventListener("click", openComposer);
+    document.getElementById("composerClose").addEventListener("click", closeComposer);
+    document.getElementById("composerCancel").addEventListener("click", closeComposer);
+    document.getElementById("composerPost").addEventListener("click", postQuestion);
+    document.getElementById("composerOverlay").addEventListener("click", function(e){ if (e.target === this) closeComposer(); });
+    loadSessions();
+    loadSidebar();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

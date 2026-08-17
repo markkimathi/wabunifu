@@ -70,7 +70,7 @@ from .db import (  # noqa: E402
     book_session, cancel_booking, list_session_bookings, list_bookings_for_designer,
     create_question, list_questions, get_question, set_accepted_reply, set_question_status,
     create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
-    count_stale_questions, get_reply_leaderboard,
+    count_stale_questions, get_reply_leaderboard, list_work_worth_reading,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -748,6 +748,17 @@ def require_designer(authorization: str = Header(default="")) -> dict:
     if not designer:
         raise HTTPException(401, "invalid session")
     return designer
+
+
+def optional_designer(authorization: str = Header(default="")) -> Optional[dict]:
+    """Like require_designer, but returns None instead of 401ing — for
+    endpoints that are publicly readable but personalize their response
+    (e.g. a session's your_status) when the caller happens to be signed in."""
+    token = authorization.removeprefix("Bearer ").strip()
+    session = get_session(token) if token else None
+    if not session:
+        return None
+    return get_designer(session["designer_id"])
 
 
 def require_employer(authorization: str = Header(default="")) -> dict:
@@ -1835,17 +1846,17 @@ def _session_out(session: dict, designer_id: int | None = None) -> dict:
 
 
 @app.get("/api/community/sessions")
-def community_list_sessions(status: str = "upcoming"):
+def community_list_sessions(status: str = "upcoming", designer: Optional[dict] = Depends(optional_designer)):
     rows = list_community_sessions(status=status if status != "all" else None)
-    return {"sessions": [_session_out(s) for s in rows]}
+    return {"sessions": [_session_out(s, designer["id"] if designer else None) for s in rows]}
 
 
 @app.get("/api/community/sessions/{session_id}")
-def community_get_session(session_id: int):
+def community_get_session(session_id: int, designer: Optional[dict] = Depends(optional_designer)):
     session = get_community_session(session_id)
     if not session:
         raise HTTPException(404, "no such session")
-    return _session_out(session)
+    return _session_out(session, designer["id"] if designer else None)
 
 
 @app.post("/api/community/sessions/{session_id}/book")
@@ -1958,6 +1969,11 @@ def community_vote_reply(reply_id: int, designer: dict = Depends(require_designe
 @app.get("/api/community/leaderboard")
 def community_leaderboard():
     return {"leaderboard": get_reply_leaderboard()}
+
+
+@app.get("/api/community/work-worth-reading")
+def community_work_worth_reading():
+    return {"work": list_work_worth_reading()}
 
 
 @app.get("/api/designers")
@@ -2105,6 +2121,21 @@ def designer_profile_page(identifier: str):
 @app.get("/jobs/{job_id}", include_in_schema=False)
 def job_details_page(job_id: str):
     return FileResponse(WEB_DIR / "job.html")
+
+
+# Community: /community lists sessions/questions/work, /community/{id}
+# serves one item — the id is prefixed ("s-3" / "q-17") so the client knows
+# session vs. question without a lookup round-trip. Still unwired into
+# pp-nav.js's placeholder ROUTES cutover like the rest of this migration —
+# reachable directly for now, same as every other pp-*.html page so far.
+@app.get("/community", include_in_schema=False)
+def community_page():
+    return FileResponse(WEB_DIR / "pp-community.html")
+
+
+@app.get("/community/{item_id}", include_in_schema=False)
+def community_detail_page(item_id: str):
+    return FileResponse(WEB_DIR / "pp-community-detail.html")
 
 
 # Static site last: /api/* and the routes above take priority, everything

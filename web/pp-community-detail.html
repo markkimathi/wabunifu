@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community · Path & Pixel</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  .layout{padding:28px 0 64px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:44px;align-items:start}
+  @media(max-width:1023px){.layout{grid-template-columns:1fr}}
+  .rail{position:sticky;top:84px;display:flex;flex-direction:column;gap:16px}
+  @media(max-width:1023px){.rail{position:static}}
+  .rail-card{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border)}
+  .rail-card h3{margin:0 0 6px;font-size:16px;font-weight:700;letter-spacing:-0.015em}
+  .rail-card p{margin:0 0 14px;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)}
+
+  /* Session view */
+  .s-top{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+  .s-title{margin:0 0 14px;font-size:40px;line-height:1.05;letter-spacing:-0.032em;font-weight:700;text-wrap:balance;max-width:24ch}
+  .s-blurb{margin:0 0 28px;font-size:17px;line-height:1.6;color:var(--c-text-muted);max-width:62ch}
+  .s-section{margin-bottom:28px;max-width:66ch}
+  .s-section h3{margin:0 0 12px;font-size:19px;font-weight:700;letter-spacing:-0.018em}
+  .agenda-row{display:flex;gap:16px;padding:13px 0;border-bottom:1px solid var(--c-surface-inset)}
+  .agenda-row .clock{width:60px;flex:none;font-size:14px;font-weight:600;color:var(--pp-gold-800);font-variant-numeric:tabular-nums}
+  .agenda-row .title{margin:0 0 2px;font-size:15.5px;font-weight:600}
+  .agenda-row .note{margin:0;font-size:14px;line-height:1.5;color:var(--c-text-subtle)}
+  .bring-row{display:flex;gap:11px;align-items:flex-start;margin-bottom:9px}
+  .bring-check{width:19px;height:19px;flex:none;margin-top:2px;border-radius:50%;background:var(--pp-gold-200);
+    border:1px solid var(--pp-gold-400);display:inline-flex;align-items:center;justify-content:center}
+  .reviewer-box{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken);border:1px solid var(--c-border)}
+  .reviewer-box .row{display:flex;gap:14px;align-items:flex-start}
+  .reviewer-box p{margin:0}
+
+  .book-card{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border)}
+  .book-datehead{display:flex;align-items:center;gap:13px;margin-bottom:16px}
+  .book-datehead .d{width:52px;flex:none;padding:8px 0;border-radius:8px;background:var(--pp-gold-200);
+    display:inline-flex;flex-direction:column;align-items:center;line-height:1.15}
+  .book-datehead .d span:first-child{font-size:10.5px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--pp-gold-800)}
+  .book-datehead .d span:last-child{font-size:22px;font-weight:800;letter-spacing:-0.02em;color:var(--pp-gold-800)}
+  .book-datehead p{margin:0}
+  .book-datehead p:first-child{font-size:15px;font-weight:700}
+  .book-datehead p:last-child{font-size:13px;color:var(--c-text-faint)}
+  .seat-line{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px;font-size:13.5px;font-weight:600}
+  .seat-pips{display:flex;gap:4px;margin-bottom:16px}
+  .seat-pips span{flex:1;height:6px;border-radius:999px;background:var(--c-surface-inset)}
+  .seat-pips span.-filled{background:var(--pp-gold)}
+  .joining-box{padding:13px;border-radius:var(--pp-radius-md);background:var(--pp-gold-200);border:1px solid var(--pp-gold-400);margin-bottom:12px}
+  .joining-box p:first-child{margin:0 0 8px;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--pp-gold-800)}
+  .joining-row{display:flex;gap:8px;align-items:center}
+  .joining-link{flex:1;min-width:0;height:38px;padding:0 11px;border-radius:8px;background:var(--c-surface);
+    border:1px solid var(--pp-gold-400);display:flex;align-items:center;overflow:hidden;font-size:13px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .attendee-row{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--c-surface-inset)}
+  .attendee-row:last-child{border-bottom:none}
+  .attendee-row .info p{margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .attendee-row .info p:first-child{font-size:14.5px;font-weight:600}
+  .attendee-row .info p:last-child{font-size:12.5px;color:var(--c-text-faint)}
+
+  /* Question view */
+  .q-title{margin:0 0 20px;font-size:32px;line-height:1.15;letter-spacing:-0.026em;font-weight:700;text-wrap:pretty;max-width:34ch}
+  .q-author{display:flex;gap:16px;align-items:flex-start;padding-bottom:26px;border-bottom:1px solid var(--c-border);margin-bottom:26px}
+  .q-body p{margin:0 0 14px;font-size:16.5px;line-height:1.65;color:var(--c-text);max-width:64ch;white-space:pre-wrap}
+  .reply-card{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);margin-bottom:12px}
+  .reply-card.-accepted{border-color:var(--pp-gold);background:var(--pp-gold-100)}
+  .reply-head{display:flex;align-items:center;gap:11px;margin-bottom:12px;flex-wrap:wrap}
+  .reply-head .who{font-size:15px;font-weight:700}
+  .reply-head .role{font-size:13px;color:var(--c-text-faint)}
+  .reply-head .when{font-size:12.5px;color:var(--c-text-faint)}
+  .reply-text{margin:0 0 14px;font-size:15.5px;line-height:1.6;max-width:64ch;white-space:pre-wrap}
+  /* .reply-card.-accepted sits on a static gold-100 surface — pin its text
+     to static ink/gold tones instead of the theme-aware defaults above,
+     which would go near-invisible in dark mode (same class of bug as the
+     Phase 7 message-bubble fix). */
+  .reply-card.-accepted .reply-head .who,
+  .reply-card.-accepted .reply-text{color:var(--pp-ink)}
+  .reply-card.-accepted .reply-head .role,
+  .reply-card.-accepted .reply-head .when{color:var(--pp-gold-800)}
+  .reply-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .vote-btn{height:36px;padding:0 12px;border-radius:8px;font-family:var(--pp-font);font-size:13.5px;font-weight:600;
+    cursor:pointer;display:inline-flex;align-items:center;gap:7px;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
+  .vote-btn.-active{background:var(--pp-gold-200);color:var(--pp-gold-800);border-color:var(--pp-gold-400)}
+  .accept-btn{height:36px;padding:0 12px;border:none;border-radius:8px;background:transparent;font-family:var(--pp-font);
+    font-size:13.5px;font-weight:600;color:var(--c-text-subtle);cursor:pointer}
+  .accept-btn:hover{background:var(--c-surface-inset)}
+  .accept-badge{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:var(--pp-gold);
+    color:var(--pp-ink);font-size:12px;font-weight:600}
+  .reply-compose{margin-top:14px;padding-top:14px;border-top:1px solid var(--c-border);display:flex;gap:10px;align-items:flex-end}
+
+  .composer-box{padding:20px;border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken);border:1px solid var(--c-border)}
+  .composer-box .row{display:flex;gap:14px;align-items:flex-start}
+
+  .related-link{display:block;padding:11px 0;border-bottom:1px solid var(--c-surface-inset)}
+  .related-link:last-child{border-bottom:none}
+  .related-link .t{display:block;font-size:14.5px;font-weight:600;line-height:1.4;margin-bottom:2px}
+  .related-link .m{display:block;font-size:12.5px;color:var(--c-text-faint)}
+
+  .skel{padding:60px 0}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="community"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Community","href":"/community"},{"label":"Loading…"}]'></nav>
+
+<main>
+  <div class="wrap" id="loadingArea"><div class="skel">Loading…</div></div>
+  <div class="wrap layout" id="sessionArea" style="display:none">
+    <div style="min-width:0">
+      <div class="s-top">
+        <span class="pp-chip" id="sKind"></span>
+        <span style="font-size:14px;color:var(--c-text-faint)" id="sMeta"></span>
+      </div>
+      <h2 class="s-title" id="sTitle"></h2>
+      <p class="s-blurb" id="sBlurb"></p>
+
+      <div class="s-section" id="sAgendaSection" style="display:none">
+        <h3>How the session goes</h3>
+        <div id="sAgenda"></div>
+      </div>
+
+      <div class="s-section" id="sBringSection" style="display:none">
+        <h3>What to bring</h3>
+        <div id="sBring"></div>
+      </div>
+
+      <div class="s-section reviewer-box" id="sReviewerSection" style="display:none">
+        <h3 style="margin-bottom:14px">Your host</h3>
+        <div class="row">
+          <span class="pp-avatar -lg" id="sHostAvatar"></span>
+          <div style="flex:1;min-width:0">
+            <p style="font-size:17px;font-weight:700;letter-spacing:-0.015em;margin-bottom:2px" id="sHostName"></p>
+            <p style="font-size:14px;line-height:1.6;color:var(--c-text-muted)" id="sHostBio"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="rail">
+      <div class="book-card">
+        <div class="book-datehead">
+          <span class="d"><span id="bookMonth"></span><span id="bookDay"></span></span>
+          <div><p id="bookTime"></p><p id="bookLength"></p></div>
+        </div>
+        <div class="seat-line"><span id="seatLabel"></span><span id="seatCount"></span></div>
+        <div class="seat-pips" id="seatPips"></div>
+        <button class="pp-btn pp-btn-primary pp-btn-block" id="bookBtn" type="button" style="margin-bottom:12px"></button>
+        <div id="joiningBox"></div>
+        <p id="notBookedNote" style="margin:0;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)"></p>
+      </div>
+
+      <div class="rail-card">
+        <h3>Who's coming</h3>
+        <p id="attendeeNote"></p>
+        <div id="attendeeList"></div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="wrap layout" id="questionArea" style="display:none">
+    <div style="min-width:0">
+      <div class="s-top">
+        <span class="pp-chip -outline" id="qTopic"></span>
+        <span style="font-size:14px;color:var(--c-text-faint)" id="qMeta"></span>
+      </div>
+      <h2 class="q-title" id="qTitleEl"></h2>
+      <div class="q-author">
+        <span class="pp-avatar -md" id="qAuthorAvatar"></span>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+            <a id="qAuthorLink" style="font-size:16px;font-weight:700;letter-spacing:-0.012em;text-decoration:none"></a>
+          </div>
+          <div class="q-body" id="qBodyText"></div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;flex-wrap:wrap">
+        <h3 style="margin:0;font-size:19px;font-weight:700;letter-spacing:-0.018em" id="replyHeading"></h3>
+        <div style="flex:1"></div>
+        <div class="pp-sort" id="sortRow"></div>
+      </div>
+      <div id="repliesArea"></div>
+
+      <div class="composer-box" id="mainComposer">
+        <div class="row">
+          <span class="pp-avatar -sm" id="meAvatar"></span>
+          <div style="flex:1;min-width:0">
+            <h3 style="margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-0.015em">Add what you know</h3>
+            <p style="margin:0 0 12px;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)">A real number or a real experience helps more than an opinion.</p>
+            <textarea class="pp-textarea" id="mainDraft" rows="3" placeholder="I was offered something similar and here's what happened…" style="margin-bottom:12px;width:100%"></textarea>
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <button class="pp-btn pp-btn-primary" id="postReplyBtn" type="button">Post reply</button>
+              <span style="font-size:13.5px;color:var(--c-text-subtle)" id="postReplyMsg"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="rail">
+      <div class="rail-card">
+        <h3>Follow this question</h3>
+        <button class="pp-btn pp-btn-secondary pp-btn-block" id="followBtn" type="button" style="margin-bottom:10px"></button>
+        <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)">We'll only ever notify you about this thread.</p>
+      </div>
+
+      <div class="rail-card" style="background:var(--pp-gold-200);border-color:var(--pp-gold-400)">
+        <h3 style="color:var(--pp-gold-900)">Pay ranges, collected</h3>
+        <p style="color:var(--pp-gold-800)">We publish what designers across Africa are actually paid, by level and by market. No company names.</p>
+        <a href="/resources" style="font-size:14.5px;font-weight:600;color:var(--pp-gold-800)">See the ranges →</a>
+      </div>
+    </aside>
+  </div>
+
+  <div class="wrap" id="notFoundArea" style="display:none;padding:64px 0">
+    <div class="pp-empty">
+      <h3>This one's not here anymore</h3>
+      <p>It may have been removed, or the link's just wrong.</p>
+      <a class="pp-btn pp-btn-primary" href="/community">Back to Community</a>
+    </div>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="/pp-nav.js"></script>
+<script src="/pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  function token(){ return localStorage.getItem("kazi_designer_token"); }
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function initialsOf(name){
+    return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
+  }
+  var TINTS = ["-tint-gold", "-tint-green", "-tint-dark", ""];
+  function tintFor(id){ return TINTS[id % TINTS.length]; }
+  var MONTHS = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+  var MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  var DAYS_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  function dateParts(iso){
+    var d = new Date(iso + "T00:00:00");
+    if (isNaN(d.getTime())) return { m: "", d: "", full: "" };
+    return { m: MONTHS[d.getMonth()], d: d.getDate(), full: DAYS_FULL[d.getDay()] + " " + d.getDate() + " " + MONTHS_FULL[d.getMonth()] };
+  }
+  function timeAgo(iso){
+    var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 3600) return Math.max(1, Math.round(diff / 60)) + "m ago";
+    if (diff < 86400) return Math.round(diff / 3600) + "h ago";
+    return Math.round(diff / 86400) + "d ago";
+  }
+  function avatarHtml(photo, name, id, size){
+    if (photo) return '<img src="' + escapeHtml(photo) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">';
+    return escapeHtml(initialsOf(name));
+  }
+  function setAvatarClass(el, id, extraClass){
+    el.className = "pp-avatar " + (extraClass || "") + " " + tintFor(id || 0);
+  }
+
+  function pathId(){
+    var parts = location.pathname.split("/").filter(Boolean);
+    return parts[parts.length - 1] || "";
+  }
+
+  function showArea(id){
+    ["loadingArea", "sessionArea", "questionArea", "notFoundArea"].forEach(function(a){
+      document.getElementById(a).style.display = (a === id) ? "" : "none";
+    });
+  }
+
+  // ---- Session view ----
+  var currentSession = null;
+  function renderSeatPips(session){
+    var total = session.seats;
+    var taken = Math.min(session.seats_taken, total);
+    var pips = [];
+    for (var i = 0; i < total; i++) pips.push('<span class="' + (i < taken ? "-filled" : "") + '"></span>');
+    document.getElementById("seatPips").innerHTML = pips.join("");
+  }
+  function renderSession(session){
+    currentSession = session;
+    document.getElementById("pp-breadcrumbs").setAttribute("data-crumbs", JSON.stringify([{ label: "Community", href: "/community" }, { label: session.title }]));
+    document.title = session.title + " · Community · Path & Pixel";
+
+    document.getElementById("sKind").textContent = session.kind || "Session";
+    var dp = dateParts(session.session_date);
+    document.getElementById("sMeta").textContent = dp.full + " · " + session.time + (session.length ? " · " + session.length : "");
+    document.getElementById("sTitle").textContent = session.title;
+    document.getElementById("sBlurb").textContent = session.blurb;
+
+    if (session.agenda && session.agenda.length) {
+      document.getElementById("sAgendaSection").style.display = "";
+      document.getElementById("sAgenda").innerHTML = session.agenda.map(function(a){
+        return '<div class="agenda-row"><span class="clock">' + escapeHtml(a.clock || "") + '</span>' +
+          '<div><p class="title">' + escapeHtml(a.title || "") + '</p><p class="note">' + escapeHtml(a.note || "") + '</p></div></div>';
+      }).join("");
+    }
+    if (session.bring_list && session.bring_list.length) {
+      document.getElementById("sBringSection").style.display = "";
+      document.getElementById("sBring").innerHTML = session.bring_list.map(function(b){
+        return '<div class="bring-row"><span class="bring-check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="var(--pp-gold-800)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg></span><p style="margin:0;font-size:15.5px;line-height:1.6">' + escapeHtml(b) + '</p></div>';
+      }).join("");
+    }
+    if (session.host) {
+      document.getElementById("sReviewerSection").style.display = "";
+      setAvatarClass(document.getElementById("sHostAvatar"), session.id, "-lg");
+      document.getElementById("sHostAvatar").innerHTML = escapeHtml(session.host_initials || initialsOf(session.host));
+      document.getElementById("sHostName").textContent = session.host;
+      document.getElementById("sHostBio").textContent = session.reviewer_bio || "";
+    }
+
+    document.getElementById("bookMonth").textContent = dp.m;
+    document.getElementById("bookDay").textContent = dp.d;
+    document.getElementById("bookTime").textContent = session.time;
+    document.getElementById("bookLength").textContent = session.length || "";
+    var left = session.seats - session.seats_taken;
+    document.getElementById("seatLabel").textContent = left > 0 ? "Seats left" : "Waitlist";
+    document.getElementById("seatCount").textContent = left > 0 ? left + " of " + session.seats : session.seats_waitlisted + " waiting";
+    renderSeatPips(session);
+    renderBookState(session);
+
+    var attendeeNote = document.getElementById("attendeeNote");
+    var attendeeList = document.getElementById("attendeeList");
+    if (session.your_status) {
+      attendeeNote.textContent = "Everyone booked can see who else is coming.";
+      loadAttendees(session.id);
+    } else {
+      attendeeNote.textContent = "Book a seat to see who else is coming.";
+      attendeeList.innerHTML = "";
+    }
+
+    showArea("sessionArea");
+  }
+
+  function renderBookState(session){
+    var btn = document.getElementById("bookBtn");
+    var joiningBox = document.getElementById("joiningBox");
+    var note = document.getElementById("notBookedNote");
+    var status = session.your_status;
+    if (status === "booked") {
+      btn.textContent = "Cancel your seat";
+      btn.className = "pp-btn pp-btn-secondary pp-btn-block";
+      joiningBox.innerHTML = '<div class="joining-box"><p>Joining link</p><div class="joining-row">' +
+        '<div class="joining-link">' + escapeHtml(session.joining_link) + '</div>' +
+        '<button class="pp-btn pp-btn-secondary pp-btn-sm" id="copyLinkBtn" type="button">Copy</button></div></div>' +
+        '<p style="margin:0 0 12px;font-size:13.5px;color:var(--c-text-subtle)">You\'re booked in — the link above is yours to join with.</p>';
+      note.textContent = "";
+      var copyBtn = document.getElementById("copyLinkBtn");
+      if (copyBtn) copyBtn.addEventListener("click", function(){
+        navigator.clipboard.writeText(session.joining_link).then(function(){
+          copyBtn.textContent = "Copied";
+          setTimeout(function(){ copyBtn.textContent = "Copy"; }, 1800);
+        });
+      });
+    } else if (status === "waitlisted") {
+      btn.textContent = "Leave the waitlist";
+      btn.className = "pp-btn pp-btn-secondary pp-btn-block";
+      joiningBox.innerHTML = "";
+      note.textContent = "You're on the waitlist — we'll email you if a seat opens up.";
+    } else {
+      var left = session.seats - session.seats_taken;
+      btn.textContent = left > 0 ? "Book your seat" : "Join the waitlist";
+      btn.className = "pp-btn pp-btn-primary pp-btn-block";
+      joiningBox.innerHTML = "";
+      note.textContent = "Free. You'll get the joining link the moment you book.";
+    }
+  }
+
+  async function loadAttendees(sessionId){
+    var t = token();
+    if (!t) return;
+    try {
+      var res = await fetch("/api/community/sessions/" + sessionId + "/attendees", { headers: { "Authorization": "Bearer " + t } });
+      if (!res.ok) return;
+      var data = await res.json();
+      document.getElementById("attendeeList").innerHTML = (data.attendees || []).map(function(a){
+        return '<a class="attendee-row" href="/designers/' + encodeURIComponent(a.handle || a.designer_id) + '" style="text-decoration:none;color:inherit">' +
+          '<span class="pp-avatar -sm ' + tintFor(a.designer_id) + '">' + avatarHtml(a.photo_path, a.display_name) + '</span>' +
+          '<div class="info"><p>' + escapeHtml(a.display_name) + (a.status === "waitlisted" ? " (waitlist)" : "") + '</p><p>' + escapeHtml(a.headline || "") + '</p></div></a>';
+      }).join("");
+    } catch (e) {}
+  }
+
+  async function toggleBooking(){
+    var t = token();
+    if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+    var btn = document.getElementById("bookBtn");
+    btn.disabled = true;
+    try {
+      if (currentSession.your_status) {
+        await fetch("/api/community/sessions/" + currentSession.id + "/cancel-booking", { method: "POST", headers: { "Authorization": "Bearer " + t } });
+      } else {
+        await fetch("/api/community/sessions/" + currentSession.id + "/book", { method: "POST", headers: { "Authorization": "Bearer " + t } });
+      }
+      var res = await fetch("/api/community/sessions/" + currentSession.id, { headers: { "Authorization": "Bearer " + t } });
+      var session = await res.json();
+      var res2 = await fetch("/api/community/sessions/" + currentSession.id + "/attendees", { headers: { "Authorization": "Bearer " + t } }).catch(function(){});
+      renderSession(session);
+    } catch (e) {}
+    btn.disabled = false;
+  }
+
+  // ---- Question view ----
+  var currentQuestion = null;
+  var replySort = "useful";
+  var meCache = null;
+
+  async function loadMe(){
+    var t = token();
+    if (!t) return null;
+    if (meCache) return meCache;
+    try {
+      var res = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + t } });
+      if (res.ok) meCache = await res.json();
+    } catch (e) {}
+    return meCache;
+  }
+
+  function replyCard(r, question){
+    var accepted = question.accepted_reply_id === r.id;
+    var isAuthor = question._isAuthor;
+    return '<article class="reply-card' + (accepted ? " -accepted" : "") + '" data-reply-id="' + r.id + '">' +
+      '<div class="reply-head">' +
+        '<span class="pp-avatar -sm ' + tintFor(r.designer_id) + '">' + avatarHtml(r.photo_path, r.display_name) + '</span>' +
+        '<a class="who" href="/designers/' + encodeURIComponent(r.handle || r.designer_id) + '" style="text-decoration:none">' + escapeHtml(r.display_name) + '</a>' +
+        '<span class="role">' + escapeHtml(r.headline || "") + '</span>' +
+        (accepted ? '<span class="accept-badge"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>Marked useful</span>' : "") +
+        '<span class="when" style="margin-left:auto">' + timeAgo(r.created_at) + '</span>' +
+      '</div>' +
+      '<p class="reply-text">' + escapeHtml(r.body) + '</p>' +
+      '<div class="reply-actions">' +
+        '<button type="button" class="vote-btn" data-vote="' + r.id + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V10l5-6 1.2 1a2 2 0 01.5 2L13 10h5a2 2 0 012 2.3l-1.2 6A2 2 0 0116.8 20z"></path><path d="M7 20H4V10h3"></path></svg>Useful <span data-vote-count="' + r.id + '">' + r.n + '</span></button>' +
+        (isAuthor && !accepted ? '<button type="button" class="accept-btn" data-accept="' + r.id + '">Mark useful</button>' : "") +
+        (isAuthor && accepted ? '<button type="button" class="accept-btn" data-accept="0">Unmark</button>' : "") +
+      '</div>' +
+    '</article>';
+  }
+
+  function renderReplies(){
+    var q = currentQuestion;
+    var replies = (q.replies || []).slice();
+    document.getElementById("replyHeading").textContent = replies.length + (replies.length === 1 ? " reply" : " replies");
+    if (!replies.length) {
+      document.getElementById("repliesArea").innerHTML = '<div class="pp-empty" style="margin-bottom:28px"><h3>No replies yet</h3><p>Be the first to add what you know.</p></div>';
+    } else {
+      document.getElementById("repliesArea").innerHTML = '<div style="margin-bottom:28px">' + replies.map(function(r){ return replyCard(r, q); }).join("") + '</div>';
+    }
+    document.querySelectorAll("[data-vote]").forEach(function(btn){
+      btn.addEventListener("click", function(){ voteReply(parseInt(btn.getAttribute("data-vote"), 10)); });
+    });
+    document.querySelectorAll("[data-accept]").forEach(function(btn){
+      btn.addEventListener("click", function(){ acceptReply(parseInt(btn.getAttribute("data-accept"), 10) || null); });
+    });
+  }
+
+  function renderSortRow(){
+    var opts = [{ key: "useful", label: "Most useful" }, { key: "newest", label: "Newest" }];
+    document.getElementById("sortRow").innerHTML = opts.map(function(o){
+      return '<button type="button" class="pp-sort-opt' + (replySort === o.key ? " -active" : "") + '" data-sort="' + o.key + '">' + o.label + '</button>';
+    }).join("");
+    document.querySelectorAll("#sortRow button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        replySort = btn.getAttribute("data-sort");
+        renderSortRow();
+        loadQuestion(currentQuestion.id);
+      });
+    });
+  }
+
+  async function renderQuestion(question){
+    currentQuestion = question;
+    document.getElementById("pp-breadcrumbs").setAttribute("data-crumbs", JSON.stringify([{ label: "Community", href: "/community" }, { label: question.title }]));
+    document.title = question.title + " · Community · Path & Pixel";
+
+    document.getElementById("qTopic").textContent = question.topic || "General";
+    document.getElementById("qMeta").textContent = "Asked " + timeAgo(question.created_at);
+    document.getElementById("qTitleEl").textContent = question.title;
+    setAvatarClass(document.getElementById("qAuthorAvatar"), question.designer_id, "-md");
+    document.getElementById("qAuthorAvatar").innerHTML = avatarHtml(question.author_photo, question.author_name);
+    var link = document.getElementById("qAuthorLink");
+    link.textContent = question.author_name;
+    link.href = "/designers/" + encodeURIComponent(question.author_handle || question.designer_id);
+    document.getElementById("qBodyText").innerHTML = question.body.split("\n").filter(Boolean).map(function(p){ return "<p>" + escapeHtml(p) + "</p>"; }).join("");
+
+    var me = await loadMe();
+    question._isAuthor = !!(me && me.id === question.designer_id);
+    renderReplies();
+    renderSortRow();
+
+    var followBtn = document.getElementById("followBtn");
+    followBtn.textContent = "Follow this question";
+    followBtn.onclick = toggleFollow;
+
+    if (me) {
+      setAvatarClass(document.getElementById("meAvatar"), me.id, "-sm");
+      document.getElementById("meAvatar").innerHTML = avatarHtml(me.photo_path, me.display_name);
+      document.getElementById("mainComposer").style.display = "";
+    } else {
+      document.getElementById("mainComposer").style.display = "none";
+    }
+
+    showArea("questionArea");
+  }
+
+  async function loadQuestion(id){
+    try {
+      var res = await fetch("/api/community/questions/" + id + "?sort=" + replySort, { cache: "no-store" });
+      if (!res.ok) throw new Error("404");
+      var data = await res.json();
+      renderQuestion(data);
+    } catch (e) { showArea("notFoundArea"); }
+  }
+
+  async function voteReply(replyId){
+    var t = token();
+    if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+    try {
+      var res = await fetch("/api/community/replies/" + replyId + "/vote", { method: "POST", headers: { "Authorization": "Bearer " + t } });
+      var data = await res.json();
+      var countEl = document.querySelector('[data-vote-count="' + replyId + '"]');
+      var btnEl = document.querySelector('[data-vote="' + replyId + '"]');
+      if (countEl) countEl.textContent = (parseInt(countEl.textContent, 10) || 0) + (data.voted ? 1 : -1);
+      if (btnEl) btnEl.classList.toggle("-active", !!data.voted);
+    } catch (e) {}
+  }
+
+  async function acceptReply(replyId){
+    var t = token();
+    if (!t) return;
+    try {
+      await fetch("/api/community/questions/" + currentQuestion.id + "/accept-reply", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + t },
+        body: JSON.stringify({ reply_id: replyId })
+      });
+      loadQuestion(currentQuestion.id);
+    } catch (e) {}
+  }
+
+  async function toggleFollow(){
+    var t = token();
+    if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+    try {
+      var res = await fetch("/api/community/questions/" + currentQuestion.id + "/follow", { method: "POST", headers: { "Authorization": "Bearer " + t } });
+      var data = await res.json();
+      document.getElementById("followBtn").textContent = data.following ? "Following" : "Follow this question";
+    } catch (e) {}
+  }
+
+  async function postReply(){
+    var t = token();
+    if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+    var draft = document.getElementById("mainDraft");
+    var msg = document.getElementById("postReplyMsg");
+    var body = draft.value.trim();
+    if (!body) { msg.textContent = "Write something first."; return; }
+    var btn = document.getElementById("postReplyBtn");
+    btn.disabled = true; msg.textContent = "";
+    try {
+      var res = await fetch("/api/community/questions/" + currentQuestion.id + "/replies", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + t },
+        body: JSON.stringify({ body: body })
+      });
+      if (!res.ok) throw new Error("bad status");
+      draft.value = "";
+      loadQuestion(currentQuestion.id);
+    } catch (e) {
+      msg.textContent = "Couldn't post that just now — try again.";
+    }
+    btn.disabled = false;
+  }
+
+  function init(){
+    var id = pathId();
+    document.getElementById("bookBtn").addEventListener("click", toggleBooking);
+    document.getElementById("postReplyBtn").addEventListener("click", postReply);
+
+    if (id.indexOf("s-") === 0) {
+      var t = token();
+      fetch("/api/community/sessions/" + id.slice(2), t ? { headers: { "Authorization": "Bearer " + t } } : {})
+        .then(function(res){ if (!res.ok) throw new Error("404"); return res.json(); })
+        .then(renderSession)
+        .catch(function(){ showArea("notFoundArea"); });
+    } else if (id.indexOf("q-") === 0) {
+      loadQuestion(id.slice(2));
+    } else {
+      showArea("notFoundArea");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
