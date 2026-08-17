@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hiring dashboard · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container-wide);width:100%;margin:0 auto;padding:28px var(--pp-page-margin) 64px;box-sizing:border-box}
+  a{color:inherit}
+
+  .dash-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+  .dash-head h1{margin:0 0 4px;font-size:30px;line-height:1.1;letter-spacing:-0.026em;font-weight:800}
+  .dash-head p{margin:0;font-size:14.5px;color:var(--c-text-subtle)}
+  .pending-banner{padding:16px 18px;border-radius:var(--pp-radius-md);background:var(--pp-gold-200);
+    color:var(--pp-gold-800);border:1px solid var(--pp-gold-400);font-size:14.5px;line-height:1.55;margin-bottom:22px}
+
+  .section{margin-top:26px}
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+  .section-head h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-0.015em}
+
+  .listing-row{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-md);background:var(--c-surface);margin-bottom:10px;flex-wrap:wrap}
+  .listing-row .main{flex:1;min-width:200px}
+  .listing-row h3{margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-0.012em}
+  .listing-row .meta{font-size:13.5px;color:var(--c-text-subtle)}
+  .listing-row .actions{display:flex;gap:8px;flex:none}
+
+  .form-panel{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);margin-bottom:20px}
+  .form-panel h3{margin:0 0 16px;font-size:17px;font-weight:700}
+  .field-block{margin-bottom:14px}
+  .field-block .pp-field-label{display:block;margin-bottom:6px;font-size:13px;font-weight:600}
+  .field-block .pp-field-input select{cursor:pointer}
+  .field-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:600px){.field-row2{grid-template-columns:1fr}}
+  .form-actions{display:flex;gap:10px;margin-top:16px}
+  .fielderr{font-size:13px;color:var(--c-bad-text);margin-top:6px}
+
+  .applicant-picker{margin-bottom:18px}
+  .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+  @media(max-width:900px){.board{grid-template-columns:1fr;gap:20px}}
+  .board-col{display:flex;flex-direction:column;gap:10px}
+  .board-col-head{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:700;
+    text-transform:uppercase;letter-spacing:0.06em;color:var(--c-text-faint);padding:0 2px}
+  .applicant-card{padding:14px;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface)}
+  .applicant-card .name{font-size:14.5px;font-weight:700;margin:0 0 2px}
+  .applicant-card .sub{font-size:12.5px;color:var(--c-text-subtle);margin:0 0 8px}
+  .applicant-card .note{font-size:12.5px;color:var(--c-text-muted);margin:0 0 10px;line-height:1.5}
+  .applicant-card .card-actions{display:flex;gap:6px;flex-wrap:wrap}
+  .applicant-card .card-actions button{height:28px;padding:0 9px;border-radius:7px;font-size:12px;font-weight:600;
+    border:1px solid var(--c-border-strong);background:var(--c-surface);color:var(--c-text-subtle);cursor:pointer;font-family:var(--pp-font)}
+  .applicant-card .card-actions button:hover{background:var(--c-bg-sunken)}
+
+  .team-row{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-md);background:var(--c-surface);margin-bottom:8px;flex-wrap:wrap}
+  .team-row .who{flex:1;min-width:160px}
+  .team-row .who .name{font-size:14.5px;font-weight:700}
+  .team-row .who .role{font-size:12.5px;color:var(--c-text-subtle)}
+  .team-row .actions{display:flex;gap:8px}
+
+  .billing-panel{padding:26px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .billing-panel h3{margin:0 0 8px;font-size:19px;font-weight:700}
+  .billing-panel p{margin:0;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle);max-width:56ch}
+
+  .state-panel{padding:48px 16px;text-align:center;color:var(--c-text-subtle);font-size:14.5px}
+  .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 18px;border-radius:10px;
+    background:var(--c-text);color:var(--c-bg);font-size:14px;font-weight:600;z-index:50;box-shadow:0 8px 24px rgba(10,10,10,.2)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-shell="focused"></div>
+
+<main><div class="wrap" id="content"><div class="state-panel">Loading…</div></div></main>
+
+<div id="pp-footer" data-variant="legal"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script src="pp-confirm.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var token = localStorage.getItem("kazi_employer_token");
+  if (!token) { location.href = "pp-auth.html?role=employer&view=signin"; return; }
+
+  var ELIGIBILITY = [
+    { v: "kenya", l: "Open to Kenya" }, { v: "africa", l: "Open to Africa" },
+    { v: "world", l: "Worldwide remote" }, { v: "check", l: "Check restrictions" }
+  ];
+  var WORK_TYPES = ["Remote", "Hybrid", "On-site"];
+  var LEVELS = ["Junior", "Mid", "Senior", "Lead"];
+  var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
+  var STAGES = ["Applied", "Reviewing", "Interviewing", "Offer"];
+  var SECTIONS = [
+    { key: "listings", label: "Listings" }, { key: "applicants", label: "Applicants" },
+    { key: "team", label: "Team" }, { key: "company", label: "Company" }, { key: "billing", label: "Billing" }
+  ];
+
+  var me = null;
+  var section = "listings";
+  var showNewListing = false;
+  var applicantListingId = null;
+  var showNewApplicant = false;
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  async function api(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({}, opts.headers || {}, { "Authorization": "Bearer " + token });
+    var res = await fetch(path, opts);
+    if (res.status === 401) { localStorage.removeItem("kazi_employer_token"); location.href = "pp-auth.html?role=employer&view=signin"; throw new Error("signed out"); }
+    if (!res.ok) {
+      var body = await res.json().catch(function(){ return {}; });
+      throw new Error((body.detail && typeof body.detail === "string") ? body.detail : "Request failed (" + res.status + ")");
+    }
+    return res.json();
+  }
+
+  function toast(msg){
+    var el = document.createElement("div");
+    el.className = "toast";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 2600);
+  }
+
+  function canWrite(){ return me && !me.is_pending_approval && (me.team_role === "owner" || me.team_role === "can_post"); }
+  function isOwner(){ return me && !me.is_pending_approval && me.team_role === "owner"; }
+
+  function sectionTabsHtml(){
+    return '<div class="pp-tabs-scroll" style="margin-bottom:22px">' +
+      SECTIONS.map(function(s){
+        return '<button type="button" class="pp-tab-chip' + (section === s.key ? " -active" : "") + '" data-section="' + s.key + '">' + s.label + '</button>';
+      }).join("") +
+    '</div>';
+  }
+
+  function statusPill(status){
+    var map = {
+      pending: '<span class="pp-status -new">In review</span>',
+      approved: '<span class="pp-status -good">Live</span>',
+      rejected: '<span class="pp-status -neutral">Not approved</span>',
+      closed: '<span class="pp-status -neutral">Closed</span>'
+    };
+    return map[status] || '<span class="pp-status -neutral">' + escapeHtml(status) + '</span>';
+  }
+
+  // ---------------- Listings ----------------
+
+  function listingFormHtml(listing){
+    listing = listing || {};
+    return '<div class="form-panel"><h3>' + (listing.id ? "Edit listing" : "Post a role") + '</h3>' +
+      '<form id="listingForm">' +
+        '<div class="field-block"><label class="pp-field-label">Job title</label>' +
+          '<div class="pp-field-input"><input id="lTitle" value="' + escapeHtml(listing.title || "") + '" placeholder="e.g. Senior Product Designer"></div></div>' +
+        '<div class="field-row2">' +
+          '<div class="field-block"><label class="pp-field-label">Company</label>' +
+            '<div class="pp-field-input"><input id="lCompany" value="' + escapeHtml(listing.company || (me.company ? me.company.name : "")) + '"></div></div>' +
+          '<div class="field-block"><label class="pp-field-label">Location</label>' +
+            '<div class="pp-field-input"><input id="lLocation" value="' + escapeHtml(listing.location || "") + '" placeholder="Remote"></div></div>' +
+        '</div>' +
+        '<div class="field-row2">' +
+          '<div class="field-block"><label class="pp-field-label">Work type</label>' +
+            '<div class="pp-field-input"><select id="lWorkType">' + WORK_TYPES.map(function(w){ return '<option' + (listing.work_type === w ? " selected" : "") + '>' + w + '</option>'; }).join("") + '</select></div></div>' +
+          '<div class="field-block"><label class="pp-field-label">Level</label>' +
+            '<div class="pp-field-input"><select id="lLevel">' + LEVELS.map(function(w){ return '<option' + (listing.level === w ? " selected" : "") + '>' + w + '</option>'; }).join("") + '</select></div></div>' +
+        '</div>' +
+        '<div class="field-row2">' +
+          '<div class="field-block"><label class="pp-field-label">Job function</label>' +
+            '<div class="pp-field-input"><select id="lDiscipline">' + DISCIPLINES.map(function(w){ return '<option' + (listing.discipline === w ? " selected" : "") + '>' + w + '</option>'; }).join("") + '</select></div></div>' +
+          '<div class="field-block"><label class="pp-field-label">Who can apply</label>' +
+            '<div class="pp-field-input"><select id="lElig">' + ELIGIBILITY.map(function(e){ return '<option value="' + e.v + '"' + (listing.eligibility === e.v ? " selected" : (!listing.id && me.company && me.company.eligibility === e.v ? " selected" : "")) + '>' + e.l + '</option>'; }).join("") + '</select></div></div>' +
+        '</div>' +
+        '<div class="field-block"><label class="pp-field-label">Where candidates actually apply</label>' +
+          '<div class="pp-field-input"><input id="lUrl" value="' + escapeHtml(listing.url || (me.company ? "https://" + (me.company.website || "").replace(/^https?:\/\//, "") : "")) + '" placeholder="https://yoursite.com/careers/role"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">Where we reach you about this listing</label>' +
+          '<div class="pp-field-input"><input id="lContactEmail" value="' + escapeHtml(listing.contact_email || (me.email || "")) + '"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">Pay, if you\'re sharing it</label>' +
+          '<div class="pp-field-input"><input id="lSalary" value="' + escapeHtml(listing.salary || "") + '" placeholder="$4,000 – $6,000 / mo"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">Description</label>' +
+          '<textarea id="lDescription" class="pp-textarea" rows="4" placeholder="What the role involves, what makes it worth applying to.">' + escapeHtml(listing.description || "") + '</textarea></div>' +
+        '<div class="fielderr" id="listingErr" hidden></div>' +
+        '<div class="form-actions">' +
+          '<button type="submit" class="pp-btn pp-btn-primary" id="listingSubmitBtn">' + (listing.id ? "Save changes" : "Submit for review") + '</button>' +
+          '<button type="button" class="pp-btn pp-btn-tertiary" id="listingCancelBtn">Cancel</button>' +
+        '</div>' +
+      '</form></div>';
+  }
+
+  function renderListings(state){
+    var listings = state.listings || [];
+    var body = sectionTabsHtml() +
+      '<div class="section-head"><h2>Listings</h2>' +
+      (canWrite() && !showNewListing ? '<button type="button" class="pp-btn pp-btn-primary" id="addListingBtn">Post a role</button>' : "") +
+      '</div>';
+    if (showNewListing) body += listingFormHtml(state.editingListing || {});
+    if (!listings.length && !showNewListing) {
+      body += '<div class="pp-empty"><h3>No listings yet</h3><p>Post your first role and it goes through the same review queue as everything else on Kazi.</p></div>';
+    } else {
+      listings.forEach(function(l){
+        body += '<div class="listing-row">' +
+          '<div class="main"><h3>' + escapeHtml(l.title) + '</h3>' +
+            '<div class="meta">' + escapeHtml(l.location || "Remote") + ' · ' + escapeHtml(l.work_type) + ' · ' + (l.applicant_count || 0) + ' applicant' + (l.applicant_count === 1 ? "" : "s") + '</div></div>' +
+          statusPill(l.status) +
+          '<div class="actions">' +
+            (canWrite() && l.status !== "closed" ? '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" data-edit-listing="' + l.id + '">Edit</button>' : "") +
+            (canWrite() && l.status !== "closed" ? '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" data-close-listing="' + l.id + '">Close</button>' : "") +
+          '</div>' +
+        '</div>';
+      });
+    }
+    return body;
+  }
+
+  // ---------------- Applicants ----------------
+
+  function applicantFormHtml(){
+    return '<div class="form-panel"><h3>Add someone you\'re talking to</h3>' +
+      '<p style="margin:0 0 14px;font-size:13.5px;color:var(--c-text-subtle)">Kazi doesn\'t collect applications — add people here yourself as they reach out, so you can track where each conversation stands.</p>' +
+      '<form id="applicantForm">' +
+        '<div class="field-block"><label class="pp-field-label">Name</label><div class="pp-field-input"><input id="aName" placeholder="Full name"></div></div>' +
+        '<div class="field-row2">' +
+          '<div class="field-block"><label class="pp-field-label">Email</label><div class="pp-field-input"><input id="aEmail" type="email"></div></div>' +
+          '<div class="field-block"><label class="pp-field-label">Location</label><div class="pp-field-input"><input id="aLocation"></div></div>' +
+        '</div>' +
+        '<div class="field-block"><label class="pp-field-label">Portfolio link</label><div class="pp-field-input"><input id="aPortfolio" placeholder="https://"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">Note</label><textarea id="aNote" class="pp-textarea" rows="2" placeholder="How you found them, what stood out."></textarea></div>' +
+        '<div class="fielderr" id="applicantErr" hidden></div>' +
+        '<div class="form-actions">' +
+          '<button type="submit" class="pp-btn pp-btn-primary" id="applicantSubmitBtn">Add</button>' +
+          '<button type="button" class="pp-btn pp-btn-tertiary" id="applicantCancelBtn">Cancel</button>' +
+        '</div>' +
+      '</form></div>';
+  }
+
+  function applicantCardHtml(a){
+    var canMoveBack = a.stage > 0, canMoveNext = a.stage < STAGES.length - 1;
+    return '<div class="applicant-card">' +
+      '<p class="name">' + escapeHtml(a.full_name) + '</p>' +
+      '<p class="sub">' + [a.location, a.email].filter(Boolean).map(escapeHtml).join(" · ") + '</p>' +
+      (a.note ? '<p class="note">' + escapeHtml(a.note) + '</p>' : "") +
+      (a.portfolio_url ? '<p class="note"><a href="' + escapeHtml(a.portfolio_url) + '" target="_blank" rel="noopener">Portfolio</a></p>' : "") +
+      (canWrite() ? '<div class="card-actions">' +
+        (canMoveBack ? '<button type="button" data-move="' + a.id + '" data-dir="-1">← Back</button>' : "") +
+        (canMoveNext ? '<button type="button" data-move="' + a.id + '" data-dir="1">Next →</button>' : "") +
+        '<button type="button" data-remove-applicant="' + a.id + '">Remove</button>' +
+      '</div>' : "") +
+    '</div>';
+  }
+
+  function renderApplicants(state){
+    var listings = (state.listings || []).filter(function(l){ return l.status !== "rejected"; });
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Applicants</h2></div>';
+    if (!listings.length) {
+      return body + '<div class="pp-empty"><h3>Post a role first</h3><p>Applicants are tracked per listing — add one from the Listings tab.</p></div>';
+    }
+    if (!applicantListingId || !listings.some(function(l){ return l.id === applicantListingId; })) applicantListingId = listings[0].id;
+    body += '<div class="applicant-picker pp-field"><label class="pp-field-label">Listing</label><div class="pp-field-input"><select id="applicantListingSelect">' +
+      listings.map(function(l){ return '<option value="' + l.id + '"' + (l.id === applicantListingId ? " selected" : "") + '>' + escapeHtml(l.title) + '</option>'; }).join("") +
+      '</select></div></div>';
+    if (canWrite() && !showNewApplicant) body += '<button type="button" class="pp-btn pp-btn-secondary" id="addApplicantBtn" style="margin-bottom:16px">Add someone</button>';
+    if (showNewApplicant) body += applicantFormHtml();
+    var applicants = state.applicants || [];
+    body += '<div class="board">' + STAGES.map(function(stageName, i){
+      var col = applicants.filter(function(a){ return a.stage === i; });
+      return '<div class="board-col"><div class="board-col-head"><span>' + stageName + '</span><span>' + col.length + '</span></div>' +
+        (col.length ? col.map(applicantCardHtml).join("") : '<p style="font-size:12.5px;color:var(--c-text-faint);padding:4px 2px">Nobody here yet.</p>') +
+      '</div>';
+    }).join("") + '</div>';
+    return body;
+  }
+
+  // ---------------- Team ----------------
+
+  function renderTeam(state){
+    var team = state.team || { members: [], pending_invites: [] };
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Team</h2></div>';
+    if (team.pending_invites.length) {
+      body += '<h3 style="font-size:14px;color:var(--c-text-subtle);margin:0 0 10px">Invited, not yet joined</h3>';
+      team.pending_invites.forEach(function(inv){
+        body += '<div class="team-row"><div class="who"><div class="name">' + escapeHtml(inv.invited_email) + '</div><div class="role">Invited as ' + escapeHtml(inv.proposed_team_role === "can_post" ? "Can post" : "Can view") + '</div></div>' +
+          '<span class="pp-status -new">Waiting</span></div>';
+      });
+    }
+    var pendingApproval = team.members.filter(function(m){ return m.is_pending_approval; });
+    if (pendingApproval.length) {
+      body += '<h3 style="font-size:14px;color:var(--c-text-subtle);margin:16px 0 10px">Joined, needs your approval</h3>';
+      pendingApproval.forEach(function(m){
+        body += '<div class="team-row"><div class="who"><div class="name">' + escapeHtml(m.full_name) + '</div><div class="role">' + escapeHtml(m.role_title || "") + '</div></div>' +
+          (isOwner() ? '<div class="actions"><button type="button" class="pp-btn pp-btn-primary pp-btn-sm" data-approve="' + m.id + '">Approve</button><button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" data-decline-teammate="' + m.id + '">Decline</button></div>' : '<span class="pp-status -new">Pending approval</span>') +
+        '</div>';
+      });
+    }
+    body += '<h3 style="font-size:14px;color:var(--c-text-subtle);margin:16px 0 10px">On the account</h3>';
+    team.members.filter(function(m){ return !m.is_pending_approval; }).forEach(function(m){
+      body += '<div class="team-row"><div class="who"><div class="name">' + escapeHtml(m.full_name) + '</div><div class="role">' + escapeHtml(m.role_title || "") + ' · ' + (m.team_role === "owner" ? "Owner" : m.team_role === "can_post" ? "Can post" : "Can view") + '</div></div>' +
+        (isOwner() && m.id !== me.id ? '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" data-remove-member="' + m.id + '">Remove</button>' : "") +
+      '</div>';
+    });
+    if (canWrite()) {
+      body += '<div class="form-panel" style="margin-top:20px"><h3>Invite someone</h3>' +
+        '<form id="inviteForm">' +
+          '<div class="field-row2">' +
+            '<div class="field-block"><label class="pp-field-label">Email</label><div class="pp-field-input"><input id="iEmail" type="email" placeholder="colleague@' + escapeHtml((me.company && me.company.website || "").replace(/^https?:\/\//, "")) + '"></div></div>' +
+            '<div class="field-block"><label class="pp-field-label">Role</label><div class="pp-field-input"><select id="iRole"><option value="can_post">Can post</option><option value="can_view">Can view</option></select></div></div>' +
+          '</div>' +
+          '<div class="fielderr" id="inviteErr" hidden></div>' +
+          '<button type="submit" class="pp-btn pp-btn-primary" id="inviteSubmitBtn">Send invite</button>' +
+        '</form></div>';
+    }
+    return body;
+  }
+
+  // ---------------- Company ----------------
+
+  function renderCompany(state){
+    var c = me.company || {};
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Company page</h2></div>';
+    body += '<div class="form-panel"><form id="companyForm">' +
+      '<div class="field-block"><label class="pp-field-label">Company name</label><div class="pp-field-input"><input id="cName" value="' + escapeHtml(c.name || "") + '"' + (isOwner() ? "" : " disabled") + '></div></div>' +
+      '<div class="field-block"><label class="pp-field-label">Website</label><div class="pp-field-input"><input id="cWebsite" value="' + escapeHtml(c.website || "") + '"' + (isOwner() ? "" : " disabled") + '></div></div>' +
+      '<div class="field-block"><label class="pp-field-label">One line about the company</label><textarea id="cBlurb" class="pp-textarea" rows="2"' + (isOwner() ? "" : " disabled") + '>' + escapeHtml(c.blurb || "") + '</textarea></div>' +
+      '<div class="field-row2">' +
+        '<div class="field-block"><label class="pp-field-label">Who you can employ</label><div class="pp-field-input"><select id="cElig"' + (isOwner() ? "" : " disabled") + '>' + ELIGIBILITY.map(function(e){ return '<option value="' + e.v + '"' + (c.eligibility === e.v ? " selected" : "") + '>' + e.l + '</option>'; }).join("") + '</select></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">Status</label><div style="padding-top:10px">' + statusPill(c.status || "pending") + '</div></div>' +
+      '</div>' +
+      '<div class="field-block"><label class="pp-field-label">How you hire abroad</label><textarea id="cEligNote" class="pp-textarea" rows="2"' + (isOwner() ? "" : " disabled") + '>' + escapeHtml(c.eligibility_note || "") + '</textarea></div>' +
+      (isOwner() ? '<div class="fielderr" id="companyErr" hidden></div><button type="submit" class="pp-btn pp-btn-primary" id="companySubmitBtn">Save changes</button>' :
+        '<p style="font-size:13px;color:var(--c-text-faint)">Only an owner can edit the company page.</p>') +
+    '</form></div>';
+    return body;
+  }
+
+  // ---------------- Billing ----------------
+
+  function renderBilling(){
+    return sectionTabsHtml() + '<div class="section-head"><h2>Billing</h2></div>' +
+      '<div class="billing-panel"><h3>Hiring tools are free right now</h3>' +
+      '<p>Kazi isn\'t charging for posting roles or managing applicants yet. If that changes, you\'ll see it here first — nothing changes automatically, and nothing is billed today.</p></div>';
+  }
+
+  // ---------------- Data + wiring ----------------
+
+  var cache = { listings: [], applicants: [], team: null };
+
+  async function loadSection(){
+    var content = document.getElementById("content");
+    if (section === "listings" || section === "applicants") {
+      var data = await api("/api/employers/me/listings");
+      cache.listings = data.listings;
+    }
+    if (section === "applicants" && applicantListingId) {
+      var adata = await api("/api/employers/me/listings/" + applicantListingId + "/applicants");
+      cache.applicants = adata.applicants;
+    }
+    if (section === "team") {
+      cache.team = await api("/api/employers/me/team");
+    }
+    render();
+  }
+
+  function render(){
+    var content = document.getElementById("content");
+    var banner = me.is_pending_approval
+      ? '<div class="pending-banner">Someone at ' + escapeHtml(me.company ? me.company.name : "this company") + ' needs to approve you before you can post or manage anything here. You can still look around.</div>'
+      : "";
+    var head = '<div class="dash-head"><div><h1>' + escapeHtml(me.company ? me.company.name : "Hiring") + '</h1><p>Signed in as ' + escapeHtml(me.full_name) + '</p></div></div>' + banner;
+    var body = "";
+    if (section === "listings") body = renderListings(cache);
+    else if (section === "applicants") body = renderApplicants(cache);
+    else if (section === "team") body = renderTeam(cache);
+    else if (section === "company") body = renderCompany(cache);
+    else body = renderBilling();
+    content.innerHTML = head + body;
+    wire();
+  }
+
+  function setSection(s){ section = s; showNewListing = false; showNewApplicant = false; loadSection(); }
+
+  function showErr(id, msg){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.hidden = !msg;
+    el.textContent = msg || "";
+  }
+
+  function wire(){
+    document.querySelectorAll("[data-section]").forEach(function(btn){
+      btn.addEventListener("click", function(){ setSection(btn.getAttribute("data-section")); });
+    });
+
+    // Listings
+    var addListingBtn = document.getElementById("addListingBtn");
+    if (addListingBtn) addListingBtn.addEventListener("click", function(){ cache.editingListing = null; showNewListing = true; render(); });
+    var listingCancelBtn = document.getElementById("listingCancelBtn");
+    if (listingCancelBtn) listingCancelBtn.addEventListener("click", function(){ showNewListing = false; render(); });
+    document.querySelectorAll("[data-edit-listing]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = parseInt(btn.getAttribute("data-edit-listing"), 10);
+        cache.editingListing = cache.listings.filter(function(l){ return l.id === id; })[0];
+        showNewListing = true;
+        render();
+      });
+    });
+    document.querySelectorAll("[data-close-listing]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.getAttribute("data-close-listing");
+        var ok = await window.showPPConfirm({
+          title: "Close this listing?", description: "It comes off the board. Applicants tracked against it stay in your history.",
+          confirmLabel: "Close listing", safeLabel: "Keep it open", danger: false
+        });
+        if (!ok) return;
+        await api("/api/employers/me/listings/" + id, { method: "DELETE" });
+        toast("Listing closed.");
+        loadSection();
+      });
+    });
+    var listingForm = document.getElementById("listingForm");
+    if (listingForm) listingForm.addEventListener("submit", async function(e){
+      e.preventDefault();
+      showErr("listingErr", "");
+      var editing = cache.editingListing;
+      var payload = {
+        title: document.getElementById("lTitle").value.trim(),
+        company: document.getElementById("lCompany").value.trim(),
+        url: document.getElementById("lUrl").value.trim(),
+        contact_email: document.getElementById("lContactEmail").value.trim(),
+        description: document.getElementById("lDescription").value.trim(),
+        location: document.getElementById("lLocation").value.trim(),
+        work_type: document.getElementById("lWorkType").value,
+        discipline: document.getElementById("lDiscipline").value,
+        level: document.getElementById("lLevel").value,
+        eligibility: document.getElementById("lElig").value,
+        salary: document.getElementById("lSalary").value.trim(),
+        agreed_to_terms: true
+      };
+      var btn = document.getElementById("listingSubmitBtn");
+      btn.disabled = true;
+      try {
+        if (editing && editing.id) {
+          await api("/api/employers/me/listings/" + editing.id, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          toast("Saved. Back in the review queue.");
+        } else {
+          await api("/api/employers/me/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+          toast("Submitted for review.");
+        }
+        showNewListing = false;
+        loadSection();
+      } catch (err) {
+        showErr("listingErr", err.message);
+        btn.disabled = false;
+      }
+    });
+
+    // Applicants
+    var applicantListingSelect = document.getElementById("applicantListingSelect");
+    if (applicantListingSelect) applicantListingSelect.addEventListener("change", function(){
+      applicantListingId = parseInt(applicantListingSelect.value, 10);
+      showNewApplicant = false;
+      loadSection();
+    });
+    var addApplicantBtn = document.getElementById("addApplicantBtn");
+    if (addApplicantBtn) addApplicantBtn.addEventListener("click", function(){ showNewApplicant = true; render(); });
+    var applicantCancelBtn = document.getElementById("applicantCancelBtn");
+    if (applicantCancelBtn) applicantCancelBtn.addEventListener("click", function(){ showNewApplicant = false; render(); });
+    var applicantForm = document.getElementById("applicantForm");
+    if (applicantForm) applicantForm.addEventListener("submit", async function(e){
+      e.preventDefault();
+      showErr("applicantErr", "");
+      var name = document.getElementById("aName").value.trim();
+      if (!name) { showErr("applicantErr", "Add a name."); return; }
+      var payload = {
+        full_name: name, email: document.getElementById("aEmail").value.trim(),
+        location: document.getElementById("aLocation").value.trim(),
+        portfolio_url: document.getElementById("aPortfolio").value.trim(),
+        note: document.getElementById("aNote").value.trim()
+      };
+      var btn = document.getElementById("applicantSubmitBtn");
+      btn.disabled = true;
+      try {
+        await api("/api/employers/me/listings/" + applicantListingId + "/applicants", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        showNewApplicant = false;
+        toast("Added.");
+        loadSection();
+      } catch (err) {
+        showErr("applicantErr", err.message);
+        btn.disabled = false;
+      }
+    });
+    document.querySelectorAll("[data-move]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.getAttribute("data-move");
+        var current = cache.applicants.filter(function(a){ return String(a.id) === id; })[0];
+        var stage = current.stage + parseInt(btn.getAttribute("data-dir"), 10);
+        await api("/api/employers/me/applicants/" + id + "/stage", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stage: stage }) });
+        loadSection();
+      });
+    });
+    document.querySelectorAll("[data-remove-applicant]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var ok = await window.showPPConfirm({
+          title: "Remove this applicant?", description: "Their card comes off the board. This can't be undone.",
+          confirmLabel: "Remove", safeLabel: "Keep them", danger: true
+        });
+        if (!ok) return;
+        await api("/api/employers/me/applicants/" + btn.getAttribute("data-remove-applicant"), { method: "DELETE" });
+        loadSection();
+      });
+    });
+
+    // Team
+    var inviteForm = document.getElementById("inviteForm");
+    if (inviteForm) inviteForm.addEventListener("submit", async function(e){
+      e.preventDefault();
+      showErr("inviteErr", "");
+      var email = document.getElementById("iEmail").value.trim();
+      var btn = document.getElementById("inviteSubmitBtn");
+      btn.disabled = true;
+      try {
+        await api("/api/employers/me/team/invite", { method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email, team_role: document.getElementById("iRole").value }) });
+        toast("Invite sent.");
+        document.getElementById("iEmail").value = "";
+        loadSection();
+      } catch (err) {
+        showErr("inviteErr", err.message);
+      }
+      btn.disabled = false;
+    });
+    document.querySelectorAll("[data-approve]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        await api("/api/employers/me/team/" + btn.getAttribute("data-approve") + "/approve", { method: "POST" });
+        toast("Approved.");
+        loadSection();
+      });
+    });
+    document.querySelectorAll("[data-decline-teammate]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var ok = await window.showPPConfirm({
+          title: "Decline this person?", description: "Nothing is shared with them beyond a plain decline. Their account is removed.",
+          confirmLabel: "Decline", safeLabel: "Keep pending", danger: true
+        });
+        if (!ok) return;
+        await api("/api/employers/me/team/" + btn.getAttribute("data-decline-teammate") + "/decline", { method: "POST" });
+        loadSection();
+      });
+    });
+    document.querySelectorAll("[data-remove-member]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var ok = await window.showPPConfirm({
+          title: "Remove this teammate?", description: "They lose access to this company's listings and applicants right away.",
+          confirmLabel: "Remove", safeLabel: "Keep them", danger: true
+        });
+        if (!ok) return;
+        try {
+          await api("/api/employers/me/team/" + btn.getAttribute("data-remove-member"), { method: "DELETE" });
+          loadSection();
+        } catch (err) { toast(err.message); }
+      });
+    });
+
+    // Company
+    var companyForm = document.getElementById("companyForm");
+    if (companyForm) companyForm.addEventListener("submit", async function(e){
+      e.preventDefault();
+      showErr("companyErr", "");
+      var payload = {
+        name: document.getElementById("cName").value.trim(),
+        website: document.getElementById("cWebsite").value.trim(),
+        blurb: document.getElementById("cBlurb").value.trim(),
+        eligibility: document.getElementById("cElig").value,
+        eligibility_note: document.getElementById("cEligNote").value.trim()
+      };
+      var btn = document.getElementById("companySubmitBtn");
+      btn.disabled = true;
+      try {
+        await api("/api/employers/me/company", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        toast("Saved. Back in review since the company page changed.");
+        me = await api("/api/employers/me");
+        render();
+      } catch (err) {
+        showErr("companyErr", err.message);
+        btn.disabled = false;
+      }
+    });
+  }
+
+  async function init(){
+    try {
+      me = await api("/api/employers/me");
+    } catch (e) {
+      return;
+    }
+    await loadSection();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

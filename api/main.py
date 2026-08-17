@@ -60,6 +60,8 @@ from .db import (  # noqa: E402
     create_employer_email_token, consume_employer_email_token,
     update_submission, list_submissions_for_company,
     create_team_invite, get_team_invite_by_token, list_pending_team_invites, set_invite_status,
+    create_applicant, list_applicants_for_submission, count_applicants_by_submission,
+    update_applicant, set_applicant_stage, delete_applicant,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -71,6 +73,7 @@ WEB_DIR = ROOT / "web"
 JOBS_JSON = WEB_DIR / "jobs.json"
 WORK_TYPES = {"Remote", "Hybrid", "On-site"}
 LEVELS = {"Junior", "Mid", "Senior", "Lead"}
+APPLICANT_STAGES = ["Applied", "Reviewing", "Interviewing", "Offer"]
 MAX_LINKS = 8
 AVAILABILITY_STATUSES = ["Available", "Open to offers", "Not available"]
 MAX_DESIGNER_DISCIPLINES = 5
@@ -576,6 +579,45 @@ class TeamInviteAccept(BaseModel):
     def _valid_password(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError("password must be at least 8 characters")
+        return v
+
+
+class ApplicantIn(BaseModel):
+    full_name: str
+    email: str = ""
+    location: str = ""
+    portfolio_url: str = ""
+    note: str = ""
+
+    @field_validator("full_name")
+    @classmethod
+    def _valid_full_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("enter a name")
+        return v.strip()[:120]
+
+    @field_validator("email", "location", "note")
+    @classmethod
+    def _trim(cls, v: str) -> str:
+        return (v or "").strip()[:300]
+
+    @field_validator("portfolio_url")
+    @classmethod
+    def _valid_url(cls, v: str) -> str:
+        v = (v or "").strip()
+        if v and not v.startswith("http://") and not v.startswith("https://"):
+            raise ValueError("portfolio link must start with http:// or https://")
+        return v[:500]
+
+
+class ApplicantStageUpdate(BaseModel):
+    stage: int
+
+    @field_validator("stage")
+    @classmethod
+    def _valid_stage(cls, v: int) -> int:
+        if v < 0 or v >= len(APPLICANT_STAGES):
+            raise ValueError(f"stage must be 0-{len(APPLICANT_STAGES) - 1}")
         return v
 
 
@@ -1339,7 +1381,11 @@ def _owned_submission(sub_id: int, company_id: int) -> dict:
 
 @app.get("/api/employers/me/listings")
 def employer_list_listings(employer: dict = Depends(require_employer)):
-    return {"listings": list_submissions_for_company(employer["company_id"])}
+    counts = count_applicants_by_submission(employer["company_id"])
+    listings = list_submissions_for_company(employer["company_id"])
+    for listing in listings:
+        listing["applicant_count"] = counts.get(listing["id"], 0)
+    return {"listings": listings}
 
 
 @app.post("/api/employers/me/listings")
@@ -1366,6 +1412,61 @@ def employer_close_listing(sub_id: int, employer: dict = Depends(require_employe
     # applicants tracked against it) rather than disappearing outright.
     _owned_submission(sub_id, employer["company_id"])
     set_status(sub_id, "closed")
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Applicants: a manual per-listing tracker, not real application collection
+# (see api/db.py's module note above create_applicant). Nested under a
+# listing's own id so ownership is checked once, at the listing, before
+# ever touching a row.
+# ---------------------------------------------------------------------------
+
+def _applicant_out(row: dict) -> dict:
+    return {**row, "stage_name": APPLICANT_STAGES[row["stage"]]}
+
+
+@app.get("/api/employers/me/listings/{sub_id}/applicants")
+def employer_list_applicants(sub_id: int, employer: dict = Depends(require_employer)):
+    _owned_submission(sub_id, employer["company_id"])
+    rows = list_applicants_for_submission(sub_id, employer["company_id"])
+    return {"applicants": [_applicant_out(r) for r in rows], "stages": APPLICANT_STAGES}
+
+
+@app.post("/api/employers/me/listings/{sub_id}/applicants")
+def employer_add_applicant(sub_id: int, payload: ApplicantIn, employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    _owned_submission(sub_id, employer["company_id"])
+    applicant_id = create_applicant(
+        sub_id, employer["company_id"], payload.full_name, payload.email, payload.location,
+        payload.portfolio_url, payload.note, employer["id"],
+    )
+    return {"ok": True, "id": applicant_id}
+
+
+@app.put("/api/employers/me/applicants/{applicant_id}")
+def employer_update_applicant(applicant_id: int, payload: ApplicantIn, employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    updated = update_applicant(
+        applicant_id, employer["company_id"], payload.full_name, payload.email,
+        payload.location, payload.portfolio_url, payload.note,
+    )
+    if not updated:
+        raise HTTPException(404, "no such applicant")
+    return {"ok": True}
+
+
+@app.put("/api/employers/me/applicants/{applicant_id}/stage")
+def employer_move_applicant(applicant_id: int, payload: ApplicantStageUpdate, employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    updated = set_applicant_stage(applicant_id, employer["company_id"], payload.stage)
+    if not updated:
+        raise HTTPException(404, "no such applicant")
+    return {"ok": True}
+
+
+@app.delete("/api/employers/me/applicants/{applicant_id}")
+def employer_remove_applicant(applicant_id: int, employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    deleted = delete_applicant(applicant_id, employer["company_id"])
+    if not deleted:
+        raise HTTPException(404, "no such applicant")
     return {"ok": True}
 
 

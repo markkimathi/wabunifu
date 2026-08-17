@@ -216,6 +216,23 @@ CREATE TABLE IF NOT EXISTS team_invites (
   responded_at TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_team_invites_company ON team_invites(company_id);
+
+CREATE TABLE IF NOT EXISTS job_applicants (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  submission_id INTEGER NOT NULL,
+  company_id INTEGER NOT NULL,
+  full_name TEXT NOT NULL,
+  email TEXT NOT NULL DEFAULT '',
+  location TEXT NOT NULL DEFAULT '',
+  portfolio_url TEXT NOT NULL DEFAULT '',
+  note TEXT NOT NULL DEFAULT '',
+  stage INTEGER NOT NULL DEFAULT 0,
+  created_by_employer_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_job_applicants_submission ON job_applicants(submission_id);
+CREATE INDEX IF NOT EXISTS idx_job_applicants_company ON job_applicants(company_id);
 """
 
 # Columns added after the table first shipped. A fresh database gets them
@@ -1186,6 +1203,93 @@ def set_invite_status(token: str, status: str) -> None:
     )
     c.commit()
     c.close()
+
+
+# ---------------------------------------------------------------------------
+# Applicants: a manual per-listing tracker an employer fills in themselves.
+# Kazi doesn't collect real applications (they go to the company's own
+# apply link), so every row here is entered by hand — this is a pipeline for
+# candidates an employer is already talking to, not an application inbox.
+# Every function takes company_id and filters on it, same ownership pattern
+# as designer_projects filtering on designer_id, so one company can never
+# read or touch another's rows even given a guessed id.
+# ---------------------------------------------------------------------------
+
+def create_applicant(submission_id: int, company_id: int, full_name: str, email: str,
+                      location: str, portfolio_url: str, note: str, created_by_employer_id: int) -> int:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO job_applicants (submission_id, company_id, full_name, email, location, "
+        "portfolio_url, note, stage, created_by_employer_id, created_at, updated_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)",
+        (submission_id, company_id, full_name, email, location, portfolio_url, note,
+         created_by_employer_id, now, now),
+    )
+    c.commit()
+    applicant_id = cur.lastrowid
+    c.close()
+    return applicant_id
+
+
+def list_applicants_for_submission(submission_id: int, company_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM job_applicants WHERE submission_id = ? AND company_id = ? ORDER BY stage, created_at",
+        (submission_id, company_id),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def count_applicants_by_submission(company_id: int) -> dict[int, int]:
+    """{submission_id: count} for every listing this company has — the
+    per-row number the Listings view shows without a query per row."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT submission_id, COUNT(*) AS n FROM job_applicants WHERE company_id = ? GROUP BY submission_id",
+        (company_id,),
+    ).fetchall()
+    c.close()
+    return {r["submission_id"]: r["n"] for r in rows}
+
+
+def update_applicant(applicant_id: int, company_id: int, full_name: str, email: str,
+                      location: str, portfolio_url: str, note: str) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "UPDATE job_applicants SET full_name = ?, email = ?, location = ?, portfolio_url = ?, "
+        "note = ?, updated_at = ? WHERE id = ? AND company_id = ?",
+        (full_name, email, location, portfolio_url, note,
+         datetime.now(timezone.utc).isoformat(timespec="seconds"), applicant_id, company_id),
+    )
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def set_applicant_stage(applicant_id: int, company_id: int, stage: int) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "UPDATE job_applicants SET stage = ?, updated_at = ? WHERE id = ? AND company_id = ?",
+        (stage, datetime.now(timezone.utc).isoformat(timespec="seconds"), applicant_id, company_id),
+    )
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def delete_applicant(applicant_id: int, company_id: int) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "DELETE FROM job_applicants WHERE id = ? AND company_id = ?", (applicant_id, company_id)
+    )
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
 
 
 # ---------------------------------------------------------------------------

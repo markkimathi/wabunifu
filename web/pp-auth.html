@@ -110,6 +110,10 @@
   var pwVisible = false;
   var sentTo = "";
   var role = "designer";
+  // A reset-link email is a fresh page load with no other signal of which
+  // account type it's for — role has to come from the link itself, not the
+  // in-memory toggle state used everywhere else on this page.
+  if (params.get("role") === "employer") role = "employer";
   var resetJustSucceeded = false;
 
   function escapeHtml(s){
@@ -145,7 +149,11 @@
       ? '<div class="pp-elig -positive" style="margin-bottom:20px">Password updated. Sign in with your new password.</div>'
       : "";
     resetJustSucceeded = false;
-    return '<h1>Welcome back</h1><p class="sub">Your saved roles are exactly where you left them.</p>' + banner +
+    return '<h1>Welcome back</h1><p class="sub">' + (role === "employer" ? "Pick up your listings and applicants." : "Your saved roles are exactly where you left them.") + '</p>' + banner +
+      '<div class="role-toggle">' +
+        '<button type="button" class="' + (role === "designer" ? "-active" : "") + '" id="pickDesigner">A designer</button>' +
+        '<button type="button" class="' + (role === "employer" ? "-active" : "") + '" id="pickEmployer">Hiring</button>' +
+      '</div>' +
       '<form id="authForm">' +
         '<div class="field-block"><label class="pp-field-label" for="fEmail">Email</label>' +
           '<div class="pp-field-input"><input id="fEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>' +
@@ -251,9 +259,16 @@
     var pickEmployer = document.getElementById("pickEmployer");
     if (pickDesigner) pickDesigner.addEventListener("click", function(){ role = "designer"; render(); });
     if (pickEmployer) pickEmployer.addEventListener("click", function(){
-      // Kazi has no employer accounts — "Hiring" routes to the real
-      // single-shot post-a-role flow instead of a fake employer signup.
-      location.href = "post.html";
+      if (view === "signup") {
+        // Employer signup collects company details a plain name+email+password
+        // form doesn't have room for (company name, site, eligibility) — the
+        // dedicated wizard is the real entry point, not a stripped-down copy
+        // of this form.
+        location.href = "pp-employer-onboarding.html";
+        return;
+      }
+      role = "employer";
+      render();
     });
 
     var eyeBtn = document.getElementById("toggleEye");
@@ -304,12 +319,18 @@
     var btn = document.getElementById("submitBtn");
     setBusy(btn, true, "Signing you in…", "Sign in");
     try {
-      var res = await fetch("/api/designers/login", {
+      var endpoint = role === "employer" ? "/api/employers/login" : "/api/designers/login";
+      var res = await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: email, password: pw })
       });
       var data = await res.json();
       if (!res.ok) { showFieldError("pwErr", data.detail || "Incorrect email or password."); setBusy(btn, false, "", "Sign in"); return; }
+      if (role === "employer") {
+        localStorage.setItem("kazi_employer_token", data.token);
+        location.href = "pp-employer.html";
+        return;
+      }
       localStorage.setItem("kazi_designer_token", data.token);
       var me = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + data.token } }).then(function(r){ return r.json(); });
       location.href = "pp-profile.html?id=" + encodeURIComponent(me.handle || me.id);
@@ -350,7 +371,8 @@
     var original = btn.textContent;
     setBusy(btn, true, "Sending…", original);
     try {
-      await fetch("/api/designers/forgot-password", {
+      var endpoint = role === "employer" ? "/api/employers/forgot-password" : "/api/designers/forgot-password";
+      await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email })
       });
       sentTo = email;
@@ -369,7 +391,8 @@
     var btn = document.getElementById("submitBtn");
     setBusy(btn, true, "Saving…", "Save and sign in");
     try {
-      var res = await fetch("/api/designers/reset-password", {
+      var endpoint = role === "employer" ? "/api/employers/reset-password" : "/api/designers/reset-password";
+      var res = await fetch(endpoint, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: resetToken, new_password: pw })
       });
