@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign in · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  @media(max-width:1023px){main{grid-template-columns:1fr}}
+  a{color:inherit}
+
+  .form-side{display:flex;flex-direction:column;padding:40px clamp(24px,5vw,64px)}
+  .form-inner{flex:1;display:flex;flex-direction:column;justify-content:center;max-width:420px;width:100%;margin:0 auto}
+  .value-side{background:var(--pp-ink);color:var(--pp-white);padding:56px;display:flex;flex-direction:column;
+    justify-content:center;position:relative;overflow:hidden}
+  @media(max-width:1023px){.value-side{display:none}}
+  .value-side h2{margin:0 0 20px;font-size:32px;line-height:1.15;letter-spacing:-0.024em;font-weight:700;max-width:16ch}
+  .value-side ul{margin:0 0 28px;padding:0;list-style:none;display:flex;flex-direction:column;gap:14px}
+  .value-side li{display:flex;gap:12px;font-size:15.5px;line-height:1.5;color:var(--pp-text-faint-on-dark,#D2D2D6)}
+  .value-side li svg{flex:none;color:var(--pp-gold);margin-top:2px}
+  .value-side blockquote{margin:0;padding-top:20px;border-top:1px solid var(--pp-border-dark,#1F1F1F);
+    font-size:15px;line-height:1.6;color:var(--pp-text-faint-on-dark,#D2D2D6);font-style:normal}
+
+  h1{margin:0 0 8px;font-size:40px;line-height:1.02;letter-spacing:-0.036em;font-weight:800}
+  .sub{margin:0 0 24px;font-size:16px;line-height:1.55;color:var(--c-text-muted)}
+  .role-toggle{display:flex;gap:6px;padding:5px;border:1px solid var(--c-border);border-radius:999px;
+    background:var(--c-bg-sunken);margin-bottom:24px}
+  .role-toggle button{flex:1;height:42px;border:none;border-radius:999px;font-family:var(--pp-font);
+    font-size:15px;font-weight:600;cursor:pointer;background:transparent;color:var(--c-text-subtle)}
+  .role-toggle button.-active{background:var(--c-surface);color:var(--c-text);box-shadow:0 0 0 1px var(--c-border-strong)}
+
+  form{width:100%}
+  .field-block{margin-bottom:16px}
+  .field-block .pp-field-label{display:block;margin-bottom:7px}
+  .field-block .pp-field-input{height:50px;border-radius:11px}
+  .field-block .pp-field-input input{font-size:15.5px}
+  .field-block .toggle-eye{width:32px;height:32px;flex:none;border:none;border-radius:8px;background:transparent;
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--c-text-subtle)}
+  .field-block .toggle-eye:hover{background:var(--c-surface-inset)}
+  .row-between{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px}
+  .row-between button{border:none;background:transparent;font-family:var(--pp-font);font-size:13.5px;
+    font-weight:600;color:var(--c-accent-text);cursor:pointer;padding:0}
+  .fielderr{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:13.5px;color:var(--c-bad-text)}
+  .fielderr svg{flex:none}
+  .pw-strength{margin-bottom:20px}
+  .pw-pips{display:flex;gap:5px;margin-bottom:7px}
+  .pw-pips span{flex:1;height:5px;border-radius:999px;background:var(--c-surface-inset)}
+  .pw-note{font-size:13px;color:var(--c-text-subtle)}
+  .hint{margin:0 0 20px;font-size:13.5px;color:var(--c-text-subtle)}
+  .legal{margin:16px 0 0;font-size:13px;line-height:1.6;color:var(--c-text-faint)}
+  .legal a{color:var(--c-accent-text);font-weight:600;text-decoration:none}
+  .switch-line{margin:20px 0 0;font-size:15px;color:var(--c-text-muted)}
+  .switch-line button{border:none;background:transparent;font-family:var(--pp-font);font-size:15px;
+    font-weight:600;color:var(--c-accent-text);cursor:pointer;padding:0}
+  .back-link{display:inline-flex;align-items:center;gap:8px;border:none;background:transparent;
+    font-family:var(--pp-font);font-size:14.5px;font-weight:600;color:var(--c-text-subtle);cursor:pointer;
+    padding:0;margin-bottom:24px}
+  .back-link:hover{color:var(--c-text)}
+
+  .sent-icon{width:54px;height:54px;border-radius:14px;background:var(--c-good-bg);border:1px solid var(--c-good-border);
+    display:flex;align-items:center;justify-content:center;margin-bottom:22px;color:var(--c-good-text)}
+  .stack{display:flex;flex-direction:column;gap:10px}
+
+  .legal-row{padding:20px clamp(24px,5vw,64px);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .legal-row span,.legal-row a{font-size:13px;color:var(--c-text-faint)}
+  .legal-row a{text-decoration:none}
+  .mark-row{padding:32px clamp(24px,5vw,64px) 0}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-shell="focused"></div>
+
+<main>
+  <div class="form-side">
+    <div class="form-inner" id="formArea"></div>
+  </div>
+  <div class="value-side">
+    <h2>Design work you can actually get</h2>
+    <ul>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>Every listing says plainly whether you can apply from where you live.</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>Applications always go straight to the company's own page.</li>
+      <li><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>A free profile that doubles as a portfolio, written by you.</li>
+    </ul>
+    <blockquote>"I stopped guessing which roles would even consider me." — a designer using Path &amp; Pixel</blockquote>
+  </div>
+</main>
+<div class="legal-row"><span id="legalYear"></span><a href="pp-privacy.html">Privacy</a><a href="pp-terms.html">Terms</a><a href="mailto:hello@odana.design">Help</a></div>
+
+<script src="pp-nav.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var ICONS = {
+    back: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>',
+    error: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>',
+    eyeOpen: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+    eyeClosed: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"></path><path d="M9.5 6a8.6 8.6 0 012.5-.4c6 0 9.5 6.4 9.5 6.4a17 17 0 01-2.7 3.4"></path><path d="M6.3 8.2A16.7 16.7 0 002.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5"></path></svg>',
+    mail: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 13l8.5-6.5"></path></svg>'
+  };
+
+  var EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
+  var params = new URLSearchParams(location.search);
+  var view = params.get("token") ? "newpw" : (params.get("view") || "signin");
+  var resetToken = params.get("token") || "";
+  var pwVisible = false;
+  var sentTo = "";
+  var role = "designer";
+  var resetJustSucceeded = false;
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function setView(v){ view = v; render(); }
+
+  function pwScore(pw){
+    if (!pw.length) return 0;
+    if (pw.length < 8) return 1;
+    if (pw.length < 14) return 2;
+    return 3;
+  }
+  function pwPipsHtml(score){
+    var colors = ["", "var(--c-bad)", "var(--pp-gold)", "var(--c-good)"];
+    return [0, 1, 2].map(function(i){
+      var filled = i < score;
+      return '<span style="' + (filled ? "background:" + colors[score] : "") + '"></span>';
+    }).join("");
+  }
+  function pwNote(score){
+    if (score === 0) return "";
+    if (score === 1) return "Too short, eight characters or more.";
+    if (score === 2) return "Fine. A longer phrase would be stronger.";
+    return "Strong. That will do nicely.";
+  }
+
+  function renderSignIn(){
+    var banner = resetJustSucceeded
+      ? '<div class="pp-elig -positive" style="margin-bottom:20px">Password updated. Sign in with your new password.</div>'
+      : "";
+    resetJustSucceeded = false;
+    return '<h1>Welcome back</h1><p class="sub">Your saved roles are exactly where you left them.</p>' + banner +
+      '<form id="authForm">' +
+        '<div class="field-block"><label class="pp-field-label" for="fEmail">Email</label>' +
+          '<div class="pp-field-input"><input id="fEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>' +
+          '<div class="fielderr" id="emailErr" hidden></div></div>' +
+        '<div class="field-block">' +
+          '<div class="row-between"><label class="pp-field-label" for="fPw" style="margin:0">Password</label>' +
+            '<button type="button" id="gotoReset">Forgotten it?</button></div>' +
+          '<div class="pp-field-input"><input id="fPw" type="password" placeholder="Your password" autocomplete="current-password">' +
+            '<button type="button" class="toggle-eye" id="toggleEye" aria-label="Show password">' + ICONS.eyeOpen + '</button></div>' +
+          '<div class="fielderr" id="pwErr" hidden></div></div>' +
+        '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn">Sign in</button>' +
+      '</form>' +
+      '<p class="switch-line">New here? <button type="button" id="gotoSignup">Create an account</button></p>';
+  }
+
+  function renderSignUp(){
+    return '<h1>Create your account</h1><p class="sub">Name, email and a password. Everything else comes after.</p>' +
+      '<div class="role-toggle">' +
+        '<button type="button" class="' + (role === "designer" ? "-active" : "") + '" id="pickDesigner">A designer</button>' +
+        '<button type="button" class="' + (role === "employer" ? "-active" : "") + '" id="pickEmployer">Hiring</button>' +
+      '</div>' +
+      '<form id="authForm">' +
+        '<div class="field-block"><label class="pp-field-label" for="fName">Name</label>' +
+          '<div class="pp-field-input"><input id="fName" type="text" placeholder="Your name" autocomplete="name"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label" for="fEmail">Email</label>' +
+          '<div class="pp-field-input"><input id="fEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>' +
+          '<div class="fielderr" id="emailErr" hidden></div></div>' +
+        '<div class="field-block"><label class="pp-field-label" for="fPw">Password</label>' +
+          '<div class="pp-field-input"><input id="fPw" type="password" placeholder="Eight characters or more" autocomplete="new-password">' +
+            '<button type="button" class="toggle-eye" id="toggleEye" aria-label="Show password">' + ICONS.eyeOpen + '</button></div>' +
+          '<div class="fielderr" id="pwErr" hidden></div></div>' +
+        '<div class="pw-strength" id="pwStrength" hidden><div class="pw-pips" id="pwPips"></div><span class="pw-note" id="pwNoteEl"></span></div>' +
+        '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn">Create account</button>' +
+      '</form>' +
+      '<p class="legal">By creating an account you agree to our <a href="pp-terms.html">terms</a> and <a href="pp-privacy.html">privacy notice</a>. We never sell your data and never contact your current employer.</p>' +
+      '<p class="switch-line">Already have an account? <button type="button" id="gotoSignin">Sign in</button></p>';
+  }
+
+  function renderReset(){
+    return '<button type="button" class="back-link" id="backToSignin">' + ICONS.back + 'Back to sign in</button>' +
+      '<h1>Reset your password</h1><p class="sub">Tell us the email you signed up with and we\'ll send a link that works for one hour.</p>' +
+      '<form id="authForm">' +
+        '<div class="field-block"><label class="pp-field-label" for="fEmail">Email</label>' +
+          '<div class="pp-field-input"><input id="fEmail" type="email" placeholder="you@example.com" autocomplete="email"></div>' +
+          '<div class="fielderr" id="emailErr" hidden></div></div>' +
+        '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn">Send the link</button>' +
+      '</form>';
+  }
+
+  function renderSent(){
+    return '<div class="sent-icon">' + ICONS.mail + '</div>' +
+      '<h1 style="font-size:36px">Check your email</h1>' +
+      '<p class="sub">We\'ve sent a reset link to <strong>' + escapeHtml(sentTo) + '</strong>. It works once, and expires in an hour.</p>' +
+      '<p class="sub">Nothing after a couple of minutes? Check spam, or make sure that\'s the address you signed up with.</p>' +
+      '<div class="stack">' +
+        '<button type="button" class="pp-btn pp-btn-secondary pp-btn-lg pp-btn-block" id="resendBtn">Resend the link</button>' +
+        '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-block" id="useDifferentBtn">Use a different email</button>' +
+      '</div>';
+  }
+
+  function renderNewPw(){
+    return '<h1>Set a new password</h1><p class="sub">You\'ll sign in with it right after. Any other devices get signed out.</p>' +
+      '<form id="authForm">' +
+        '<div class="field-block"><label class="pp-field-label" for="fPw">New password</label>' +
+          '<div class="pp-field-input"><input id="fPw" type="password" placeholder="Eight characters or more" autocomplete="new-password">' +
+            '<button type="button" class="toggle-eye" id="toggleEye" aria-label="Show password">' + ICONS.eyeOpen + '</button></div>' +
+          '<div class="fielderr" id="pwErr" hidden></div></div>' +
+        '<div class="pw-strength" id="pwStrength" hidden><div class="pw-pips" id="pwPips"></div><span class="pw-note" id="pwNoteEl"></span></div>' +
+        (!resetToken ? '<p class="hint" style="color:var(--c-bad-text)">This page needs a reset link from your email — use the link we sent you, or <a href="pp-auth.html?view=reset" style="color:inherit;font-weight:600">request a new one</a>.</p>' : "") +
+        '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn"' + (!resetToken ? " disabled" : "") + '>Save and sign in</button>' +
+      '</form>';
+  }
+
+  function render(){
+    var area = document.getElementById("formArea");
+    if (view === "signup") area.innerHTML = renderSignUp();
+    else if (view === "reset") area.innerHTML = renderReset();
+    else if (view === "sent") area.innerHTML = renderSent();
+    else if (view === "newpw") area.innerHTML = renderNewPw();
+    else area.innerHTML = renderSignIn();
+    wire();
+  }
+
+  function showFieldError(id, msg){
+    var el = document.getElementById(id);
+    if (!el) return;
+    if (!msg) { el.hidden = true; el.innerHTML = ""; return; }
+    el.hidden = false;
+    el.innerHTML = ICONS.error + escapeHtml(msg);
+  }
+
+  function wire(){
+    var backBtn = document.getElementById("backToSignin");
+    if (backBtn) backBtn.addEventListener("click", function(){ setView("signin"); });
+    var gotoReset = document.getElementById("gotoReset");
+    if (gotoReset) gotoReset.addEventListener("click", function(){ setView("reset"); });
+    var gotoSignup = document.getElementById("gotoSignup");
+    if (gotoSignup) gotoSignup.addEventListener("click", function(){ setView("signup"); });
+    var gotoSignin = document.getElementById("gotoSignin");
+    if (gotoSignin) gotoSignin.addEventListener("click", function(){ setView("signin"); });
+
+    var pickDesigner = document.getElementById("pickDesigner");
+    var pickEmployer = document.getElementById("pickEmployer");
+    if (pickDesigner) pickDesigner.addEventListener("click", function(){ role = "designer"; render(); });
+    if (pickEmployer) pickEmployer.addEventListener("click", function(){
+      // Kazi has no employer accounts — "Hiring" routes to the real
+      // single-shot post-a-role flow instead of a fake employer signup.
+      location.href = "post.html";
+    });
+
+    var eyeBtn = document.getElementById("toggleEye");
+    var pwInput = document.getElementById("fPw");
+    if (eyeBtn) eyeBtn.addEventListener("click", function(){
+      pwVisible = !pwVisible;
+      pwInput.type = pwVisible ? "text" : "password";
+      eyeBtn.innerHTML = pwVisible ? ICONS.eyeClosed : ICONS.eyeOpen;
+      eyeBtn.setAttribute("aria-label", pwVisible ? "Hide password" : "Show password");
+    });
+
+    var pwStrength = document.getElementById("pwStrength");
+    if (pwStrength && pwInput) {
+      pwInput.addEventListener("input", function(){
+        var score = pwScore(pwInput.value);
+        pwStrength.hidden = !pwInput.value.length;
+        document.getElementById("pwPips").innerHTML = pwPipsHtml(score);
+        document.getElementById("pwNoteEl").textContent = pwNote(score);
+      });
+    }
+
+    var resendBtn = document.getElementById("resendBtn");
+    if (resendBtn) resendBtn.addEventListener("click", function(){ submitReset(sentTo, resendBtn); });
+    var useDifferentBtn = document.getElementById("useDifferentBtn");
+    if (useDifferentBtn) useDifferentBtn.addEventListener("click", function(){ setView("reset"); });
+
+    var form = document.getElementById("authForm");
+    if (form) form.addEventListener("submit", function(e){
+      e.preventDefault();
+      if (view === "signin") submitSignIn();
+      else if (view === "signup") submitSignUp();
+      else if (view === "reset") submitReset(document.getElementById("fEmail").value.trim(), document.getElementById("submitBtn"));
+      else if (view === "newpw") submitNewPw();
+    });
+  }
+
+  function setBusy(btn, busy, busyLabel, restLabel){
+    btn.disabled = busy;
+    btn.textContent = busy ? busyLabel : restLabel;
+  }
+
+  async function submitSignIn(){
+    var email = document.getElementById("fEmail").value.trim();
+    var pw = document.getElementById("fPw").value;
+    showFieldError("emailErr", ""); showFieldError("pwErr", "");
+    if (!EMAIL_RE.test(email)) { showFieldError("emailErr", "That doesn't look like an email address yet."); return; }
+    if (!pw) { showFieldError("pwErr", "Enter your password."); return; }
+    var btn = document.getElementById("submitBtn");
+    setBusy(btn, true, "Signing you in…", "Sign in");
+    try {
+      var res = await fetch("/api/designers/login", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: pw })
+      });
+      var data = await res.json();
+      if (!res.ok) { showFieldError("pwErr", data.detail || "Incorrect email or password."); setBusy(btn, false, "", "Sign in"); return; }
+      localStorage.setItem("kazi_designer_token", data.token);
+      var me = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + data.token } }).then(function(r){ return r.json(); });
+      location.href = "pp-profile.html?id=" + encodeURIComponent(me.handle || me.id);
+    } catch (e) {
+      showFieldError("pwErr", "Couldn't reach the server. Try again.");
+      setBusy(btn, false, "", "Sign in");
+    }
+  }
+
+  async function submitSignUp(){
+    var name = document.getElementById("fName").value.trim();
+    var email = document.getElementById("fEmail").value.trim();
+    var pw = document.getElementById("fPw").value;
+    showFieldError("emailErr", ""); showFieldError("pwErr", "");
+    if (!name) { document.getElementById("fName").focus(); return; }
+    if (!EMAIL_RE.test(email)) { showFieldError("emailErr", "That doesn't look like an email address yet."); return; }
+    if (pwScore(pw) < 2) { showFieldError("pwErr", "Eight characters or more, please."); return; }
+    var btn = document.getElementById("submitBtn");
+    setBusy(btn, true, "Creating your account…", "Create account");
+    try {
+      var res = await fetch("/api/designers/signup", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email, password: pw, display_name: name })
+      });
+      var data = await res.json();
+      if (!res.ok) { showFieldError("emailErr", data.detail || "Couldn't create that account."); setBusy(btn, false, "", "Create account"); return; }
+      localStorage.setItem("kazi_designer_token", data.token);
+      location.href = "pp-onboarding.html";
+    } catch (e) {
+      showFieldError("emailErr", "Couldn't reach the server. Try again.");
+      setBusy(btn, false, "", "Create account");
+    }
+  }
+
+  async function submitReset(email, btn){
+    showFieldError("emailErr", "");
+    if (!EMAIL_RE.test(email || "")) { showFieldError("emailErr", "That doesn't look like an email address yet."); return; }
+    var original = btn.textContent;
+    setBusy(btn, true, "Sending…", original);
+    try {
+      await fetch("/api/designers/forgot-password", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: email })
+      });
+      sentTo = email;
+      setView("sent");
+    } catch (e) {
+      showFieldError("emailErr", "Couldn't reach the server. Try again.");
+      setBusy(btn, false, "", original);
+    }
+  }
+
+  async function submitNewPw(){
+    var pw = document.getElementById("fPw").value;
+    if (!resetToken) return;
+    showFieldError("pwErr", "");
+    if (pwScore(pw) < 2) { showFieldError("pwErr", "Eight characters or more, please."); return; }
+    var btn = document.getElementById("submitBtn");
+    setBusy(btn, true, "Saving…", "Save and sign in");
+    try {
+      var res = await fetch("/api/designers/reset-password", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token: resetToken, new_password: pw })
+      });
+      var data = await res.json();
+      if (!res.ok) { showFieldError("pwErr", data.detail || "That reset link is invalid or has expired."); setBusy(btn, false, "", "Save and sign in"); return; }
+      // The reset endpoint only confirms {ok:true} — it doesn't hand back
+      // the designer's email — so a real auto-login isn't possible here
+      // without asking for it again. Send them to sign in instead of
+      // fabricating that step.
+      resetJustSucceeded = true;
+      setView("signin");
+    } catch (e) {
+      showFieldError("pwErr", "Couldn't reach the server. Try again.");
+      setBusy(btn, false, "", "Save and sign in");
+    }
+  }
+
+  document.getElementById("legalYear").textContent = "© " + new Date().getFullYear() + " Path & Pixel";
+  render();
+})();
+</script>
+</body>
+</html>
