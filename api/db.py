@@ -271,6 +271,80 @@ CREATE TABLE IF NOT EXISTS messages (
   read_at TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
+
+CREATE TABLE IF NOT EXISTS community_sessions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  title TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT '',
+  session_date TEXT NOT NULL,
+  time TEXT NOT NULL DEFAULT '',
+  length TEXT NOT NULL DEFAULT '',
+  blurb TEXT NOT NULL DEFAULT '',
+  host TEXT NOT NULL DEFAULT '',
+  host_initials TEXT NOT NULL DEFAULT '',
+  host_bg TEXT NOT NULL DEFAULT '',
+  host_fg TEXT NOT NULL DEFAULT '',
+  reviewer_bio TEXT NOT NULL DEFAULT '',
+  seats INTEGER NOT NULL DEFAULT 6,
+  joining_link TEXT NOT NULL DEFAULT '',
+  bring_list TEXT NOT NULL DEFAULT '[]',
+  agenda TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'scheduled',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_community_sessions_date ON community_sessions(session_date);
+
+CREATE TABLE IF NOT EXISTS session_bookings (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  session_id INTEGER NOT NULL,
+  designer_id INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'booked',
+  created_at TEXT NOT NULL,
+  UNIQUE(session_id, designer_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_bookings_session ON session_bookings(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_bookings_designer ON session_bookings(designer_id);
+
+CREATE TABLE IF NOT EXISTS community_questions (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  topic TEXT NOT NULL DEFAULT '',
+  title TEXT NOT NULL,
+  body TEXT NOT NULL,
+  accepted_reply_id INTEGER,
+  status TEXT NOT NULL DEFAULT 'visible',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_community_questions_designer ON community_questions(designer_id);
+CREATE INDEX IF NOT EXISTS idx_community_questions_status ON community_questions(status);
+
+CREATE TABLE IF NOT EXISTS community_replies (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  question_id INTEGER NOT NULL,
+  designer_id INTEGER NOT NULL,
+  body TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'visible',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_community_replies_question ON community_replies(question_id);
+
+CREATE TABLE IF NOT EXISTS reply_votes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  reply_id INTEGER NOT NULL,
+  designer_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(reply_id, designer_id)
+);
+CREATE INDEX IF NOT EXISTS idx_reply_votes_reply ON reply_votes(reply_id);
+
+CREATE TABLE IF NOT EXISTS question_follows (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  question_id INTEGER NOT NULL,
+  designer_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(question_id, designer_id)
+);
+CREATE INDEX IF NOT EXISTS idx_question_follows_question ON question_follows(question_id);
 """
 
 # Columns added after the table first shipped. A fresh database gets them
@@ -1483,6 +1557,346 @@ def mark_conversation_read(conversation_id: int, reader_type: str) -> None:
     )
     c.commit()
     c.close()
+
+
+# ---------------------------------------------------------------------------
+# Community: sessions (fixed-capacity seat reservations, not calendar
+# booking — see api/main.py's community section for the full behavioral
+# note), questions/replies/votes/follows. Sessions are admin-authored;
+# everything else is designer-authored, same ownership-scoped-query pattern
+# as the rest of this module.
+# ---------------------------------------------------------------------------
+
+def create_community_session(**fields) -> int:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    cols = list(fields.keys()) + ["status", "created_at"]
+    placeholders = ", ".join("?" * len(cols))
+    values = list(fields.values()) + ["scheduled", now]
+    c = _conn()
+    cur = c.execute(
+        f"INSERT INTO community_sessions ({', '.join(cols)}) VALUES ({placeholders})", values
+    )
+    c.commit()
+    session_id = cur.lastrowid
+    c.close()
+    return session_id
+
+
+def list_community_sessions(status: str | None = None) -> list[dict]:
+    c = _conn()
+    if status == "upcoming":
+        now = datetime.now(timezone.utc).date().isoformat()
+        rows = c.execute(
+            "SELECT * FROM community_sessions WHERE status = 'scheduled' AND session_date >= ? ORDER BY session_date",
+            (now,),
+        ).fetchall()
+    elif status == "past":
+        now = datetime.now(timezone.utc).date().isoformat()
+        rows = c.execute(
+            "SELECT * FROM community_sessions WHERE session_date < ? OR status != 'scheduled' ORDER BY session_date DESC",
+            (now,),
+        ).fetchall()
+    else:
+        rows = c.execute("SELECT * FROM community_sessions ORDER BY session_date DESC").fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def get_community_session(session_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM community_sessions WHERE id = ?", (session_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def update_community_session(session_id: int, **fields) -> bool:
+    if not fields:
+        return False
+    c = _conn()
+    cols = ", ".join(f"{k} = ?" for k in fields)
+    cur = c.execute(f"UPDATE community_sessions SET {cols} WHERE id = ?", (*fields.values(), session_id))
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def set_session_status(session_id: int, status: str) -> None:
+    c = _conn()
+    c.execute("UPDATE community_sessions SET status = ? WHERE id = ?", (status, session_id))
+    c.commit()
+    c.close()
+
+
+def count_session_seats(session_id: int) -> dict:
+    c = _conn()
+    taken = c.execute(
+        "SELECT COUNT(*) FROM session_bookings WHERE session_id = ? AND status = 'booked'", (session_id,)
+    ).fetchone()[0]
+    waitlisted = c.execute(
+        "SELECT COUNT(*) FROM session_bookings WHERE session_id = ? AND status = 'waitlisted'", (session_id,)
+    ).fetchone()[0]
+    c.close()
+    return {"taken": taken, "waitlisted": waitlisted}
+
+
+def get_booking(session_id: int, designer_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute(
+        "SELECT * FROM session_bookings WHERE session_id = ? AND designer_id = ? AND status != 'cancelled'",
+        (session_id, designer_id),
+    ).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def book_session(session_id: int, designer_id: int, seats: int) -> str:
+    """Returns 'booked' or 'waitlisted'. A cancelled row for the same pair is
+    reused (UPDATE) rather than inserted again, since (session_id,
+    designer_id) is unique — someone who cancels and rejoins gets a fresh
+    queue position either way, decided by count_session_seats at call time."""
+    c = _conn()
+    taken = c.execute(
+        "SELECT COUNT(*) FROM session_bookings WHERE session_id = ? AND status = 'booked'", (session_id,)
+    ).fetchone()[0]
+    new_status = "booked" if taken < seats else "waitlisted"
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    existing = c.execute(
+        "SELECT id FROM session_bookings WHERE session_id = ? AND designer_id = ?", (session_id, designer_id)
+    ).fetchone()
+    if existing:
+        c.execute(
+            "UPDATE session_bookings SET status = ?, created_at = ? WHERE id = ?",
+            (new_status, now, existing["id"]),
+        )
+    else:
+        c.execute(
+            "INSERT INTO session_bookings (session_id, designer_id, status, created_at) VALUES (?, ?, ?, ?)",
+            (session_id, designer_id, new_status, now),
+        )
+    c.commit()
+    c.close()
+    return new_status
+
+
+def cancel_booking(session_id: int, designer_id: int) -> None:
+    c = _conn()
+    c.execute(
+        "UPDATE session_bookings SET status = 'cancelled' WHERE session_id = ? AND designer_id = ?",
+        (session_id, designer_id),
+    )
+    c.commit()
+    c.close()
+    # Promote the earliest waitlisted booking into the freed seat, if any.
+    c = _conn()
+    next_up = c.execute(
+        "SELECT id FROM session_bookings WHERE session_id = ? AND status = 'waitlisted' ORDER BY id LIMIT 1",
+        (session_id,),
+    ).fetchone()
+    if next_up:
+        c.execute("UPDATE session_bookings SET status = 'booked' WHERE id = ?", (next_up["id"],))
+        c.commit()
+    c.close()
+
+
+def list_session_bookings(session_id: int) -> list[dict]:
+    """The attendee roster — every designer with a live (not cancelled)
+    booking, joined out to their public display fields. Callers in
+    api/main.py gate who's allowed to call this at all (must themselves be
+    attending); this function itself just returns the full roster."""
+    c = _conn()
+    rows = c.execute(
+        """
+        SELECT sb.status, d.id AS designer_id, d.display_name, d.handle, d.photo_path, d.headline
+        FROM session_bookings sb JOIN designers d ON d.id = sb.designer_id
+        WHERE sb.session_id = ? AND sb.status IN ('booked', 'waitlisted')
+        ORDER BY sb.id
+        """,
+        (session_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def list_bookings_for_designer(designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        """
+        SELECT sb.status, sb.session_id, cs.*
+        FROM session_bookings sb JOIN community_sessions cs ON cs.id = sb.session_id
+        WHERE sb.designer_id = ? AND sb.status IN ('booked', 'waitlisted')
+        ORDER BY cs.session_date
+        """,
+        (designer_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def create_question(designer_id: int, topic: str, title: str, body: str) -> int:
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO community_questions (designer_id, topic, title, body, status, created_at) "
+        "VALUES (?, ?, ?, ?, 'visible', ?)",
+        (designer_id, topic, title, body, datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    question_id = cur.lastrowid
+    c.close()
+    return question_id
+
+
+def list_questions(topic: str | None = None, status: str = "visible") -> list[dict]:
+    c = _conn()
+    if topic:
+        rows = c.execute(
+            "SELECT * FROM community_questions WHERE status = ? AND topic = ? ORDER BY created_at DESC",
+            (status, topic),
+        ).fetchall()
+    else:
+        rows = c.execute(
+            "SELECT * FROM community_questions WHERE status = ? ORDER BY created_at DESC", (status,)
+        ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def get_question(question_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM community_questions WHERE id = ?", (question_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def set_accepted_reply(question_id: int, reply_id: int | None) -> None:
+    c = _conn()
+    c.execute("UPDATE community_questions SET accepted_reply_id = ? WHERE id = ?", (reply_id, question_id))
+    c.commit()
+    c.close()
+
+
+def set_question_status(question_id: int, status: str) -> None:
+    c = _conn()
+    c.execute("UPDATE community_questions SET status = ? WHERE id = ?", (status, question_id))
+    c.commit()
+    c.close()
+
+
+def create_reply(question_id: int, designer_id: int, body: str) -> int:
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO community_replies (question_id, designer_id, body, status, created_at) "
+        "VALUES (?, ?, ?, 'visible', ?)",
+        (question_id, designer_id, body, datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    reply_id = cur.lastrowid
+    c.close()
+    return reply_id
+
+
+def list_replies(question_id: int, sort: str = "useful") -> list[dict]:
+    c = _conn()
+    order = "n DESC, r.id" if sort == "useful" else "r.id DESC"
+    rows = c.execute(
+        f"""
+        SELECT r.*, d.display_name, d.handle, d.photo_path, d.headline,
+               (SELECT COUNT(*) FROM reply_votes v WHERE v.reply_id = r.id) AS n
+        FROM community_replies r JOIN designers d ON d.id = r.designer_id
+        WHERE r.question_id = ? AND r.status = 'visible'
+        ORDER BY {order}
+        """,
+        (question_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def get_reply(reply_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM community_replies WHERE id = ?", (reply_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def set_reply_status(reply_id: int, status: str) -> None:
+    c = _conn()
+    c.execute("UPDATE community_replies SET status = ? WHERE id = ?", (status, reply_id))
+    c.commit()
+    c.close()
+
+
+def toggle_vote(reply_id: int, designer_id: int) -> bool:
+    """Returns True if the vote is now on, False if it was just removed."""
+    c = _conn()
+    existing = c.execute(
+        "SELECT id FROM reply_votes WHERE reply_id = ? AND designer_id = ?", (reply_id, designer_id)
+    ).fetchone()
+    if existing:
+        c.execute("DELETE FROM reply_votes WHERE id = ?", (existing["id"],))
+        c.commit()
+        c.close()
+        return False
+    c.execute(
+        "INSERT INTO reply_votes (reply_id, designer_id, created_at) VALUES (?, ?, ?)",
+        (reply_id, designer_id, datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+    return True
+
+
+def toggle_follow(question_id: int, designer_id: int) -> bool:
+    c = _conn()
+    existing = c.execute(
+        "SELECT id FROM question_follows WHERE question_id = ? AND designer_id = ?", (question_id, designer_id)
+    ).fetchone()
+    if existing:
+        c.execute("DELETE FROM question_follows WHERE id = ?", (existing["id"],))
+        c.commit()
+        c.close()
+        return False
+    c.execute(
+        "INSERT INTO question_follows (question_id, designer_id, created_at) VALUES (?, ?, ?)",
+        (question_id, designer_id, datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+    return True
+
+
+def count_stale_questions(days: int = 2) -> list[dict]:
+    """Questions with zero visible replies, older than `days` — the
+    admin Community view's "unanswered" flag."""
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec="seconds")
+    c = _conn()
+    rows = c.execute(
+        """
+        SELECT q.* FROM community_questions q
+        WHERE q.status = 'visible' AND q.created_at < ?
+          AND NOT EXISTS (SELECT 1 FROM community_replies r WHERE r.question_id = q.id AND r.status = 'visible')
+        ORDER BY q.created_at
+        """,
+        (cutoff,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def get_reply_leaderboard(days: int = 30, limit: int = 10) -> list[dict]:
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=days)).isoformat(timespec="seconds")
+    c = _conn()
+    rows = c.execute(
+        """
+        SELECT d.id AS designer_id, d.display_name, d.handle, d.photo_path, COUNT(*) AS n
+        FROM community_replies r JOIN designers d ON d.id = r.designer_id
+        WHERE r.status = 'visible' AND r.created_at >= ? AND d.status = 'approved'
+        GROUP BY r.designer_id ORDER BY n DESC LIMIT ?
+        """,
+        (cutoff, limit),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
 
 
 # ---------------------------------------------------------------------------

@@ -65,6 +65,12 @@ from .db import (  # noqa: E402
     save_job, list_saved_jobs, unsave_job,
     get_or_create_conversation, get_conversation, list_conversations_for_designer,
     list_conversations_for_company, list_messages, create_message, mark_conversation_read,
+    create_community_session, list_community_sessions, get_community_session,
+    update_community_session, set_session_status, count_session_seats, get_booking,
+    book_session, cancel_booking, list_session_bookings, list_bookings_for_designer,
+    create_question, list_questions, get_question, set_accepted_reply, set_question_status,
+    create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
+    count_stale_questions, get_reply_leaderboard,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -669,6 +675,62 @@ class EmployerConversationStart(BaseModel):
         if not v:
             raise ValueError("a message can't be empty")
         return v[:4000]
+
+
+class CommunitySessionIn(BaseModel):
+    title: str
+    kind: str = ""
+    session_date: str
+    time: str = ""
+    length: str = ""
+    blurb: str = ""
+    host: str = ""
+    host_initials: str = ""
+    host_bg: str = ""
+    host_fg: str = ""
+    reviewer_bio: str = ""
+    seats: int = 6
+    joining_link: str = ""
+    bring_list: list[str] = []
+    agenda: list[dict] = []
+
+    @field_validator("title", "session_date")
+    @classmethod
+    def _required(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("required")
+        return v
+
+
+class QuestionIn(BaseModel):
+    topic: str = ""
+    title: str
+    body: str
+
+    @field_validator("title", "body")
+    @classmethod
+    def _required(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("required")
+        return v[:8000]
+
+
+class ReplyIn(BaseModel):
+    body: str
+
+    @field_validator("body")
+    @classmethod
+    def _valid_body(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("a reply can't be empty")
+        return v[:8000]
+
+
+class ReplyAccept(BaseModel):
+    reply_id: Optional[int] = None
 
 
 def require_admin(authorization: str = Header(default="")) -> None:
@@ -1747,6 +1809,155 @@ def employer_send_message(conversation_id: int, payload: MessageIn, employer: di
     _require_company_conversation(conversation_id, employer["company_id"])
     create_message(conversation_id, "employer", None, employer["id"], payload.body)
     return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Community: sessions (fixed-capacity seat reservations — an admin pastes in
+# a joining_link string, there's no real video/calendar integration, same
+# non-transactional treatment as the employer dashboard's Billing tab) and
+# a designer-run Q&A board. Public reads, designer-authenticated writes;
+# admin session-creation lands in a later milestone.
+# ---------------------------------------------------------------------------
+
+def _session_out(session: dict, designer_id: int | None = None) -> dict:
+    seats = count_session_seats(session["id"])
+    out = {
+        **session,
+        "bring_list": json.loads(session["bring_list"] or "[]"),
+        "agenda": json.loads(session["agenda"] or "[]"),
+        "seats_taken": seats["taken"],
+        "seats_waitlisted": seats["waitlisted"],
+    }
+    if designer_id is not None:
+        booking = get_booking(session["id"], designer_id)
+        out["your_status"] = booking["status"] if booking else None
+    return out
+
+
+@app.get("/api/community/sessions")
+def community_list_sessions(status: str = "upcoming"):
+    rows = list_community_sessions(status=status if status != "all" else None)
+    return {"sessions": [_session_out(s) for s in rows]}
+
+
+@app.get("/api/community/sessions/{session_id}")
+def community_get_session(session_id: int):
+    session = get_community_session(session_id)
+    if not session:
+        raise HTTPException(404, "no such session")
+    return _session_out(session)
+
+
+@app.post("/api/community/sessions/{session_id}/book")
+def community_book_session(session_id: int, designer: dict = Depends(require_designer)):
+    session = get_community_session(session_id)
+    if not session or session["status"] != "scheduled":
+        raise HTTPException(404, "no such session")
+    status = book_session(session_id, designer["id"], session["seats"])
+    return {"ok": True, "status": status}
+
+
+@app.post("/api/community/sessions/{session_id}/cancel-booking")
+def community_cancel_booking(session_id: int, designer: dict = Depends(require_designer)):
+    if not get_community_session(session_id):
+        raise HTTPException(404, "no such session")
+    cancel_booking(session_id, designer["id"])
+    return {"ok": True}
+
+
+@app.get("/api/community/sessions/{session_id}/attendees")
+def community_session_attendees(session_id: int, designer: dict = Depends(require_designer)):
+    if not get_community_session(session_id):
+        raise HTTPException(404, "no such session")
+    if not get_booking(session_id, designer["id"]):
+        raise HTTPException(403, "you're not attending this session")
+    return {"attendees": list_session_bookings(session_id)}
+
+
+@app.get("/api/designers/me/community-sessions")
+def designer_my_sessions(designer: dict = Depends(require_designer)):
+    rows = list_bookings_for_designer(designer["id"])
+    for r in rows:
+        r["bring_list"] = json.loads(r["bring_list"] or "[]")
+        r["agenda"] = json.loads(r["agenda"] or "[]")
+    return {"sessions": rows}
+
+
+def _question_out(question: dict) -> dict:
+    designer = get_designer(question["designer_id"])
+    return {
+        **question,
+        "author_name": designer["display_name"] if designer else "",
+        "author_handle": designer["handle"] if designer else "",
+        "author_photo": designer["photo_path"] if designer else "",
+        "reply_count": len(list_replies(question["id"])),
+    }
+
+
+@app.get("/api/community/questions")
+def community_list_questions(topic: str = ""):
+    rows = list_questions(topic=topic or None)
+    return {"questions": [_question_out(q) for q in rows]}
+
+
+@app.get("/api/community/questions/{question_id}")
+def community_get_question(question_id: int, sort: str = "useful"):
+    question = get_question(question_id)
+    if not question or question["status"] != "visible":
+        raise HTTPException(404, "no such question")
+    return {**_question_out(question), "replies": list_replies(question_id, sort=sort)}
+
+
+@app.post("/api/community/questions")
+def community_create_question(payload: QuestionIn, designer: dict = Depends(require_designer)):
+    question_id = create_question(designer["id"], payload.topic, payload.title, payload.body)
+    return {"ok": True, "question_id": question_id}
+
+
+@app.post("/api/community/questions/{question_id}/replies")
+def community_create_reply(question_id: int, payload: ReplyIn, designer: dict = Depends(require_designer)):
+    question = get_question(question_id)
+    if not question or question["status"] != "visible":
+        raise HTTPException(404, "no such question")
+    reply_id = create_reply(question_id, designer["id"], payload.body)
+    return {"ok": True, "reply_id": reply_id}
+
+
+@app.post("/api/community/questions/{question_id}/accept-reply")
+def community_accept_reply(question_id: int, reply: ReplyAccept, designer: dict = Depends(require_designer)):
+    question = get_question(question_id)
+    if not question:
+        raise HTTPException(404, "no such question")
+    if question["designer_id"] != designer["id"]:
+        raise HTTPException(403, "only the question's author can accept a reply")
+    if reply.reply_id is not None:
+        reply_row = get_reply(reply.reply_id)
+        if not reply_row or reply_row["question_id"] != question_id:
+            raise HTTPException(404, "no such reply")
+    set_accepted_reply(question_id, reply.reply_id)
+    return {"ok": True}
+
+
+@app.post("/api/community/questions/{question_id}/follow")
+def community_follow_question(question_id: int, designer: dict = Depends(require_designer)):
+    if not get_question(question_id):
+        raise HTTPException(404, "no such question")
+    following = toggle_follow(question_id, designer["id"])
+    return {"ok": True, "following": following}
+
+
+@app.post("/api/community/replies/{reply_id}/vote")
+def community_vote_reply(reply_id: int, designer: dict = Depends(require_designer)):
+    reply = get_reply(reply_id)
+    if not reply or reply["status"] != "visible":
+        raise HTTPException(404, "no such reply")
+    voted = toggle_vote(reply_id, designer["id"])
+    return {"ok": True, "voted": voted}
+
+
+@app.get("/api/community/leaderboard")
+def community_leaderboard():
+    return {"leaderboard": get_reply_leaderboard()}
 
 
 @app.get("/api/designers")
