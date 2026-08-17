@@ -233,6 +233,44 @@ CREATE TABLE IF NOT EXISTS job_applicants (
 );
 CREATE INDEX IF NOT EXISTS idx_job_applicants_submission ON job_applicants(submission_id);
 CREATE INDEX IF NOT EXISTS idx_job_applicants_company ON job_applicants(company_id);
+
+CREATE TABLE IF NOT EXISTS designer_saved_jobs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  job_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  company TEXT NOT NULL,
+  location TEXT NOT NULL DEFAULT '',
+  eligibility TEXT NOT NULL DEFAULT '',
+  url TEXT NOT NULL DEFAULT '',
+  saved_at TEXT NOT NULL,
+  UNIQUE(designer_id, job_id)
+);
+CREATE INDEX IF NOT EXISTS idx_saved_jobs_designer ON designer_saved_jobs(designer_id);
+
+CREATE TABLE IF NOT EXISTS conversations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  company_id INTEGER NOT NULL,
+  started_by TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  last_message_at TEXT NOT NULL,
+  UNIQUE(designer_id, company_id)
+);
+CREATE INDEX IF NOT EXISTS idx_conversations_designer ON conversations(designer_id);
+CREATE INDEX IF NOT EXISTS idx_conversations_company ON conversations(company_id);
+
+CREATE TABLE IF NOT EXISTS messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  conversation_id INTEGER NOT NULL,
+  sender_type TEXT NOT NULL,
+  sender_designer_id INTEGER,
+  sender_employer_id INTEGER,
+  body TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  read_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id);
 """
 
 # Columns added after the table first shipped. A fresh database gets them
@@ -1290,6 +1328,161 @@ def delete_applicant(applicant_id: int, company_id: int) -> bool:
     c.commit()
     c.close()
     return deleted
+
+
+# ---------------------------------------------------------------------------
+# Saved roles. title/company/location/eligibility/url are a snapshot taken
+# at save time, not a live join against _combined_jobs() — a scraped listing
+# ages out of web/jobs.json (MAX_AGE_DAYS) and an employer submission can
+# close, and a saved role should still show something real rather than a
+# broken reference once that happens.
+# ---------------------------------------------------------------------------
+
+def save_job(designer_id: int, job_id: str, title: str, company: str,
+             location: str, eligibility: str, url: str) -> None:
+    c = _conn()
+    c.execute(
+        "INSERT OR IGNORE INTO designer_saved_jobs "
+        "(designer_id, job_id, title, company, location, eligibility, url, saved_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (designer_id, job_id, title, company, location, eligibility, url,
+         datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+
+
+def list_saved_jobs(designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM designer_saved_jobs WHERE designer_id = ? ORDER BY saved_at DESC", (designer_id,)
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def unsave_job(designer_id: int, job_id: str) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "DELETE FROM designer_saved_jobs WHERE designer_id = ? AND job_id = ?", (designer_id, job_id)
+    )
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
+
+
+# ---------------------------------------------------------------------------
+# Messages: one thread per (designer, company) pair, either side can start
+# it, any teammate on the company side can read/reply. Plain polling, no
+# realtime infra — matches this codebase's plain-JS-no-libraries style.
+# ---------------------------------------------------------------------------
+
+def get_or_create_conversation(designer_id: int, company_id: int, started_by: str) -> int:
+    c = _conn()
+    row = c.execute(
+        "SELECT id FROM conversations WHERE designer_id = ? AND company_id = ?",
+        (designer_id, company_id),
+    ).fetchone()
+    if row:
+        c.close()
+        return row["id"]
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    cur = c.execute(
+        "INSERT INTO conversations (designer_id, company_id, started_by, created_at, last_message_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (designer_id, company_id, started_by, now, now),
+    )
+    c.commit()
+    conversation_id = cur.lastrowid
+    c.close()
+    return conversation_id
+
+
+def get_conversation(conversation_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def _conversation_summaries(rows: list[sqlite3.Row], reader_type: str) -> list[dict]:
+    c = _conn()
+    out = []
+    for row in rows:
+        conv = dict(row)
+        # id, not created_at — two messages can land in the same second
+        # (created_at only has second resolution), and id is the one value
+        # that always reflects true insertion order regardless.
+        last = c.execute(
+            "SELECT body, sender_type, created_at FROM messages WHERE conversation_id = ? "
+            "ORDER BY id DESC LIMIT 1", (conv["id"],)
+        ).fetchone()
+        unread = c.execute(
+            "SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND sender_type != ? AND read_at = ''",
+            (conv["id"], reader_type),
+        ).fetchone()[0]
+        conv["last_message"] = dict(last) if last else None
+        conv["unread_count"] = unread
+        out.append(conv)
+    c.close()
+    return out
+
+
+def list_conversations_for_designer(designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM conversations WHERE designer_id = ? ORDER BY last_message_at DESC, id DESC", (designer_id,)
+    ).fetchall()
+    c.close()
+    return _conversation_summaries(rows, "designer")
+
+
+def list_conversations_for_company(company_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM conversations WHERE company_id = ? ORDER BY last_message_at DESC, id DESC", (company_id,)
+    ).fetchall()
+    c.close()
+    return _conversation_summaries(rows, "employer")
+
+
+def list_messages(conversation_id: int) -> list[dict]:
+    # id, not created_at — see the note in _conversation_summaries above.
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM messages WHERE conversation_id = ? ORDER BY id", (conversation_id,)
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def create_message(conversation_id: int, sender_type: str, sender_designer_id: int | None,
+                    sender_employer_id: int | None, body: str) -> int:
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO messages (conversation_id, sender_type, sender_designer_id, sender_employer_id, "
+        "body, created_at, read_at) VALUES (?, ?, ?, ?, ?, ?, '')",
+        (conversation_id, sender_type, sender_designer_id, sender_employer_id, body, now),
+    )
+    c.execute("UPDATE conversations SET last_message_at = ? WHERE id = ?", (now, conversation_id))
+    c.commit()
+    message_id = cur.lastrowid
+    c.close()
+    return message_id
+
+
+def mark_conversation_read(conversation_id: int, reader_type: str) -> None:
+    """Marks every message NOT sent by the reader as read — i.e. opening a
+    thread clears the other side's unread count, never your own messages."""
+    c = _conn()
+    c.execute(
+        "UPDATE messages SET read_at = ? WHERE conversation_id = ? AND sender_type != ? AND read_at = ''",
+        (datetime.now(timezone.utc).isoformat(timespec="seconds"), conversation_id, reader_type),
+    )
+    c.commit()
+    c.close()
 
 
 # ---------------------------------------------------------------------------

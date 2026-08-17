@@ -62,6 +62,9 @@ from .db import (  # noqa: E402
     create_team_invite, get_team_invite_by_token, list_pending_team_invites, set_invite_status,
     create_applicant, list_applicants_for_submission, count_applicants_by_submission,
     update_applicant, set_applicant_stage, delete_applicant,
+    save_job, list_saved_jobs, unsave_job,
+    get_or_create_conversation, get_conversation, list_conversations_for_designer,
+    list_conversations_for_company, list_messages, create_message, mark_conversation_read,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -621,6 +624,53 @@ class ApplicantStageUpdate(BaseModel):
         return v
 
 
+class SaveJobIn(BaseModel):
+    job_id: str
+    title: str
+    company: str
+    location: str = ""
+    eligibility: str = ""
+    url: str = ""
+
+
+class MessageIn(BaseModel):
+    body: str
+
+    @field_validator("body")
+    @classmethod
+    def _valid_body(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("a message can't be empty")
+        return v[:4000]
+
+
+class DesignerConversationStart(BaseModel):
+    company_id: int
+    body: str
+
+    @field_validator("body")
+    @classmethod
+    def _valid_body(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("a message can't be empty")
+        return v[:4000]
+
+
+class EmployerConversationStart(BaseModel):
+    designer_id: int
+    body: str
+
+    @field_validator("body")
+    @classmethod
+    def _valid_body(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("a message can't be empty")
+        return v[:4000]
+
+
 def require_admin(authorization: str = Header(default="")) -> None:
     token = authorization.removeprefix("Bearer ").strip()
     if not token or token != ADMIN_TOKEN:
@@ -1177,6 +1227,85 @@ def designer_delete_me(designer: dict = Depends(require_designer)):
 
 
 # ---------------------------------------------------------------------------
+# Saved roles, messages and matches: the genuinely new Dashboard tabs that
+# have real backend behind them (Overview/Profile/Availability/Account are
+# just this file's existing designer endpoints, reused as-is).
+# ---------------------------------------------------------------------------
+
+@app.get("/api/designers/me/saved-jobs")
+def designer_list_saved_jobs(designer: dict = Depends(require_designer)):
+    return {"jobs": list_saved_jobs(designer["id"])}
+
+
+@app.post("/api/designers/me/saved-jobs")
+def designer_save_job(payload: SaveJobIn, designer: dict = Depends(require_designer)):
+    save_job(designer["id"], payload.job_id, payload.title, payload.company,
+              payload.location, payload.eligibility, payload.url)
+    return {"ok": True}
+
+
+@app.delete("/api/designers/me/saved-jobs/{job_id}")
+def designer_unsave_job(job_id: str, designer: dict = Depends(require_designer)):
+    unsave_job(designer["id"], job_id)
+    return {"ok": True}
+
+
+@app.get("/api/designers/me/matches")
+def designer_matches(designer: dict = Depends(require_designer)):
+    """A real, plain overlap filter against the designer's own listed
+    disciplines — no scoring model, no fabricated "why you matched" copy
+    beyond the discipline that actually overlaps."""
+    disciplines = set(parse_multi_field(designer.get("discipline")))
+    combined, _ = _combined_jobs()
+    if not disciplines:
+        return {"jobs": []}
+    matches = [j for j in combined if j["cat"] in disciplines]
+    return {"jobs": matches[:20]}
+
+
+def _designer_conversation_out(conv: dict) -> dict:
+    company = get_company(conv["company_id"])
+    return {**conv, "company_name": company["name"] if company else "", "company_slug": company["slug"] if company else ""}
+
+
+@app.get("/api/designers/me/conversations")
+def designer_list_conversations(designer: dict = Depends(require_designer)):
+    convs = list_conversations_for_designer(designer["id"])
+    return {"conversations": [_designer_conversation_out(c) for c in convs]}
+
+
+@app.post("/api/designers/me/conversations")
+def designer_start_conversation(payload: DesignerConversationStart, designer: dict = Depends(require_designer)):
+    company = get_company(payload.company_id)
+    if not company or company["status"] != "approved":
+        raise HTTPException(404, "no such company")
+    conversation_id = get_or_create_conversation(designer["id"], payload.company_id, "designer")
+    create_message(conversation_id, "designer", designer["id"], None, payload.body)
+    return {"ok": True, "conversation_id": conversation_id}
+
+
+def _require_own_conversation(conversation_id: int, designer_id: int) -> dict:
+    conv = get_conversation(conversation_id)
+    if not conv or conv["designer_id"] != designer_id:
+        raise HTTPException(404, "no such conversation")
+    return conv
+
+
+@app.get("/api/designers/me/conversations/{conversation_id}/messages")
+def designer_get_messages(conversation_id: int, designer: dict = Depends(require_designer)):
+    _require_own_conversation(conversation_id, designer["id"])
+    mark_conversation_read(conversation_id, "designer")
+    return {"messages": list_messages(conversation_id)}
+
+
+@app.post("/api/designers/me/conversations/{conversation_id}/messages")
+def designer_send_message(conversation_id: int, payload: MessageIn, designer: dict = Depends(require_designer)):
+    _require_own_conversation(conversation_id, designer["id"])
+    create_message(conversation_id, "designer", designer["id"], None, payload.body)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
 # Employer accounts: signup/login/password-reset, profile editing. Real
 # per-account auth (require_employer), same shape as the designer section
 # above but sitting on the companies/employers tables instead. Company CRUD,
@@ -1569,6 +1698,54 @@ def employer_remove_teammate(target_id: int, employer: dict = Depends(require_em
     if target["team_role"] == "owner" and count_company_owners(employer["company_id"], exclude_id=target_id) == 0:
         raise HTTPException(400, "Can't remove the only owner — add another owner first.")
     delete_employer(target_id)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Messages, employer side: mirrors the designer side, scoped by company_id
+# so any teammate can read/reply to a thread, not just whoever started it.
+# ---------------------------------------------------------------------------
+
+def _employer_conversation_out(conv: dict) -> dict:
+    designer = get_designer(conv["designer_id"])
+    return {**conv, "designer_name": designer["display_name"] if designer else "",
+            "designer_handle": designer.get("handle", "") if designer else ""}
+
+
+@app.get("/api/employers/me/conversations")
+def employer_list_conversations(employer: dict = Depends(require_employer)):
+    convs = list_conversations_for_company(employer["company_id"])
+    return {"conversations": [_employer_conversation_out(c) for c in convs]}
+
+
+@app.post("/api/employers/me/conversations")
+def employer_start_conversation(payload: EmployerConversationStart, employer: dict = Depends(require_employer)):
+    designer = get_designer(payload.designer_id)
+    if not designer or designer["status"] != "approved":
+        raise HTTPException(404, "no such designer")
+    conversation_id = get_or_create_conversation(payload.designer_id, employer["company_id"], "employer")
+    create_message(conversation_id, "employer", None, employer["id"], payload.body)
+    return {"ok": True, "conversation_id": conversation_id}
+
+
+def _require_company_conversation(conversation_id: int, company_id: int) -> dict:
+    conv = get_conversation(conversation_id)
+    if not conv or conv["company_id"] != company_id:
+        raise HTTPException(404, "no such conversation")
+    return conv
+
+
+@app.get("/api/employers/me/conversations/{conversation_id}/messages")
+def employer_get_messages(conversation_id: int, employer: dict = Depends(require_employer)):
+    _require_company_conversation(conversation_id, employer["company_id"])
+    mark_conversation_read(conversation_id, "employer")
+    return {"messages": list_messages(conversation_id)}
+
+
+@app.post("/api/employers/me/conversations/{conversation_id}/messages")
+def employer_send_message(conversation_id: int, payload: MessageIn, employer: dict = Depends(require_employer)):
+    _require_company_conversation(conversation_id, employer["company_id"])
+    create_message(conversation_id, "employer", None, employer["id"], payload.body)
     return {"ok": True}
 
 

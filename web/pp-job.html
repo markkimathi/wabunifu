@@ -167,12 +167,29 @@
     try { return JSON.parse(localStorage.getItem("pp_saved_jobs") || "[]"); } catch (e) { return []; }
   }
   function isSaved(id){ return savedIds().indexOf(id) !== -1; }
-  function setSaved(id, on){
+  // See pp-jobs.html's identical note: localStorage is the fast local
+  // cache both signed-in and signed-out visitors read from, and a signed-in
+  // designer's save/unsave also fires a fire-and-forget call to the real
+  // per-account endpoint so it persists across devices.
+  function designerToken(){ return localStorage.getItem("kazi_designer_token"); }
+  function setSaved(id, on, job){
     var ids = savedIds();
     var idx = ids.indexOf(id);
     if (on && idx === -1) ids.push(id);
     if (!on && idx !== -1) ids.splice(idx, 1);
     localStorage.setItem("pp_saved_jobs", JSON.stringify(ids));
+    var token = designerToken();
+    if (!token) return;
+    if (on && job) {
+      fetch("/api/designers/me/saved-jobs", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ job_id: job.id, title: job.t, company: job.co, location: job.city || "", eligibility: job.elig || "", url: job.url || "" })
+      }).catch(function(){});
+    } else if (!on) {
+      fetch("/api/designers/me/saved-jobs/" + encodeURIComponent(id), {
+        method: "DELETE", headers: { "Authorization": "Bearer " + token }
+      }).catch(function(){});
+    }
   }
 
   function escapeHtml(s){
@@ -307,7 +324,7 @@
       saveBtn.innerHTML = ICONS.save.replace("{{fill}}", saved ? "currentColor" : "none") + (saved ? "Saved" : "Save role");
     }
     paintSave();
-    saveBtn.addEventListener("click", function(){ setSaved(job.id, !isSaved(job.id)); paintSave(); });
+    saveBtn.addEventListener("click", function(){ setSaved(job.id, !isSaved(job.id), job); paintSave(); });
 
     if (hasLongDesc) {
       var expandBtn = document.getElementById("expandBtn");

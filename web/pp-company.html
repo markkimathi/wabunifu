@@ -46,6 +46,12 @@
   .state-panel{padding:64px 24px;text-align:center}
   .state-panel h3{margin:0 0 8px;font-size:22px;font-weight:700}
   .state-panel p{margin:0 0 20px;font-size:15px;color:var(--c-text-subtle)}
+
+  .msg-composer{margin-top:14px;padding:16px;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface)}
+  .msg-composer textarea{width:100%;border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-md);padding:10px 12px;
+    font-family:var(--pp-font);font-size:14.5px;color:var(--c-text);background:var(--c-bg);resize:vertical;margin-bottom:10px}
+  .msg-composer textarea:focus{outline:none;border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+  .msg-note{font-size:13px;color:var(--c-good-text);margin-top:8px}
 </style>
 </head>
 <body>
@@ -151,6 +157,32 @@
 
   function renderReal(company){
     render(company.name, company.listings || [], company);
+    var designerToken = localStorage.getItem("kazi_designer_token");
+    if (!designerToken) return;
+    var wrap = document.querySelector(".wrap.layout");
+    if (!wrap) return;
+    var composer = document.createElement("div");
+    composer.className = "msg-composer";
+    composer.innerHTML = '<label class="pp-field-label" style="display:block;margin-bottom:8px">Message ' + escapeHtml(company.name) + '</label>' +
+      '<textarea id="msgBody" rows="3" placeholder="Say hello, ask about a role, whatever\'s useful."></textarea>' +
+      '<button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="msgSendBtn">Send</button>' +
+      '<span class="msg-note" id="msgNote" hidden>Sent. Find the reply in your dashboard\'s Messages tab.</span>';
+    wrap.insertBefore(composer, wrap.firstChild);
+    document.getElementById("msgSendBtn").addEventListener("click", async function(){
+      var body = document.getElementById("msgBody").value.trim();
+      if (!body) return;
+      var btn = document.getElementById("msgSendBtn");
+      btn.disabled = true;
+      try {
+        await fetch("/api/designers/me/conversations", {
+          method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + designerToken },
+          body: JSON.stringify({ company_id: company.id, body: body })
+        });
+        document.getElementById("msgBody").value = "";
+        document.getElementById("msgNote").hidden = false;
+      } catch (e) {}
+      btn.disabled = false;
+    });
   }
 
   function render(name, jobs, company){

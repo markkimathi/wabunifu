@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container-wide);width:100%;margin:0 auto;padding:28px var(--pp-page-margin) 64px;box-sizing:border-box}
+  a{color:inherit}
+
+  .dash-head h1{margin:0 0 4px;font-size:30px;line-height:1.1;letter-spacing:-0.026em;font-weight:800}
+  .dash-head p{margin:0 0 20px;font-size:14.5px;color:var(--c-text-subtle)}
+
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
+  .stat-card{padding:18px;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface)}
+  .stat-card .n{font-size:26px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
+  .stat-card .l{font-size:13px;color:var(--c-text-subtle)}
+
+  .section{margin-top:26px}
+  .section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
+  .section-head h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-0.015em}
+
+  .job-row{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-md);background:var(--c-surface);margin-bottom:10px;flex-wrap:wrap}
+  .job-row .main{flex:1;min-width:200px}
+  .job-row h3{margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-0.012em}
+  .job-row .meta{font-size:13.5px;color:var(--c-text-subtle)}
+
+  .form-panel{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);margin-bottom:20px}
+  .form-panel h3{margin:0 0 16px;font-size:17px;font-weight:700}
+  .field-block{margin-bottom:16px}
+  .field-block .pp-field-label{display:block;margin-bottom:7px}
+  .field-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:600px){.field-row2{grid-template-columns:1fr}}
+  .form-actions{display:flex;align-items:center;gap:12px;margin-top:16px}
+  .fielderr{font-size:13px;color:var(--c-bad-text);margin-top:6px}
+  .save-note{font-size:13px;color:var(--c-good-text)}
+
+  .photo-block{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+  .photo-block img{width:72px;height:72px;border-radius:50%;object-fit:cover;border:1px solid var(--c-border)}
+  .divider-or{display:flex;align-items:center;gap:14px;margin:20px 0 14px}
+  .divider-or span:not(.txt){flex:1;height:1px;background:var(--c-border)}
+  .divider-or .txt{font-size:13px;color:var(--c-text-faint)}
+  .avatar-grid{display:grid;grid-template-columns:repeat(9,1fr);gap:8px}
+  .avatar-option{position:relative;border:none;background:none;padding:0;cursor:pointer;border-radius:50%;overflow:hidden}
+  .avatar-option img{width:100%;aspect-ratio:1;display:block;border-radius:50%;border:2px solid transparent}
+  .avatar-option.-selected img{border-color:var(--pp-gold)}
+
+  .chip-select{display:flex;flex-wrap:wrap;gap:7px}
+  .pick-chip{padding:7px 13px;border-radius:999px;font-family:var(--pp-font);font-size:13.5px;font-weight:500;
+    cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
+  .pick-chip.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
+
+  .tag-box{display:flex;flex-wrap:wrap;gap:7px;align-items:center;min-height:50px;padding:8px 10px;
+    border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .tag-box:focus-within{border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+  .tag-box input{border:none;outline:none;background:transparent;font-family:var(--pp-font);
+    font-size:14.5px;flex:1;min-width:120px;color:var(--c-text)}
+  .skill-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;
+    background:var(--c-surface-inset);color:var(--c-text-muted);font-size:13px;font-weight:500}
+  .skill-chip button{border:none;background:none;color:inherit;cursor:pointer;padding:0;display:inline-flex;opacity:.7}
+
+  .avail-opt{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--c-border-strong);
+    border-radius:var(--pp-radius-md);cursor:pointer;margin-bottom:8px;background:var(--c-surface)}
+  .avail-opt.-active{border-color:var(--pp-gold);background:var(--c-bg-sunken)}
+  .avail-opt .dot{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid var(--c-border-strong)}
+  .avail-opt.-active .dot{border-color:var(--pp-gold);background:var(--pp-gold)}
+
+  .thread-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:0;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-lg);overflow:hidden;min-height:420px}
+  @media(max-width:760px){.thread-layout{grid-template-columns:1fr}}
+  .thread-list{border-right:1px solid var(--c-border);overflow-y:auto;max-height:560px}
+  @media(max-width:760px){.thread-list{border-right:none;border-bottom:1px solid var(--c-border);max-height:220px}}
+  .thread-item{display:block;width:100%;text-align:left;padding:14px 16px;border:none;border-bottom:1px solid var(--c-border);
+    background:var(--c-surface);cursor:pointer;font-family:var(--pp-font);color:var(--c-text)}
+  .thread-item.-active{background:var(--c-bg-sunken)}
+  .thread-item .name{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .thread-item .preview{font-size:13px;color:var(--c-text-subtle);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .unread-dot{width:8px;height:8px;border-radius:50%;background:var(--pp-gold);flex:none}
+  .thread-body{display:flex;flex-direction:column;background:var(--c-bg)}
+  .thread-messages{flex:1;padding:18px;overflow-y:auto;max-height:460px;display:flex;flex-direction:column;gap:10px}
+  .msg-bubble{max-width:70%;padding:10px 14px;border-radius:14px;font-size:14.5px;line-height:1.5}
+  .msg-bubble.-me{align-self:flex-end;background:var(--c-text);color:var(--c-bg);border-bottom-right-radius:4px}
+  .msg-bubble.-them{align-self:flex-start;background:var(--c-surface-inset);color:var(--c-text);border-bottom-left-radius:4px}
+  .thread-composer{display:flex;gap:10px;padding:14px;border-top:1px solid var(--c-border)}
+  .thread-composer input{flex:1;height:44px;padding:0 14px;border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-md);
+    background:var(--c-surface);font-family:var(--pp-font);font-size:14.5px;color:var(--c-text)}
+  .thread-composer input:focus{outline:none;border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+
+  .state-panel{padding:48px 16px;text-align:center;color:var(--c-text-subtle);font-size:14.5px}
+  .danger-block{padding:20px;border:1px solid var(--c-bad-border);border-radius:var(--pp-radius-md);background:var(--c-bad-bg)}
+  .danger-block h3{margin:0 0 6px;font-size:15.5px;color:var(--c-bad-text)}
+  .danger-block p{margin:0 0 14px;font-size:13.5px;color:var(--c-bad-text)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-shell="focused"></div>
+
+<main><div class="wrap" id="content"><div class="state-panel">Loading…</div></div></main>
+
+<div id="pp-footer" data-variant="legal"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script src="pp-confirm.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var token = localStorage.getItem("kazi_designer_token");
+  if (!token) { location.href = "pp-auth.html?view=signin"; return; }
+
+  var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
+  var MAX_DISCIPLINES = 5;
+  var MAX_SKILLS = 7;
+  var AVATAR_COUNT = 28;
+  var DEFAULT_AVATAR = "/avatars/avatar-1.png";
+  var AVAILABILITY = ["Available", "Open to offers", "Not available"];
+  var SECTIONS = [
+    { key: "overview", label: "Overview" }, { key: "saved", label: "Saved roles" },
+    { key: "messages", label: "Messages" }, { key: "analytics", label: "Analytics" },
+    { key: "profile", label: "Profile" }, { key: "availability", label: "Availability" },
+    { key: "account", label: "Account" }
+  ];
+
+  var me = null;
+  var section = "overview";
+  var selectedDisciplines = [], selectedSkills = [];
+  var activeThreadId = null;
+  var cache = { saved: [], matches: [], stats: null, conversations: [], messages: [] };
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  async function api(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({}, opts.headers || {}, { "Authorization": "Bearer " + token });
+    var res = await fetch(path, opts);
+    if (res.status === 401) { localStorage.removeItem("kazi_designer_token"); location.href = "pp-auth.html?view=signin"; throw new Error("signed out"); }
+    if (!res.ok) {
+      var body = await res.json().catch(function(){ return {}; });
+      throw new Error((body.detail && typeof body.detail === "string") ? body.detail : "Request failed (" + res.status + ")");
+    }
+    return res.json();
+  }
+
+  function toast(msg){
+    var el = document.createElement("div");
+    el.style.cssText = "position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 18px;border-radius:10px;background:var(--c-text);color:var(--c-bg);font-size:14px;font-weight:600;z-index:50;box-shadow:0 8px 24px rgba(10,10,10,.2)";
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 2600);
+  }
+
+  function sectionTabsHtml(){
+    return '<div class="pp-tabs-scroll" style="margin-bottom:22px">' +
+      SECTIONS.map(function(s){
+        return '<button type="button" class="pp-tab-chip' + (section === s.key ? " -active" : "") + '" data-section="' + s.key + '">' + s.label + '</button>';
+      }).join("") +
+    '</div>';
+  }
+
+  function eligBadge(elig){
+    var map = { africa:["Open across Africa",true], kenya:["Open across Africa",true], world:["Global remote",true], check:["Worth checking",false] };
+    var m = map[elig] || map.check;
+    return m[1] ? '<span class="pp-elig -positive"><span class="pp-elig-dot"></span>' + m[0] + '</span>' : '<span class="pp-elig -check">' + m[0] + '</span>';
+  }
+
+  // ---------------- Overview ----------------
+
+  function renderOverview(){
+    var body = sectionTabsHtml() +
+      '<div class="stat-row">' +
+        '<div class="stat-card"><div class="n">' + (cache.stats ? cache.stats.profile_views : "—") + '</div><div class="l">Profile views, last 90 days</div></div>' +
+        '<div class="stat-card"><div class="n">' + cache.saved.length + '</div><div class="l">Saved roles</div></div>' +
+        '<div class="stat-card"><div class="n">' + cache.matches.length + '</div><div class="l">Roles matching your disciplines</div></div>' +
+      '</div>';
+    if (!me.onboarding_completed) {
+      body += '<div class="form-panel"><h3>Finish setting up</h3><p style="margin:0 0 14px;font-size:14px;color:var(--c-text-subtle)">A complete profile is what shows up in the directory and on matched roles.</p><a href="pp-onboarding.html" class="pp-btn pp-btn-primary">Continue setup</a></div>';
+    }
+    body += '<div class="section"><div class="section-head"><h2>Roles that match you</h2><a href="pp-jobs.html" style="font-size:13.5px;font-weight:600;color:var(--c-accent-text);text-decoration:none">See all roles</a></div>';
+    if (!cache.matches.length) {
+      body += '<div class="pp-empty"><h3>No matches yet</h3><p>Add a discipline in Profile and roles that fit will show up here.</p></div>';
+    } else {
+      cache.matches.slice(0, 5).forEach(function(j){
+        body += '<a class="job-row" href="pp-job.html?id=' + encodeURIComponent(j.id) + '" style="text-decoration:none;color:inherit">' +
+          '<div class="main"><h3>' + escapeHtml(j.t) + '</h3><div class="meta">' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</div></div>' +
+          eligBadge(j.elig) +
+        '</a>';
+      });
+    }
+    body += '</div>';
+    return body;
+  }
+
+  // ---------------- Saved roles ----------------
+
+  function renderSaved(){
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Saved roles</h2></div>';
+    if (!cache.saved.length) {
+      body += '<div class="pp-empty"><h3>Nothing saved yet</h3><p>Save a role from the jobs board and it shows up here.</p><a class="pp-btn pp-btn-primary" href="pp-jobs.html">Browse roles</a></div>';
+      return body;
+    }
+    cache.saved.forEach(function(j){
+      body += '<div class="job-row">' +
+        '<div class="main"><h3>' + escapeHtml(j.title) + '</h3><div class="meta">' + escapeHtml(j.company) + ' · ' + escapeHtml(j.location || "Remote") + '</div></div>' +
+        (j.eligibility ? eligBadge(j.eligibility) : "") +
+        '<div class="actions" style="display:flex;gap:8px">' +
+          (j.url ? '<a class="pp-btn pp-btn-tertiary pp-btn-sm" href="pp-job.html?id=' + encodeURIComponent(j.job_id) + '">View</a>' : "") +
+          '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" data-unsave="' + escapeHtml(j.job_id) + '">Remove</button>' +
+        '</div>' +
+      '</div>';
+    });
+    return body;
+  }
+
+  // ---------------- Messages ----------------
+
+  function renderMessages(){
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Messages</h2></div>';
+    if (!cache.conversations.length) {
+      body += '<div class="pp-empty"><h3>No conversations yet</h3><p>Message a company from their page and the thread shows up here.</p></div>';
+      return body;
+    }
+    if (!activeThreadId) activeThreadId = cache.conversations[0].id;
+    var active = cache.conversations.filter(function(c){ return c.id === activeThreadId; })[0] || cache.conversations[0];
+    body += '<div class="thread-layout">' +
+      '<div class="thread-list">' + cache.conversations.map(function(c){
+        return '<button type="button" class="thread-item' + (c.id === active.id ? " -active" : "") + '" data-thread="' + c.id + '">' +
+          '<span class="name">' + (c.unread_count ? '<span class="unread-dot"></span>' : "") + escapeHtml(c.company_name) + '</span>' +
+          '<span class="preview">' + escapeHtml(c.last_message ? c.last_message.body : "") + '</span>' +
+        '</button>';
+      }).join("") + '</div>' +
+      '<div class="thread-body">' +
+        '<div class="thread-messages" id="threadMessages"><p style="color:var(--c-text-faint);font-size:13.5px">Loading…</p></div>' +
+        '<form class="thread-composer" id="composerForm"><input id="composerInput" placeholder="Write a reply…" autocomplete="off"><button type="submit" class="pp-btn pp-btn-primary">Send</button></form>' +
+      '</div>' +
+    '</div>';
+    return body;
+  }
+
+  function renderThreadMessages(){
+    var el = document.getElementById("threadMessages");
+    if (!el) return;
+    if (!cache.messages.length) { el.innerHTML = '<p style="color:var(--c-text-faint);font-size:13.5px">Say hello.</p>'; return; }
+    el.innerHTML = cache.messages.map(function(m){
+      return '<div class="msg-bubble ' + (m.sender_type === "designer" ? "-me" : "-them") + '">' + escapeHtml(m.body) + '</div>';
+    }).join("");
+    el.scrollTop = el.scrollHeight;
+  }
+
+  async function loadThread(id){
+    activeThreadId = id;
+    var data = await api("/api/designers/me/conversations/" + id + "/messages");
+    cache.messages = data.messages;
+    renderThreadMessages();
+    var convData = await api("/api/designers/me/conversations");
+    cache.conversations = convData.conversations;
+  }
+
+  // ---------------- Analytics ----------------
+
+  function renderAnalytics(){
+    return sectionTabsHtml() + '<div class="section-head"><h2>Analytics</h2></div>' +
+      '<div class="stat-row"><div class="stat-card"><div class="n">' + (cache.stats ? cache.stats.profile_views : "—") + '</div><div class="l">Profile views, last 90 days</div></div></div>' +
+      '<p style="font-size:13.5px;color:var(--c-text-subtle);max-width:60ch">This counts visits to your public profile page. We don\'t track or show who looked — just how many.</p>';
+  }
+
+  // ---------------- Profile ----------------
+
+  function renderProfile(){
+    var current = me.photo_path || DEFAULT_AVATAR;
+    var avatarOpts = "";
+    for (var n = 1; n <= AVATAR_COUNT; n++) {
+      var path = "/avatars/avatar-" + n + ".png";
+      avatarOpts += '<button type="button" class="avatar-option' + (path === current ? " -selected" : "") + '" data-avatar="' + path + '"><img src="' + path + '" alt=""></button>';
+    }
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Profile</h2></div>';
+    body += '<div class="form-panel"><form id="profileForm">' +
+      '<div class="photo-block"><img id="photoPreview" src="' + escapeHtml(current) + '" alt="">' +
+        '<div><button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="photoUploadBtn">Upload a photo</button>' +
+        '<input type="file" id="photoInput" accept=".jpg,.jpeg,.png,.webp" style="display:none"></div></div>' +
+      '<div class="divider-or"><span></span><span class="txt">or pick an avatar</span><span></span></div>' +
+      '<div class="avatar-grid" style="margin-bottom:20px">' + avatarOpts + '</div>' +
+      '<div class="field-block"><label class="pp-field-label">Name</label><div class="pp-field-input"><input id="pName" value="' + escapeHtml(me.display_name || "") + '"></div></div>' +
+      '<div class="field-block"><label class="pp-field-label">Headline</label><div class="pp-field-input"><input id="pHeadline" value="' + escapeHtml(me.headline || "") + '" placeholder="e.g. Product Designer"></div></div>' +
+      '<div class="field-row2">' +
+        '<div class="field-block"><label class="pp-field-label">Location</label><div class="pp-field-input"><input id="pLocation" value="' + escapeHtml(me.location || "") + '"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">Years of experience</label><div class="pp-field-input"><input id="pYears" value="' + escapeHtml(me.years_experience || "") + '"></div></div>' +
+      '</div>' +
+      '<div class="field-block"><label class="pp-field-label">Bio</label><textarea id="pBio" class="pp-textarea" rows="3">' + escapeHtml(me.bio || "") + '</textarea></div>' +
+      '<div class="field-block"><label class="pp-field-label">Discipline (up to ' + MAX_DISCIPLINES + ')</label><div class="chip-select" id="disciplineChips"></div></div>' +
+      '<div class="field-block"><label class="pp-field-label">Skills (up to ' + MAX_SKILLS + ')</label><div class="tag-box" id="skillBox"><input id="skillInput" placeholder="Type a skill and press Enter"></div></div>' +
+      '<div class="fielderr" id="profileErr" hidden></div>' +
+      '<div class="form-actions"><button type="submit" class="pp-btn pp-btn-primary" id="profileSubmitBtn">Save changes</button><span class="save-note" id="profileSaveNote" hidden>Saved.</span></div>' +
+    '</form></div>';
+    return body;
+  }
+
+  function renderDisciplineChips(){
+    var box = document.getElementById("disciplineChips");
+    if (!box) return;
+    var atCap = selectedDisciplines.length >= MAX_DISCIPLINES;
+    box.innerHTML = DISCIPLINES.map(function(d){
+      var active = selectedDisciplines.indexOf(d) !== -1;
+      return '<button type="button" class="pick-chip' + (active ? " -active" : "") + '"' + (!active && atCap ? " disabled" : "") + ' data-d="' + escapeHtml(d) + '">' + escapeHtml(d) + '</button>';
+    }).join("");
+    box.querySelectorAll("[data-d]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var d = btn.getAttribute("data-d");
+        var idx = selectedDisciplines.indexOf(d);
+        if (idx !== -1) selectedDisciplines.splice(idx, 1);
+        else if (selectedDisciplines.length < MAX_DISCIPLINES) selectedDisciplines.push(d);
+        renderDisciplineChips();
+      });
+    });
+  }
+
+  function renderSkillChips(){
+    var box = document.getElementById("skillBox");
+    if (!box) return;
+    var input = document.getElementById("skillInput");
+    box.querySelectorAll(".skill-chip").forEach(function(el){ el.remove(); });
+    selectedSkills.forEach(function(s){
+      var chip = document.createElement("span");
+      chip.className = "skill-chip";
+      chip.innerHTML = escapeHtml(s) + '<button type="button" data-s="' + escapeHtml(s) + '">&times;</button>';
+      box.insertBefore(chip, input);
+    });
+    box.querySelectorAll(".skill-chip button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        selectedSkills = selectedSkills.filter(function(s){ return s !== btn.getAttribute("data-s"); });
+        renderSkillChips();
+      });
+    });
+  }
+
+  // ---------------- Availability ----------------
+
+  function renderAvailability(){
+    var current = me.availability_status || "";
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Availability</h2></div>';
+    body += '<div class="form-panel"><form id="availForm">' +
+      AVAILABILITY.map(function(a){
+        return '<label class="avail-opt' + (current === a ? " -active" : "") + '"><span class="dot"></span><input type="radio" name="avail" value="' + a + '" style="display:none"' + (current === a ? " checked" : "") + '><span>' + a + '</span></label>';
+      }).join("") +
+      '<div class="form-actions" style="margin-top:12px"><button type="submit" class="pp-btn pp-btn-primary" id="availSubmitBtn">Save</button><span class="save-note" id="availSaveNote" hidden>Saved.</span></div>' +
+    '</form></div>';
+    return body;
+  }
+
+  // ---------------- Account ----------------
+
+  function renderAccount(){
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Account</h2></div>';
+    body += '<div class="form-panel"><h3>Sign-in email</h3><p style="margin:0 0 4px;font-size:14.5px">' + escapeHtml(me.email) + '</p>' +
+      '<p style="margin:0;font-size:13px;color:var(--c-text-subtle)">' + (me.email_verified ? "Verified." : "Not verified yet.") + '</p></div>';
+    body += '<div class="form-panel"><h3>Password</h3><a class="pp-btn pp-btn-secondary" href="pp-auth.html?view=reset">Reset your password</a></div>';
+    body += '<div class="form-panel"><h3>Résumé</h3>' +
+      (me.resume_filename ? '<p style="margin:0 0 10px;font-size:14.5px">' + escapeHtml(me.resume_filename) + '</p>' : '<p style="margin:0 0 10px;font-size:14.5px;color:var(--c-text-subtle)">No résumé uploaded.</p>') +
+      '<button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="resumeUploadBtn">Upload résumé</button>' +
+      '<input type="file" id="resumeInput" accept=".pdf,.doc,.docx" style="display:none"></div>';
+    body += '<div class="danger-block"><h3>Close your account</h3><p>Removes your profile, projects, saved roles and messages. This can\'t be undone.</p>' +
+      '<button type="button" class="pp-btn pp-btn-danger" id="deleteAccountBtn">Close account</button></div>';
+    return body;
+  }
+
+  // ---------------- Render + wire ----------------
+
+  function render(){
+    var content = document.getElementById("content");
+    var head = '<div class="dash-head"><h1>' + escapeHtml(me.display_name) + '</h1><p>Your designer dashboard</p></div>';
+    var body = "";
+    if (section === "overview") body = renderOverview();
+    else if (section === "saved") body = renderSaved();
+    else if (section === "messages") body = renderMessages();
+    else if (section === "analytics") body = renderAnalytics();
+    else if (section === "profile") body = renderProfile();
+    else if (section === "availability") body = renderAvailability();
+    else body = renderAccount();
+    content.innerHTML = head + body;
+    if (section === "profile") { selectedDisciplines = (me.discipline || []).slice(); selectedSkills = (me.skills || []).slice(); renderDisciplineChips(); renderSkillChips(); }
+    wire();
+    if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
+  }
+
+  function setSection(s){ section = s; loadSection(); }
+
+  async function loadSection(){
+    if (section === "overview" || section === "saved") {
+      var savedData = await api("/api/designers/me/saved-jobs");
+      cache.saved = savedData.jobs;
+    }
+    if (section === "overview") {
+      var matchData = await api("/api/designers/me/matches");
+      cache.matches = matchData.jobs;
+      cache.stats = await api("/api/designers/me/stats");
+    }
+    if (section === "analytics") cache.stats = await api("/api/designers/me/stats");
+    if (section === "messages") {
+      var convData = await api("/api/designers/me/conversations");
+      cache.conversations = convData.conversations;
+    }
+    render();
+  }
+
+  function showErr(id, msg){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.hidden = !msg;
+    el.textContent = msg || "";
+  }
+
+  function wire(){
+    document.querySelectorAll("[data-section]").forEach(function(btn){
+      btn.addEventListener("click", function(){ setSection(btn.getAttribute("data-section")); });
+    });
+
+    // Saved
+    document.querySelectorAll("[data-unsave]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        await api("/api/designers/me/saved-jobs/" + encodeURIComponent(btn.getAttribute("data-unsave")), { method: "DELETE" });
+        loadSection();
+      });
+    });
+
+    // Messages
+    document.querySelectorAll("[data-thread]").forEach(function(btn){
+      btn.addEventListener("click", function(){ loadThread(parseInt(btn.getAttribute("data-thread"), 10)).then(render); });
+    });
+    var composerForm = document.getElementById("composerForm");
+    if (composerForm) composerForm.addEventListener("submit", async function(e){
+      e.preventDefault();
+      var input = document.getElementById("composerInput");
+      var body = input.value.trim();
+      if (!body) return;
+      input.value = "";
+      await api("/api/designers/me/conversations/" + activeThreadId + "/messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: body }) });
+      // Full render, not just the message pane — the thread list's preview
+      // text and unread dot need the refreshed cache.conversations too.
+      await loadThread(activeThreadId);
+      render();
+    });
+
+    // Profile
+    var skillInput = document.getElementById("skillInput");
+    if (skillInput) skillInput.addEventListener("keydown", function(e){
+      if (e.key !== "Enter") return;
+      e.preventDefault();
+      var v = skillInput.value.trim();
+      if (v && selectedSkills.length < MAX_SKILLS && selectedSkills.indexOf(v) === -1) { selectedSkills.push(v); skillInput.value = ""; renderSkillChips(); }
+    });
+    var photoUploadBtn = document.getElementById("photoUploadBtn");
+    var photoInput = document.getElementById("photoInput");
+    if (photoUploadBtn) photoUploadBtn.addEventListener("click", function(){ photoInput.click(); });
+    if (photoInput) photoInput.addEventListener("change", async function(){
+      if (!photoInput.files[0]) return;
+      var fd = new FormData();
+      fd.append("file", photoInput.files[0]);
+      try {
+        var data = await api("/api/designers/me/photo", { method: "POST", body: fd });
+        document.getElementById("photoPreview").src = data.photo_path;
+        me.photo_path = data.photo_path;
+      } catch (err) { toast(err.message); }
+    });
+    document.querySelectorAll("[data-avatar]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var path = btn.getAttribute("data-avatar");
+        await api("/api/designers/me/avatar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ photo_path: path }) });
+        me.photo_path = path;
+        // Update in place rather than a full render() — this tab may have
+        // unsaved discipline/skill picks sitting in selectedDisciplines/
+        // selectedSkills, and a render() re-seeds those from me.discipline/
+        // me.skills (still the pre-save values), silently discarding
+        // whatever the person had just clicked before saving.
+        document.getElementById("photoPreview").src = path;
+        document.querySelectorAll("[data-avatar]").forEach(function(b){ b.classList.toggle("-selected", b === btn); });
+      });
+    });
+    var profileForm = document.getElementById("profileForm");
+    if (profileForm) profileForm.addEventListener("submit", async function(e){
+      e.preventDefault();
+      showErr("profileErr", "");
+      var payload = {
+        display_name: document.getElementById("pName").value.trim(),
+        headline: document.getElementById("pHeadline").value.trim(),
+        location: document.getElementById("pLocation").value.trim(),
+        years_experience: document.getElementById("pYears").value.trim(),
+        bio: document.getElementById("pBio").value.trim(),
+        discipline: selectedDisciplines, skills: selectedSkills,
+        availability_status: me.availability_status || "", phone: me.phone || "", contact_email: me.contact_email || ""
+      };
+      var btn = document.getElementById("profileSubmitBtn");
+      btn.disabled = true;
+      try {
+        await api("/api/designers/me", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        me = await api("/api/designers/me");
+        document.getElementById("profileSaveNote").hidden = false;
+        setTimeout(function(){ var n = document.getElementById("profileSaveNote"); if (n) n.hidden = true; }, 2000);
+      } catch (err) { showErr("profileErr", err.message); }
+      btn.disabled = false;
+    });
+
+    // Availability
+    document.querySelectorAll(".avail-opt").forEach(function(label){
+      label.addEventListener("click", function(){
+        document.querySelectorAll(".avail-opt").forEach(function(l){ l.classList.remove("-active"); });
+        label.classList.add("-active");
+        label.querySelector("input").checked = true;
+      });
+    });
+    var availForm = document.getElementById("availForm");
+    if (availForm) availForm.addEventListener("submit", async function(e){
+      e.preventDefault();
+      var picked = availForm.querySelector('input[name="avail"]:checked');
+      var payload = {
+        display_name: me.display_name, bio: me.bio || "", discipline: me.discipline || [], skills: me.skills || [],
+        location: me.location || "", phone: me.phone || "", contact_email: me.contact_email || "",
+        headline: me.headline || "", years_experience: me.years_experience || "",
+        availability_status: picked ? picked.value : ""
+      };
+      await api("/api/designers/me", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+      me = await api("/api/designers/me");
+      document.getElementById("availSaveNote").hidden = false;
+      setTimeout(function(){ var n = document.getElementById("availSaveNote"); if (n) n.hidden = true; }, 2000);
+    });
+
+    // Account
+    var resumeUploadBtn = document.getElementById("resumeUploadBtn");
+    var resumeInput = document.getElementById("resumeInput");
+    if (resumeUploadBtn) resumeUploadBtn.addEventListener("click", function(){ resumeInput.click(); });
+    if (resumeInput) resumeInput.addEventListener("change", async function(){
+      if (!resumeInput.files[0]) return;
+      var fd = new FormData();
+      fd.append("file", resumeInput.files[0]);
+      try {
+        await api("/api/designers/me/resume", { method: "POST", body: fd });
+        me = await api("/api/designers/me");
+        toast("Résumé uploaded.");
+        render();
+      } catch (err) { toast(err.message); }
+    });
+    var deleteAccountBtn = document.getElementById("deleteAccountBtn");
+    if (deleteAccountBtn) deleteAccountBtn.addEventListener("click", async function(){
+      var ok = await window.showPPConfirm({
+        title: "Close your account?", description: "Your profile, projects, saved roles and messages are all removed. This can't be undone.",
+        confirmLabel: "Close account", safeLabel: "Keep my account", danger: true
+      });
+      if (!ok) return;
+      await api("/api/designers/me", { method: "DELETE" });
+      localStorage.removeItem("kazi_designer_token");
+      location.href = "index.html";
+    });
+  }
+
+  async function init(){
+    try { me = await api("/api/designers/me"); } catch (e) { return; }
+    await loadSection();
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

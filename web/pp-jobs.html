@@ -238,13 +238,44 @@
     try { return JSON.parse(localStorage.getItem("pp_saved_jobs") || "[]"); } catch (e) { return []; }
   }
   function isSaved(id){ return savedIds().indexOf(id) !== -1; }
-  function setSaved(id, on){
+  // Signed-in designers get real, cross-device persistence via
+  // /api/designers/me/saved-jobs; localStorage stays the fast local cache
+  // both signed-in and signed-out visitors read from for instant paint.
+  // Save/unsave calls to the API are fire-and-forget — the local state is
+  // what the UI reacts to either way, so a slow or failed network call
+  // never blocks the toggle.
+  function designerToken(){ return localStorage.getItem("kazi_designer_token"); }
+  function setSaved(id, on, job){
     var ids = savedIds();
     var idx = ids.indexOf(id);
     if (on && idx === -1) ids.push(id);
     if (!on && idx !== -1) ids.splice(idx, 1);
     localStorage.setItem("pp_saved_jobs", JSON.stringify(ids));
     document.getElementById("savedCount").textContent = ids.length;
+    var token = designerToken();
+    if (!token) return;
+    if (on && job) {
+      fetch("/api/designers/me/saved-jobs", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ job_id: job.id, title: job.t, company: job.co, location: job.city || "", eligibility: job.elig || "", url: job.url || "" })
+      }).catch(function(){});
+    } else if (!on) {
+      fetch("/api/designers/me/saved-jobs/" + encodeURIComponent(id), {
+        method: "DELETE", headers: { "Authorization": "Bearer " + token }
+      }).catch(function(){});
+    }
+  }
+  async function syncSavedFromServer(){
+    var token = designerToken();
+    if (!token) return;
+    try {
+      var res = await fetch("/api/designers/me/saved-jobs", { headers: { "Authorization": "Bearer " + token } });
+      if (!res.ok) return;
+      var data = await res.json();
+      localStorage.setItem("pp_saved_jobs", JSON.stringify(data.jobs.map(function(j){ return j.job_id; })));
+      var el = document.getElementById("savedCount");
+      if (el) el.textContent = data.jobs.length;
+    } catch (e) {}
   }
 
   // Kazi's own eligibility model has 4 values (kenya/africa/world/check);
@@ -476,7 +507,8 @@
         e.preventDefault(); e.stopPropagation();
         var id = btn.getAttribute("data-save");
         var wasSaved = isSaved(id);
-        setSaved(id, !wasSaved);
+        var job = state.all.filter(function(j){ return j.id === id; })[0];
+        setSaved(id, !wasSaved, job);
         renderResults();
         if (!wasSaved) {
           showToast("Saved. Find it under Saved.", { label: "Undo", onClick: function(){ setSaved(id, false); renderResults(); } });
@@ -570,6 +602,7 @@
 
   function init(){
     document.getElementById("savedCount").textContent = savedIds().length;
+    syncSavedFromServer();
     document.getElementById("tabAll").addEventListener("click", function(){ setTab("all"); });
     document.getElementById("tabSaved").addEventListener("click", function(){ setTab("saved"); });
     document.getElementById("resetFilters").addEventListener("click", resetFilters);
