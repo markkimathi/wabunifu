@@ -183,6 +183,7 @@ CREATE TABLE IF NOT EXISTS employers (
   is_pending_approval INTEGER NOT NULL DEFAULT 0,
   invited_by_employer_id INTEGER,
   email_verified INTEGER NOT NULL DEFAULT 0,
+  suspended INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_employers_company ON employers(company_id);
@@ -362,6 +363,20 @@ CREATE TABLE IF NOT EXISTS pay_submissions (
 );
 CREATE INDEX IF NOT EXISTS idx_pay_submissions_status ON pay_submissions(status);
 CREATE INDEX IF NOT EXISTS idx_pay_submissions_group ON pay_submissions(discipline, level, market);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind TEXT NOT NULL,
+  target_id INTEGER NOT NULL,
+  reporter_designer_id INTEGER,
+  reporter_employer_id INTEGER,
+  summary TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT 'open',
+  resolution TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL,
+  resolved_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 """
 
 # Columns added after the table first shipped. A fresh database gets them
@@ -385,6 +400,7 @@ _MIGRATIONS = [
     "ALTER TABLE designers ADD COLUMN resume_public INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE submissions ADD COLUMN company_id INTEGER",
     "ALTER TABLE submissions ADD COLUMN employer_id INTEGER",
+    "ALTER TABLE employers ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0",
 ]
 
 
@@ -1576,6 +1592,13 @@ def mark_conversation_read(conversation_id: int, reader_type: str) -> None:
     c.close()
 
 
+def get_message(message_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM messages WHERE id = ?", (message_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
 # ---------------------------------------------------------------------------
 # Community: sessions (fixed-capacity seat reservations, not calendar
 # booking — see api/main.py's community section for the full behavioral
@@ -2013,6 +2036,55 @@ def list_pay_submissions(status: str | None = None) -> list[dict]:
 def set_pay_submission_status(submission_id: int, status: str) -> None:
     c = _conn()
     c.execute("UPDATE pay_submissions SET status = ? WHERE id = ?", (status, submission_id))
+    c.commit()
+    c.close()
+
+
+def create_report(kind: str, target_id: int, reporter_designer_id: int | None,
+                   reporter_employer_id: int | None, summary: str) -> int:
+    c = _conn()
+    cur = c.execute(
+        "INSERT INTO reports (kind, target_id, reporter_designer_id, reporter_employer_id, summary, "
+        "status, created_at) VALUES (?, ?, ?, ?, ?, 'open', ?)",
+        (kind, target_id, reporter_designer_id, reporter_employer_id, summary,
+         datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    report_id = cur.lastrowid
+    c.close()
+    return report_id
+
+
+def list_reports(status: str | None = None) -> list[dict]:
+    c = _conn()
+    if status:
+        rows = c.execute("SELECT * FROM reports WHERE status = ? ORDER BY id DESC", (status,)).fetchall()
+    else:
+        rows = c.execute("SELECT * FROM reports ORDER BY id DESC").fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def get_report(report_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM reports WHERE id = ?", (report_id,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def resolve_report(report_id: int, resolution: str) -> None:
+    c = _conn()
+    c.execute(
+        "UPDATE reports SET status = 'resolved', resolution = ?, resolved_at = ? WHERE id = ?",
+        (resolution, datetime.now(timezone.utc).isoformat(timespec="seconds"), report_id),
+    )
+    c.commit()
+    c.close()
+
+
+def set_employer_suspended(employer_id: int, suspended: bool) -> None:
+    c = _conn()
+    c.execute("UPDATE employers SET suspended = ? WHERE id = ?", (1 if suspended else 0, employer_id))
     c.commit()
     c.close()
 

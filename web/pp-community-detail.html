@@ -85,6 +85,13 @@
   .reply-card.-accepted .reply-head .role,
   .reply-card.-accepted .reply-head .when{color:var(--pp-gold-800)}
   .reply-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .report-btn{height:36px;padding:0 12px;border:none;border-radius:8px;background:transparent;font-family:var(--pp-font);
+    font-size:13.5px;font-weight:600;color:var(--c-text-faint);cursor:pointer}
+  .report-btn:hover{background:var(--c-surface-inset);color:var(--c-bad-text)}
+  .report-box{margin-top:12px;padding:14px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);
+    border:1px solid var(--c-border);display:flex;flex-direction:column;gap:10px}
+  .report-box textarea{width:100%;box-sizing:border-box}
+  .report-box .row{display:flex;gap:8px;justify-content:flex-end}
   .vote-btn{height:36px;padding:0 12px;border-radius:8px;font-family:var(--pp-font);font-size:13.5px;font-weight:600;
     cursor:pointer;display:inline-flex;align-items:center;gap:7px;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
   .vote-btn.-active{background:var(--pp-gold-200);color:var(--pp-gold-800);border-color:var(--pp-gold-400)}
@@ -209,7 +216,9 @@
       <div class="rail-card">
         <h3>Follow this question</h3>
         <button class="pp-btn pp-btn-secondary pp-btn-block" id="followBtn" type="button" style="margin-bottom:10px"></button>
-        <p style="margin:0;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)">We'll only ever notify you about this thread.</p>
+        <p style="margin:0 0 10px;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)">We'll only ever notify you about this thread.</p>
+        <button class="report-btn" id="reportQuestionBtn" type="button" style="padding-left:0">Report this question</button>
+        <div class="report-box" id="reportQuestionBox" style="display:none"></div>
       </div>
 
       <div class="rail-card" style="background:var(--pp-gold-200);border-color:var(--pp-gold-400)">
@@ -445,8 +454,62 @@
         '<button type="button" class="vote-btn" data-vote="' + r.id + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20V10l5-6 1.2 1a2 2 0 01.5 2L13 10h5a2 2 0 012 2.3l-1.2 6A2 2 0 0116.8 20z"></path><path d="M7 20H4V10h3"></path></svg>Useful <span data-vote-count="' + r.id + '">' + r.n + '</span></button>' +
         (isAuthor && !accepted ? '<button type="button" class="accept-btn" data-accept="' + r.id + '">Mark useful</button>' : "") +
         (isAuthor && accepted ? '<button type="button" class="accept-btn" data-accept="0">Unmark</button>' : "") +
+        '<div style="flex:1"></div>' +
+        '<button type="button" class="report-btn" data-report-reply="' + r.id + '">Report</button>' +
       '</div>' +
+      '<div class="report-box" data-report-box-reply="' + r.id + '" style="display:none"></div>' +
     '</article>';
+  }
+
+  var REPORT_BOX_HTML =
+    '<label class="pp-field-label" style="display:block;margin-bottom:2px">Why are you reporting this?</label>' +
+    '<textarea class="pp-textarea report-reason" rows="2" placeholder="Optional — helps whoever reviews it"></textarea>' +
+    '<div class="row"><button type="button" class="pp-btn pp-btn-tertiary report-cancel">Cancel</button>' +
+    '<button type="button" class="pp-btn pp-btn-danger report-send">Send report</button></div>';
+
+  function wireReportBox(box, endpoint){
+    box.innerHTML = REPORT_BOX_HTML;
+    box.querySelector(".report-cancel").addEventListener("click", function(){ box.style.display = "none"; });
+    box.querySelector(".report-send").addEventListener("click", async function(){
+      var t = token();
+      if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+      var btn = box.querySelector(".report-send");
+      btn.disabled = true;
+      try {
+        await fetch(endpoint, {
+          method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + t },
+          body: JSON.stringify({ summary: box.querySelector(".report-reason").value.trim() })
+        });
+        box.style.display = "none";
+        if (window.showPPToast) showPPToast("Report sent — a person will review it.");
+      } catch (e) {}
+      btn.disabled = false;
+    });
+  }
+
+  // Reply cards are fully re-created (innerHTML) on every renderReplies()
+  // call, so rebinding here is safe — old nodes and their listeners are
+  // discarded together. The question-report button is a static element
+  // that survives re-renders, so it's wired exactly once from
+  // renderQuestion() instead, via wireQuestionReportButton() below.
+  function wireReportButtons(){
+    document.querySelectorAll("[data-report-reply]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-report-reply");
+        var box = document.querySelector('[data-report-box-reply="' + id + '"]');
+        if (box.style.display === "none") { wireReportBox(box, "/api/community/replies/" + id + "/report"); box.style.display = "flex"; }
+        else box.style.display = "none";
+      });
+    });
+  }
+
+  function wireQuestionReportButton(){
+    var qBtn = document.getElementById("reportQuestionBtn");
+    if (qBtn) qBtn.addEventListener("click", function(){
+      var box = document.getElementById("reportQuestionBox");
+      if (box.style.display === "none") { wireReportBox(box, "/api/community/questions/" + currentQuestion.id + "/report"); box.style.display = "flex"; }
+      else box.style.display = "none";
+    });
   }
 
   function renderReplies(){
@@ -464,6 +527,7 @@
     document.querySelectorAll("[data-accept]").forEach(function(btn){
       btn.addEventListener("click", function(){ acceptReply(parseInt(btn.getAttribute("data-accept"), 10) || null); });
     });
+    wireReportButtons();
   }
 
   function renderSortRow(){
@@ -586,6 +650,7 @@
     var id = pathId();
     document.getElementById("bookBtn").addEventListener("click", toggleBooking);
     document.getElementById("postReplyBtn").addEventListener("click", postReply);
+    wireQuestionReportButton();
 
     if (id.indexOf("s-") === 0) {
       var t = token();

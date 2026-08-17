@@ -252,6 +252,24 @@
 
   .empty{text-align:center;padding:60px 20px;color:var(--muted);border:1px dashed var(--hairline-strong);border-radius:var(--radius)}
 
+  .urgent{background:var(--red-soft);color:var(--red)}
+  .kind-badge{background:var(--brand-soft);color:var(--brand);padding:3px 9px;border-radius:999px;font-weight:600}
+  .report-quote{font-size:13.5px;color:var(--ink);line-height:1.5;margin:0 0 8px;padding:10px 12px;
+    background:var(--surface);border:1px solid var(--hairline);border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;max-width:60ch}
+  .dismiss{background:var(--surface);color:var(--muted);border:1px solid var(--hairline-strong)}
+
+  .modal-backdrop{position:fixed;inset:0;z-index:60;background:rgba(11,22,35,.5);display:flex;align-items:center;justify-content:center;padding:20px}
+  .modal-panel{background:var(--canvas);border-radius:var(--radius);padding:24px;max-width:440px;width:100%;box-shadow:var(--shadow)}
+  .modal-panel h3{margin:0 0 6px;font-size:19px}
+  .modal-panel .sub{margin:0 0 18px}
+  .modal-options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
+  .modal-opt{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--hairline-strong);border-radius:12px;cursor:pointer}
+  .modal-opt input{margin-top:3px}
+  .modal-opt b{display:block;font-size:14px}
+  .modal-opt span{display:block;font-size:12.5px;color:var(--muted)}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px}
+  .modal-cancel{font:inherit;font-size:13.5px;font-weight:700;padding:10px 16px;border-radius:999px;border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
+
   /* ---- dashboard ---- */
   .view-switch{display:flex;gap:8px;margin:32px 0 20px}
   .view-switch button{font:inherit;font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;
@@ -413,6 +431,7 @@
     <button data-view="queue">Review queue</button>
     <button data-view="designers">Designer profiles</button>
     <button data-view="employers">Employers</button>
+    <button data-view="reports">Reports</button>
   </div>
 
   <section id="dashboardView">
@@ -505,6 +524,36 @@
 
     <div id="employerList"></div>
   </section>
+
+  <section id="reportsView" style="display:none">
+    <h1>Reports</h1>
+    <p class="sub">Every question, reply, and message has a report control. Each one lands here for a person to review — nothing is auto-removed.</p>
+
+    <div class="tabs">
+      <button data-rstatus="open" class="active">Open</button>
+      <button data-rstatus="resolved">Resolved</button>
+      <button data-rstatus="all">All</button>
+    </div>
+
+    <div id="reportList"></div>
+  </section>
+</div>
+
+<div class="modal-backdrop" id="reportModalBackdrop" style="display:none">
+  <div class="modal-panel">
+    <h3>Resolve report</h3>
+    <p class="sub" id="reportModalSummary"></p>
+    <div class="modal-options">
+      <label class="modal-opt"><input type="radio" name="rmodalAction" value="keep" checked><div><b>Keep</b><span>The content stays. No rule was broken.</span></div></label>
+      <label class="modal-opt"><input type="radio" name="rmodalAction" value="remove"><div><b>Remove</b><span>Take the content down. Doesn't affect the account.</span></div></label>
+      <label class="modal-opt"><input type="radio" name="rmodalAction" value="suspend"><div><b>Suspend</b><span>Suspend the account that posted it.</span></div></label>
+      <label class="modal-opt"><input type="radio" name="rmodalAction" value="ask"><div><b>Ask</b><span>Not enough here to decide — follow up with someone first.</span></div></label>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="reportModalCancel">Cancel</button>
+      <button class="approve" id="reportModalConfirm">Resolve</button>
+    </div>
+  </div>
 </div>
 
 <footer class="foot">
@@ -556,6 +605,7 @@ const dashboardView = document.getElementById("dashboardView");
 const queueView = document.getElementById("queueView");
 const designersView = document.getElementById("designersView");
 const employersView = document.getElementById("employersView");
+const reportsView = document.getElementById("reportsView");
 document.querySelectorAll(".view-switch button").forEach(b => {
   b.addEventListener("click", () => {
     document.querySelectorAll(".view-switch button").forEach(x => x.classList.remove("active"));
@@ -565,10 +615,12 @@ document.querySelectorAll(".view-switch button").forEach(b => {
     queueView.style.display = view === "queue" ? "block" : "none";
     designersView.style.display = view === "designers" ? "block" : "none";
     employersView.style.display = view === "employers" ? "block" : "none";
+    reportsView.style.display = view === "reports" ? "block" : "none";
     if (view === "dashboard") loadDashboard();
     else if (view === "queue") loadTab(document.querySelector("#queueView .tabs button.active").dataset.status);
     else if (view === "designers") loadDesignerTab(document.querySelector("#designersView .tabs button.active").dataset.dstatus);
-    else loadEmployerTab(document.querySelector("#employersView .tabs button.active").dataset.estatus);
+    else if (view === "employers") loadEmployerTab(document.querySelector("#employersView .tabs button.active").dataset.estatus);
+    else loadReportTab(document.querySelector("#reportsView .tabs button.active").dataset.rstatus);
   });
 });
 
@@ -827,6 +879,13 @@ document.querySelectorAll("#employersView .tabs button").forEach(b => {
     loadEmployerTab(b.dataset.estatus);
   });
 });
+document.querySelectorAll("#reportsView .tabs button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#reportsView .tabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    loadReportTab(b.dataset.rstatus);
+  });
+});
 
 async function loadTab(status) {
   list.innerHTML = `<div class="empty">Loading…</div>`;
@@ -1001,6 +1060,93 @@ function renderEmployers(rows) {
     });
   });
 }
+
+/* ---------- reports ---------- */
+const reportList = document.getElementById("reportList");
+const KIND_LABELS = { message: "Message", community_reply: "Reply", community_question: "Question" };
+const STALE_HOURS = 48;
+
+async function loadReportTab(status) {
+  reportList.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const rows = await api(`/api/admin/reports?status=${status}`);
+    renderReports(rows);
+  } catch (e) {
+    reportList.innerHTML = `<div class="empty">Couldn't load: ${e.message}</div>`;
+  }
+}
+
+function renderReports(rows) {
+  if (!rows.length) {
+    reportList.innerHTML = `<div class="empty">Nothing here.</div>`;
+    return;
+  }
+  reportList.innerHTML = rows.map(r => {
+    const stale = r.status === "open" && (Date.now() - new Date(r.created_at).getTime()) > STALE_HOURS * 3600 * 1000;
+    const t = r.target || {};
+    return `
+    <div class="item" data-id="${r.id}">
+      <div>
+        <div class="badges" style="margin-bottom:8px">
+          <span class="kind-badge">${escapeHtml(KIND_LABELS[r.kind] || r.kind)}</span>
+          ${stale ? `<span class="urgent">Needs attention</span>` : ""}
+        </div>
+        <p class="meta">Reported by <b>${escapeHtml(r.reporter)}</b>${t.by ? ` · posted by <b>${escapeHtml(t.by)}</b>` : ""}</p>
+        ${t.content_deleted ? `<p class="report-quote">This content has already been removed.</p>` : `<p class="report-quote">${escapeHtml(t.content || "")}</p>`}
+        ${r.summary ? `<p class="meta">Reason: ${escapeHtml(r.summary)}</p>` : ""}
+        <p class="meta" style="margin-top:8px">${new Date(r.created_at).toLocaleString()}</p>
+      </div>
+      <div class="actions">
+        ${r.status === "open" ? `
+          <button class="dismiss" data-raction="dismiss">Dismiss</button>
+          <button class="approve" data-raction="review">Review</button>
+        ` : `<span class="status ${r.resolution === "keep" ? "approved" : "rejected"}">resolution: ${escapeHtml(r.resolution)}</span>`}
+      </div>
+    </div>
+  `;
+  }).join("");
+
+  reportList.querySelectorAll("[data-raction]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.closest(".item").dataset.id;
+      if (btn.dataset.raction === "review") { openReportModal(id); return; }
+      btn.disabled = true;
+      try {
+        await api(`/api/admin/reports/${id}/resolve`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "keep" }) });
+        const activeTab = document.querySelector("#reportsView .tabs button.active").dataset.rstatus;
+        loadReportTab(activeTab);
+      } catch (e) {
+        await window.showAlertDialog({title: "Failed", description: e.message});
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+const reportModalBackdrop = document.getElementById("reportModalBackdrop");
+let reportModalId = null;
+function openReportModal(id) {
+  reportModalId = id;
+  document.getElementById("reportModalSummary").textContent = "Choose what happens to this report.";
+  reportModalBackdrop.querySelector('input[value="keep"]').checked = true;
+  reportModalBackdrop.style.display = "flex";
+}
+document.getElementById("reportModalCancel").addEventListener("click", () => { reportModalBackdrop.style.display = "none"; });
+reportModalBackdrop.addEventListener("click", (e) => { if (e.target === reportModalBackdrop) reportModalBackdrop.style.display = "none"; });
+document.getElementById("reportModalConfirm").addEventListener("click", async () => {
+  const action = reportModalBackdrop.querySelector('input[name="rmodalAction"]:checked').value;
+  const btn = document.getElementById("reportModalConfirm");
+  btn.disabled = true;
+  try {
+    await api(`/api/admin/reports/${reportModalId}/resolve`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action }) });
+    reportModalBackdrop.style.display = "none";
+    const activeTab = document.querySelector("#reportsView .tabs button.active").dataset.rstatus;
+    loadReportTab(activeTab);
+  } catch (e) {
+    await window.showAlertDialog({title: "Failed", description: e.message});
+  }
+  btn.disabled = false;
+});
 
 if (token) tryEnter();
 </script>

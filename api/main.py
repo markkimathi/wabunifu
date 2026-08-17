@@ -72,6 +72,7 @@ from .db import (  # noqa: E402
     create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
     count_stale_questions, get_reply_leaderboard, list_work_worth_reading,
     get_pay_median, create_pay_submission, list_pay_ranges,
+    get_message, create_report, list_reports, get_report, resolve_report, set_employer_suspended,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -746,6 +747,26 @@ class ReplyAccept(BaseModel):
     reply_id: Optional[int] = None
 
 
+class ReportIn(BaseModel):
+    summary: str = ""
+
+    @field_validator("summary")
+    @classmethod
+    def _clip_summary(cls, v: str) -> str:
+        return (v or "").strip()[:1000]
+
+
+class ReportResolve(BaseModel):
+    action: str
+
+    @field_validator("action")
+    @classmethod
+    def _valid_action(cls, v: str) -> str:
+        if v not in {"remove", "suspend", "keep", "ask"}:
+            raise ValueError("action must be one of remove, suspend, keep, ask")
+        return v
+
+
 class PaySubmissionIn(BaseModel):
     discipline: str
     level: str
@@ -804,6 +825,8 @@ def require_designer(authorization: str = Header(default="")) -> dict:
     designer = get_designer(session["designer_id"])
     if not designer:
         raise HTTPException(401, "invalid session")
+    if designer["status"] == "suspended":
+        raise HTTPException(403, "this account has been suspended")
     return designer
 
 
@@ -826,6 +849,8 @@ def require_employer(authorization: str = Header(default="")) -> dict:
     employer = get_employer(session["employer_id"])
     if not employer:
         raise HTTPException(401, "invalid session")
+    if employer["suspended"]:
+        raise HTTPException(403, "this account has been suspended")
     return employer
 
 
@@ -1435,6 +1460,17 @@ def designer_send_message(conversation_id: int, payload: MessageIn, designer: di
     return {"ok": True}
 
 
+@app.post("/api/designers/me/conversations/{conversation_id}/messages/{message_id}/report")
+def designer_report_message(conversation_id: int, message_id: int, payload: ReportIn,
+                             designer: dict = Depends(require_designer)):
+    _require_own_conversation(conversation_id, designer["id"])
+    message = get_message(message_id)
+    if not message or message["conversation_id"] != conversation_id:
+        raise HTTPException(404, "no such message")
+    create_report("message", message_id, designer["id"], None, payload.summary)
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------------------
 # Employer accounts: signup/login/password-reset, profile editing. Real
 # per-account auth (require_employer), same shape as the designer section
@@ -1879,6 +1915,17 @@ def employer_send_message(conversation_id: int, payload: MessageIn, employer: di
     return {"ok": True}
 
 
+@app.post("/api/employers/me/conversations/{conversation_id}/messages/{message_id}/report")
+def employer_report_message(conversation_id: int, message_id: int, payload: ReportIn,
+                             employer: dict = Depends(require_employer)):
+    _require_company_conversation(conversation_id, employer["company_id"])
+    message = get_message(message_id)
+    if not message or message["conversation_id"] != conversation_id:
+        raise HTTPException(404, "no such message")
+    create_report("message", message_id, None, employer["id"], payload.summary)
+    return {"ok": True}
+
+
 # ---------------------------------------------------------------------------
 # Community: sessions (fixed-capacity seat reservations — an admin pastes in
 # a joining_link string, there's no real video/calendar integration, same
@@ -2023,6 +2070,22 @@ def community_vote_reply(reply_id: int, designer: dict = Depends(require_designe
     return {"ok": True, "voted": voted}
 
 
+@app.post("/api/community/questions/{question_id}/report")
+def community_report_question(question_id: int, payload: ReportIn, designer: dict = Depends(require_designer)):
+    if not get_question(question_id):
+        raise HTTPException(404, "no such question")
+    create_report("community_question", question_id, designer["id"], None, payload.summary)
+    return {"ok": True}
+
+
+@app.post("/api/community/replies/{reply_id}/report")
+def community_report_reply(reply_id: int, payload: ReportIn, designer: dict = Depends(require_designer)):
+    if not get_reply(reply_id):
+        raise HTTPException(404, "no such reply")
+    create_report("community_reply", reply_id, designer["id"], None, payload.summary)
+    return {"ok": True}
+
+
 @app.get("/api/community/leaderboard")
 def community_leaderboard():
     return {"leaderboard": get_reply_leaderboard()}
@@ -2139,6 +2202,113 @@ def admin_reject_company(company_id: int, _: None = Depends(require_admin)):
     if not get_company(company_id):
         raise HTTPException(404, "no such company")
     set_company_status(company_id, "rejected")
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Admin: reports. Polymorphic — the report row only stores kind + target_id,
+# so every read resolves the actual content (and its author) live via joins
+# rather than duplicating it onto the report row, which would go stale the
+# moment the content changed.
+# ---------------------------------------------------------------------------
+
+def _report_target(report: dict) -> dict:
+    kind, target_id = report["kind"], report["target_id"]
+    if kind == "message":
+        message = get_message(target_id)
+        if not message:
+            return {"content_deleted": True}
+        if message["sender_type"] == "designer":
+            author = get_designer(message["sender_designer_id"])
+            by = author["display_name"] if author else "(deleted designer)"
+        else:
+            employer = get_employer(message["sender_employer_id"])
+            by = employer["full_name"] if employer else "(deleted employer)"
+        return {"by": by, "content": message["body"], "sender_type": message["sender_type"]}
+    if kind == "community_reply":
+        reply = get_reply(target_id)
+        if not reply:
+            return {"content_deleted": True}
+        author = get_designer(reply["designer_id"])
+        question = get_question(reply["question_id"])
+        return {
+            "by": author["display_name"] if author else "(deleted designer)",
+            "content": reply["body"],
+            "about": question["title"] if question else "",
+            "reply_status": reply["status"],
+        }
+    if kind == "community_question":
+        question = get_question(target_id)
+        if not question:
+            return {"content_deleted": True}
+        author = get_designer(question["designer_id"])
+        return {
+            "by": author["display_name"] if author else "(deleted designer)",
+            "content": question["title"] + " — " + question["body"],
+            "question_status": question["status"],
+        }
+    return {"content_deleted": True}
+
+
+def _report_out(report: dict) -> dict:
+    reporter = "Anonymous"
+    if report["reporter_designer_id"]:
+        d = get_designer(report["reporter_designer_id"])
+        reporter = d["display_name"] if d else "(deleted designer)"
+    elif report["reporter_employer_id"]:
+        e = get_employer(report["reporter_employer_id"])
+        reporter = e["full_name"] if e else "(deleted employer)"
+    return {**report, "reporter": reporter, "target": _report_target(report)}
+
+
+@app.get("/api/admin/reports")
+def admin_list_reports(status: str = "open", _: None = Depends(require_admin)):
+    rows = list_reports(status=status if status != "all" else None)
+    return [_report_out(r) for r in rows]
+
+
+@app.get("/api/admin/reports/{report_id}")
+def admin_get_report(report_id: int, _: None = Depends(require_admin)):
+    report = get_report(report_id)
+    if not report:
+        raise HTTPException(404, "no such report")
+    return _report_out(report)
+
+
+@app.post("/api/admin/reports/{report_id}/resolve")
+def admin_resolve_report(report_id: int, payload: ReportResolve, _: None = Depends(require_admin)):
+    report = get_report(report_id)
+    if not report:
+        raise HTTPException(404, "no such report")
+    action = payload.action
+    kind, target_id = report["kind"], report["target_id"]
+
+    if action == "remove":
+        if kind == "community_reply":
+            set_reply_status(target_id, "removed")
+        elif kind == "community_question":
+            set_question_status(target_id, "removed")
+        # Messages have no soft-delete mechanism — the resolution is still
+        # recorded below, but the message body itself stays as-is.
+
+    if action == "suspend":
+        if kind == "message":
+            message = get_message(target_id)
+            if message:
+                if message["sender_type"] == "designer" and message["sender_designer_id"]:
+                    set_designer_status(message["sender_designer_id"], "suspended")
+                elif message["sender_type"] == "employer" and message["sender_employer_id"]:
+                    set_employer_suspended(message["sender_employer_id"], True)
+        elif kind == "community_reply":
+            reply = get_reply(target_id)
+            if reply:
+                set_designer_status(reply["designer_id"], "suspended")
+        elif kind == "community_question":
+            question = get_question(target_id)
+            if question:
+                set_designer_status(question["designer_id"], "suspended")
+
+    resolve_report(report_id, action)
     return {"ok": True}
 
 
