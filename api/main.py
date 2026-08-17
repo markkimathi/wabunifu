@@ -51,12 +51,14 @@ from .db import (  # noqa: E402
     list_designer_projects, count_designer_projects, create_designer_project,
     update_designer_project, set_project_image, delete_designer_project, reorder_designer_projects,
     create_company, get_company, get_company_by_slug, get_company_by_domain,
+    update_company, set_company_logo, list_companies, set_company_status,
     create_employer, get_employer, get_employer_by_email, list_employers_for_company,
     count_company_owners, set_employer_email_verified, set_employer_password,
     update_employer_profile, approve_pending_employer, delete_employer,
     create_employer_session, get_employer_session, delete_employer_session,
     delete_employer_sessions_for_employer,
     create_employer_email_token, consume_employer_email_token,
+    update_submission, list_submissions_for_company,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -118,6 +120,9 @@ MAX_RESUME_BYTES = 5 * 1024 * 1024
 # MAX_PROJECTS covers at once, so files are named "{designer_id}_{project_id}.jpg".
 PROJECTS_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "projects"
 MAX_PROJECTS = 6
+
+# Company logos, same volume, same reason — one file per company, fixed name.
+LOGOS_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "logos"
 
 
 def classify_device(user_agent: str) -> str:
@@ -504,6 +509,28 @@ class EmployerProfileUpdate(BaseModel):
         if not v or not v.strip():
             raise ValueError("enter your name")
         return v.strip()
+
+
+class CompanyUpdate(BaseModel):
+    name: str
+    website: str = ""
+    blurb: str = ""
+    eligibility: str = ""
+    eligibility_note: str = ""
+
+    @field_validator("name")
+    @classmethod
+    def _valid_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("enter the company name")
+        return v.strip()[:120]
+
+    @field_validator("eligibility")
+    @classmethod
+    def _valid_eligibility(cls, v: str) -> str:
+        if v and v not in ELIGIBILITY:
+            raise ValueError(f"eligibility must be one of {sorted(ELIGIBILITY)}")
+        return v
 
 
 def require_admin(authorization: str = Header(default="")) -> None:
@@ -1190,6 +1217,112 @@ def employer_delete_me(employer: dict = Depends(require_employer)):
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# Companies: the public page, and the owning employer's own edit/logo
+# endpoints. Same review-queue re-review-on-edit rule as designer profiles.
+# ---------------------------------------------------------------------------
+
+def _company_listings(company: dict) -> list[dict]:
+    """This company's own approved submissions, run through the same Job()
+    construction _combined_jobs() uses for employer submissions generally —
+    scraped jobs.json listings have no company_id at all, so they can never
+    appear here; this is a company's real self-submitted listings only."""
+    out = []
+    for s in list_submissions_for_company(company["id"]):
+        if s["status"] != "approved":
+            continue
+        desc_html, desc_text = format_description(s.get("description", ""), is_html=False)
+        out.append(
+            Job(
+                title=s["title"], company=s["company"], url=s["url"], source="Direct",
+                location=s["location"], work_type=s["work_type"], discipline=s["discipline"],
+                level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
+                desc=desc_html or None, desc_text=desc_text or None, posted_at=s["created_at"][:10],
+            ).to_web()
+        )
+    return out
+
+
+@app.get("/api/companies/{identifier}")
+def company_public_page(identifier: str):
+    company = get_company(int(identifier)) if identifier.isdigit() else None
+    if not company:
+        company = get_company_by_slug(identifier)
+    if not company or company["status"] != "approved":
+        raise HTTPException(404, "no such company")
+    return {**company, "listings": _company_listings(company)}
+
+
+@app.put("/api/employers/me/company")
+def employer_update_company(payload: CompanyUpdate, employer: dict = Depends(require_employer_role("owner"))):
+    update_company(
+        employer["company_id"], payload.name, payload.website, payload.blurb,
+        payload.eligibility, payload.eligibility_note,
+    )
+    return {"ok": True}
+
+
+@app.post("/api/employers/me/company/logo")
+async def employer_upload_company_logo(file: UploadFile = File(...), employer: dict = Depends(require_employer_role("owner"))):
+    data = await file.read()
+    try:
+        jpeg_bytes = photo_module.process_photo(data)
+    except photo_module.UnsupportedPhoto as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    LOGOS_DIR.mkdir(parents=True, exist_ok=True)
+    logo_path = f"{employer['company_id']}.jpg"
+    (LOGOS_DIR / logo_path).write_bytes(jpeg_bytes)
+    set_company_logo(employer["company_id"], f"/logos/{logo_path}")
+    return {"ok": True, "logo_path": f"/logos/{logo_path}"}
+
+
+# ---------------------------------------------------------------------------
+# Listings: an employer's own submissions. POST goes through the exact same
+# insert_submission() the anonymous /post.html flow uses, just stamped with
+# company_id/employer_id — one review queue, not a parallel employer-only
+# path. Literal ordering doesn't matter here (no "me" vs dynamic-id clash
+# the way /designers/me does, since these all sit under /me/listings).
+# ---------------------------------------------------------------------------
+
+def _owned_submission(sub_id: int, company_id: int) -> dict:
+    sub = get_submission(sub_id)
+    if not sub or sub.get("company_id") != company_id:
+        raise HTTPException(404, "no such listing")
+    return sub
+
+
+@app.get("/api/employers/me/listings")
+def employer_list_listings(employer: dict = Depends(require_employer)):
+    return {"listings": list_submissions_for_company(employer["company_id"])}
+
+
+@app.post("/api/employers/me/listings")
+def employer_create_listing(payload: JobSubmission, employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    sub_id = insert_submission(payload.model_dump(), company_id=employer["company_id"], employer_id=employer["id"])
+    return {"ok": True, "id": sub_id, "status": "pending"}
+
+
+@app.get("/api/employers/me/listings/{sub_id}")
+def employer_get_listing(sub_id: int, employer: dict = Depends(require_employer)):
+    return _owned_submission(sub_id, employer["company_id"])
+
+
+@app.put("/api/employers/me/listings/{sub_id}")
+def employer_update_listing(sub_id: int, payload: JobSubmission, employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    _owned_submission(sub_id, employer["company_id"])
+    update_submission(sub_id, **payload.model_dump())
+    return {"ok": True}
+
+
+@app.delete("/api/employers/me/listings/{sub_id}")
+def employer_close_listing(sub_id: int, employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    # Closing, not deleting — a closed listing keeps its history (views,
+    # applicants tracked against it) rather than disappearing outright.
+    _owned_submission(sub_id, employer["company_id"])
+    set_status(sub_id, "closed")
+    return {"ok": True}
+
+
 @app.get("/api/designers")
 def designers_directory(discipline: str = ""):
     rows = list_approved_designers(discipline=discipline or None)
@@ -1261,6 +1394,10 @@ app.mount("/photos", StaticFiles(directory=str(PHOTOS_DIR)), name="photos")
 # (unlike resumes), so a plain static mount is fine.
 PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/project-images", StaticFiles(directory=str(PROJECTS_DIR)), name="project-images")
+
+# Same reasoning for company logos.
+LOGOS_DIR.mkdir(parents=True, exist_ok=True)
+app.mount("/logos", StaticFiles(directory=str(LOGOS_DIR)), name="logos")
 
 
 # Clean URLs: serve the .html files without the extension...

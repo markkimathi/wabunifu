@@ -103,9 +103,34 @@
 
   var companyName = new URLSearchParams(location.search).get("name");
 
+  // Best-effort client-side mirror of api/db.py's _slugify_company() — good
+  // enough to find the common case (a company with no slug collision) on
+  // the first try. A miss just falls through to the job-matched view below,
+  // same as before a real companies table existed, so this is a pure
+  // upgrade path, never a regression.
+  function guessSlug(name){
+    var base = (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!base || !/^[a-z]/.test(base)) base = "company" + base;
+    base = base.slice(0, 30);
+    while (base.length < 3) base += "0";
+    return base;
+  }
+
   async function load(){
     var content = document.getElementById("content");
     if (!companyName) { content.innerHTML = notFound("No company specified."); return; }
+
+    var realCompany = null;
+    try {
+      var cRes = await fetch("/api/companies/" + encodeURIComponent(guessSlug(companyName)), { cache: "no-store" });
+      if (cRes.ok) {
+        var candidate = await cRes.json();
+        if (candidate.name.toLowerCase() === companyName.toLowerCase()) realCompany = candidate;
+      }
+    } catch (e) { /* fall through to the job-matched view */ }
+
+    if (realCompany) { renderReal(realCompany); return; }
+
     var jobs;
     try {
       var res = await fetch("/api/jobs", { cache: "no-store" });
@@ -116,7 +141,7 @@
       content.innerHTML = notFound("The board didn't load. Try again in a moment."); return;
     }
     if (!jobs.length) { content.innerHTML = notFound("No open roles found for " + companyName + " right now."); return; }
-    render(jobs);
+    render(companyName, jobs, null);
   }
 
   function notFound(msg){
@@ -124,29 +149,38 @@
       '<a class="pp-btn pp-btn-primary" href="pp-jobs.html">Browse open roles</a></div>';
   }
 
-  function render(jobs){
-    document.title = companyName + " · Path & Pixel";
+  function renderReal(company){
+    render(company.name, company.listings || [], company);
+  }
+
+  function render(name, jobs, company){
+    document.title = name + " · Path & Pixel";
     var crumbs = document.getElementById("pp-breadcrumbs");
-    crumbs.setAttribute("data-crumbs", JSON.stringify([{ label: "Jobs", href: "pp-jobs.html" }, { label: companyName }]));
+    crumbs.setAttribute("data-crumbs", JSON.stringify([{ label: "Jobs", href: "pp-jobs.html" }, { label: name }]));
     PathPixelNav.renderBreadcrumbs(crumbs);
 
     var city = mostCommon(jobs.map(function(j){ return j.city; }));
+    var mark = company && company.logo_path
+      ? '<img src="' + escapeHtml(company.logo_path) + '" alt="" style="width:96px;height:96px;flex:none;border-radius:var(--pp-radius-xl);object-fit:cover">'
+      : '<span class="mark">' + name[0].toUpperCase() + '</span>';
 
     document.getElementById("content").innerHTML =
       '<div class="head">' +
-        '<span class="mark">' + companyName[0].toUpperCase() + '</span>' +
+        mark +
         '<div style="flex:1;min-width:280px">' +
-          '<h1>' + escapeHtml(companyName) + '</h1>' +
+          '<h1>' + escapeHtml(name) + '</h1>' +
+          (company && company.blurb ? '<p style="margin:0 0 12px;font-size:15.5px;line-height:1.55;color:var(--c-text-subtle);max-width:60ch">' + escapeHtml(company.blurb) + '</p>' : "") +
           '<div class="head-meta">' +
             (city ? '<span>' + ICONS.place + escapeHtml(city) + '</span>' : "") +
             '<span>' + ICONS.roles + jobs.length + ' open role' + (jobs.length === 1 ? "" : "s") + ' on Path &amp; Pixel</span>' +
+            (company && company.eligibility ? eligBadge(company.eligibility) : "") +
           '</div>' +
         '</div>' +
-        '<a class="pp-btn pp-btn-primary head-cta" href="pp-jobs.html?q=' + encodeURIComponent(companyName) + '">See all roles</a>' +
+        '<a class="pp-btn pp-btn-primary head-cta" href="pp-jobs.html?q=' + encodeURIComponent(name) + '">See all roles</a>' +
       '</div>' +
       '<div class="wrap layout" style="padding-left:0;padding-right:0">' +
         '<div class="roles-head"><h2>Open roles</h2><span>' + jobs.length + ' live now</span></div>' +
-        '<div>' + jobs.map(renderJobRow).join("") + '</div>' +
+        (jobs.length ? '<div>' + jobs.map(renderJobRow).join("") + '</div>' : '<p style="color:var(--c-text-subtle);font-size:15px">Nothing open right now.</p>') +
       '</div>';
   }
 

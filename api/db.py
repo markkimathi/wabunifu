@@ -221,6 +221,8 @@ _MIGRATIONS = [
     "ALTER TABLE designers ADD COLUMN resume_filename TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN resume_uploaded_at TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN resume_public INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE submissions ADD COLUMN company_id INTEGER",
+    "ALTER TABLE submissions ADD COLUMN employer_id INTEGER",
 ]
 
 
@@ -248,23 +250,56 @@ def init_db() -> None:
     backfill_onboarding_completed()
 
 
-def insert_submission(data: dict) -> int:
+def insert_submission(data: dict, company_id: int | None = None, employer_id: int | None = None) -> int:
+    """company_id/employer_id are None for the anonymous /post.html flow
+    (unchanged since before employer accounts existed) and set when an
+    authenticated employer posts from their own dashboard — either way the
+    row lands in the exact same admin review queue, no parallel path."""
     c = _conn()
-    row = {**data, "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
+    row = {**data, "company_id": company_id, "employer_id": employer_id,
+           "created_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     cur = c.execute("""
         INSERT INTO submissions
           (title, company, url, contact_email, location, work_type,
            discipline, level, eligibility, salary, description, agreed_to_terms,
-           status, created_at)
+           company_id, employer_id, status, created_at)
         VALUES
           (:title, :company, :url, :contact_email, :location, :work_type,
            :discipline, :level, :eligibility, :salary, :description, :agreed_to_terms,
-           'pending', :created_at)
+           :company_id, :employer_id, 'pending', :created_at)
     """, row)
     c.commit()
     sub_id = cur.lastrowid
     c.close()
     return sub_id
+
+
+def update_submission(sub_id: int, **fields) -> bool:
+    """Editing any content field on a listing sends it back to 'pending' for
+    re-review, same rule as update_designer_profile. Closing a listing is a
+    pure status change with nothing to re-review, so it goes through
+    set_status() directly instead of this function."""
+    if not fields:
+        return False
+    c = _conn()
+    cols = ", ".join(f"{k} = ?" for k in fields)
+    cur = c.execute(
+        f"UPDATE submissions SET {cols}, status = 'pending' WHERE id = ?",
+        (*fields.values(), sub_id),
+    )
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def list_submissions_for_company(company_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM submissions WHERE company_id = ? ORDER BY created_at DESC", (company_id,)
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
 
 
 def list_submissions(status: str | None = None) -> list[dict]:
@@ -862,6 +897,48 @@ def get_company_by_domain(domain: str) -> dict | None:
         if host and host == domain.lower():
             return dict(row)
     return None
+
+
+def update_company(company_id: int, name: str, website: str, blurb: str,
+                    eligibility: str, eligibility_note: str) -> None:
+    # Same re-review-on-edit rule as update_designer_profile/update_submission
+    # — an approved company page doesn't change without another look.
+    c = _conn()
+    row = c.execute("SELECT status FROM companies WHERE id = ?", (company_id,)).fetchone()
+    new_status = "pending" if row and row["status"] == "approved" else (row["status"] if row else "pending")
+    c.execute(
+        "UPDATE companies SET name = ?, website = ?, blurb = ?, eligibility = ?, "
+        "eligibility_note = ?, status = ? WHERE id = ?",
+        (name, website, blurb, eligibility, eligibility_note, new_status, company_id),
+    )
+    c.commit()
+    c.close()
+
+
+def set_company_logo(company_id: int, logo_path: str) -> None:
+    c = _conn()
+    c.execute("UPDATE companies SET logo_path = ? WHERE id = ?", (logo_path, company_id))
+    c.commit()
+    c.close()
+
+
+def list_companies(status: str | None = None) -> list[dict]:
+    c = _conn()
+    if status:
+        rows = c.execute(
+            "SELECT * FROM companies WHERE status = ? ORDER BY created_at DESC", (status,)
+        ).fetchall()
+    else:
+        rows = c.execute("SELECT * FROM companies ORDER BY created_at DESC").fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def set_company_status(company_id: int, status: str) -> None:
+    c = _conn()
+    c.execute("UPDATE companies SET status = ? WHERE id = ?", (status, company_id))
+    c.commit()
+    c.close()
 
 
 def create_employer(company_id: int, email: str, password_hash: str, full_name: str,
