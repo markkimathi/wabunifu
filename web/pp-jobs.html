@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jobs · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  .hero{padding:20px 0 0}
+  .hero h1{margin:0 0 14px;font-size:var(--pp-display-size);line-height:1.0;letter-spacing:-0.04em;font-weight:800;max-width:22ch}
+  .hero p{margin:0 0 24px;font-size:17px;line-height:1.6;color:var(--c-text-muted);max-width:92ch}
+  .hero-search{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+  .hero-search .pp-field-input{flex:1;min-width:280px;height:52px;border-radius:12px}
+  .hero-search .pp-field-input input{font-size:16px}
+
+  .tabbar{position:sticky;top:56px;z-index:var(--pp-z-sticky);background:var(--c-bg);border-bottom:1px solid var(--c-border)}
+  @media(min-width:1024px){.tabbar{top:var(--pp-header-height)}}
+  .tabbar-inner{display:flex;gap:26px}
+  .tabbar button{border:none;background:transparent;font-family:var(--pp-font);font-size:15px;font-weight:500;
+    color:var(--c-text-subtle);padding:14px 0 12px;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;
+    display:inline-flex;align-items:center;gap:8px}
+  .tabbar button.-active{font-weight:600;color:var(--c-text);border-bottom-color:var(--pp-gold)}
+  .tabbar .pp-tab-count{padding:1px 8px;border-radius:999px;background:var(--c-surface-inset);font-size:12px;font-weight:700}
+
+  .layout{padding:32px 0 64px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:32px;align-items:start}
+  @media(max-width:1023px){.layout{grid-template-columns:1fr}}
+
+  .rail{border:1px solid var(--c-border);border-radius:var(--pp-radius-xl);background:var(--c-surface);
+    padding:20px;display:flex;flex-direction:column;gap:22px;position:sticky;top:150px;max-height:560px;overflow-y:auto}
+  @media(min-width:1024px){.rail{top:190px}}
+  @media(max-width:1023px){.rail{position:static;max-height:none}}
+  .rail-head{display:flex;align-items:center;justify-content:space-between}
+  .rail-head span{font-size:15px;font-weight:700}
+  .rail-reset{border:none;background:transparent;font-family:var(--pp-font);font-size:13.5px;font-weight:600;
+    color:var(--c-accent-text);cursor:pointer;padding:4px}
+  .rail-group{display:flex;flex-direction:column;gap:10px}
+  .rail-label{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-faint)}
+  .rail-divider{height:1px;background:var(--c-surface-inset)}
+  .rail-chips{display:flex;flex-wrap:wrap;gap:7px}
+  .rail-chip{padding:6px 12px;border-radius:999px;font-family:var(--pp-font);font-size:13.5px;font-weight:500;
+    cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
+  .rail-chip.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
+  .rail-cta{padding:16px;border-radius:10px;background:var(--c-good-bg);border:1px solid var(--c-good-border)}
+  .rail-cta h4{margin:0 0 6px;font-size:14.5px;font-weight:700;color:var(--c-good-text)}
+  .rail-cta p{margin:0 0 12px;font-size:13px;line-height:1.5;color:var(--c-good-text)}
+  .rail-cta a{font-size:13.5px;font-weight:600;color:var(--c-good-text);border-bottom:1px solid currentColor;padding-bottom:1px;text-decoration:none}
+
+  .results-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+  .results-count{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .results-count>span{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  .active-chip{display:inline-flex;align-items:center;gap:7px;padding:5px 10px;border:none;border-radius:7px;
+    font-family:var(--pp-font);font-size:12.5px;font-weight:600;cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted)}
+  .sort-wrap{position:relative;display:flex;align-items:center;gap:8px}
+  .sort-wrap>span{font-size:13.5px;color:var(--c-text-subtle)}
+  .sort-btn{height:40px;padding:0 12px;border:1px solid var(--c-border-strong);border-radius:9px;background:var(--c-surface);
+    font-family:var(--pp-font);font-size:14px;font-weight:500;color:var(--c-text);cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+  .sort-menu{position:absolute;top:46px;right:0;z-index:8;min-width:200px;padding:6px;border:1px solid var(--c-surface-inset);
+    border-radius:10px;background:var(--c-surface);box-shadow:var(--pp-shadow-lg);display:none}
+  .sort-menu.-open{display:block}
+  .sort-menu button{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;padding:9px 10px;
+    border:none;border-radius:7px;background:transparent;font-family:var(--pp-font);font-size:14px;color:var(--c-text);
+    cursor:pointer;text-align:left}
+  .sort-menu button:hover{background:var(--c-bg-sunken)}
+  .sort-menu button.-picked{font-weight:600}
+  .sort-menu .tick{color:var(--c-accent-text);font-weight:700}
+
+  .job-row{padding:20px 4px;border-bottom:1px solid var(--c-border);background:var(--c-surface);
+    display:grid;grid-template-columns:minmax(0,1fr) 104px 216px 118px 36px 18px;align-items:center;gap:20px;
+    cursor:pointer;text-decoration:none;color:inherit}
+  .job-row:hover{background:var(--c-bg-sunken)}
+  @media(max-width:900px){.job-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main save" "tags tags" "meta meta";row-gap:10px}
+    .job-row .jr-place{display:none}}
+  .jr-main{display:flex;align-items:center;gap:12px;min-width:0;grid-area:main}
+  .jr-main h4{margin:0 0 2px;font-size:16px;font-weight:700;letter-spacing:-0.015em;line-height:1.28;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .jr-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .jr-place{font-size:13.5px;color:var(--c-text-muted);margin:0}
+  .jr-tags{display:flex;flex-wrap:wrap;gap:6px;grid-area:tags}
+  .jr-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;grid-area:meta}
+  @media(max-width:900px){.jr-meta{align-items:flex-start}}
+  .jr-meta .pay{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  .jr-meta .posted{font-size:12px;color:var(--c-text-faint);white-space:nowrap}
+  .jr-save{grid-area:save}
+  .jr-chevron{color:var(--c-icon);flex:none}
+  @media(max-width:900px){.jr-chevron{display:none}}
+
+  .list-wrap{border-top:1px solid var(--c-border)}
+  .state-panel{padding:40px 24px;border-radius:12px;background:var(--c-surface);border:1px solid var(--c-border);text-align:center;
+    display:flex;flex-direction:column;align-items:center}
+  .state-panel h3{margin:0 0 7px;font-size:20px;font-weight:700;letter-spacing:-0.02em}
+  .state-panel p{margin:0 0 20px;font-size:15px;line-height:1.6;max-width:44ch;color:var(--c-text-subtle)}
+  .state-icon{width:44px;height:44px;border-radius:50%;background:var(--c-bad-bg);color:var(--c-bad-text);
+    display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+  .empty-icon{width:52px;height:52px;border-radius:12px;background:var(--pp-gold-200);border:1px solid var(--pp-gold-400);
+    color:var(--pp-gold-800);margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
+
+  .skeleton-row{padding:20px;border-radius:12px;background:var(--c-surface);border:1px solid var(--c-border);
+    display:flex;gap:16px;align-items:flex-start;margin-bottom:12px}
+  .skeleton-block{background:var(--c-surface-inset);border-radius:5px;animation:pp-pulse 1.4s ease-in-out infinite}
+  @keyframes pp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  @media(prefers-reduced-motion:reduce){.skeleton-block{animation:none}}
+
+  .pager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:28px}
+  .pager button,.pager span.pg-num{height:40px;min-width:40px;padding:0 14px;border-radius:9px;font-family:var(--pp-font);
+    font-size:14px;font-weight:600;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;white-space:nowrap}
+  .pager button{border:1px solid var(--c-border-strong);background:var(--c-surface);color:var(--c-text)}
+  .pager button:hover{background:var(--c-bg-sunken)}
+  .pager button:disabled{color:var(--c-border-strong);cursor:not-allowed;background:var(--c-surface)}
+  .pg-num{border:none;padding:0;background:transparent;color:var(--c-text-muted);cursor:pointer}
+  .pg-num.-active{background:var(--c-text);color:var(--c-bg);cursor:default}
+
+  #pp-toast{position:fixed;bottom:24px;left:0;right:0;z-index:var(--pp-z-toast);display:flex;justify-content:center;pointer-events:none}
+  .toast-panel{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;background:var(--pp-ink);
+    box-shadow:var(--pp-shadow-lg);pointer-events:auto;opacity:0;transform:translateY(8px);
+    transition:opacity var(--pp-duration) var(--pp-ease),transform var(--pp-duration) var(--pp-ease)}
+  .toast-panel.-show{opacity:1;transform:translateY(0)}
+  .toast-panel span{font-size:14px;color:var(--pp-white)}
+  .toast-panel button{border:none;background:transparent;color:var(--pp-gold);font-family:var(--pp-font);
+    font-size:13.5px;font-weight:600;cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="jobs"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Jobs"}]'></nav>
+
+<main>
+  <div class="wrap hero">
+    <h1>Design roles, checked<br>for where you live</h1>
+    <p id="heroSub">Loading roles…</p>
+    <div class="hero-search">
+      <label class="pp-field-input" style="flex:1;min-width:280px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+        <input type="text" id="searchInput" placeholder="Product designer, brand, motion…">
+      </label>
+      <button class="pp-btn pp-btn-primary pp-btn-lg" id="searchBtn" type="button">Search</button>
+    </div>
+  </div>
+
+  <div class="tabbar">
+    <div class="wrap tabbar-inner">
+      <button class="-active" id="tabAll" type="button">All roles</button>
+      <button id="tabSaved" type="button">Saved<span class="pp-tab-count" id="savedCount">0</span></button>
+    </div>
+  </div>
+
+  <div class="wrap layout">
+    <aside class="rail">
+      <div class="rail-head"><span>Filters</span><button class="rail-reset" id="resetFilters" type="button">Reset</button></div>
+
+      <div class="rail-group">
+        <span class="rail-label">Where you can apply from</span>
+        <div id="eligFilters"></div>
+      </div>
+      <div class="rail-divider"></div>
+      <div class="rail-group">
+        <span class="rail-label">Discipline</span>
+        <div class="rail-chips" id="disciplineFilters"></div>
+      </div>
+      <div class="rail-divider"></div>
+      <div class="rail-group">
+        <span class="rail-label">Experience</span>
+        <div id="levelFilters"></div>
+      </div>
+      <div class="rail-divider"></div>
+      <div class="rail-group">
+        <span class="rail-label">Pay published</span>
+        <label class="pp-toggle-row">
+          <input type="checkbox" id="payOnly">
+          <span class="pp-toggle"></span>
+          Only roles with pay
+        </label>
+      </div>
+
+      <div class="rail-cta">
+        <h4>Not hearing back?</h4>
+        <p>Check your résumé against any role on this board, and we'll show you what the screener isn't finding.</p>
+        <a href="pp-resources.html">Run a résumé check</a>
+      </div>
+    </aside>
+
+    <div>
+      <div class="results-head">
+        <div class="results-count" id="resultsCount"></div>
+        <div class="sort-wrap">
+          <span>Sort</span>
+          <button class="sort-btn" id="sortBtn" type="button">Newest
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+          </button>
+          <div class="sort-menu" id="sortMenu"></div>
+        </div>
+      </div>
+
+      <div id="jobsArea"></div>
+      <div class="pager" id="pager" hidden></div>
+    </div>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+<div id="pp-toast"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var ICONS = {
+    save: '<svg width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="{{fill}}" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>',
+    chevron: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>',
+    x: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
+    alert: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.5"></path><circle cx="12" cy="12" r="9"></circle></svg>',
+    search: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>',
+    check: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>'
+  };
+
+  var LEVELS = ["Junior", "Mid", "Senior", "Lead"];
+  var PAGE_SIZE = 20;
+
+  var state = {
+    all: [], loaded: false, failed: false,
+    query: "", elig: { africa: true, world: true, check: true },
+    disciplines: new Set(), levels: new Set(), payOnly: false,
+    sort: "newest", tab: "all", page: 1
+  };
+
+  function savedIds(){
+    try { return JSON.parse(localStorage.getItem("pp_saved_jobs") || "[]"); } catch (e) { return []; }
+  }
+  function isSaved(id){ return savedIds().indexOf(id) !== -1; }
+  function setSaved(id, on){
+    var ids = savedIds();
+    var idx = ids.indexOf(id);
+    if (on && idx === -1) ids.push(id);
+    if (!on && idx !== -1) ids.splice(idx, 1);
+    localStorage.setItem("pp_saved_jobs", JSON.stringify(ids));
+    document.getElementById("savedCount").textContent = ids.length;
+  }
+
+  // Kazi's own eligibility model has 4 values (kenya/africa/world/check);
+  // Path & Pixel's spec is a simplified 3-tier one (Open across Africa /
+  // Global remote / Worth checking), with green carrying the signal for
+  // both positive tiers and nothing else. kenya and africa collapse into
+  // the same "Open across Africa" tier here — P&P is Africa-first, not
+  // Kenya-first, per house rules.
+  var ELIG_META = {
+    africa: { label: "Open across Africa", positive: true },
+    kenya: { label: "Open across Africa", positive: true },
+    world: { label: "Global remote", positive: true },
+    check: { label: "Worth checking", positive: false }
+  };
+  function eligBadge(elig){
+    var m = ELIG_META[elig] || ELIG_META.check;
+    if (m.positive) return '<span class="pp-elig -positive"><span class="pp-elig-dot"></span>' + m.label + '</span>';
+    return '<span class="pp-elig -check">' + m.label + '</span>';
+  }
+  function eligGroup(elig){ return (elig === "kenya" || elig === "africa") ? "africa" : elig; }
+
+  var toastTimer = null;
+  function showToast(msg, action){
+    var host = document.getElementById("pp-toast");
+    var panel = document.createElement("div");
+    panel.className = "toast-panel";
+    panel.innerHTML = ICONS.check.replace("currentColor", "var(--pp-gold)") + "<span></span>" +
+      (action ? '<button type="button"></button>' : "");
+    panel.querySelector("span").textContent = msg;
+    if (action) {
+      var btn = panel.querySelector("button");
+      btn.textContent = action.label;
+      btn.addEventListener("click", function(){ action.onClick(); host.innerHTML = ""; });
+    }
+    host.innerHTML = "";
+    host.appendChild(panel);
+    requestAnimationFrame(function(){ panel.classList.add("-show"); });
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ host.innerHTML = ""; }, 2600);
+  }
+
+  function matchesFilters(j){
+    if (state.tab === "saved" && !isSaved(j.id)) return false;
+    if (!state.elig[eligGroup(j.elig)]) return false;
+    if (state.disciplines.size && !state.disciplines.has(j.cat)) return false;
+    if (state.levels.size && !state.levels.has(j.level)) return false;
+    if (state.payOnly && (!j.pay || j.pay === "Not disclosed")) return false;
+    if (state.query) {
+      var q = state.query.toLowerCase();
+      if ((j.t || "").toLowerCase().indexOf(q) === -1 && (j.co || "").toLowerCase().indexOf(q) === -1) return false;
+    }
+    return true;
+  }
+
+  function sortJobs(list){
+    var out = list.slice();
+    if (state.sort === "pay") {
+      out.sort(function(a, b){
+        var ap = a.pay && a.pay !== "Not disclosed" ? 0 : 1;
+        var bp = b.pay && b.pay !== "Not disclosed" ? 0 : 1;
+        return ap - bp || a.days - b.days;
+      });
+    } else {
+      out.sort(function(a, b){ return a.days - b.days; });
+    }
+    return out;
+  }
+
+  function renderFilterRail(){
+    var eligBox = document.getElementById("eligFilters");
+    eligBox.innerHTML = [["africa", "Open across Africa"], ["world", "Global remote"], ["check", "Worth checking"]]
+      .map(function(pair){
+        var key = pair[0], label = pair[1];
+        var count = state.all.filter(function(j){ return eligGroup(j.elig) === key; }).length;
+        return '<label class="pp-check-row"><input type="checkbox" data-elig="' + key + '"' +
+          (state.elig[key] ? " checked" : "") + '>' + label +
+          '<span class="pp-check-count">' + count + '</span></label>';
+      }).join("");
+    eligBox.querySelectorAll("input").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        state.elig[cb.getAttribute("data-elig")] = cb.checked;
+        state.page = 1;
+        renderResults();
+      });
+    });
+
+    var disciplines = Array.from(new Set(state.all.map(function(j){ return j.cat; }).filter(Boolean))).sort();
+    var discBox = document.getElementById("disciplineFilters");
+    discBox.innerHTML = disciplines.map(function(d){
+      return '<button type="button" class="rail-chip' + (state.disciplines.has(d) ? " -active" : "") + '" data-disc="' + d + '">' + d + '</button>';
+    }).join("");
+    discBox.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var d = btn.getAttribute("data-disc");
+        if (state.disciplines.has(d)) state.disciplines.delete(d); else state.disciplines.add(d);
+        state.page = 1;
+        renderFilterRail();
+        renderResults();
+      });
+    });
+
+    var levelBox = document.getElementById("levelFilters");
+    levelBox.innerHTML = LEVELS.map(function(l){
+      var count = state.all.filter(function(j){ return j.level === l; }).length;
+      if (!count) return "";
+      return '<label class="pp-check-row"><input type="checkbox" data-level="' + l + '"' +
+        (state.levels.has(l) ? " checked" : "") + '>' + l +
+        '<span class="pp-check-count">' + count + '</span></label>';
+    }).join("");
+    levelBox.querySelectorAll("input").forEach(function(cb){
+      cb.addEventListener("change", function(){
+        var l = cb.getAttribute("data-level");
+        if (cb.checked) state.levels.add(l); else state.levels.delete(l);
+        state.page = 1;
+        renderResults();
+      });
+    });
+  }
+
+  function activeChipsHtml(){
+    var chips = [];
+    [["africa", "Open across Africa"], ["world", "Global remote"], ["check", "Worth checking"]].forEach(function(pair){
+      if (!state.elig[pair[0]]) chips.push({ label: pair[1] + " ✕ off", key: "elig", val: pair[0] });
+    });
+    state.disciplines.forEach(function(d){ chips.push({ label: d, key: "disc", val: d }); });
+    state.levels.forEach(function(l){ chips.push({ label: l, key: "level", val: l }); });
+    if (state.payOnly) chips.push({ label: "Pay published", key: "pay" });
+    if (!chips.length) return "";
+    return chips.map(function(c, i){
+      return '<button type="button" class="active-chip" data-chip="' + i + '">' + c.label + ICONS.x + '</button>';
+    }).join("");
+  }
+
+  function renderResultsHead(filteredCount){
+    var countEl = document.getElementById("resultsCount");
+    var label = filteredCount + (filteredCount === 1 ? " role" : " roles");
+    countEl.innerHTML = '<span>' + label + '</span>' + activeChipsHtml();
+  }
+
+  function renderJobRow(j){
+    var tags = eligBadge(j.elig) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>';
+    var saved = isSaved(j.id);
+    return '<a class="job-row" href="pp-job.html?id=' + encodeURIComponent(j.id) + '">' +
+      '<div class="jr-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
+        '<div><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + '</p></div></div>' +
+      '<p class="jr-place">' + escapeHtml(j.city || "Remote") + '</p>' +
+      '<div class="jr-tags">' + tags + '</div>' +
+      '<div class="jr-meta"><span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span>' +
+        '<span class="posted">' + postedLabel(j.days) + '</span></div>' +
+      '<button type="button" class="pp-btn-icon jr-save' + (saved ? " -saved" : "") + '" data-save="' + j.id + '" aria-label="Save role">' +
+        ICONS.save.replace("{{fill}}", saved ? "currentColor" : "none") + '</button>' +
+      '<span class="jr-chevron">' + ICONS.chevron + '</span>' +
+    '</a>';
+  }
+
+  function postedLabel(days){
+    if (days === 0) return "Today";
+    if (days === 1) return "1 day ago";
+    return days + " days ago";
+  }
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
+  function renderResults(){
+    var area = document.getElementById("jobsArea");
+    var pager = document.getElementById("pager");
+
+    if (!state.loaded && !state.failed) {
+      renderResultsHead(0);
+      area.innerHTML = Array.from({ length: 4 }).map(function(){
+        return '<div class="skeleton-row" aria-hidden="true">' +
+          '<span class="skeleton-block" style="width:48px;height:48px;border-radius:12px;flex:none"></span>' +
+          '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:9px">' +
+          '<span class="skeleton-block" style="height:17px;width:60%"></span>' +
+          '<span class="skeleton-block" style="height:13px;width:40%"></span>' +
+          '<span class="skeleton-block" style="height:13px;width:30%"></span></div>' +
+          '<span class="skeleton-block" style="width:96px;height:36px;border-radius:10px;flex:none"></span></div>';
+      }).join("");
+      pager.hidden = true;
+      return;
+    }
+
+    if (state.failed) {
+      renderResultsHead(0);
+      area.innerHTML = '<div class="state-panel" role="alert">' +
+        '<span class="state-icon">' + ICONS.alert + '</span>' +
+        '<h3>The board didn\'t load</h3>' +
+        '<p>Your filters and saved roles are still here. This was the request for the listings themselves, so nothing you set has been lost.</p>' +
+        '<button type="button" class="pp-btn pp-btn-primary" id="retryBtn">Load the roles again</button></div>';
+      document.getElementById("retryBtn").addEventListener("click", loadJobs);
+      pager.hidden = true;
+      return;
+    }
+
+    var filtered = sortJobs(state.all.filter(matchesFilters));
+    renderResultsHead(filtered.length);
+
+    if (!filtered.length) {
+      var emptyBody = state.tab === "saved"
+        ? "Save a role and it waits here, with the closing date, so you don't miss it."
+        : "Nothing matches those filters right now. Try clearing a few.";
+      area.innerHTML = '<div class="state-panel">' +
+        '<span class="empty-icon">' + ICONS.search + '</span>' +
+        '<h3>' + (state.tab === "saved" ? "Nothing saved yet" : "No roles match") + '</h3>' +
+        '<p>' + emptyBody + '</p>' +
+        (state.tab === "saved"
+          ? '<button type="button" class="pp-btn pp-btn-primary" id="browseBtn">Browse open roles</button>'
+          : '<button type="button" class="pp-btn pp-btn-primary" id="clearBtn">Clear all filters</button>') +
+        '</div>';
+      var b = document.getElementById("browseBtn") || document.getElementById("clearBtn");
+      b.addEventListener("click", function(){
+        if (state.tab === "saved") { state.tab = "all"; setTab("all"); }
+        resetFilters();
+      });
+      pager.hidden = true;
+      return;
+    }
+
+    var totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+    if (state.page > totalPages) state.page = totalPages;
+    var pageItems = filtered.slice((state.page - 1) * PAGE_SIZE, state.page * PAGE_SIZE);
+
+    area.innerHTML = '<div class="list-wrap">' + pageItems.map(renderJobRow).join("") + '</div>';
+    area.querySelectorAll("[data-save]").forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.preventDefault(); e.stopPropagation();
+        var id = btn.getAttribute("data-save");
+        var wasSaved = isSaved(id);
+        setSaved(id, !wasSaved);
+        renderResults();
+        if (!wasSaved) {
+          showToast("Saved. Find it under Saved.", { label: "Undo", onClick: function(){ setSaved(id, false); renderResults(); } });
+        }
+      });
+    });
+
+    if (totalPages > 1) {
+      pager.hidden = false;
+      var pieces = [];
+      pieces.push('<button type="button" data-page="' + (state.page - 1) + '"' + (state.page === 1 ? " disabled" : "") + '>Previous</button>');
+      for (var p = 1; p <= totalPages; p++) {
+        if (p === 1 || p === totalPages || Math.abs(p - state.page) <= 1) {
+          pieces.push('<span class="pg-num' + (p === state.page ? " -active" : "") + '" data-page="' + p + '">' + p + '</span>');
+        } else if (p === 2 || p === totalPages - 1) {
+          pieces.push('<span class="pg-num" style="cursor:default">…</span>');
+        }
+      }
+      pieces.push('<button type="button" data-page="' + (state.page + 1) + '"' + (state.page === totalPages ? " disabled" : "") + '>Next</button>');
+      pager.innerHTML = pieces.join("");
+      pager.querySelectorAll("[data-page]").forEach(function(el){
+        el.addEventListener("click", function(){
+          var p = parseInt(el.getAttribute("data-page"), 10);
+          if (p >= 1 && p <= totalPages) { state.page = p; renderResults(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+        });
+      });
+    } else {
+      pager.hidden = true;
+    }
+  }
+
+  function resetFilters(){
+    state.elig = { africa: true, world: true, check: true };
+    state.disciplines = new Set();
+    state.levels = new Set();
+    state.payOnly = false;
+    state.query = "";
+    document.getElementById("searchInput").value = "";
+    document.getElementById("payOnly").checked = false;
+    state.page = 1;
+    renderFilterRail();
+    renderResults();
+  }
+
+  function setTab(tab){
+    state.tab = tab;
+    state.page = 1;
+    document.getElementById("tabAll").classList.toggle("-active", tab === "all");
+    document.getElementById("tabSaved").classList.toggle("-active", tab === "saved");
+    renderResults();
+  }
+
+  var SORTS = [{ key: "newest", label: "Newest" }, { key: "pay", label: "Salary disclosed first" }];
+  function renderSortMenu(){
+    var menu = document.getElementById("sortMenu");
+    menu.innerHTML = SORTS.map(function(s){
+      return '<button type="button" data-sort="' + s.key + '" class="' + (state.sort === s.key ? "-picked" : "") + '">' +
+        s.label + (state.sort === s.key ? '<span class="tick">' + ICONS.check.replace(/width="18" height="18"/, 'width="14" height="14"') + '</span>' : "") + '</button>';
+    }).join("");
+    menu.querySelectorAll("button").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        state.sort = btn.getAttribute("data-sort");
+        document.getElementById("sortBtn").firstChild.textContent = SORTS.filter(function(s){ return s.key === state.sort; })[0].label;
+        menu.classList.remove("-open");
+        renderSortMenu();
+        renderResults();
+      });
+    });
+  }
+
+  async function loadJobs(){
+    state.loaded = false;
+    state.failed = false;
+    renderResults();
+    try {
+      var res = await fetch("/api/jobs", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      state.all = data.jobs || [];
+      state.loaded = true;
+      document.getElementById("heroSub").textContent =
+        state.all.length.toLocaleString() + " open roles, updated " +
+        new Date(data.generated_at).toLocaleDateString(undefined, { month: "long", day: "numeric" }) +
+        ". We've read every one of them and said plainly who can take it, so you know where you stand before you open it. When you're ready, you'll apply on the company's own page.";
+      renderFilterRail();
+    } catch (e) {
+      state.failed = true;
+    }
+    renderResults();
+  }
+
+  function init(){
+    document.getElementById("savedCount").textContent = savedIds().length;
+    document.getElementById("tabAll").addEventListener("click", function(){ setTab("all"); });
+    document.getElementById("tabSaved").addEventListener("click", function(){ setTab("saved"); });
+    document.getElementById("resetFilters").addEventListener("click", resetFilters);
+    document.getElementById("payOnly").addEventListener("change", function(e){
+      state.payOnly = e.target.checked; state.page = 1; renderResults();
+    });
+    var searchInput = document.getElementById("searchInput");
+    function runSearch(){ state.query = searchInput.value.trim(); state.page = 1; renderResults(); }
+    document.getElementById("searchBtn").addEventListener("click", runSearch);
+    searchInput.addEventListener("keydown", function(e){ if (e.key === "Enter") runSearch(); });
+
+    var sortBtn = document.getElementById("sortBtn");
+    var sortMenu = document.getElementById("sortMenu");
+    sortBtn.addEventListener("click", function(){ sortMenu.classList.toggle("-open"); });
+    document.addEventListener("click", function(e){
+      if (!sortBtn.contains(e.target) && !sortMenu.contains(e.target)) sortMenu.classList.remove("-open");
+    });
+    renderSortMenu();
+
+    var qParam = new URLSearchParams(location.search).get("q");
+    if (qParam) { searchInput.value = qParam; state.query = qParam; }
+
+    loadJobs();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

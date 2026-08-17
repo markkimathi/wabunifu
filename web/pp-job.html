@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job · Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  .layout{padding:24px 0 72px;display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:56px;align-items:start}
+  @media(max-width:1023px){.layout{grid-template-columns:1fr;gap:0}}
+
+  .role-head{display:flex;align-items:flex-start;gap:18px;margin-bottom:22px}
+  .role-head .pp-card-mark{width:64px;height:64px;font-size:26px;border-radius:var(--pp-radius-lg)}
+  .role-head h1{margin:0 0 8px;font-size:var(--pp-h1-size);line-height:1.05;letter-spacing:-0.034em;font-weight:800}
+  .role-head .meta{margin:0;font-size:17px;color:var(--c-text-muted)}
+  .role-tags{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:32px}
+
+  .desc{max-width:720px;font-size:17px;line-height:1.65;color:var(--c-text-muted)}
+  .desc h2,.desc h3{color:var(--c-text);font-weight:600;letter-spacing:-0.016em;margin:24px 0 12px}
+  .desc p{margin:0 0 14px}
+  .desc ul,.desc ol{margin:0 0 14px;padding-left:20px}
+  .desc li{margin-bottom:6px}
+  .desc.-clamped{max-height:340px;overflow:hidden;position:relative;mask-image:linear-gradient(to bottom, black 70%, transparent 100%)}
+  .expand-btn{align-self:flex-start;margin-top:16px}
+
+  .elig-panel{margin-top:32px;max-width:720px;padding:24px 26px;border-radius:var(--pp-radius-lg);
+    background:var(--c-good-bg);border:1px solid var(--c-good-border)}
+  .elig-panel h4{margin:0 0 10px;font-size:19px;font-weight:700;letter-spacing:-0.018em;color:var(--c-good-text)}
+  .elig-panel p{margin:0 0 12px;font-size:16.5px;line-height:1.6;color:var(--c-good-text)}
+  .elig-panel p:last-child{margin:0;font-size:14.5px;opacity:.8}
+  .elig-panel.-check{background:var(--pp-gold-200);border-color:var(--pp-gold-400)}
+  .elig-panel.-check h4,.elig-panel.-check p{color:var(--pp-gold-800)}
+
+  aside.apply-rail{display:flex;flex-direction:column;gap:16px;position:sticky;top:calc(var(--pp-header-height) + 24px);align-self:start}
+  @media(max-width:1023px){aside.apply-rail{position:static;padding-top:32px}}
+  .rail-card{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .pay-amount{font-size:26px;font-weight:800;letter-spacing:-0.028em;font-variant-numeric:tabular-nums;margin-bottom:2px}
+  .pay-note{font-size:14px;color:var(--c-text-subtle);margin-bottom:20px}
+  .rail-card .pp-btn{width:100%;margin-bottom:10px}
+  .rail-meta{margin-top:20px;padding-top:18px;border-top:1px solid var(--c-surface-inset);display:flex;flex-direction:column;gap:11px}
+  .rail-meta-row{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+  .rail-meta-row span:first-child{color:var(--c-text-subtle)}
+  .rail-meta-row span:last-child{font-weight:600}
+
+  .company-card{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .company-card .row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .company-card .name{font-size:16px;font-weight:700;letter-spacing:-0.015em}
+  .company-card .sub{font-size:13.5px;color:var(--c-text-subtle)}
+  .company-card p{margin:0 0 14px;font-size:14px;line-height:1.55;color:var(--c-text-muted)}
+  .company-card a.more{font-size:14px;font-weight:600;color:var(--c-accent-text);text-decoration:none}
+
+  .cv-card{padding:22px;border:1px solid var(--c-good-border);border-radius:var(--pp-radius-lg);background:var(--c-good-bg)}
+  .cv-card h4{margin:0 0 6px;font-size:16px;font-weight:700;color:var(--c-good-text)}
+  .cv-card p{margin:0 0 16px;font-size:13.5px;line-height:1.55;color:var(--c-good-text)}
+  .cv-option{width:100%;display:flex;align-items:center;gap:11px;padding:12px 14px;border-radius:10px;margin-bottom:8px;
+    cursor:pointer;text-align:left;font-family:var(--pp-font);background:var(--c-surface);border:1px solid var(--c-border-strong)}
+  .cv-option.-active{border-color:var(--c-good);box-shadow:0 0 0 3px var(--c-good-border)}
+  .cv-dot{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid var(--c-good-border);display:inline-flex;align-items:center;justify-content:center}
+  .cv-option.-active .cv-dot{border-color:var(--c-good)}
+  .cv-dot span{width:8px;height:8px;border-radius:50%;background:transparent}
+  .cv-option.-active .cv-dot span{background:var(--c-good)}
+  .cv-option .label{font-size:14px;font-weight:600;color:var(--c-good-text)}
+  .cv-option .sub{display:block;font-size:12.5px;color:var(--c-good-text)}
+  .cv-drop{border:1.5px dashed var(--c-good-border);border-radius:10px;padding:18px;text-align:center;background:var(--c-surface);margin-bottom:10px}
+  .cv-drop p{margin:8px 0 2px;font-size:13.5px;font-weight:600;color:var(--c-good-text)}
+  .cv-drop span{font-size:12px;color:var(--c-good-text)}
+  .cv-run{height:44px;width:100%;border:none;border-radius:10px;background:var(--c-good-text);color:var(--pp-white);
+    font-family:var(--pp-font);font-size:15px;font-weight:600;cursor:pointer}
+  .cv-run:disabled{opacity:.6;cursor:not-allowed}
+  .cv-score{display:flex;align-items:baseline;gap:10px;margin-bottom:12px}
+  .cv-score .pct{font-size:38px;font-weight:800;letter-spacing:-0.03em;color:var(--c-good-text);font-variant-numeric:tabular-nums}
+  .cv-score .note{font-size:13.5px;color:var(--c-good-text)}
+  .cv-bar{height:8px;border-radius:999px;background:var(--c-good-border);margin-bottom:16px;overflow:hidden}
+  .cv-bar span{display:block;height:100%;background:var(--c-good)}
+  .cv-missing-label{display:block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-good-text);margin-bottom:8px}
+  .cv-missing{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+  .cv-missing span{padding:4px 10px;border-radius:7px;background:var(--pp-gold-300);color:var(--pp-gold-800);font-size:12.5px;font-weight:600}
+  .cv-summary{margin:0 0 14px;font-size:13.5px;line-height:1.55;color:var(--c-good-text)}
+  .cv-reset{height:40px;width:100%;border:1px solid var(--c-good-border);border-radius:10px;background:var(--c-surface);
+    color:var(--c-good-text);font-family:var(--pp-font);font-size:14px;font-weight:600;cursor:pointer}
+
+  .similar-card{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .similar-card h4{margin:0 0 14px;font-size:15px;font-weight:700}
+  .similar-item{display:block;text-decoration:none;color:inherit;margin-bottom:14px}
+  .similar-item:last-child{margin-bottom:0}
+  .similar-item .t{font-size:14.5px;font-weight:600;line-height:1.35;margin-bottom:2px}
+  .similar-item .s{font-size:13px;color:var(--c-text-subtle)}
+  .similar-divider{height:1px;background:var(--c-surface-inset);margin:14px 0}
+
+  .share-backdrop{position:fixed;inset:0;z-index:var(--pp-z-modal);background:rgba(10,10,10,.48);
+    display:none;align-items:flex-start;justify-content:center;padding:120px 24px 24px}
+  .share-backdrop.-open{display:flex}
+  .share-panel{width:100%;max-width:440px;background:var(--c-surface);border-radius:16px;box-shadow:var(--pp-shadow-xl);padding:26px}
+  .share-panel h3{margin:0;font-size:21px;font-weight:700;letter-spacing:-0.018em}
+  .share-panel .head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:6px}
+  .share-panel .sub{margin:0 0 20px;font-size:14.5px;line-height:1.55;color:var(--c-text-subtle)}
+  .share-link-row{display:flex;gap:8px;margin-bottom:20px}
+  .share-link-row .box{flex:1;min-width:0;height:48px;padding:0 14px;border:1px solid var(--c-border);border-radius:10px;
+    background:var(--c-bg-sunken);display:flex;align-items:center;overflow:hidden}
+  .share-link-row .box span{font-family:var(--pp-font-mono);font-size:13px;color:var(--c-text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .share-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .share-grid a{height:76px;border:1px solid var(--c-border);border-radius:10px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--c-text-muted);text-decoration:none}
+  .share-grid a:hover{background:var(--c-bg-sunken);color:var(--c-text)}
+
+  .state-panel{padding:64px 24px;text-align:center}
+  .state-panel h3{margin:0 0 8px;font-size:22px;font-weight:700}
+  .state-panel p{margin:0 0 20px;font-size:15px;color:var(--c-text-subtle)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="jobs"></div>
+<nav id="pp-breadcrumbs"></nav>
+
+<main>
+  <div class="wrap" id="content">
+    <div class="state-panel"><p>Loading role…</p></div>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var ICONS = {
+    save: '<svg width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="{{fill}}" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>',
+    share: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"></path></svg>',
+    external: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"></path></svg>',
+    chevron: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>',
+    close: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
+    upload: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"></path><path d="M4 16v3a2 2 0 002 2h12a2 2 0 002-2v-3"></path></svg>',
+    email: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 13l8.5-6.5"></path></svg>'
+  };
+
+  var ELIG_META = {
+    africa: { label: "Open across Africa", positive: true,
+      note: "This company's listing states where it can hire, and this role is included on that list." },
+    kenya: { label: "Open across Africa", positive: true,
+      note: "This company's listing names Kenya among the countries it can hire in." },
+    world: { label: "Global remote", positive: true,
+      note: "This role is open to remote candidates without a location restriction." },
+    check: { label: "Worth checking", positive: false,
+      note: "The posting doesn't say where you can work from. We've flagged it as worth checking, ask before you invest time applying." }
+  };
+  function eligMeta(elig){ return ELIG_META[elig] || ELIG_META.check; }
+  function eligGroup(elig){ return (elig === "kenya" || elig === "africa") ? "africa" : elig; }
+  function eligBadge(elig){
+    var m = eligMeta(elig);
+    if (m.positive) return '<span class="pp-elig -positive"><span class="pp-elig-dot"></span>' + m.label + '</span>';
+    return '<span class="pp-elig -check">' + m.label + '</span>';
+  }
+
+  function savedIds(){
+    try { return JSON.parse(localStorage.getItem("pp_saved_jobs") || "[]"); } catch (e) { return []; }
+  }
+  function isSaved(id){ return savedIds().indexOf(id) !== -1; }
+  function setSaved(id, on){
+    var ids = savedIds();
+    var idx = ids.indexOf(id);
+    if (on && idx === -1) ids.push(id);
+    if (!on && idx !== -1) ids.splice(idx, 1);
+    localStorage.setItem("pp_saved_jobs", JSON.stringify(ids));
+  }
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function postedLabel(days){
+    if (days === 0) return "Today";
+    if (days === 1) return "1 day ago";
+    return days + " days ago";
+  }
+  function plainTextLength(html){
+    var d = document.createElement("div");
+    d.innerHTML = html || "";
+    return (d.textContent || "").length;
+  }
+
+  var jobId = new URLSearchParams(location.search).get("id");
+  var job = null;
+  var allJobs = [];
+
+  async function loadJob(){
+    var content = document.getElementById("content");
+    if (!jobId) {
+      content.innerHTML = notFoundHtml("No role specified.");
+      return;
+    }
+    try {
+      var res = await fetch("/api/jobs/" + encodeURIComponent(jobId), { cache: "no-store" });
+      if (!res.ok) throw new Error("not found");
+      job = await res.json();
+    } catch (e) {
+      content.innerHTML = notFoundHtml("This role isn't here anymore. It may have closed or been removed.");
+      return;
+    }
+    renderJob();
+    loadSimilarAndCompany();
+  }
+
+  function notFoundHtml(msg){
+    return '<div class="state-panel"><h3>Role not found</h3><p>' + escapeHtml(msg) + '</p>' +
+      '<a class="pp-btn pp-btn-primary" href="pp-jobs.html">Browse open roles</a></div>';
+  }
+
+  function renderJob(){
+    document.title = job.t + " at " + job.co + " · Path & Pixel";
+
+    var crumbs = document.getElementById("pp-breadcrumbs");
+    crumbs.setAttribute("data-crumbs", JSON.stringify([{ label: "Jobs", href: "pp-jobs.html" }, { label: job.t }]));
+    PathPixelNav.renderBreadcrumbs(crumbs);
+
+    var meta = eligMeta(job.elig);
+    var elClass = meta.positive ? "" : " -check";
+    var descHtml = job.desc || ("<p>" + escapeHtml(job.desc_text || "No description was provided with this listing.") + "</p>");
+    var long = plainTextLength(descHtml) > 900;
+
+    document.getElementById("content").innerHTML =
+      '<div class="layout">' +
+        '<article>' +
+          '<div class="role-head">' +
+            '<span class="pp-card-mark">' + (job.co ? job.co[0].toUpperCase() : "?") + '</span>' +
+            '<div style="flex:1;min-width:0"><h1>' + escapeHtml(job.t) + '</h1>' +
+              '<p class="meta">' + escapeHtml(job.co) + ' · ' + escapeHtml(job.city || "Remote") +
+                (job.work ? " · " + escapeHtml(job.work) : "") + '</p></div>' +
+            '<button type="button" class="pp-btn pp-btn-secondary" id="shareBtn" style="flex:none">' + ICONS.share + 'Share</button>' +
+          '</div>' +
+          '<div class="role-tags">' + eligBadge(job.elig) +
+            (job.cat ? '<span class="pp-chip">' + escapeHtml(job.cat) + '</span>' : "") +
+            (job.level ? '<span class="pp-chip">' + escapeHtml(job.level) + '</span>' : "") + '</div>' +
+          '<div class="desc' + (long ? " -clamped" : "") + '" id="descBox">' + descHtml + '</div>' +
+          (long ? '<button type="button" class="pp-btn pp-btn-secondary expand-btn" id="expandBtn">Read the full description' + ICONS.chevron + '</button>' : "") +
+          '<div class="elig-panel' + elClass + '">' +
+            '<h4>How we checked this role</h4>' +
+            '<p>' + meta.note + '</p>' +
+            '<p>Something here look wrong? Tell us and we\'ll read it again.</p>' +
+          '</div>' +
+        '</article>' +
+
+        '<aside class="apply-rail">' +
+          '<div class="rail-card">' +
+            '<div class="pay-amount">' + escapeHtml(job.pay || "Not disclosed") + '</div>' +
+            '<div class="pay-note">' + (job.pay && job.pay !== "Not disclosed" ? "published by the company" : "the company hasn't shared a figure") + '</div>' +
+            '<a class="pp-btn pp-btn-primary pp-btn-lg" href="' + escapeHtml(job.url) + '" target="_blank" rel="noopener" id="applyBtn">Apply on ' + escapeHtml(job.co) + ICONS.external + '</a>' +
+            '<button type="button" class="pp-btn pp-btn-secondary" id="saveBtn"></button>' +
+            '<div class="rail-meta">' +
+              '<div class="rail-meta-row"><span>Posted</span><span>' + postedLabel(job.days) + '</span></div>' +
+              (job.src ? '<div class="rail-meta-row"><span>Listed via</span><span>' + escapeHtml(job.src) + '</span></div>' : "") +
+            '</div>' +
+          '</div>' +
+
+          '<div class="company-card" id="companyCard">' +
+            '<div class="row"><span class="pp-card-mark -logo">LOGO</span>' +
+              '<div><div class="name">' + escapeHtml(job.co) + '</div><div class="sub">' + escapeHtml(job.city || "Remote") + '</div></div></div>' +
+            '<p>Applications go to their own careers page, Path &amp; Pixel never hosts the application itself.</p>' +
+            '<a class="more" id="moreRolesLink" href="pp-jobs.html?q=' + encodeURIComponent(job.co) + '">More roles at ' + escapeHtml(job.co) + ' →</a>' +
+          '</div>' +
+
+          cvCardHtml() +
+
+          '<div class="similar-card" id="similarCard"><h4>Similar and still open</h4><p style="font-size:13.5px;color:var(--c-text-subtle);margin:0">Loading…</p></div>' +
+        '</aside>' +
+      '</div>' +
+
+      '<div class="share-backdrop" id="shareBackdrop">' +
+        '<div class="share-panel">' +
+          '<div class="head"><h3>Share this role</h3>' +
+            '<button type="button" class="pp-btn-icon -ghost" id="shareCloseBtn" aria-label="Close">' + ICONS.close + '</button></div>' +
+          '<p class="sub">' + escapeHtml(job.t) + ' at ' + escapeHtml(job.co) + '</p>' +
+          '<div class="share-link-row"><div class="box"><span id="shareUrlText"></span></div>' +
+            '<button type="button" class="pp-btn pp-btn-primary" id="copyLinkBtn">Copy</button></div>' +
+          '<div class="share-grid" id="shareGrid"></div>' +
+        '</div>' +
+      '</div>';
+
+    wireInteractions(long);
+  }
+
+  function cvCardHtml(){
+    return '<div class="cv-card" id="cvCard">' +
+      '<h4>Check this role against your résumé</h4>' +
+      '<p>We\'ll read the description and your résumé together, then show you what a screener would miss. We keep none of it.</p>' +
+      '<div id="cvBody"></div>' +
+    '</div>';
+  }
+
+  function wireInteractions(hasLongDesc){
+    var saveBtn = document.getElementById("saveBtn");
+    function paintSave(){
+      var saved = isSaved(job.id);
+      saveBtn.classList.toggle("pp-btn-secondary", true);
+      saveBtn.innerHTML = ICONS.save.replace("{{fill}}", saved ? "currentColor" : "none") + (saved ? "Saved" : "Save role");
+    }
+    paintSave();
+    saveBtn.addEventListener("click", function(){ setSaved(job.id, !isSaved(job.id)); paintSave(); });
+
+    if (hasLongDesc) {
+      var expandBtn = document.getElementById("expandBtn");
+      var descBox = document.getElementById("descBox");
+      expandBtn.addEventListener("click", function(){
+        var open = !descBox.classList.contains("-clamped");
+        descBox.classList.toggle("-clamped", open);
+        expandBtn.innerHTML = (open ? "Read the full description" : "Show less") + ICONS.chevron;
+        expandBtn.querySelector("svg").style.transform = open ? "none" : "rotate(180deg)";
+      });
+    }
+
+    var shareBackdrop = document.getElementById("shareBackdrop");
+    var shareUrl = location.origin + location.pathname + "?id=" + encodeURIComponent(job.id);
+    document.getElementById("shareUrlText").textContent = shareUrl.replace(/^https?:\/\//, "");
+    document.getElementById("shareBtn").addEventListener("click", function(){ shareBackdrop.classList.add("-open"); });
+    document.getElementById("shareCloseBtn").addEventListener("click", function(){ shareBackdrop.classList.remove("-open"); });
+    shareBackdrop.addEventListener("mousedown", function(e){ if (e.target === shareBackdrop) shareBackdrop.classList.remove("-open"); });
+    document.addEventListener("keydown", function(e){ if (e.key === "Escape") shareBackdrop.classList.remove("-open"); });
+
+    var copyBtn = document.getElementById("copyLinkBtn");
+    copyBtn.addEventListener("click", function(){
+      navigator.clipboard.writeText(shareUrl).then(function(){
+        copyBtn.textContent = "Copied";
+        setTimeout(function(){ copyBtn.textContent = "Copy"; }, 2000);
+      });
+    });
+
+    var shareText = encodeURIComponent(job.t + " at " + job.co);
+    var encodedUrl = encodeURIComponent(shareUrl);
+    document.getElementById("shareGrid").innerHTML =
+      '<a href="https://www.linkedin.com/sharing/share-offsite/?url=' + encodedUrl + '" target="_blank" rel="noopener"><svg width="19" height="19" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.03-3.04-1.85-3.04-1.86 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05a3.74 3.74 0 0 1 3.37-1.85c3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.07 2.07 0 1 1 0-4.13 2.07 2.07 0 0 1 0 4.13zm1.78 13.02H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.72V1.72C24 .77 23.2 0 22.22 0z"></path></svg>LinkedIn</a>' +
+      '<a href="https://twitter.com/intent/tweet?text=' + shareText + '&url=' + encodedUrl + '" target="_blank" rel="noopener"><svg width="19" height="19" viewBox="0 0 24 24" fill="#0A0A0A"><path d="M18.9 1.15h3.68l-8.04 9.19L24 22.85h-7.41l-5.8-7.58-6.64 7.58H.46l8.6-9.83L0 1.15h7.59l5.24 6.93zM17.61 20.64h2.04L6.49 3.24H4.3z"></path></svg>X</a>' +
+      '<a href="https://wa.me/?text=' + shareText + '%20' + encodedUrl + '" target="_blank" rel="noopener"><svg width="19" height="19" viewBox="0 0 24 24" fill="#25D366"><path d="M17.47 14.38c-.3-.15-1.76-.87-2.03-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.39-1.47-.88-.79-1.48-1.76-1.65-2.06-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.21-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.01-1.04 2.47s1.06 2.87 1.21 3.07c.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.19 1.87.12.57-.09 1.76-.72 2.01-1.41.25-.7.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35zM12.04 21.79h-.01a9.87 9.87 0 0 1-5.03-1.38l-.36-.21-3.74.98 1-3.64-.24-.37a9.86 9.86 0 0 1-1.51-5.26c0-5.45 4.44-9.88 9.9-9.88 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.89 6.99c0 5.45-4.44 9.88-9.89 9.88zM20.52 3.45A11.8 11.8 0 0 0 12.04 0C5.5 0 .18 5.32.18 11.86c0 2.09.55 4.13 1.59 5.93L.08 24l6.36-1.67a11.85 11.85 0 0 0 5.6 1.43h.01c6.54 0 11.86-5.32 11.86-11.86 0-3.17-1.23-6.15-3.47-8.39z"></path></svg>WhatsApp</a>' +
+      '<a href="mailto:?subject=' + shareText + '&body=' + encodedUrl + '">' + ICONS.email + 'Email</a>';
+
+    initCvWidget();
+  }
+
+  // ---- résumé check widget: wired to the real endpoints. Anonymous
+  // upload goes through /api/ats/check; a signed-in designer with a saved
+  // résumé can reuse it through /api/designers/me/ats-check instead. ----
+  function initCvWidget(){
+    var body = document.getElementById("cvBody");
+    var token = localStorage.getItem("kazi_designer_token");
+    var jobDescText = plainTextFrom(job.desc) || job.desc_text || job.t;
+    var mode = "upload"; // "saved" | "upload"
+    var pickedFile = null;
+    var designer = null;
+
+    function idleHtml(){
+      var savedOption = designer && designer.resume_path
+        ? '<button type="button" class="cv-option' + (mode === "saved" ? " -active" : "") + '" id="cvPickSaved">' +
+            '<span class="cv-dot"><span></span></span>' +
+            '<span><span class="label">Use the résumé on your profile</span>' +
+            '<span class="sub">' + escapeHtml(designer.resume_filename || "your saved résumé") + '</span></span></button>'
+        : "";
+      return savedOption +
+        '<button type="button" class="cv-option' + (mode === "upload" ? " -active" : "") + '" id="cvPickUpload">' +
+          '<span class="cv-dot"><span></span></span><span class="label">' + (savedOption ? "Upload a different one" : "Upload your résumé") + '</span></button>' +
+        (mode === "upload"
+          ? '<div class="cv-drop" id="cvDrop">' + ICONS.upload +
+              '<p>' + (pickedFile ? escapeHtml(pickedFile.name) : "Drop your résumé, or click to choose") + '</p>' +
+              '<span>PDF or DOCX, under 5 MB</span>' +
+              '<input type="file" id="cvFileInput" accept=".pdf,.docx" style="display:none">' +
+            '</div>'
+          : "") +
+        '<button type="button" class="cv-run" id="cvRunBtn"' + ((mode === "upload" && !pickedFile) ? " disabled" : "") + '>Check my résumé</button>';
+    }
+
+    function doneHtml(result){
+      var km = result.keyword_match;
+      var missing = km ? km.missing.slice(0, 6) : [];
+      return '<div class="cv-score"><span class="pct">' + (km ? km.score : result.score) + '%</span>' +
+          '<span class="note">' + (km ? "keyword match" : "résumé score") + '</span></div>' +
+        '<div class="cv-bar"><span style="width:' + (km ? km.score : result.score) + '%"></span></div>' +
+        (missing.length
+          ? '<span class="cv-missing-label">Missing from your résumé</span>' +
+            '<div class="cv-missing">' + missing.map(function(w){ return "<span>" + escapeHtml(w) + "</span>"; }).join("") + '</div>'
+          : "") +
+        '<p class="cv-summary">' + (km
+          ? "You already cover " + (km.matched.slice(0, 3).join(", ") || "some of what they're asking for") + ". Add the missing terms above in your own words if they genuinely apply to you."
+          : "Word count: " + result.word_count + ". Full formatting checks are in your dashboard.") + '</p>' +
+        '<button type="button" class="cv-reset" id="cvResetBtn">Check a different résumé</button>';
+    }
+
+    function render(){ body.innerHTML = idleHtml(); wireIdle(); }
+
+    function wireIdle(){
+      var savedBtn = document.getElementById("cvPickSaved");
+      if (savedBtn) savedBtn.addEventListener("click", function(){ mode = "saved"; render(); });
+      document.getElementById("cvPickUpload").addEventListener("click", function(){ mode = "upload"; render(); });
+      if (mode === "upload") {
+        var drop = document.getElementById("cvDrop");
+        var input = document.getElementById("cvFileInput");
+        drop.addEventListener("click", function(){ input.click(); });
+        input.addEventListener("change", function(){
+          pickedFile = input.files[0] || null;
+          render();
+        });
+      }
+      document.getElementById("cvRunBtn").addEventListener("click", runCheck);
+    }
+
+    async function runCheck(){
+      var runBtn = document.getElementById("cvRunBtn");
+      runBtn.disabled = true;
+      runBtn.textContent = "Checking…";
+      try {
+        var result;
+        if (mode === "saved" && token) {
+          var res = await fetch("/api/designers/me/ats-check", {
+            method: "POST",
+            headers: { "Authorization": "Bearer " + token, "Content-Type": "application/json" },
+            body: JSON.stringify({ job_description: jobDescText })
+          });
+          if (!res.ok) throw new Error(await res.text());
+          result = await res.json();
+        } else if (pickedFile) {
+          var fd = new FormData();
+          fd.append("file", pickedFile);
+          fd.append("job_description", jobDescText);
+          var res2 = await fetch("/api/ats/check", { method: "POST", body: fd });
+          if (!res2.ok) throw new Error(await res2.text());
+          result = await res2.json();
+        } else {
+          throw new Error("Choose a résumé first.");
+        }
+        body.innerHTML = doneHtml(result);
+        document.getElementById("cvResetBtn").addEventListener("click", function(){ pickedFile = null; mode = "upload"; render(); });
+      } catch (e) {
+        runBtn.disabled = false;
+        runBtn.textContent = "Check my résumé";
+        alertInline(typeof e.message === "string" && e.message ? e.message : "Couldn't run that check, try again.");
+      }
+    }
+
+    function alertInline(msg){
+      var note = document.createElement("p");
+      note.style.cssText = "margin:8px 0 0;font-size:12.5px;color:var(--c-bad-text)";
+      note.textContent = msg;
+      body.appendChild(note);
+    }
+
+    if (token) {
+      fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + token } })
+        .then(function(r){ return r.ok ? r.json() : null; })
+        .then(function(d){ designer = d; if (d && d.resume_path) mode = "saved"; render(); })
+        .catch(function(){ render(); });
+    } else {
+      render();
+    }
+  }
+
+  function plainTextFrom(html){
+    if (!html) return "";
+    var d = document.createElement("div");
+    d.innerHTML = html;
+    return (d.textContent || "").trim();
+  }
+
+  async function loadSimilarAndCompany(){
+    try {
+      var res = await fetch("/api/jobs", { cache: "no-store" });
+      var data = await res.json();
+      allJobs = data.jobs || [];
+    } catch (e) {
+      document.getElementById("similarCard").innerHTML =
+        '<h4>Similar and still open</h4><p style="font-size:14px;color:var(--c-text-subtle);margin:0 0 10px">These didn\'t load. The role above is unaffected.</p>' +
+        '<button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="retrySimilar">Try again</button>';
+      var btn = document.getElementById("retrySimilar");
+      if (btn) btn.addEventListener("click", loadSimilarAndCompany);
+      return;
+    }
+
+    var companyCount = allJobs.filter(function(j){ return j.co === job.co && j.id !== job.id; }).length;
+    var moreLink = document.getElementById("moreRolesLink");
+    if (moreLink) moreLink.textContent = companyCount ? "More roles at " + job.co + " →" : "See all roles →";
+    var companyCard = document.getElementById("companyCard");
+    if (companyCard && companyCount === 0) {
+      var p = companyCard.querySelector("p");
+      if (p) p.textContent = "Applications go to their own careers page, Path & Pixel never hosts the application itself.";
+    }
+
+    var similar = allJobs.filter(function(j){ return j.id !== job.id && j.cat === job.cat; }).slice(0, 3);
+    if (!similar.length) similar = allJobs.filter(function(j){ return j.id !== job.id; }).slice(0, 3);
+
+    var similarCard = document.getElementById("similarCard");
+    if (!similar.length) {
+      similarCard.innerHTML = '<h4>Similar and still open</h4><p style="font-size:14px;color:var(--c-text-subtle);margin:0">Nothing else matches right now.</p>';
+      return;
+    }
+    similarCard.innerHTML = '<h4>Similar and still open</h4>' +
+      similar.map(function(j, i){
+        return (i ? '<div class="similar-divider"></div>' : "") +
+          '<a class="similar-item" href="pp-job.html?id=' + encodeURIComponent(j.id) + '">' +
+            '<div class="t">' + escapeHtml(j.t) + '</div>' +
+            '<div class="s">' + escapeHtml(j.co) + ' · ' + eligMeta(j.elig).label + '</div></a>';
+      }).join("");
+  }
+
+  document.addEventListener("DOMContentLoaded", loadJob);
+})();
+</script>
+</body>
+</html>
