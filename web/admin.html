@@ -412,6 +412,7 @@
     <button data-view="dashboard" class="active">Dashboard</button>
     <button data-view="queue">Review queue</button>
     <button data-view="designers">Designer profiles</button>
+    <button data-view="employers">Employers</button>
   </div>
 
   <section id="dashboardView">
@@ -490,6 +491,20 @@
 
     <div id="designerList"></div>
   </section>
+
+  <section id="employersView" style="display:none">
+    <h1>Employers</h1>
+    <p class="sub">Approve a company and its team can post roles and see applicants. Nothing goes live until a click here.</p>
+
+    <div class="tabs">
+      <button data-estatus="pending" class="active">Pending</button>
+      <button data-estatus="approved">Approved</button>
+      <button data-estatus="rejected">Rejected</button>
+      <button data-estatus="all">All</button>
+    </div>
+
+    <div id="employerList"></div>
+  </section>
 </div>
 
 <footer class="foot">
@@ -540,6 +555,7 @@ async function tryEnter() {
 const dashboardView = document.getElementById("dashboardView");
 const queueView = document.getElementById("queueView");
 const designersView = document.getElementById("designersView");
+const employersView = document.getElementById("employersView");
 document.querySelectorAll(".view-switch button").forEach(b => {
   b.addEventListener("click", () => {
     document.querySelectorAll(".view-switch button").forEach(x => x.classList.remove("active"));
@@ -548,9 +564,11 @@ document.querySelectorAll(".view-switch button").forEach(b => {
     dashboardView.style.display = view === "dashboard" ? "block" : "none";
     queueView.style.display = view === "queue" ? "block" : "none";
     designersView.style.display = view === "designers" ? "block" : "none";
+    employersView.style.display = view === "employers" ? "block" : "none";
     if (view === "dashboard") loadDashboard();
     else if (view === "queue") loadTab(document.querySelector("#queueView .tabs button.active").dataset.status);
-    else loadDesignerTab(document.querySelector("#designersView .tabs button.active").dataset.dstatus);
+    else if (view === "designers") loadDesignerTab(document.querySelector("#designersView .tabs button.active").dataset.dstatus);
+    else loadEmployerTab(document.querySelector("#employersView .tabs button.active").dataset.estatus);
   });
 });
 
@@ -802,6 +820,14 @@ document.querySelectorAll("#designersView .tabs button").forEach(b => {
   });
 });
 
+document.querySelectorAll("#employersView .tabs button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#employersView .tabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    loadEmployerTab(b.dataset.estatus);
+  });
+});
+
 async function loadTab(status) {
   list.innerHTML = `<div class="empty">Loading…</div>`;
   try {
@@ -915,6 +941,59 @@ function renderDesigners(rows, status) {
         await api(`/api/admin/designers/${id}/${action}`, { method: "POST" });
         const activeTab = document.querySelector("#designersView .tabs button.active").dataset.dstatus;
         loadDesignerTab(activeTab);
+      } catch (e) {
+        await window.showAlertDialog({title: "Failed", description: e.message});
+        btn.disabled = false;
+      }
+    });
+  });
+}
+
+/* ---------- employers (companies) ---------- */
+const employerList = document.getElementById("employerList");
+
+async function loadEmployerTab(status) {
+  employerList.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const rows = await api(`/api/admin/companies?status=${status}`);
+    renderEmployers(rows);
+  } catch (e) {
+    employerList.innerHTML = `<div class="empty">Couldn't load: ${e.message}</div>`;
+  }
+}
+
+function renderEmployers(rows) {
+  if (!rows.length) {
+    employerList.innerHTML = `<div class="empty">Nothing here.</div>`;
+    return;
+  }
+  employerList.innerHTML = rows.map(c => `
+    <div class="item" data-id="${c.id}">
+      <div>
+        <h3>${escapeHtml(c.name)} <span style="font-weight:400;color:var(--muted)">/${escapeHtml(c.slug)}</span></h3>
+        <p class="meta"><b>${escapeHtml(c.website || "No website set")}</b> · ${c.team_size} ${c.team_size === 1 ? "person" : "people"} on the team</p>
+        ${c.eligibility ? `<p class="meta">Reach: ${escapeHtml(c.eligibility)}${c.eligibility_note ? ` — ${escapeHtml(c.eligibility_note)}` : ""}</p>` : ""}
+        ${c.blurb ? `<p class="desc">${escapeHtml(c.blurb)}</p>` : ""}
+        <p class="meta" style="margin-top:8px">Created ${new Date(c.created_at).toLocaleDateString()}</p>
+      </div>
+      <div class="actions">
+        ${c.status === "pending" ? `
+          <button class="approve" data-eaction="approve">Approve</button>
+          <button class="reject" data-eaction="reject">Reject</button>
+        ` : `<span class="status ${c.status}">${c.status}</span>`}
+      </div>
+    </div>
+  `).join("");
+
+  employerList.querySelectorAll("[data-eaction]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.closest(".item").dataset.id;
+      const action = btn.dataset.eaction;
+      btn.disabled = true;
+      try {
+        await api(`/api/admin/companies/${id}/${action}`, { method: "POST" });
+        const activeTab = document.querySelector("#employersView .tabs button.active").dataset.estatus;
+        loadEmployerTab(activeTab);
       } catch (e) {
         await window.showAlertDialog({title: "Failed", description: e.message});
         btn.disabled = false;

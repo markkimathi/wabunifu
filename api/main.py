@@ -1794,6 +1794,42 @@ def admin_verify_designer_email(designer_id: int, _: None = Depends(require_admi
     return {"ok": True}
 
 
+# ---------------------------------------------------------------------------
+# Admin: companies. Same review-queue shape as designers above — a company
+# and everyone on its team stays invisible (no public page, no listings)
+# until an admin approves it here.
+# ---------------------------------------------------------------------------
+
+@app.get("/api/admin/companies")
+def admin_list_companies(status: str = "pending", _: None = Depends(require_admin)):
+    rows = list_companies(status=status if status != "all" else None)
+    return [{**c, "team_size": len(list_employers_for_company(c["id"]))} for c in rows]
+
+
+@app.get("/api/admin/companies/{company_id}")
+def admin_get_company(company_id: int, _: None = Depends(require_admin)):
+    company = get_company(company_id)
+    if not company:
+        raise HTTPException(404, "no such company")
+    return {**company, "team": [_employer_public(e) for e in list_employers_for_company(company_id)]}
+
+
+@app.post("/api/admin/companies/{company_id}/approve")
+def admin_approve_company(company_id: int, _: None = Depends(require_admin)):
+    if not get_company(company_id):
+        raise HTTPException(404, "no such company")
+    set_company_status(company_id, "approved")
+    return {"ok": True}
+
+
+@app.post("/api/admin/companies/{company_id}/reject")
+def admin_reject_company(company_id: int, _: None = Depends(require_admin)):
+    if not get_company(company_id):
+        raise HTTPException(404, "no such company")
+    set_company_status(company_id, "rejected")
+    return {"ok": True}
+
+
 # Public single-profile lookup — registered after the /me routes above so
 # "me" is never routed here as if it were a numeric id. Accepts either the
 # numeric id (old-style links, and any profile that hasn't set a handle
