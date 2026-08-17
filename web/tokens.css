@@ -1,0 +1,399 @@
+/* Path & Pixel design tokens
+   Source of truth for implementation. The design system page documents these;
+   this file is what the product should import. Keep the two in step.
+   Every value here is used by at least one designed screen. */
+
+:root {
+  /* ---------------------------------------------------------------
+     BRAND
+     #FFB900 is the brand. It is 1.6:1 on cream, so it is a FILL and a
+     MARKER colour, never a text colour at body size. For gold text use
+     --pp-gold-800 (5.49:1). NOT gold-700: #B37F00 is 3.53:1 on white and
+     fails AA.
+     --------------------------------------------------------------- */
+  --pp-gold:          #FFB900;
+  --pp-gold-100:      #FFFDF7;
+  --pp-gold-200:      #FFF8E6;
+  --pp-gold-300:      #FFF3D1;
+  --pp-gold-400:      #FFE08A;
+  --pp-gold-500:      #FFB900;
+  --pp-gold-600:      #E0A100;
+  --pp-gold-700:      #B37F00;
+  --pp-gold-800:      #8A6200;
+  --pp-gold-900:      #5C4200;
+
+  /* Neutrals. Cool and pure, never warm. Whiter whites, darker blacks,
+     so the gold is the only warm thing on the page. */
+  --pp-ink:           #0A0A0A;
+  --pp-ink-raised:    #1F1F1F;
+  --pp-ink-deep:      #141414;
+  --pp-stone-100:     #FFFFFF;  /* page ground */
+  --pp-stone-200:     #F7F7F8;  /* hover fill, inset band */
+  --pp-stone-300:     #EFEFF1;  /* neutral tag, track, canvas */
+  --pp-stone-400:     #E3E3E6;  /* default border */
+  --pp-stone-500:     #D2D2D6;  /* strong border, control border */
+  --pp-stone-600:     #A1A1A8;  /* disabled text, chevrons */
+  --pp-stone-700:     #6E6E75;  /* placeholder, caption. 4.9:1 on #FFFFFF
+                                   ONLY. Do not use on stone-200/300 grounds
+                                   (drops to ~4.4:1), use stone-800 there. */
+  --pp-stone-800:     #56565C;  /* secondary text */
+  --pp-stone-900:     #3D3D42;  /* body text on light */
+  --pp-white:         #FFFFFF;
+
+  /* Green carries the eligibility signal. Nothing else. */
+  --pp-green:         #089111;  /* fill and marker only, never text */
+  --pp-green-100:     #F4FBF5;  /* PANEL tint. Whole blocks of eligibility
+                                   copy sit on this, so it stays quiet. */
+  --pp-green-150:     #DFEFE0;  /* panel border, pairs with green-100 */
+  --pp-green-200:     #E6F6E7;  /* CHIP tint only, the eligibility signal */
+  --pp-green-300:     #BFE7C1;  /* chip border */
+  --pp-green-700:     #05730C;  /* green text, and green button fills that
+                                   carry white text (#089111 is 4.1:1) */
+
+  /* Semantic */
+  --pp-success:       #089111;
+  --pp-success-200:   #E6F6E7;
+  --pp-success-300:   #BFE7C1;
+  --pp-success-700:   #05730C;
+  --pp-danger:        #D41616;
+  --pp-danger-200:    #FDEAEA;
+  --pp-danger-300:    #F6C6C6;
+  --pp-danger-700:    #A61111;
+  --pp-danger-800:    #8A0D0D;
+
+  /* Roles */
+  --pp-bg:            var(--pp-stone-100);
+  --pp-bg-sunken:     var(--pp-stone-300);
+  --pp-surface:       var(--pp-white);
+  --pp-surface-inset: var(--pp-stone-200);
+  --pp-text:          var(--pp-ink);
+  --pp-text-muted:    var(--pp-stone-900);
+  --pp-text-subtle:   var(--pp-stone-800);
+  --pp-text-faint:    var(--pp-stone-700);  /* placeholder text. Must stay
+                                               AA: #A1A1A8 is only 2.6:1. */
+  --pp-text-on-dark:  var(--pp-white);
+  /* On dark surfaces the light ramp does NOT apply: stone-700/800 fall to
+     2.3-3.9:1 on ink. Use these two instead. Both pass AA on #0A0A0A and
+     on #1F1F1F. Never use them as text on a light surface. #A1A1A8 on
+     stone-300 is 2.24:1. #A1A1A8 stays valid as an ICON stroke anywhere. */
+  --pp-text-subtle-on-dark: #A1A1A8;
+  --pp-text-faint-on-dark:  #D2D2D6;
+  --pp-text-on-gold:  var(--pp-ink);
+  --pp-link:          var(--pp-ink);
+  --pp-link-hover:    var(--pp-gold-800);
+  --pp-nav-active:    var(--pp-gold-700);
+
+  /* ---------------------------------------------------------------
+     TYPE. Grift throughout. Weights 300 to 900 are all available.
+     --------------------------------------------------------------- */
+  --pp-font:              Grift, system-ui, -apple-system, sans-serif;
+  --pp-font-mono:         ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --pp-weight-regular:    400;
+  --pp-weight-medium:     500;
+  --pp-weight-semibold:   600;
+  --pp-weight-bold:       700;
+  --pp-weight-extrabold:  800;
+
+  /* Display, desktop. Reduce one step at tablet, two at mobile. */
+  --pp-display-size:      52px;
+  --pp-display-line:      1.02;
+  --pp-display-track:     -0.035em;
+  --pp-display-weight:    800;
+
+  --pp-h1-size:           40px;
+  --pp-h1-line:           1.06;
+  --pp-h1-track:          -0.030em;
+  --pp-h1-weight:         700;
+
+  --pp-h2-size:           32px;
+  --pp-h2-line:           1.10;
+  --pp-h2-track:          -0.026em;
+  --pp-h2-weight:         700;
+
+  --pp-h3-size:           28px;
+  --pp-h3-line:           1.15;
+  --pp-h3-track:          -0.024em;
+  --pp-h3-weight:         700;
+
+  --pp-h4-size:           20px;
+  --pp-h4-line:           1.25;
+  --pp-h4-track:          -0.018em;
+  --pp-h4-weight:         700;
+
+  --pp-h5-size:           17px;
+  --pp-h5-line:           1.30;
+  --pp-h5-track:          -0.015em;
+  --pp-h5-weight:         700;
+
+  --pp-lead-size:         21px;   /* case-study standfirst */
+  --pp-lead-line:         1.50;
+
+  --pp-body-lg-size:      18px;   /* long-form reading column only */
+  --pp-body-lg-line:      1.70;
+
+  --pp-body-size:         16px;
+  --pp-body-line:         1.60;
+
+  --pp-body-sm-size:      14.5px;
+  --pp-body-sm-line:      1.55;
+
+  --pp-caption-size:      13px;
+  --pp-caption-line:      1.50;
+
+  --pp-label-size:        13.5px;
+  --pp-label-weight:      600;
+
+  --pp-overline-size:     11px;
+  --pp-overline-track:    0.09em;
+  --pp-overline-weight:   700;
+
+  --pp-button-size:       15px;
+  --pp-button-weight:     600;
+
+  --pp-nav-size:          15px;
+  --pp-nav-weight:        500;
+  --pp-nav-weight-active: 600;
+
+  --pp-meta-size:         12.5px;
+  --pp-meta-weight:       600;
+
+  /* Reading measure */
+  --pp-measure-read:      720px;  /* case study text column */
+  --pp-measure-prose:     62ch;   /* section intros */
+  --pp-measure-tight:     46ch;   /* card and panel copy */
+
+  /* ---------------------------------------------------------------
+     SPACE. 4px base, doubling loosely.
+     --------------------------------------------------------------- */
+  --pp-space-1:   2px;
+  --pp-space-2:   4px;
+  --pp-space-3:   6px;
+  --pp-space-4:   8px;
+  --pp-space-5:   12px;
+  --pp-space-6:   16px;
+  --pp-space-7:   20px;
+  --pp-space-8:   24px;
+  --pp-space-9:   32px;
+  --pp-space-10:  40px;
+  --pp-space-11:  48px;
+  --pp-space-12:  64px;
+  --pp-space-13:  96px;
+  --pp-space-14:  128px;
+
+  /* Radius. Restrained. Over-rounding reads as generic. */
+  --pp-radius-xs:    3px;
+  --pp-radius-sm:    6px;
+  --pp-radius-md:    8px;
+  --pp-radius-lg:    10px;
+  --pp-radius-xl:    14px;
+  --pp-radius-full:  999px;
+
+  /* Borders */
+  --pp-border-subtle:  1px solid var(--pp-stone-300);
+  --pp-border:         1px solid var(--pp-stone-400);
+  --pp-border-strong:  1px solid var(--pp-stone-500);
+  --pp-border-focus:   1px solid var(--pp-gold);
+  --pp-border-error:   1px solid var(--pp-danger);
+  --pp-border-dark:    1px solid var(--pp-ink-raised);
+
+  /* Elevation. Quiet. Flat surfaces and hairlines do the separating;
+     shadow is reserved for things that genuinely float. */
+  --pp-shadow-xs:  none;
+  --pp-shadow-sm:  none;
+  --pp-shadow-md:  0 1px 2px rgba(10,10,10,0.04);
+  --pp-shadow-lg:  0 8px 24px rgba(10,10,10,0.10);
+  --pp-shadow-xl:  0 20px 56px rgba(10,10,10,0.22);
+
+  /* Focus. One treatment, product-wide. Applied to the WRAPPER of a
+     field, never the bare input. */
+  --pp-focus-ring:    0 0 0 3px var(--pp-gold-400);
+  --pp-focus-outline: 2px solid var(--pp-gold);
+  --pp-focus-offset:  2px;
+
+  /* ---------------------------------------------------------------
+     LAYOUT
+     --------------------------------------------------------------- */
+  --pp-container:          1280px;  /* default */
+  --pp-container-wide:     1400px;  /* dashboard, with sidebar */
+  --pp-container-read:     1080px;  /* case study */
+  --pp-page-margin:        32px;    /* desktop */
+  --pp-page-margin-tablet: 24px;
+  --pp-page-margin-mobile: 16px;
+
+  --pp-header-height:       68px;
+  --pp-header-height-small: 56px;   /* tablet and mobile */
+  --pp-crumb-height:        46px;
+  --pp-sticky-offset:       92px;   /* header + 24 */
+  --pp-sidebar:             248px;  /* dashboard rail */
+  --pp-sidebar-collapsed:   68px;   /* 1024 to 1279 */
+  --pp-rail:                320px;  /* content right rail */
+  --pp-rail-wide:           380px;  /* post a role preview */
+  --pp-thread-list:         300px;
+
+  --pp-gutter:        24px;
+  --pp-gutter-mobile: 16px;
+  --pp-gutter-wide:   32px;
+
+  /* Controls */
+  --pp-control-height:       44px;  /* minimum touch target */
+  --pp-control-height-sm:    38px;  /* desktop-only chips and filters */
+  --pp-control-height-field: 50px;  /* text inputs, desktop */
+  --pp-control-height-touch: 52px;  /* text inputs, mobile */
+  --pp-control-height-cta:   52px;
+  --pp-icon-inline:          15px;
+  --pp-icon-button:          18px;
+  --pp-icon-nav:             20px;
+
+  /* Motion. Restrained. Nothing decorative. */
+  --pp-ease:            cubic-bezier(0.2, 0, 0.2, 1);
+  --pp-duration-fast:   120ms;
+  --pp-duration:        180ms;
+  --pp-duration-slow:   260ms;
+  --pp-toast-life:      2600ms;
+
+  /* Z */
+  --pp-z-sticky:   2;
+  --pp-z-header:   6;
+  --pp-z-toast:    9;
+  --pp-z-panel:    10;
+  --pp-z-modal:    20;
+  --pp-z-menu:     21;
+}
+
+/* -----------------------------------------------------------------
+   THEME. Light is the default. Dark is a real second surface set, not
+   an inversion. The neutrals stay cool, the gold is unchanged, and
+   green/red lighten because #089111 and #D41616 fall below AA as text
+   on near-black.
+
+   Screens reference the --c-* semantic set, never the raw ramp, so a
+   single data-pp-theme flip on the page wrapper retints everything.
+   ----------------------------------------------------------------- */
+:root,
+[data-pp-theme="light"] {
+  --c-bg:             #FFFFFF;
+  --c-bg-sunken:      #F7F7F8;
+  --c-surface:        #FFFFFF;
+  --c-surface-inset:  #EFEFF1;
+  --c-surface-dark:   #0A0A0A;  /* footer, dark panels — same in both */
+  --c-border:         #E3E3E6;
+  --c-border-strong:  #D2D2D6;
+  --c-border-hover:   #A1A1A8;
+  --c-text:           #0A0A0A;
+  --c-text-muted:     #3D3D42;
+  --c-text-subtle:    #56565C;
+  --c-text-faint:     #6E6E75;
+  --c-icon:           #A1A1A8;
+  --c-accent:         #FFB900;
+  --c-accent-hover:   #E0A100;
+  --c-accent-text:    #8A6200;  /* gold as text, 5.5:1 on light */
+  --c-on-accent:      #0A0A0A;
+  --c-good:           #089111;  /* fill and marker only */
+  --c-good-text:      #05730C;
+  --c-good-bg:        #E6F6E7;
+  --c-good-border:    #BFE7C1;
+  --c-bad:            #D41616;
+  --c-bad-text:       #A61111;
+  --c-bad-bg:         #FDEAEA;
+  --c-bad-border:     #F6C6C6;
+}
+
+[data-pp-theme="dark"] {
+  --c-bg:             #0A0A0A;
+  --c-bg-sunken:      #121215;
+  --c-surface:        #17171A;  /* a raised card lightens; shadows do nothing here */
+  --c-surface-inset:  #232327;
+  --c-surface-dark:   #0A0A0A;  /* a band that was already ink stays the page ground */
+  --c-border:         #2E2E34;
+  --c-border-strong:  #3D3D44;
+  --c-border-hover:   #6E6E78;
+  --c-text:           #F4F4F5;
+  --c-text-muted:     #C9C9D0;  /* 13.0:1 on bg */
+  --c-text-subtle:    #A8A8B0;  /* 8.8:1 on bg */
+  --c-text-faint:     #8E8E97;  /* 6.1:1 on bg */
+  --c-icon:           #8E8E97;
+  --c-accent:         #FFB900;
+  --c-accent-hover:   #FFC42B;
+  --c-accent-text:    #FFB900;  /* 11.5:1 on bg. #FFD166 on a gold tint panel */
+  --c-on-accent:      #0A0A0A;
+  --c-good:           #34C63F;  /* fill, marker and text all lighten on ink */
+  --c-good-text:      #34C63F;
+  --c-good-bg:        #122E15;
+  --c-good-border:    #1F4D24;
+  --c-bad:            #D41616;  /* a destructive fill is the same red in both modes */
+  --c-bad-text:       #FF6B6B;
+  --c-bad-bg:         #3A1212;
+  --c-bad-border:     #6E2020;
+}
+
+/* -----------------------------------------------------------------
+   BREAKPOINTS. Five states, decided rather than derived.
+   Written as comments because custom properties cannot be used in
+   media queries. Use these exact values.
+
+     mobile portrait   320  to 767    4 col,  16px gutter
+     tablet portrait   768  to 1023   8 col,  24px gutter
+     tablet landscape  1024 to 1279  12 col,  24px gutter
+     desktop           1280 to 1535  12 col,  24px gutter
+     large desktop     1536 and up   12 col,  32px gutter
+   ----------------------------------------------------------------- */
+
+/* Never size type with vw inside a fixed-width artboard: vw resolves
+   against the real viewport, not the artboard, so desktop can render
+   smaller than tablet and the hierarchy inverts. Use fixed px per
+   breakpoint (below), or container queries with cqw. */
+
+/* Type scales down at tablet and mobile. */
+@media (max-width: 1023px) {
+  :root {
+    --pp-display-size: 40px;
+    --pp-h1-size:      34px;
+    --pp-h2-size:      28px;
+    --pp-h3-size:      24px;
+    --pp-body-lg-size: 17px;
+    --pp-lead-size:    19px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --pp-display-size: 34px;
+    --pp-h1-size:      29px;
+    --pp-h2-size:      26px;
+    --pp-h3-size:      23px;
+    --pp-h4-size:      18.5px;
+    --pp-lead-size:    17.5px;
+    --pp-page-margin:  16px;
+    --pp-gutter:       16px;
+  }
+}
+
+/* -----------------------------------------------------------------
+   BASE
+   ----------------------------------------------------------------- */
+body {
+  margin: 0;
+  background: var(--pp-bg);
+  color: var(--pp-text);
+  font-family: var(--pp-font);
+  font-size: var(--pp-body-size);
+  line-height: var(--pp-body-line);
+  -webkit-font-smoothing: antialiased;
+}
+
+* { box-sizing: border-box; }
+
+a { color: var(--pp-link); text-decoration: none; }
+a:hover { color: var(--pp-link-hover); }
+
+::selection { background: var(--pp-gold-400); color: var(--pp-ink); }
+
+:focus-visible {
+  outline: var(--pp-focus-outline);
+  outline-offset: var(--pp-focus-offset);
+  border-radius: var(--pp-radius-xs);
+}
+
+/* Numerals align in tables, stats and money. */
+.pp-tabular { font-variant-numeric: tabular-nums; }
