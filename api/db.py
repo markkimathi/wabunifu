@@ -37,6 +37,7 @@ ANALYTICS_RETENTION_DAYS = 90
 SESSION_DAYS = 30
 VERIFY_CODE_MINUTES = 15
 RESET_TOKEN_HOURS = 1
+INVITE_EXPIRY_DAYS = 5
 
 # Override with KAZI_DB_PATH in production to point at a mounted volume:
 # e.g. a host that wipes the container filesystem on every deploy needs this
@@ -200,6 +201,21 @@ CREATE TABLE IF NOT EXISTS employer_email_tokens (
   used INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS team_invites (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  token TEXT NOT NULL UNIQUE,
+  company_id INTEGER NOT NULL,
+  invited_email TEXT NOT NULL,
+  invited_by_employer_id INTEGER NOT NULL,
+  proposed_team_role TEXT NOT NULL DEFAULT 'can_post',
+  needs_approval INTEGER NOT NULL DEFAULT 1,
+  status TEXT NOT NULL DEFAULT 'pending',
+  expires_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  responded_at TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS idx_team_invites_company ON team_invites(company_id);
 """
 
 # Columns added after the table first shipped. A fresh database gets them
@@ -1114,6 +1130,60 @@ def cleanup_stale_employer_tokens() -> None:
     c = _conn()
     c.execute("DELETE FROM employer_sessions WHERE expires_at < ?", (now,))
     c.execute("DELETE FROM employer_email_tokens WHERE expires_at < ?", (now,))
+    c.commit()
+    c.close()
+
+
+# ---------------------------------------------------------------------------
+# Team invites: a colleague joins an existing company instead of setting one
+# up twice. needs_approval is decided once, at send time, from the
+# inviter's own team_role — an owner can add people directly, anyone else's
+# invitees land pending until an owner approves them (see
+# approve_pending_employer / employer_delete_me's sibling in main.py).
+# ---------------------------------------------------------------------------
+
+def create_team_invite(company_id: int, invited_email: str, invited_by_employer_id: int,
+                        proposed_team_role: str, needs_approval: bool) -> str:
+    token = secrets.token_urlsafe(24)
+    now = datetime.now(timezone.utc)
+    c = _conn()
+    c.execute(
+        "INSERT INTO team_invites (token, company_id, invited_email, invited_by_employer_id, "
+        "proposed_team_role, needs_approval, status, expires_at, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, 'pending', ?, ?)",
+        (token, company_id, invited_email, invited_by_employer_id, proposed_team_role,
+         1 if needs_approval else 0,
+         (now + timedelta(days=INVITE_EXPIRY_DAYS)).isoformat(timespec="seconds"),
+         now.isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+    return token
+
+
+def get_team_invite_by_token(token: str) -> dict | None:
+    c = _conn()
+    row = c.execute("SELECT * FROM team_invites WHERE token = ?", (token,)).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def list_pending_team_invites(company_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM team_invites WHERE company_id = ? AND status = 'pending' ORDER BY created_at DESC",
+        (company_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def set_invite_status(token: str, status: str) -> None:
+    c = _conn()
+    c.execute(
+        "UPDATE team_invites SET status = ?, responded_at = ? WHERE token = ?",
+        (status, datetime.now(timezone.utc).isoformat(timespec="seconds"), token),
+    )
     c.commit()
     c.close()
 

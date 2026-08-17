@@ -22,7 +22,7 @@ import re
 from typing import Optional
 import sys
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timezone
 
 import bcrypt
 from fastapi import (
@@ -59,6 +59,7 @@ from .db import (  # noqa: E402
     delete_employer_sessions_for_employer,
     create_employer_email_token, consume_employer_email_token,
     update_submission, list_submissions_for_company,
+    create_team_invite, get_team_invite_by_token, list_pending_team_invites, set_invite_status,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -530,6 +531,51 @@ class CompanyUpdate(BaseModel):
     def _valid_eligibility(cls, v: str) -> str:
         if v and v not in ELIGIBILITY:
             raise ValueError(f"eligibility must be one of {sorted(ELIGIBILITY)}")
+        return v
+
+
+# Invite-able roles only — "owner" is never proposed through an invite, only
+# created at signup (or, in a later version, an explicit ownership transfer
+# that doesn't exist yet).
+INVITE_TEAM_ROLES = {"can_post", "can_view"}
+
+
+class TeamInviteIn(BaseModel):
+    email: str
+    team_role: str = "can_post"
+
+    @field_validator("email")
+    @classmethod
+    def _valid_email(cls, v: str) -> str:
+        v = v.strip().lower()
+        if "@" not in v or "." not in v.split("@")[-1]:
+            raise ValueError("enter a valid email address")
+        return v
+
+    @field_validator("team_role")
+    @classmethod
+    def _valid_team_role(cls, v: str) -> str:
+        if v not in INVITE_TEAM_ROLES:
+            raise ValueError(f"team_role must be one of {sorted(INVITE_TEAM_ROLES)}")
+        return v
+
+
+class TeamInviteAccept(BaseModel):
+    full_name: str
+    password: str
+
+    @field_validator("full_name")
+    @classmethod
+    def _valid_full_name(cls, v: str) -> str:
+        if not v or not v.strip():
+            raise ValueError("enter your name")
+        return v.strip()
+
+    @field_validator("password")
+    @classmethod
+    def _valid_password(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError("password must be at least 8 characters")
         return v
 
 
@@ -1320,6 +1366,108 @@ def employer_close_listing(sub_id: int, employer: dict = Depends(require_employe
     # applicants tracked against it) rather than disappearing outright.
     _owned_submission(sub_id, employer["company_id"])
     set_status(sub_id, "closed")
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Team: the roster plus pending invites (owner side), and the invite link
+# itself (public — a colleague hasn't signed in yet when they open it). The
+# real backend counterpart to the client-side-only pp-invite.html demo: the
+# link now carries a server-verified token instead of spoofable
+# ?company=&inviter=&email= query params.
+# ---------------------------------------------------------------------------
+
+@app.get("/api/employers/me/team")
+def employer_team(employer: dict = Depends(require_employer)):
+    members = [_employer_public(e) | {"is_pending_approval": bool(e["is_pending_approval"])}
+               for e in list_employers_for_company(employer["company_id"])]
+    pending_invites = list_pending_team_invites(employer["company_id"])
+    return {"members": members, "pending_invites": pending_invites}
+
+
+@app.post("/api/employers/me/team/invite")
+def employer_send_invite(payload: TeamInviteIn, background: BackgroundTasks,
+                          employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    if get_employer_by_email(payload.email):
+        raise HTTPException(400, "That email already has an account somewhere on Kazi.")
+    company = get_company(employer["company_id"])
+    needs_approval = employer["team_role"] != "owner"
+    token = create_team_invite(
+        employer["company_id"], payload.email, employer["id"], payload.team_role, needs_approval,
+    )
+    background.add_task(email_module.send_team_invite_email, payload.email, company["name"], employer["full_name"], token)
+    return {"ok": True}
+
+
+@app.get("/api/employers/invites/{token}")
+def get_team_invite(token: str):
+    invite = get_team_invite_by_token(token)
+    if not invite or invite["status"] != "pending" or invite["expires_at"] < datetime.now(timezone.utc).isoformat(timespec="seconds"):
+        raise HTTPException(404, "This invite is no longer valid.")
+    company = get_company(invite["company_id"])
+    inviter = get_employer(invite["invited_by_employer_id"])
+    return {
+        "company_name": company["name"] if company else "",
+        "inviter_name": inviter["full_name"] if inviter else "",
+        "invited_email": invite["invited_email"],
+        "needs_approval": bool(invite["needs_approval"]),
+    }
+
+
+@app.post("/api/employers/invites/{token}/accept")
+def accept_team_invite(token: str, payload: TeamInviteAccept):
+    invite = get_team_invite_by_token(token)
+    if not invite or invite["status"] != "pending" or invite["expires_at"] < datetime.now(timezone.utc).isoformat(timespec="seconds"):
+        raise HTTPException(404, "This invite is no longer valid.")
+    if get_employer_by_email(invite["invited_email"]):
+        raise HTTPException(400, "That email already has an account somewhere on Kazi.")
+    password_hash = bcrypt.hashpw(payload.password.encode(), bcrypt.gensalt()).decode()
+    employer_id = create_employer(
+        invite["company_id"], invite["invited_email"], password_hash, payload.full_name,
+        team_role=invite["proposed_team_role"], is_pending_approval=bool(invite["needs_approval"]),
+        invited_by_employer_id=invite["invited_by_employer_id"],
+    )
+    set_invite_status(token, "accepted")
+    return {"ok": True, "token": create_employer_session(employer_id), "needs_approval": bool(invite["needs_approval"])}
+
+
+@app.post("/api/employers/invites/{token}/decline")
+def decline_team_invite(token: str):
+    invite = get_team_invite_by_token(token)
+    if not invite or invite["status"] != "pending":
+        raise HTTPException(404, "This invite is no longer valid.")
+    set_invite_status(token, "declined")
+    return {"ok": True}
+
+
+@app.post("/api/employers/me/team/{target_id}/approve")
+def employer_approve_teammate(target_id: int, employer: dict = Depends(require_employer_role("owner"))):
+    target = get_employer(target_id)
+    if not target or target["company_id"] != employer["company_id"]:
+        raise HTTPException(404, "no such teammate")
+    approve_pending_employer(target_id)
+    return {"ok": True}
+
+
+@app.post("/api/employers/me/team/{target_id}/decline")
+def employer_decline_teammate(target_id: int, employer: dict = Depends(require_employer_role("owner"))):
+    # "Decline says nothing was shared" — the pending account is removed
+    # outright, same as it never having been created.
+    target = get_employer(target_id)
+    if not target or target["company_id"] != employer["company_id"] or not target["is_pending_approval"]:
+        raise HTTPException(404, "no such pending teammate")
+    delete_employer(target_id)
+    return {"ok": True}
+
+
+@app.delete("/api/employers/me/team/{target_id}")
+def employer_remove_teammate(target_id: int, employer: dict = Depends(require_employer_role("owner"))):
+    target = get_employer(target_id)
+    if not target or target["company_id"] != employer["company_id"]:
+        raise HTTPException(404, "no such teammate")
+    if target["team_role"] == "owner" and count_company_owners(employer["company_id"], exclude_id=target_id) == 0:
+        raise HTTPException(400, "Can't remove the only owner — add another owner first.")
+    delete_employer(target_id)
     return {"ok": True}
 
 

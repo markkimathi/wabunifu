@@ -83,17 +83,10 @@
     eyeClosed: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"></path><path d="M9.5 6a8.6 8.6 0 012.5-.4c6 0 9.5 6.4 9.5 6.4a17 17 0 01-2.7 3.4"></path><path d="M6.3 8.2A16.7 16.7 0 002.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5"></path></svg>'
   };
 
-  var params = new URLSearchParams(location.search);
-  var company = (params.get("company") || "").trim();
-  var inviter = (params.get("inviter") || "").trim();
-  var email = (params.get("email") || "").trim();
-  var needsApproval = params.get("approval") !== "auto";
+  var token = new URLSearchParams(location.search).get("token") || "";
 
-  var companyLabel = company || "this team";
-  var inviterLabel = inviter || "Someone on the team";
-  var emailLabel = email || "the email address on this invite";
-
-  var state = { view: "invite", name: "", pw: "", pwVisible: false };
+  var invite = null; // {company_name, inviter_name, invited_email, needs_approval}, filled from the server
+  var state = { view: "loading", name: "", pw: "", pwVisible: false, error: "", submitting: false };
 
   function escapeHtml(s){
     return (s || "").replace(/[&<>"']/g, function(c){
@@ -101,70 +94,103 @@
     });
   }
 
-  var MESSAGES = {
-    waiting: {
-      icon: "-wait", iconSvg: ICON.clock,
-      title: "Someone has to approve you",
-      body: "You're on " + escapeHtml(companyLabel) + "'s team page as pending. Whoever owns the account has been asked, and most approvals land the same day.",
-      facts: [
-        "Your name and password are saved — you won't fill this in twice.",
-        "Nothing you post is visible to " + escapeHtml(companyLabel) + " until you're approved, because you can't post yet.",
-        "This is a local demo of that wait — Kazi doesn't have real invite accounts yet."
-      ],
-      action: "Look around Kazi", href: "index.html"
-    },
-    joined: {
-      icon: "-good", iconSvg: ICON.check,
-      title: "You can post roles now",
-      body: "You're on the " + escapeHtml(companyLabel) + " account with the same access as whoever invited you. Post a role, and applicants go straight to your own page.",
-      facts: [
-        "Your first listing starts with eligibility already answered.",
-        "Kazi never sits between you and a candidate, and never charges per hire.",
-        "This is a local demo of that handoff — nothing here was actually saved to an account."
-      ],
-      action: "Post a role", href: "/post" + (company ? "?company=" + encodeURIComponent(company) : "")
-    },
-    declined: {
-      icon: "-neutral", iconSvg: ICON.x,
-      title: "Nothing was created",
-      body: "We told " + escapeHtml(inviterLabel) + " the invite was declined, not why. No account exists at " + escapeHtml(emailLabel) + ", and that address is off the " + escapeHtml(companyLabel) + " team.",
-      facts: [
-        "The link is dead — opening it again would show this same page.",
-        "You can still join Kazi as a designer, with your own email."
-      ],
-      action: "Back to Kazi", href: "index.html"
-    }
-  };
+  function companyLabel(){ return (invite && invite.company_name) || "this team"; }
+  function inviterLabel(){ return (invite && invite.inviter_name) || "Someone on the team"; }
+  function emailLabel(){ return (invite && invite.invited_email) || "the email address on this invite"; }
 
-  function ready(pw){
+  function messages(){
+    return {
+      waiting: {
+        icon: "-wait", iconSvg: ICON.clock,
+        title: "Someone has to approve you",
+        body: "You're on " + escapeHtml(companyLabel()) + "'s team page as pending. Whoever owns the account has been asked, and most approvals land the same day.",
+        facts: [
+          "Your name and password are saved — you won't fill this in twice.",
+          "Nothing you post is visible to " + escapeHtml(companyLabel()) + " until you're approved, because you can't post yet."
+        ],
+        action: "Look around Kazi", href: "index.html"
+      },
+      joined: {
+        icon: "-good", iconSvg: ICON.check,
+        title: "You can post roles now",
+        body: "You're on the " + escapeHtml(companyLabel()) + " account with the same access as whoever invited you. Post a role, and applicants go straight to your own page.",
+        facts: [
+          "Your first listing starts with eligibility already answered.",
+          "Kazi never sits between you and a candidate, and never charges per hire."
+        ],
+        action: "Post a role", href: "/post" + (invite && invite.company_name ? "?company=" + encodeURIComponent(invite.company_name) : "")
+      },
+      declined: {
+        icon: "-neutral", iconSvg: ICON.x,
+        title: "Nothing was created",
+        body: "We told " + escapeHtml(inviterLabel()) + " the invite was declined, not why. No account exists at " + escapeHtml(emailLabel()) + ", and that address is off the " + escapeHtml(companyLabel()) + " team.",
+        facts: [
+          "The link is dead — opening it again would show this same page.",
+          "You can still join Kazi as a designer, with your own email."
+        ],
+        action: "Back to Kazi", href: "index.html"
+      },
+      invalid: {
+        icon: "-neutral", iconSvg: ICON.x,
+        title: "This invite isn’t valid",
+        body: "It may have already been used, declined, or it's simply expired — invites last 5 days.",
+        facts: [
+          "Ask whoever invited you to send a new one from their Team page."
+        ],
+        action: "Back to Kazi", href: "index.html"
+      }
+    };
+  }
+
+  function ready(){
     return state.name.trim().length > 1 && state.pw.length >= 8;
+  }
+
+  async function loadInvite(){
+    if (!token) { state.view = "invalid"; render(); return; }
+    try {
+      var res = await fetch("/api/employers/invites/" + encodeURIComponent(token));
+      if (!res.ok) { state.view = "invalid"; render(); return; }
+      invite = await res.json();
+      state.view = "invite";
+      render();
+    } catch (e) {
+      state.view = "invalid";
+      render();
+    }
+  }
+
+  function renderLoading(){
+    return '<p class="sub">Loading your invite…</p>';
   }
 
   function renderForm(){
     var r = ready();
-    return '<div class="invite-badge"><span class="mark">' + (company ? company.slice(0,1).toUpperCase() : "?") + '</span>' +
-      '<span class="txt">' + escapeHtml(inviterLabel) + ' invited you' + (inviter ? "" : "") + '</span></div>' +
-      '<h1>Post roles at ' + escapeHtml(companyLabel) + '</h1>' +
-      '<p class="sub">' + escapeHtml(companyLabel) + ' is already on Kazi, so there’s no company to set up and no eligibility questions to answer — that work carries over to everything you post.</p>' +
+    var name = companyLabel(), who = inviterLabel();
+    return '<div class="invite-badge"><span class="mark">' + name.slice(0,1).toUpperCase() + '</span>' +
+      '<span class="txt">' + escapeHtml(who) + ' invited you</span></div>' +
+      '<h1>Post roles at ' + escapeHtml(name) + '</h1>' +
+      '<p class="sub">' + escapeHtml(name) + ' is already on Kazi, so there’s no company to set up and no eligibility questions to answer — that work carries over to everything you post.</p>' +
       '<form id="inviteForm">' +
         '<div class="field-block"><label class="pp-field-label" for="fName">Your name</label>' +
           '<div class="pp-field-input"><input id="fName" type="text" placeholder="How you want to appear to applicants" value="' + escapeHtml(state.name) + '"></div></div>' +
         '<div class="field-block"><label class="pp-field-label" for="fPw">A password</label>' +
           '<div class="pp-field-input"><input id="fPw" type="' + (state.pwVisible ? "text" : "password") + '" placeholder="Eight characters or more" value="' + escapeHtml(state.pw) + '">' +
             '<button type="button" class="toggle-eye" id="toggleEye" aria-label="' + (state.pwVisible ? "Hide password" : "Show password") + '">' + (state.pwVisible ? ICON.eyeClosed : ICON.eyeOpen) + '</button></div></div>' +
-        '<p class="email-note">Your email, <strong>' + escapeHtml(emailLabel) + '</strong>, is already on the invite.</p>' +
+        '<p class="email-note">Your email, <strong>' + escapeHtml(emailLabel()) + '</strong>, is already on the invite.</p>' +
+        (state.error ? '<p class="email-note" style="color:var(--c-bad-text)">' + escapeHtml(state.error) + '</p>' : "") +
         '<div class="cta-row">' +
-          '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg"' + (r ? "" : " disabled") + '>Join ' + escapeHtml(companyLabel) + '</button>' +
+          '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg"' + (r && !state.submitting ? "" : " disabled") + '>' + (state.submitting ? "Joining…" : "Join " + escapeHtml(name)) + '</button>' +
           '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-lg" id="notMineBtn">Not my company</button>' +
         '</div>' +
       '</form>' +
-      '<p class="approval-note">' + (needsApproval
-        ? "Whoever owns the " + escapeHtml(companyLabel) + " account approves new people. You won't be able to post until they do."
-        : escapeHtml(inviterLabel) + " can add people directly, so you're in as soon as you join.") + '</p>';
+      '<p class="approval-note">' + (invite && invite.needs_approval
+        ? "Whoever owns the " + escapeHtml(name) + " account approves new people. You won't be able to post until they do."
+        : escapeHtml(who) + " can add people directly, so you're in as soon as you join.") + '</p>';
   }
 
   function renderMessage(){
-    var m = MESSAGES[state.view];
+    var m = messages()[state.view];
     return '<span class="msg-icon ' + m.icon + '">' + m.iconSvg + '</span>' +
       '<h1>' + m.title + '</h1>' +
       '<p class="sub">' + m.body + '</p>' +
@@ -183,18 +209,45 @@
   }
 
   function render(){
-    document.getElementById("formArea").innerHTML = state.view === "invite" ? renderForm() : renderMessage();
+    var body = state.view === "loading" ? renderLoading() : (state.view === "invite" ? renderForm() : renderMessage());
+    document.getElementById("formArea").innerHTML = body;
     document.getElementById("valueSide").innerHTML = renderValueSide();
     wire();
+  }
+
+  async function submitJoin(){
+    state.error = "";
+    state.submitting = true;
+    render();
+    try {
+      var res = await fetch("/api/employers/invites/" + encodeURIComponent(token) + "/accept", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ full_name: state.name.trim(), password: state.pw })
+      });
+      var data = await res.json();
+      if (!res.ok) {
+        state.error = (data.detail && typeof data.detail === "string") ? data.detail : "Couldn't join. Try again.";
+        state.submitting = false;
+        render();
+        return;
+      }
+      localStorage.setItem("kazi_employer_token", data.token);
+      state.submitting = false;
+      state.view = data.needs_approval ? "waiting" : "joined";
+      render();
+    } catch (e) {
+      state.error = "Couldn't reach the server. Try again.";
+      state.submitting = false;
+      render();
+    }
   }
 
   function wire(){
     var form = document.getElementById("inviteForm");
     if (form) form.addEventListener("submit", function(e){
       e.preventDefault();
-      if (!ready()) return;
-      state.view = needsApproval ? "waiting" : "joined";
-      render();
+      if (!ready() || state.submitting) return;
+      submitJoin();
     });
     var fName = document.getElementById("fName");
     if (fName) fName.addEventListener("input", function(){
@@ -213,18 +266,22 @@
 
     var notMineBtn = document.getElementById("notMineBtn");
     if (notMineBtn) notMineBtn.addEventListener("click", async function(){
+      var who = inviterLabel(), name = companyLabel();
       var ok = await window.showPPConfirm({
-        title: "Tell " + inviterLabel + " this isn’t your company?",
-        description: "No account is created and the invite dies. " + inviterLabel + " sees that it was declined, not why. Your email address is removed from the " + companyLabel + " account.",
+        title: "Tell " + who + " this isn’t your company?",
+        description: "No account is created and the invite dies. " + who + " sees that it was declined, not why. Your email address is removed from the " + name + " account.",
         confirmLabel: "Decline the invite",
         safeLabel: "Go back to the invite",
         danger: true
       });
-      if (ok) { state.view = "declined"; render(); }
+      if (!ok) return;
+      try { await fetch("/api/employers/invites/" + encodeURIComponent(token) + "/decline", { method: "POST" }); } catch (e) {}
+      state.view = "declined";
+      render();
     });
   }
 
-  render();
+  loadInvite();
 })();
 </script>
 </body>

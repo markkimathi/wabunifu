@@ -87,6 +87,11 @@
   .handoff-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:22px}
   .dash-note{padding:16px 18px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);border:1px solid var(--c-border);
     font-size:13.5px;line-height:1.6;color:var(--c-text-subtle)}
+
+  .toggle-eye{width:32px;height:32px;flex:none;border:none;border-radius:8px;background:transparent;
+    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--c-text-subtle)}
+  .toggle-eye:hover{background:var(--c-surface-inset)}
+  .fielderr{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:13.5px;color:var(--c-bad-text)}
 </style>
 </head>
 <body>
@@ -107,7 +112,10 @@
   var ICON = {
     check: '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>',
     arrow: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>',
-    doc: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--c-bg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>'
+    doc: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--c-bg)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>',
+    error: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>',
+    eyeOpen: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+    eyeClosed: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"></path><path d="M9.5 6a8.6 8.6 0 012.5-.4c6 0 9.5 6.4 9.5 6.4a17 17 0 01-2.7 3.4"></path><path d="M6.3 8.2A16.7 16.7 0 002.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5"></path></svg>'
   };
 
   var REACH = [
@@ -132,9 +140,11 @@
     step: 0,
     name: "", site: "", blurb: "",
     reach: null, how: "",
-    role: "", email: ""
+    role: "", email: "", fullName: "", pw: "", pwVisible: false
   };
   var view = "flow"; // "flow" | "handoff"
+  var submitError = "";
+  var submitting = false;
 
   function escapeHtml(s){
     return (s || "").replace(/[&<>"']/g, function(c){
@@ -241,21 +251,28 @@
   function renderIdentity(){
     var eOk = emailMatches();
     var filled = state.email.indexOf("@") > 0;
-    var ok = state.role.trim().length > 1 && eOk;
-    var note = !state.role.trim() ? "Add your role" : (!filled ? "Add your work email" : "The email should match the company domain");
+    var ok = state.fullName.trim().length > 1 && state.role.trim().length > 1 && eOk && state.pw.length >= 8;
+    var note = !state.fullName.trim() ? "Add your name" : (!state.role.trim() ? "Add your role" :
+      (!filled ? "Add your work email" : (!eOk ? "The email should match the company domain" : "Add a password, eight characters or more")));
     var hint = !filled
       ? "A free email address won’t do here — it needs to be at the company."
       : (eOk ? "That matches " + escapeHtml(siteDomain()) + "." : "That doesn’t match " + escapeHtml(siteDomain() || "the website you gave") + " yet.");
     return '<span class="step-kicker">Step 5 of ' + TOTAL_STEPS + '</span>' +
       '<h1 class="step-title">And who are you there?</h1>' +
       '<p class="step-sub">A work email that matches the company domain is how a listing gets tied to a real employer, not a login screen we check for you.</p>' +
+      '<div class="field-block"><label class="pp-field-label" for="fFullName">Your name</label>' +
+        '<div class="pp-field-input"><input id="fFullName" type="text" placeholder="How you want to appear to applicants" value="' + escapeHtml(state.fullName) + '"></div></div>' +
       '<div class="field-block"><label class="pp-field-label" for="fRole">Your role there</label>' +
         '<div class="pp-field-input"><input id="fRole" type="text" placeholder="e.g. Design Lead" value="' + escapeHtml(state.role) + '"></div></div>' +
       '<div class="field-block"><label class="pp-field-label" for="fEmail">Work email</label>' +
         '<div class="pp-field-input"><input id="fEmail" type="email" placeholder="you@company.com" value="' + escapeHtml(state.email) + '">' +
         (eOk ? '<span class="match-tag">' + ICON.check + 'Matches the domain</span>' : "") + '</div>' +
         '<p class="field-hint' + (filled && !eOk ? " -bad" : (eOk ? " -ok" : "")) + '">' + hint + '</p></div>' +
-      stepNav({ ok: ok, note: note, label: "Finish and post a role" });
+      '<div class="field-block"><label class="pp-field-label" for="fPw">A password</label>' +
+        '<div class="pp-field-input"><input id="fPw" type="' + (state.pwVisible ? "text" : "password") + '" placeholder="Eight characters or more" value="' + escapeHtml(state.pw) + '">' +
+          '<button type="button" class="toggle-eye" id="toggleEye" aria-label="' + (state.pwVisible ? "Hide password" : "Show password") + '">' + (state.pwVisible ? ICON.eyeClosed : ICON.eyeOpen) + '</button></div></div>' +
+      (submitError ? '<div class="fielderr">' + ICON.error + escapeHtml(submitError) + '</div>' : "") +
+      stepNav({ ok: ok && !submitting, note: submitting ? "" : note, label: submitting ? "Setting up…" : "Finish and post a role" });
   }
 
   function renderHandoff(){
@@ -300,6 +317,39 @@
 
   function goStep(n){ state.step = n; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 
+  async function submitSignup(){
+    submitError = "";
+    submitting = true;
+    render();
+    try {
+      var res = await fetch("/api/employers/signup", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: state.email.trim(), password: state.pw, full_name: state.fullName.trim(),
+          role_title: state.role.trim(), company_name: state.name.trim(),
+          company_website: state.site.trim(), company_blurb: state.blurb.trim(),
+          eligibility: state.reach || "", eligibility_note: state.how.trim()
+        })
+      });
+      var data = await res.json();
+      if (!res.ok) {
+        submitError = (data.detail && typeof data.detail === "string") ? data.detail : "Couldn't set this up. Check the fields above and try again.";
+        submitting = false;
+        render();
+        return;
+      }
+      localStorage.setItem("kazi_employer_token", data.token);
+      submitting = false;
+      view = "handoff";
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (e) {
+      submitError = "Couldn't reach the server. Try again.";
+      submitting = false;
+      render();
+    }
+  }
+
   function wireFlow(){
     var backBtn = document.getElementById("backBtn");
     if (backBtn) backBtn.addEventListener("click", function(){ goStep(state.step - 1); });
@@ -309,7 +359,7 @@
 
     var nextBtn = document.getElementById("nextBtn");
     if (nextBtn) nextBtn.addEventListener("click", function(){
-      if (state.step === 4) { view = "handoff"; render(); window.scrollTo({ top: 0, behavior: "smooth" }); return; }
+      if (state.step === 4) { submitSignup(); return; }
       goStep(state.step + 1);
     });
 
@@ -331,10 +381,16 @@
     var fHow = document.getElementById("fHow");
     if (fHow) fHow.addEventListener("input", function(){ state.how = fHow.value; refreshGate(); });
 
+    var fFullName = document.getElementById("fFullName");
+    if (fFullName) fFullName.addEventListener("input", function(){ state.fullName = fFullName.value; refreshGate(); });
     var fRole = document.getElementById("fRole");
     if (fRole) fRole.addEventListener("input", function(){ state.role = fRole.value; refreshGate(); });
     var fEmail = document.getElementById("fEmail");
     if (fEmail) fEmail.addEventListener("input", function(){ state.email = fEmail.value; render(); });
+    var fPw = document.getElementById("fPw");
+    if (fPw) fPw.addEventListener("input", function(){ state.pw = fPw.value; refreshGate(); });
+    var eyeBtn = document.getElementById("toggleEye");
+    if (eyeBtn) eyeBtn.addEventListener("click", function(){ state.pwVisible = !state.pwVisible; render(); document.getElementById("fPw").focus(); });
   }
 
   // Re-render just enough to refresh the gate note / Next button without
@@ -349,8 +405,9 @@
       note = !state.reach ? "Pick one" : "Say how that works";
     } else if (state.step === 4) {
       var eOk = emailMatches(), filled = state.email.indexOf("@") > 0;
-      ok = state.role.trim().length > 1 && eOk;
-      note = !state.role.trim() ? "Add your role" : (!filled ? "Add your work email" : "The email should match the company domain");
+      ok = state.fullName.trim().length > 1 && state.role.trim().length > 1 && eOk && state.pw.length >= 8;
+      note = !state.fullName.trim() ? "Add your name" : (!state.role.trim() ? "Add your role" :
+        (!filled ? "Add your work email" : (!eOk ? "The email should match the company domain" : "Add a password, eight characters or more")));
     }
     if (nextBtn) nextBtn.disabled = !ok;
     if (gateNote) gateNote.textContent = ok ? "" : (note || "");
