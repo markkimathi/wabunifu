@@ -270,6 +270,21 @@
   .modal-actions{display:flex;justify-content:flex-end;gap:10px}
   .modal-cancel{font:inherit;font-size:13.5px;font-weight:700;padding:10px 16px;border-radius:999px;border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
 
+  .form-panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:20px;background:var(--surface);margin-bottom:20px}
+  .form-panel h3{margin:0 0 16px;font-size:16.5px}
+  .field-block{display:block;margin-bottom:14px}
+  .field-block .field-label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
+  .field-block input, .field-block textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--hairline-strong);
+    border-radius:10px;padding:10px 12px;background:var(--canvas);color:var(--ink);box-sizing:border-box;resize:vertical}
+  .field-block input:focus, .field-block textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
+  .field-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:600px){.field-row2{grid-template-columns:1fr}}
+  .form-actions{display:flex;align-items:center;gap:12px;margin-top:4px}
+  .form-actions button{font:inherit;font-size:13.5px;font-weight:700;padding:10px 18px;border-radius:999px;border:0;cursor:pointer}
+  .fielderr{color:#a5341f;font-size:13px;margin:8px 0 0}
+  [data-theme="dark"] .fielderr{color:#FF6B5B}
+  .save-note{color:var(--green-ink);font-size:13.5px;font-weight:600}
+
   /* ---- dashboard ---- */
   .view-switch{display:flex;gap:8px;margin:32px 0 20px}
   .view-switch button{font:inherit;font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;
@@ -432,6 +447,8 @@
     <button data-view="designers">Designer profiles</button>
     <button data-view="employers">Employers</button>
     <button data-view="reports">Reports</button>
+    <button data-view="community">Community</button>
+    <button data-view="paydata">Pay data</button>
   </div>
 
   <section id="dashboardView">
@@ -537,6 +554,63 @@
 
     <div id="reportList"></div>
   </section>
+
+  <section id="communityView" style="display:none">
+    <h1>Community</h1>
+    <p class="sub">Schedule a session and it appears on the Community page right away. Sessions can't be edited here yet — cancel and re-create if something's wrong.</p>
+
+    <div class="form-panel">
+      <h3>Schedule a session</h3>
+      <form id="sessionForm">
+        <div class="field-row2">
+          <label class="field-block"><span class="field-label">Title</span><input type="text" id="sTitle" required></label>
+          <label class="field-block"><span class="field-label">Kind</span><input type="text" id="sKind" placeholder="Portfolio review"></label>
+        </div>
+        <div class="field-row2">
+          <label class="field-block"><span class="field-label">Date</span><input type="date" id="sDate" required></label>
+          <label class="field-block"><span class="field-label">Time</span><input type="text" id="sTime" placeholder="16:00 EAT"></label>
+        </div>
+        <div class="field-row2">
+          <label class="field-block"><span class="field-label">Length</span><input type="text" id="sLength" placeholder="45 min"></label>
+          <label class="field-block"><span class="field-label">Seats</span><input type="number" id="sSeats" value="6" min="1"></label>
+        </div>
+        <label class="field-block"><span class="field-label">Blurb</span><textarea id="sBlurb" rows="2"></textarea></label>
+        <div class="field-row2">
+          <label class="field-block"><span class="field-label">Host name</span><input type="text" id="sHost"></label>
+          <label class="field-block"><span class="field-label">Host initials</span><input type="text" id="sHostInitials" maxlength="3"></label>
+        </div>
+        <label class="field-block"><span class="field-label">Reviewer bio</span><textarea id="sBio" rows="2"></textarea></label>
+        <label class="field-block"><span class="field-label">Joining link</span><input type="text" id="sLink" placeholder="https://meet.google.com/…"></label>
+        <label class="field-block"><span class="field-label">What to bring — one per line</span><textarea id="sBring" rows="3" placeholder="A portfolio link or PDF"></textarea></label>
+        <label class="field-block"><span class="field-label">Agenda — one per line, as "time | title | note"</span><textarea id="sAgenda" rows="3" placeholder="16:00 | Intros | Quick round"></textarea></label>
+        <p class="fielderr" id="sessionErr" style="display:none"></p>
+        <div class="form-actions">
+          <button type="submit" class="approve" style="padding:10px 18px">Schedule session</button>
+          <span class="save-note" id="sessionNote" style="display:none">Scheduled.</span>
+        </div>
+      </form>
+    </div>
+
+    <h3 style="margin:28px 0 12px">Upcoming sessions</h3>
+    <div id="sessionList"></div>
+
+    <h3 style="margin:28px 0 12px">Unanswered questions (2+ days)</h3>
+    <div id="staleList"></div>
+  </section>
+
+  <section id="paydataView" style="display:none">
+    <h1>Pay data</h1>
+    <p class="sub">A submission only counts toward the published ranges once accepted here. Nobody's name, handle, or company is ever attached to a row.</p>
+
+    <div class="tabs">
+      <button data-pstatus="pending" class="active">Pending</button>
+      <button data-pstatus="accepted">Accepted</button>
+      <button data-pstatus="rejected">Rejected</button>
+      <button data-pstatus="all">All</button>
+    </div>
+
+    <div id="payList"></div>
+  </section>
 </div>
 
 <div class="modal-backdrop" id="reportModalBackdrop" style="display:none">
@@ -606,6 +680,8 @@ const queueView = document.getElementById("queueView");
 const designersView = document.getElementById("designersView");
 const employersView = document.getElementById("employersView");
 const reportsView = document.getElementById("reportsView");
+const communityView = document.getElementById("communityView");
+const paydataView = document.getElementById("paydataView");
 document.querySelectorAll(".view-switch button").forEach(b => {
   b.addEventListener("click", () => {
     document.querySelectorAll(".view-switch button").forEach(x => x.classList.remove("active"));
@@ -616,11 +692,15 @@ document.querySelectorAll(".view-switch button").forEach(b => {
     designersView.style.display = view === "designers" ? "block" : "none";
     employersView.style.display = view === "employers" ? "block" : "none";
     reportsView.style.display = view === "reports" ? "block" : "none";
+    communityView.style.display = view === "community" ? "block" : "none";
+    paydataView.style.display = view === "paydata" ? "block" : "none";
     if (view === "dashboard") loadDashboard();
     else if (view === "queue") loadTab(document.querySelector("#queueView .tabs button.active").dataset.status);
     else if (view === "designers") loadDesignerTab(document.querySelector("#designersView .tabs button.active").dataset.dstatus);
     else if (view === "employers") loadEmployerTab(document.querySelector("#employersView .tabs button.active").dataset.estatus);
-    else loadReportTab(document.querySelector("#reportsView .tabs button.active").dataset.rstatus);
+    else if (view === "reports") loadReportTab(document.querySelector("#reportsView .tabs button.active").dataset.rstatus);
+    else if (view === "community") loadCommunityView();
+    else loadPayTab(document.querySelector("#paydataView .tabs button.active").dataset.pstatus);
   });
 });
 
@@ -886,6 +966,13 @@ document.querySelectorAll("#reportsView .tabs button").forEach(b => {
     loadReportTab(b.dataset.rstatus);
   });
 });
+document.querySelectorAll("#paydataView .tabs button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#paydataView .tabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    loadPayTab(b.dataset.pstatus);
+  });
+});
 
 async function loadTab(status) {
   list.innerHTML = `<div class="empty">Loading…</div>`;
@@ -1147,6 +1234,170 @@ document.getElementById("reportModalConfirm").addEventListener("click", async ()
   }
   btn.disabled = false;
 });
+
+/* ---------- community: sessions + stale questions ---------- */
+const sessionList = document.getElementById("sessionList");
+const staleList = document.getElementById("staleList");
+
+function loadCommunityView() {
+  loadSessionList();
+  loadStaleQuestions();
+}
+
+async function loadSessionList() {
+  sessionList.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const data = await fetch("/api/community/sessions?status=all").then(r => r.json());
+    const rows = data.sessions || [];
+    if (!rows.length) { sessionList.innerHTML = `<div class="empty">No sessions scheduled yet.</div>`; return; }
+    sessionList.innerHTML = rows.map(s => `
+      <div class="item" data-id="${s.id}">
+        <div>
+          <h3>${escapeHtml(s.title)}</h3>
+          <p class="meta"><b>${escapeHtml(s.session_date)}</b> · ${escapeHtml(s.time)} · ${escapeHtml(s.length)} · ${s.seats_taken}/${s.seats} booked${s.seats_waitlisted ? ` · ${s.seats_waitlisted} waiting` : ""}</p>
+          ${s.host ? `<p class="meta">Hosted by ${escapeHtml(s.host)}</p>` : ""}
+        </div>
+        <div class="actions">
+          ${s.status === "scheduled" ? `<button class="reject" data-scancel="${s.id}">Cancel</button>` : `<span class="status rejected">${escapeHtml(s.status)}</span>`}
+        </div>
+      </div>
+    `).join("");
+    sessionList.querySelectorAll("[data-scancel]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        btn.disabled = true;
+        try {
+          await api(`/api/admin/community/sessions/${btn.dataset.scancel}/cancel`, { method: "POST" });
+          loadSessionList();
+        } catch (e) {
+          await window.showAlertDialog({title: "Failed", description: e.message});
+          btn.disabled = false;
+        }
+      });
+    });
+  } catch (e) {
+    sessionList.innerHTML = `<div class="empty">Couldn't load: ${e.message}</div>`;
+  }
+}
+
+async function loadStaleQuestions() {
+  staleList.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const data = await api("/api/admin/community/questions?flagged=stale");
+    const rows = data.questions || [];
+    if (!rows.length) { staleList.innerHTML = `<div class="empty">Nothing unanswered for more than two days.</div>`; return; }
+    staleList.innerHTML = rows.map(q => `
+      <div class="item">
+        <div>
+          <h3>${escapeHtml(q.title)}</h3>
+          <p class="desc">${escapeHtml(q.body)}</p>
+          <p class="meta">Asked ${new Date(q.created_at).toLocaleDateString()}</p>
+        </div>
+      </div>
+    `).join("");
+  } catch (e) {
+    staleList.innerHTML = `<div class="empty">Couldn't load: ${e.message}</div>`;
+  }
+}
+
+document.getElementById("sessionForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const err = document.getElementById("sessionErr");
+  const note = document.getElementById("sessionNote");
+  err.style.display = "none";
+  note.style.display = "none";
+
+  const bring_list = document.getElementById("sBring").value.split("\n").map(s => s.trim()).filter(Boolean);
+  const agenda = document.getElementById("sAgenda").value.split("\n").map(s => s.trim()).filter(Boolean).map(line => {
+    const parts = line.split("|").map(p => p.trim());
+    return { clock: parts[0] || "", title: parts[1] || "", note: parts[2] || "" };
+  });
+
+  const payload = {
+    title: document.getElementById("sTitle").value.trim(),
+    kind: document.getElementById("sKind").value.trim(),
+    session_date: document.getElementById("sDate").value,
+    time: document.getElementById("sTime").value.trim(),
+    length: document.getElementById("sLength").value.trim(),
+    seats: parseInt(document.getElementById("sSeats").value, 10) || 6,
+    blurb: document.getElementById("sBlurb").value.trim(),
+    host: document.getElementById("sHost").value.trim(),
+    host_initials: document.getElementById("sHostInitials").value.trim(),
+    host_bg: "", host_fg: "",
+    reviewer_bio: document.getElementById("sBio").value.trim(),
+    joining_link: document.getElementById("sLink").value.trim(),
+    bring_list, agenda,
+  };
+  if (!payload.title || !payload.session_date) {
+    err.textContent = "Title and date are required.";
+    err.style.display = "block";
+    return;
+  }
+
+  const btn = e.target.querySelector("button[type=submit]");
+  btn.disabled = true;
+  try {
+    await api("/api/admin/community/sessions", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(payload) });
+    note.style.display = "inline";
+    e.target.reset();
+    document.getElementById("sSeats").value = 6;
+    loadSessionList();
+  } catch (e2) {
+    err.textContent = e2.message;
+    err.style.display = "block";
+  }
+  btn.disabled = false;
+});
+
+/* ---------- pay data ---------- */
+const payList = document.getElementById("payList");
+
+async function loadPayTab(status) {
+  payList.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const rows = await api(`/api/admin/pay-submissions?status=${status}`);
+    renderPaySubmissions(rows);
+  } catch (e) {
+    payList.innerHTML = `<div class="empty">Couldn't load: ${e.message}</div>`;
+  }
+}
+
+function renderPaySubmissions(rows) {
+  if (!rows.length) {
+    payList.innerHTML = `<div class="empty">Nothing here.</div>`;
+    return;
+  }
+  payList.innerHTML = rows.map(p => `
+    <div class="item" data-id="${p.id}">
+      <div>
+        <h3>${escapeHtml(p.discipline)} · ${escapeHtml(p.level)} · ${escapeHtml(p.market)}</h3>
+        <p class="meta"><b>$${Math.round(p.amount_monthly_usd).toLocaleString()}/mo</b> (reported as ${escapeHtml(String(p.raw_amount))} ${escapeHtml(p.raw_currency)})</p>
+        ${p.outlier_check ? `<p class="meta">${escapeHtml(p.outlier_check)}</p>` : ""}
+        <p class="meta">${new Date(p.created_at).toLocaleString()}</p>
+      </div>
+      <div class="actions">
+        ${p.status === "pending" ? `
+          <button class="approve" data-paction="accept">Accept</button>
+          <button class="reject" data-paction="reject">Reject</button>
+        ` : `<span class="status ${p.status === "accepted" ? "approved" : "rejected"}">${escapeHtml(p.status)}</span>`}
+      </div>
+    </div>
+  `).join("");
+
+  payList.querySelectorAll("[data-paction]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const id = btn.closest(".item").dataset.id;
+      btn.disabled = true;
+      try {
+        await api(`/api/admin/pay-submissions/${id}/${btn.dataset.paction}`, { method: "POST" });
+        const activeTab = document.querySelector("#paydataView .tabs button.active").dataset.pstatus;
+        loadPayTab(activeTab);
+      } catch (e) {
+        await window.showAlertDialog({title: "Failed", description: e.message});
+        btn.disabled = false;
+      }
+    });
+  });
+}
 
 if (token) tryEnter();
 </script>

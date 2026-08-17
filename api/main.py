@@ -71,7 +71,7 @@ from .db import (  # noqa: E402
     create_question, list_questions, get_question, set_accepted_reply, set_question_status,
     create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
     count_stale_questions, get_reply_leaderboard, list_work_worth_reading,
-    get_pay_median, create_pay_submission, list_pay_ranges,
+    get_pay_median, create_pay_submission, list_pay_ranges, list_pay_submissions, set_pay_submission_status,
     get_message, create_report, list_reports, get_report, resolve_report, set_employer_suspended,
 )
 from . import geoip  # noqa: E402
@@ -715,6 +715,24 @@ class CommunitySessionIn(BaseModel):
         if not v:
             raise ValueError("required")
         return v
+
+
+class CommunitySessionUpdate(BaseModel):
+    title: Optional[str] = None
+    kind: Optional[str] = None
+    session_date: Optional[str] = None
+    time: Optional[str] = None
+    length: Optional[str] = None
+    blurb: Optional[str] = None
+    host: Optional[str] = None
+    host_initials: Optional[str] = None
+    host_bg: Optional[str] = None
+    host_fg: Optional[str] = None
+    reviewer_bio: Optional[str] = None
+    seats: Optional[int] = None
+    joining_link: Optional[str] = None
+    bring_list: Optional[list[str]] = None
+    agenda: Optional[list[dict]] = None
 
 
 class QuestionIn(BaseModel):
@@ -2309,6 +2327,78 @@ def admin_resolve_report(report_id: int, payload: ReportResolve, _: None = Depen
                 set_designer_status(question["designer_id"], "suspended")
 
     resolve_report(report_id, action)
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# Admin: community sessions (scheduling) + a stale-questions flag for the
+# Q&A board. Mirrors the designer-facing session shape exactly — an admin
+# is just writing the same fields a designer reads.
+# ---------------------------------------------------------------------------
+
+@app.post("/api/admin/community/sessions")
+def admin_create_session(payload: CommunitySessionIn, _: None = Depends(require_admin)):
+    session_id = create_community_session(
+        title=payload.title, kind=payload.kind, session_date=payload.session_date,
+        time=payload.time, length=payload.length, blurb=payload.blurb, host=payload.host,
+        host_initials=payload.host_initials, host_bg=payload.host_bg, host_fg=payload.host_fg,
+        reviewer_bio=payload.reviewer_bio, seats=payload.seats, joining_link=payload.joining_link,
+        bring_list=json.dumps(payload.bring_list), agenda=json.dumps(payload.agenda),
+    )
+    return {"ok": True, "session_id": session_id}
+
+
+@app.patch("/api/admin/community/sessions/{session_id}")
+def admin_update_session(session_id: int, payload: CommunitySessionUpdate, _: None = Depends(require_admin)):
+    if not get_community_session(session_id):
+        raise HTTPException(404, "no such session")
+    fields = payload.model_dump(exclude_none=True)
+    if "bring_list" in fields:
+        fields["bring_list"] = json.dumps(fields["bring_list"])
+    if "agenda" in fields:
+        fields["agenda"] = json.dumps(fields["agenda"])
+    if fields:
+        update_community_session(session_id, **fields)
+    return {"ok": True}
+
+
+@app.post("/api/admin/community/sessions/{session_id}/cancel")
+def admin_cancel_session(session_id: int, _: None = Depends(require_admin)):
+    if not get_community_session(session_id):
+        raise HTTPException(404, "no such session")
+    set_session_status(session_id, "cancelled")
+    return {"ok": True}
+
+
+@app.get("/api/admin/community/questions")
+def admin_flagged_questions(flagged: str = "", _: None = Depends(require_admin)):
+    if flagged == "stale":
+        return {"questions": count_stale_questions()}
+    return {"questions": list_questions()}
+
+
+# ---------------------------------------------------------------------------
+# Admin: pay-data moderation queue. Same review-queue shape used everywhere
+# else in this file — a submission stays out of the public aggregate until
+# accepted here. outlier_check was computed once, at submission time in
+# api/resources/pay-submissions, against whatever the median was then.
+# ---------------------------------------------------------------------------
+
+@app.get("/api/admin/pay-submissions")
+def admin_list_pay_submissions(status: str = "pending", _: None = Depends(require_admin)):
+    rows = list_pay_submissions(status=status if status != "all" else None)
+    return [{k: v for k, v in r.items() if k != "designer_id"} for r in rows]
+
+
+@app.post("/api/admin/pay-submissions/{submission_id}/accept")
+def admin_accept_pay_submission(submission_id: int, _: None = Depends(require_admin)):
+    set_pay_submission_status(submission_id, "accepted")
+    return {"ok": True}
+
+
+@app.post("/api/admin/pay-submissions/{submission_id}/reject")
+def admin_reject_pay_submission(submission_id: int, _: None = Depends(require_admin)):
+    set_pay_submission_status(submission_id, "rejected")
     return {"ok": True}
 
 
