@@ -118,7 +118,9 @@ CREATE TABLE IF NOT EXISTS designers (
   email_verified INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL,
-  company_id INTEGER
+  company_id INTEGER,
+  failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+  locked_until TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_designers_status ON designers(status);
 
@@ -212,7 +214,9 @@ CREATE TABLE IF NOT EXISTS employers (
   invited_by_employer_id INTEGER,
   email_verified INTEGER NOT NULL DEFAULT 0,
   suspended INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+  locked_until TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_employers_company ON employers(company_id);
 
@@ -453,6 +457,10 @@ _MIGRATIONS = [
     "ALTER TABLE designer_projects ADD COLUMN problem TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designer_projects ADD COLUMN results TEXT NOT NULL DEFAULT '[]'",
     "ALTER TABLE designer_projects ADD COLUMN credits TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE designers ADD COLUMN locked_until TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE employers ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE employers ADD COLUMN locked_until TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -691,6 +699,39 @@ def get_designer_by_email(email: str) -> dict | None:
     row = c.execute("SELECT * FROM designers WHERE email = ?", (email,)).fetchone()
     c.close()
     return dict(row) if row else None
+
+
+LOGIN_LOCKOUT_THRESHOLD = 5
+LOGIN_LOCKOUT_MINUTES = 15
+
+
+def record_designer_login_failure(designer_id: int) -> dict:
+    """Bumps the failed-attempt counter and, once it reaches the threshold,
+    locks the account for LOGIN_LOCKOUT_MINUTES and resets the counter so a
+    fresh run starts counting from zero after the lock clears. Returns the
+    post-update {attempts, locked_until} so the caller can build the
+    "N attempts left" / lockout message without a second query."""
+    c = _conn()
+    row = c.execute("SELECT failed_login_attempts FROM designers WHERE id = ?", (designer_id,)).fetchone()
+    attempts = (row["failed_login_attempts"] if row else 0) + 1
+    locked_until = ""
+    if attempts >= LOGIN_LOCKOUT_THRESHOLD:
+        locked_until = (datetime.now(timezone.utc) + timedelta(minutes=LOGIN_LOCKOUT_MINUTES)).isoformat(timespec="seconds")
+        attempts = 0
+    c.execute(
+        "UPDATE designers SET failed_login_attempts = ?, locked_until = ? WHERE id = ?",
+        (attempts, locked_until, designer_id),
+    )
+    c.commit()
+    c.close()
+    return {"attempts": attempts, "locked_until": locked_until}
+
+
+def reset_designer_login_failures(designer_id: int) -> None:
+    c = _conn()
+    c.execute("UPDATE designers SET failed_login_attempts = 0, locked_until = '' WHERE id = ?", (designer_id,))
+    c.commit()
+    c.close()
 
 
 def get_designer_by_handle(handle: str) -> dict | None:
@@ -1421,6 +1462,31 @@ def get_employer_by_email(email: str) -> dict | None:
     row = c.execute("SELECT * FROM employers WHERE email = ?", (email,)).fetchone()
     c.close()
     return dict(row) if row else None
+
+
+def record_employer_login_failure(employer_id: int) -> dict:
+    """Mirrors record_designer_login_failure() — see its docstring."""
+    c = _conn()
+    row = c.execute("SELECT failed_login_attempts FROM employers WHERE id = ?", (employer_id,)).fetchone()
+    attempts = (row["failed_login_attempts"] if row else 0) + 1
+    locked_until = ""
+    if attempts >= LOGIN_LOCKOUT_THRESHOLD:
+        locked_until = (datetime.now(timezone.utc) + timedelta(minutes=LOGIN_LOCKOUT_MINUTES)).isoformat(timespec="seconds")
+        attempts = 0
+    c.execute(
+        "UPDATE employers SET failed_login_attempts = ?, locked_until = ? WHERE id = ?",
+        (attempts, locked_until, employer_id),
+    )
+    c.commit()
+    c.close()
+    return {"attempts": attempts, "locked_until": locked_until}
+
+
+def reset_employer_login_failures(employer_id: int) -> None:
+    c = _conn()
+    c.execute("UPDATE employers SET failed_login_attempts = 0, locked_until = '' WHERE id = ?", (employer_id,))
+    c.commit()
+    c.close()
 
 
 def list_employers_for_company(company_id: int) -> list[dict]:

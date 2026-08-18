@@ -42,6 +42,9 @@ from .db import (  # noqa: E402
     init_db, insert_submission, list_submissions, get_submission, set_status,
     log_pageview, log_search, log_apply_click, get_analytics_summary, count_profile_views,
     create_designer, get_designer, get_designer_by_email, get_designer_by_handle,
+    record_designer_login_failure, reset_designer_login_failures,
+    record_employer_login_failure, reset_employer_login_failures,
+    LOGIN_LOCKOUT_THRESHOLD, LOGIN_LOCKOUT_MINUTES,
     update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
     mark_onboarding_completed,
@@ -1181,11 +1184,37 @@ def designer_signup(payload: DesignerSignup, background: BackgroundTasks):
     return {"ok": True, "token": session_token}
 
 
+def _lockout_minutes_left(locked_until: str) -> int:
+    """Whole minutes remaining on a lockout, rounded up so "1 minute left"
+    never reads as "0 minutes left" while still actually locked."""
+    try:
+        until = datetime.fromisoformat(locked_until)
+    except ValueError:
+        return 0
+    seconds_left = (until - datetime.now(timezone.utc)).total_seconds()
+    return max(0, int(seconds_left + 59) // 60)
+
+
 @app.post("/api/designers/login")
 def designer_login(payload: DesignerLogin):
     designer = get_designer_by_email(payload.email.strip().lower())
+    if designer and designer.get("locked_until"):
+        minutes_left = _lockout_minutes_left(designer["locked_until"])
+        if minutes_left > 0:
+            raise HTTPException(423, {"message": f"Too many attempts. Try again in {minutes_left} minutes.", "locked": True})
     if not designer or not bcrypt.checkpw(payload.password.encode(), designer["password_hash"].encode()):
+        if designer:
+            result = record_designer_login_failure(designer["id"])
+            if result["locked_until"]:
+                raise HTTPException(423, {"message": f"Too many attempts. Try again in {LOGIN_LOCKOUT_MINUTES} minutes.", "locked": True})
+            remaining = LOGIN_LOCKOUT_THRESHOLD - result["attempts"]
+            if remaining <= 2:
+                raise HTTPException(401, {
+                    "message": "That password doesn't match this email",
+                    "attempts_remaining": remaining,
+                })
         raise HTTPException(401, "Incorrect email or password.")
+    reset_designer_login_failures(designer["id"])
     return {"ok": True, "token": create_session(designer["id"])}
 
 
@@ -1788,8 +1817,23 @@ def employer_signup(payload: EmployerSignup, background: BackgroundTasks):
 @app.post("/api/employers/login")
 def employer_login(payload: EmployerLogin):
     employer = get_employer_by_email(payload.email.strip().lower())
+    if employer and employer.get("locked_until"):
+        minutes_left = _lockout_minutes_left(employer["locked_until"])
+        if minutes_left > 0:
+            raise HTTPException(423, {"message": f"Too many attempts. Try again in {minutes_left} minutes.", "locked": True})
     if not employer or not bcrypt.checkpw(payload.password.encode(), employer["password_hash"].encode()):
+        if employer:
+            result = record_employer_login_failure(employer["id"])
+            if result["locked_until"]:
+                raise HTTPException(423, {"message": f"Too many attempts. Try again in {LOGIN_LOCKOUT_MINUTES} minutes.", "locked": True})
+            remaining = LOGIN_LOCKOUT_THRESHOLD - result["attempts"]
+            if remaining <= 2:
+                raise HTTPException(401, {
+                    "message": "That password doesn't match this email",
+                    "attempts_remaining": remaining,
+                })
         raise HTTPException(401, "Incorrect email or password.")
+    reset_employer_login_failures(employer["id"])
     return {"ok": True, "token": create_employer_session(employer["id"])}
 
 

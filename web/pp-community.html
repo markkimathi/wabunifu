@@ -82,6 +82,19 @@
   .thread-replies{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none;padding-left:6px}
   .thread-replies .n{font-size:18px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
   .thread-replies .l{font-size:11px;color:var(--c-text-faint)}
+  .thread-open{padding:0 20px 18px 78px;display:flex;flex-direction:column;gap:12px;border-top:1px solid var(--c-border)}
+  @media(max-width:539px){.thread-open{padding-left:20px}}
+  .reply-item{padding:14px 16px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);border:1px solid var(--c-border)}
+  .reply-item .head{display:flex;align-items:center;gap:9px;margin-bottom:7px}
+  .reply-item .head .who{font-size:13.5px;font-weight:600}
+  .reply-item .head .when{margin-left:auto;font-size:12px;color:var(--c-text-faint)}
+  .reply-item p{margin:0;font-size:14.5px;line-height:1.55}
+  .reply-compose{display:flex;gap:10px;align-items:flex-end}
+  .reply-compose textarea{flex:1;min-width:0;padding:10px 13px;border-radius:var(--pp-radius-md);
+    background:var(--c-surface);border:1px solid var(--c-border-strong);font-family:var(--pp-font);
+    font-size:14.5px;line-height:1.5;resize:none;color:var(--c-text)}
+  .reply-compose textarea:focus{outline:none;border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+  .reply-compose button{flex:none}
 
   .work-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
   @media(max-width:639px){.work-grid{grid-template-columns:1fr}}
@@ -234,7 +247,7 @@
     sessions: { loaded: false, failed: false, items: [] },
     questions: { loaded: false, failed: false, items: [] },
     work: { loaded: false, failed: false, items: [] },
-    mySeats: [], leaderboard: []
+    mySeats: [], leaderboard: [], openQuestions: {}
   };
 
   var TABS = [
@@ -284,10 +297,18 @@
     return { label: left + " seats left", cls: "" };
   }
 
+  function sessionBookState(s){
+    if (s.your_status === "booked") return { label: "Cancel your seat", cls: "pp-btn-secondary" };
+    if (s.your_status === "waitlisted") return { label: "Leave the waitlist", cls: "pp-btn-secondary" };
+    var left = s.seats - s.seats_taken;
+    return { label: left > 0 ? "Book your seat" : "Join the waitlist", cls: "pp-btn-primary" };
+  }
+
   function sessionCard(s){
     var dp = dateParts(s.session_date);
     var seat = sessionSeatNote(s);
-    return '<a class="session-card" href="/community/s-' + s.id + '" style="text-decoration:none;color:inherit">' +
+    var book = sessionBookState(s);
+    return '<article class="session-card">' +
       '<div class="session-date"><span class="m">' + dp.m + '</span><span class="d">' + dp.d + '</span><span class="t">' + escapeHtml(s.time) + '</span></div>' +
       '<div class="session-body">' +
         '<div class="session-top"><span class="pp-chip">' + escapeHtml(s.kind || "Session") + '</span><span style="font-size:13px;color:var(--c-text-faint)">' + escapeHtml(s.length) + '</span></div>' +
@@ -295,13 +316,16 @@
         '<div class="session-foot">' +
           '<div class="session-host"><span class="pp-avatar -xs ' + tintFor(s.id) + '">' + escapeHtml(s.host_initials || initialsOf(s.host)) + '</span><span>' + escapeHtml(s.host) + '</span></div>' +
           '<span class="seat-note' + seat.cls + '">' + seat.label + '</span>' +
+          '<div style="flex:1;min-width:8px"></div>' +
+          '<button type="button" class="pp-btn pp-btn-sm ' + book.cls + '" data-book="' + s.id + '">' + book.label + '</button>' +
         '</div>' +
-      '</div></a>';
+      '</div></article>';
   }
 
   function questionCard(q){
-    return '<a class="thread-card" href="/community/q-' + q.id + '" style="text-decoration:none;color:inherit;display:block">' +
-      '<div class="thread-btn">' +
+    var open = state.openQuestions[q.id];
+    return '<article class="thread-card">' +
+      '<button type="button" class="thread-btn" data-toggle="' + q.id + '">' +
         '<span class="pp-avatar -sm ' + tintFor(q.designer_id) + '">' + (q.author_photo ? '<img src="' + escapeHtml(q.author_photo) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : escapeHtml(initialsOf(q.author_name))) + '</span>' +
         '<span class="thread-main">' +
           '<span class="thread-meta"><span class="pp-chip -outline">' + escapeHtml(q.topic || "General") + '</span><span class="who">' + escapeHtml(q.author_name) + ' · ' + timeAgo(q.created_at) + '</span></span>' +
@@ -309,7 +333,27 @@
           '<span class="thread-excerpt">' + escapeHtml(q.body) + '</span>' +
         '</span>' +
         '<span class="thread-replies"><span class="n">' + q.reply_count + '</span><span class="l">replies</span></span>' +
-      '</div></a>';
+      '</button>' +
+      (open ? questionOpenHtml(q, open) : "") +
+    '</article>';
+  }
+
+  function questionOpenHtml(q, open){
+    if (open.loading) return '<div class="thread-open"><p style="margin:0;font-size:14px;color:var(--c-text-faint)">Loading replies…</p></div>';
+    var replies = open.replies || [];
+    return '<div class="thread-open">' +
+      (replies.length ? replies.map(function(r){
+        return '<div class="reply-item"><div class="head">' +
+          '<span class="pp-avatar -xs ' + tintFor(r.designer_id) + '">' + (r.photo_path ? '<img src="' + escapeHtml(r.photo_path) + '" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover">' : escapeHtml(initialsOf(r.display_name))) + '</span>' +
+          '<span class="who">' + escapeHtml(r.display_name) + '</span><span class="when">' + timeAgo(r.created_at) + '</span></div>' +
+          '<p>' + escapeHtml(r.body) + '</p></div>';
+      }).join("") : "") +
+      (token() ? '<div class="reply-compose">' +
+        '<textarea rows="1" placeholder="Add what you know…" data-draft="' + q.id + '">' + escapeHtml(open.draft || "") + '</textarea>' +
+        '<button type="button" class="pp-btn pp-btn-dark" data-send="' + q.id + '">Reply</button></div>' +
+        '<span class="msg" id="replyMsg-' + q.id + '" style="font-size:13px;color:var(--c-bad-text)"></span>'
+        : '<p style="margin:0;font-size:13.5px;color:var(--c-text-faint)"><a href="/pp-auth.html?view=signin&next=' + encodeURIComponent("/community") + '" style="font-weight:600;color:var(--c-accent-text)">Sign in</a> to add a reply.</p>') +
+    '</div>';
   }
 
   function workCard(w){
@@ -351,12 +395,101 @@
       return;
     }
 
-    if (state.tab === "sessions") area.innerHTML = '<div style="display:flex;flex-direction:column;gap:14px">' + bucket.items.map(sessionCard).join("") + '</div>';
-    else if (state.tab === "questions") area.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' + bucket.items.map(questionCard).join("") + '</div>';
-    else {
+    if (state.tab === "sessions") {
+      area.innerHTML = '<div style="display:flex;flex-direction:column;gap:14px">' + bucket.items.map(sessionCard).join("") + '</div>';
+      wireSessionCards();
+    } else if (state.tab === "questions") {
+      area.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' + bucket.items.map(questionCard).join("") + '</div>';
+      wireQuestionCards();
+    } else {
       area.innerHTML = '<p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:var(--c-text-muted);max-width:66ch">' +
         'Real, recent work from approved profiles — one piece per designer, newest first.</p>' +
         '<div class="work-grid">' + bucket.items.map(workCard).join("") + '</div>';
+    }
+  }
+
+  function wireSessionCards(){
+    document.querySelectorAll("[data-book]").forEach(function(btn){
+      btn.addEventListener("click", function(){ toggleSessionBooking(parseInt(btn.getAttribute("data-book"), 10), btn); });
+    });
+  }
+
+  async function toggleSessionBooking(sessionId, btn){
+    if (!token()) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent("/community"); return; }
+    var session = state.sessions.items.filter(function(s){ return s.id === sessionId; })[0];
+    if (!session) return;
+    btn.disabled = true;
+    var original = btn.textContent;
+    btn.textContent = "…";
+    try {
+      var endpoint = session.your_status ? "/cancel-booking" : "/book";
+      await fetch("/api/community/sessions/" + sessionId + endpoint, {
+        method: "POST", headers: { Authorization: "Bearer " + token() }
+      });
+      var res = await fetch("/api/community/sessions/" + sessionId, { headers: { Authorization: "Bearer " + token() } });
+      var updated = await res.json();
+      state.sessions.items = state.sessions.items.map(function(s){ return s.id === sessionId ? updated : s; });
+      renderFeed();
+      loadSidebar();
+    } catch (e) {
+      btn.disabled = false; btn.textContent = original;
+    }
+  }
+
+  function wireQuestionCards(){
+    document.querySelectorAll("[data-toggle]").forEach(function(btn){
+      btn.addEventListener("click", function(){ toggleQuestion(parseInt(btn.getAttribute("data-toggle"), 10)); });
+    });
+    document.querySelectorAll("[data-send]").forEach(function(btn){
+      btn.addEventListener("click", function(){ sendReply(parseInt(btn.getAttribute("data-send"), 10)); });
+    });
+    document.querySelectorAll("[data-draft]").forEach(function(ta){
+      ta.addEventListener("input", function(){
+        var qid = parseInt(ta.getAttribute("data-draft"), 10);
+        if (state.openQuestions[qid]) state.openQuestions[qid].draft = ta.value;
+      });
+    });
+  }
+
+  async function toggleQuestion(qid){
+    if (state.openQuestions[qid]) {
+      delete state.openQuestions[qid];
+      renderFeed();
+      return;
+    }
+    state.openQuestions[qid] = { loading: true, replies: [], draft: "" };
+    renderFeed();
+    try {
+      var res = await fetch("/api/community/questions/" + qid, { cache: "no-store" });
+      var data = await res.json();
+      state.openQuestions[qid] = { loading: false, replies: data.replies || [], draft: "" };
+    } catch (e) {
+      state.openQuestions[qid] = { loading: false, replies: [], draft: "" };
+    }
+    renderFeed();
+  }
+
+  async function sendReply(qid){
+    var open = state.openQuestions[qid];
+    if (!open) return;
+    var body = (open.draft || "").trim();
+    if (!body) return;
+    var msgEl = document.getElementById("replyMsg-" + qid);
+    try {
+      var res = await fetch("/api/community/questions/" + qid + "/replies", {
+        method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + token() },
+        body: JSON.stringify({ body: body })
+      });
+      if (!res.ok) throw new Error("failed");
+      open.draft = "";
+      var res2 = await fetch("/api/community/questions/" + qid, { cache: "no-store" });
+      var data = await res2.json();
+      open.replies = data.replies || [];
+      var q = state.questions.items.filter(function(x){ return x.id === qid; })[0];
+      if (q) q.reply_count = open.replies.length;
+      renderFeed();
+    } catch (e) {
+      if (msgEl) msgEl.textContent = "Couldn't send that — try again.";
     }
   }
 

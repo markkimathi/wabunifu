@@ -14,10 +14,24 @@
   a{color:inherit}
   .wizard{max-width:560px;width:100%;padding-top:8px}
 
-  .dots{display:flex;gap:8px;margin-bottom:36px}
+  .wizard-top{display:flex;justify-content:flex-end;margin-bottom:20px}
+  .finish-later{border:none;background:transparent;font-family:var(--pp-font);font-size:14.5px;font-weight:600;
+    color:var(--c-text-subtle);cursor:pointer;padding:8px 12px;border-radius:var(--pp-radius-md)}
+  .finish-later:hover{background:var(--c-bg-sunken);color:var(--c-text)}
+
+  .dots{display:flex;gap:8px;margin-bottom:16px}
   .dot{flex:1;height:4px;border-radius:999px;background:var(--c-surface-inset)}
   .dot.-done{background:var(--pp-gold)}
   .dot.-active{background:var(--c-text)}
+
+  .strength-meter{padding:14px 16px;border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken);
+    border:1px solid var(--c-border);margin-bottom:28px}
+  .strength-meter .row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+  .strength-meter .row span:first-child{font-size:13px;font-weight:600}
+  .strength-meter .row span:last-child{font-size:13px;font-weight:700;color:var(--pp-gold-800);font-variant-numeric:tabular-nums}
+  .strength-meter .bar{height:6px;border-radius:999px;background:var(--c-border);overflow:hidden}
+  .strength-meter .bar span{display:block;height:100%;background:var(--pp-gold);transition:width var(--pp-duration) var(--pp-ease)}
+  .strength-meter .note{margin:10px 0 0;font-size:12.5px;line-height:1.5;color:var(--c-text-subtle)}
 
   .step-title{margin:0 0 6px;font-size:30px;line-height:1.1;letter-spacing:-0.026em;font-weight:800}
   .step-sub{margin:0 0 28px;font-size:15.5px;line-height:1.55;color:var(--c-text-subtle)}
@@ -130,7 +144,53 @@
     for (var i = 0; i < TOTAL_STEPS; i++) {
       out += '<div class="dot' + (i === step ? " -active" : (i < step ? " -done" : "")) + '"></div>';
     }
-    return '<div class="dots">' + out + '</div>';
+    return '<div class="wizard-top"><button type="button" class="finish-later" id="finishLaterBtn">Save and finish later</button></div>' +
+      '<div class="dots">' + out + '</div>' + strengthMeterHtml();
+  }
+
+  // Seven roughly-equal factors, matching the shape of a real profile
+  // rather than the wizard's own step order — a photo doesn't move this,
+  // since avatar-1 is a real default, not a placeholder that signals
+  // incompleteness the way a blank name or bio does.
+  function strengthPct(){
+    var field = function(id, fallback){ var el = document.getElementById(id); return el ? el.value : fallback; };
+    var n = 0;
+    if ((field("fName", me.display_name) || "").trim()) n += 14;
+    if ((field("fHeadline", me.headline) || "").trim()) n += 14;
+    if ((field("fBio", me.bio) || "").trim()) n += 14;
+    if ((step === 1 ? selectedDisciplines : (me.discipline || [])).length) n += 14;
+    if ((step === 1 ? selectedSkills : (me.skills || [])).length) n += 14;
+    if ((me.links || []).length || (me.projects || []).length) n += 16;
+    if ((field("fLocation", me.location) || "").trim()) n += 14;
+    return Math.min(100, n);
+  }
+  function strengthNote(pct){
+    if (pct < 40) return "A headline and one line of bio move this fastest.";
+    if (pct < 80) return "Add a project or a link and you're in good shape.";
+    return "Strong enough to share with a hiring manager.";
+  }
+  function strengthMeterHtml(){
+    var pct = strengthPct();
+    return '<div class="strength-meter"><div class="row"><span>Profile strength</span><span>' + pct + '%</span></div>' +
+      '<div class="bar"><span style="width:' + pct + '%"></span></div>' +
+      '<p class="note">' + strengthNote(pct) + '</p></div>';
+  }
+  function updateStrengthMeter(){
+    var meter = document.querySelector(".strength-meter");
+    if (!meter) return;
+    var pct = strengthPct();
+    meter.querySelector(".row span:last-child").textContent = pct + "%";
+    meter.querySelector(".bar span").style.width = pct + "%";
+    meter.querySelector(".note").textContent = strengthNote(pct);
+  }
+  async function saveAndFinishLater(){
+    var btn = document.getElementById("finishLaterBtn");
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    try {
+      if (step === 1 || step === 2 || step === 3) await saveProfileFields();
+    } catch (e) { /* best-effort — don't block leaving on a save hiccup */ }
+    location.href = "/dashboard";
   }
 
   function navHtml(backStep, nextId, nextLabel, opts){
@@ -239,6 +299,9 @@
     skillInput.addEventListener("keydown", function(e){
       if (e.key === "Enter") { e.preventDefault(); addSkill(skillInput.value); skillInput.value = ""; }
     });
+    ["fName", "fHeadline", "fLocation"].forEach(function(id){
+      document.getElementById(id).addEventListener("input", updateStrengthMeter);
+    });
     document.getElementById("backBtn").addEventListener("click", function(){ goTo(0); });
     document.getElementById("aboutNextBtn").addEventListener("click", async function(){
       if (skillInput.value.trim()) { addSkill(skillInput.value); skillInput.value = ""; }
@@ -268,6 +331,7 @@
         if (idx !== -1) selectedDisciplines.splice(idx, 1);
         else if (selectedDisciplines.length < MAX_DISCIPLINES) selectedDisciplines.push(d);
         renderDisciplineChips();
+        updateStrengthMeter();
       });
     });
   }
@@ -281,6 +345,7 @@
       btn.addEventListener("click", function(){
         selectedSkills = selectedSkills.filter(function(s){ return s !== btn.getAttribute("data-s"); });
         renderSkillChips();
+        updateStrengthMeter();
       });
     });
     var input = document.getElementById("skillInput");
@@ -294,6 +359,7 @@
     if (selectedSkills.some(function(s){ return s.toLowerCase() === value.toLowerCase(); })) return;
     selectedSkills.push(value);
     renderSkillChips();
+    updateStrengthMeter();
   }
   // Every step (About/Contact/Bio) re-sends the full PUT /me payload, since
   // that's one endpoint for all of it — but only the current step's fields
@@ -358,6 +424,7 @@
       '<textarea id="fBio" class="pp-textarea" rows="5" placeholder="Product designer based in Nairobi, focused on fintech and mobile-first experiences...">' + escapeHtml(me.bio || "") + '</textarea>' +
       '<p class="err-text" id="bioErr" hidden></p>' +
       navHtml(2, "bioNextBtn", "Next");
+    document.getElementById("fBio").addEventListener("input", updateStrengthMeter);
     document.getElementById("backBtn").addEventListener("click", function(){ goTo(2); });
     document.getElementById("bioNextBtn").addEventListener("click", async function(){
       var errEl = document.getElementById("bioErr");
@@ -494,6 +561,7 @@
     else if (step === 4) renderLinksStep();
     else if (step === 5) renderResumeStep();
     else renderProjectsStep();
+    document.getElementById("finishLaterBtn").addEventListener("click", saveAndFinishLater);
   }
 
   async function init(){

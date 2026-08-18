@@ -47,6 +47,14 @@
     font-weight:600;color:var(--c-accent-text);cursor:pointer;padding:0}
   .fielderr{display:flex;align-items:center;gap:7px;margin-top:8px;font-size:13.5px;color:var(--c-bad-text)}
   .fielderr svg{flex:none}
+  .auth-callout{display:flex;gap:11px;align-items:flex-start;padding:14px 16px;border-radius:11px;
+    background:var(--c-bad-bg);border:1px solid var(--c-bad-border);margin-bottom:16px}
+  .auth-callout svg{flex:none;margin-top:1px;color:var(--c-bad-text)}
+  .auth-callout .title{margin:0 0 3px;font-size:14.5px;font-weight:600;color:var(--c-bad-text)}
+  .auth-callout .note{margin:0;font-size:14px;line-height:1.55;color:var(--c-bad-text)}
+  .auth-callout .note button{border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:600;
+    color:inherit;cursor:pointer;padding:0;text-decoration:underline}
+  .match-icon{flex:none;color:var(--c-good-text)}
   .pw-strength{margin-bottom:20px}
   .pw-pips{display:flex;gap:5px;margin-bottom:7px}
   .pw-pips span{flex:1;height:5px;border-radius:999px;background:var(--c-surface-inset)}
@@ -100,7 +108,8 @@
     error: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4M12 16h.01"></path></svg>',
     eyeOpen: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
     eyeClosed: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"></path><path d="M9.5 6a8.6 8.6 0 012.5-.4c6 0 9.5 6.4 9.5 6.4a17 17 0 01-2.7 3.4"></path><path d="M6.3 8.2A16.7 16.7 0 002.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5"></path></svg>',
-    mail: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 13l8.5-6.5"></path></svg>'
+    mail: '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 13l8.5-6.5"></path></svg>',
+    match: '<svg class="match-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>'
   };
 
   var EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
@@ -164,6 +173,7 @@
           '<div class="pp-field-input"><input id="fPw" type="password" placeholder="Your password" autocomplete="current-password">' +
             '<button type="button" class="toggle-eye" id="toggleEye" aria-label="Show password">' + ICONS.eyeOpen + '</button></div>' +
           '<div class="fielderr" id="pwErr" hidden></div></div>' +
+        '<div id="authCallout"></div>' +
         '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn">Sign in</button>' +
       '</form>' +
       '<p class="switch-line">New here? <button type="button" id="gotoSignup">Create an account</button></p>';
@@ -222,6 +232,10 @@
             '<button type="button" class="toggle-eye" id="toggleEye" aria-label="Show password">' + ICONS.eyeOpen + '</button></div>' +
           '<div class="fielderr" id="pwErr" hidden></div></div>' +
         '<div class="pw-strength" id="pwStrength" hidden><div class="pw-pips" id="pwPips"></div><span class="pw-note" id="pwNoteEl"></span></div>' +
+        '<div class="field-block"><label class="pp-field-label" for="fPw2">Again, to be sure</label>' +
+          '<div class="pp-field-input"><input id="fPw2" type="password" placeholder="Repeat it" autocomplete="new-password">' +
+            '<span id="pw2Match" hidden>' + ICONS.match + '</span></div>' +
+          '<div class="fielderr" id="pw2Err" hidden></div></div>' +
         (!resetToken ? '<p class="hint" style="color:var(--c-bad-text)">This page needs a reset link from your email — use the link we sent you, or <a href="/signin?view=reset" style="color:inherit;font-weight:600">request a new one</a>.</p>' : "") +
         '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn"' + (!resetToken ? " disabled" : "") + '>Save and sign in</button>' +
       '</form>';
@@ -290,6 +304,24 @@
       });
     }
 
+    var pw2Input = document.getElementById("fPw2");
+    if (pw2Input && pwInput) {
+      var checkMatch = function(){
+        var match = pw2Input.value.length > 0 && pw2Input.value === pwInput.value;
+        document.getElementById("pw2Match").hidden = !match;
+        if (pw2Input.value.length === 0) showFieldError("pw2Err", "");
+      };
+      pw2Input.addEventListener("input", checkMatch);
+      pwInput.addEventListener("input", checkMatch);
+      pw2Input.addEventListener("blur", function(){
+        if (pw2Input.value.length > 0 && pw2Input.value !== pwInput.value) {
+          showFieldError("pw2Err", "These two don’t match yet.");
+        } else {
+          showFieldError("pw2Err", "");
+        }
+      });
+    }
+
     var resendBtn = document.getElementById("resendBtn");
     if (resendBtn) resendBtn.addEventListener("click", function(){ submitReset(sentTo, resendBtn); });
     var useDifferentBtn = document.getElementById("useDifferentBtn");
@@ -310,10 +342,33 @@
     btn.textContent = busy ? busyLabel : restLabel;
   }
 
+  function renderAuthCallout(detail){
+    var el = document.getElementById("authCallout");
+    if (!el) return;
+    if (!detail || typeof detail === "string") { el.innerHTML = ""; return; }
+    var title, note;
+    if (detail.locked) {
+      title = "Sign-in is locked for now";
+      note = escapeHtml(detail.message);
+    } else if (detail.attempts_remaining !== undefined) {
+      title = detail.message || "That password doesn't match this email";
+      var word = detail.attempts_remaining === 1 ? "attempt" : "attempts";
+      note = detail.attempts_remaining + " " + word + " left before we lock sign-in for fifteen minutes. " +
+        '<button type="button" id="calloutReset">Reset it instead</button>.';
+    } else {
+      el.innerHTML = ""; return;
+    }
+    el.innerHTML = '<div class="auth-callout">' + ICONS.error +
+      '<div><p class="title">' + escapeHtml(title) + '</p>' +
+      '<p class="note">' + note + '</p></div></div>';
+    var resetBtn = document.getElementById("calloutReset");
+    if (resetBtn) resetBtn.addEventListener("click", function(){ setView("reset"); });
+  }
+
   async function submitSignIn(){
     var email = document.getElementById("fEmail").value.trim();
     var pw = document.getElementById("fPw").value;
-    showFieldError("emailErr", ""); showFieldError("pwErr", "");
+    showFieldError("emailErr", ""); showFieldError("pwErr", ""); renderAuthCallout(null);
     if (!EMAIL_RE.test(email)) { showFieldError("emailErr", "That doesn't look like an email address yet."); return; }
     if (!pw) { showFieldError("pwErr", "Enter your password."); return; }
     var btn = document.getElementById("submitBtn");
@@ -325,7 +380,15 @@
         body: JSON.stringify({ email: email, password: pw })
       });
       var data = await res.json();
-      if (!res.ok) { showFieldError("pwErr", data.detail || "Incorrect email or password."); setBusy(btn, false, "", "Sign in"); return; }
+      if (!res.ok) {
+        if (data.detail && typeof data.detail === "object") {
+          renderAuthCallout(data.detail);
+        } else {
+          showFieldError("pwErr", data.detail || "Incorrect email or password.");
+        }
+        setBusy(btn, false, "", "Sign in");
+        return;
+      }
       if (role === "employer") {
         localStorage.setItem("kazi_employer_token", data.token);
         location.href = "/pp-employer.html";
@@ -385,9 +448,11 @@
 
   async function submitNewPw(){
     var pw = document.getElementById("fPw").value;
+    var pw2 = document.getElementById("fPw2").value;
     if (!resetToken) return;
-    showFieldError("pwErr", "");
+    showFieldError("pwErr", ""); showFieldError("pw2Err", "");
     if (pwScore(pw) < 2) { showFieldError("pwErr", "Eight characters or more, please."); return; }
+    if (pw2 !== pw) { showFieldError("pw2Err", "These two don’t match yet."); return; }
     var btn = document.getElementById("submitBtn");
     setBusy(btn, true, "Saving…", "Save and sign in");
     try {
