@@ -189,7 +189,15 @@
     + ".pp-header-focused a{display:inline-flex}"
     + ".pp-header-focused img{width:32px;height:32px;display:block}"
     // ---- breadcrumbs ----
-    + ".pp-crumbs{max-width:var(--pp-container);margin:0 auto;padding:var(--pp-page-margin);padding-top:16px;padding-bottom:0;display:flex;align-items:center;gap:9px;font-size:14px;color:var(--c-text-subtle);position:sticky;top:56px;z-index:var(--pp-z-sticky,2);background:var(--c-bg)}"
+    // body is display:flex;flex-direction:column (see base reset in every
+    // pp-*.html page), and #pp-breadcrumbs is a direct child of body that's
+    // itself display:flex — a flex item that's also a flex container sizes
+    // to fit its own content on the cross axis instead of stretching to
+    // fill, so without an explicit width the whole bar (and its centering
+    // margin:auto) collapses to hug the breadcrumb text instead of the
+    // page's actual content width, and every page's back-to-page-content
+    // alignment breaks (this is what "align to left" was reporting).
+    + ".pp-crumbs{width:100%;max-width:var(--pp-container);margin:0 auto;padding:var(--pp-page-margin);padding-top:16px;padding-bottom:0;display:flex;align-items:center;gap:9px;font-size:14px;color:var(--c-text-subtle);position:sticky;top:56px;z-index:var(--pp-z-sticky,2);background:var(--c-bg)}"
     + "@media(min-width:1024px){.pp-crumbs{top:var(--pp-header-height);position:static}}"
     + ".pp-crumbs a{color:var(--c-text-subtle);text-decoration:none}"
     + ".pp-crumbs a:hover{color:var(--c-text)}"
