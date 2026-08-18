@@ -140,8 +140,8 @@
         <p>Listing yourself is free, and always will be. Companies search here before they even post a role.</p>
       </div>
       <div style="display:flex;align-items:center;gap:14px;flex:none">
-        <a class="pp-btn pp-btn-primary" href="pp-onboarding.html">Create your profile</a>
-        <a href="pp-signin.html" style="font-size:15px;font-weight:600;color:var(--c-accent-text)">Sign in</a>
+        <a class="pp-btn pp-btn-primary" href="/onboarding">Create your profile</a>
+        <a href="/signin" style="font-size:15px;font-weight:600;color:var(--c-accent-text)">Sign in</a>
       </div>
     </div>
   </div>
@@ -256,7 +256,7 @@
 
   function personCard(p, idx){
     var thumbs = (p.projects || []).slice(0, 3);
-    return '<a class="person-card" href="pp-profile.html?id=' + encodeURIComponent(p.handle || p.id) + '">' +
+    return '<a class="person-card" href="/designers/' + encodeURIComponent(p.handle || p.id) + '">' +
       '<div class="person-head">' +
         (p.photo_path
           ? '<img src="' + escapeHtml(p.photo_path) + '" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover;flex:none">'

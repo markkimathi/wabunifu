@@ -188,7 +188,7 @@
         '<div class="pw-strength" id="pwStrength" hidden><div class="pw-pips" id="pwPips"></div><span class="pw-note" id="pwNoteEl"></span></div>' +
         '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn">Create account</button>' +
       '</form>' +
-      '<p class="legal">By creating an account you agree to our <a href="pp-terms.html">terms</a> and <a href="pp-privacy.html">privacy notice</a>. We never sell your data and never contact your current employer.</p>' +
+      '<p class="legal">By creating an account you agree to our <a href="/terms">terms</a> and <a href="/privacy">privacy notice</a>. We never sell your data and never contact your current employer.</p>' +
       '<p class="switch-line">Already have an account? <button type="button" id="gotoSignin">Sign in</button></p>';
   }
 
@@ -222,7 +222,7 @@
             '<button type="button" class="toggle-eye" id="toggleEye" aria-label="Show password">' + ICONS.eyeOpen + '</button></div>' +
           '<div class="fielderr" id="pwErr" hidden></div></div>' +
         '<div class="pw-strength" id="pwStrength" hidden><div class="pw-pips" id="pwPips"></div><span class="pw-note" id="pwNoteEl"></span></div>' +
-        (!resetToken ? '<p class="hint" style="color:var(--c-bad-text)">This page needs a reset link from your email — use the link we sent you, or <a href="pp-auth.html?view=reset" style="color:inherit;font-weight:600">request a new one</a>.</p>' : "") +
+        (!resetToken ? '<p class="hint" style="color:var(--c-bad-text)">This page needs a reset link from your email — use the link we sent you, or <a href="/signin?view=reset" style="color:inherit;font-weight:600">request a new one</a>.</p>' : "") +
         '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn"' + (!resetToken ? " disabled" : "") + '>Save and sign in</button>' +
       '</form>';
   }
@@ -264,7 +264,7 @@
         // form doesn't have room for (company name, site, eligibility) — the
         // dedicated wizard is the real entry point, not a stripped-down copy
         // of this form.
-        location.href = "pp-employer-onboarding.html";
+        location.href = "/post-a-role";
         return;
       }
       role = "employer";
@@ -328,12 +328,12 @@
       if (!res.ok) { showFieldError("pwErr", data.detail || "Incorrect email or password."); setBusy(btn, false, "", "Sign in"); return; }
       if (role === "employer") {
         localStorage.setItem("kazi_employer_token", data.token);
-        location.href = "pp-employer.html";
+        location.href = "/pp-employer.html";
         return;
       }
       localStorage.setItem("kazi_designer_token", data.token);
       var me = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + data.token } }).then(function(r){ return r.json(); });
-      location.href = "pp-profile.html?id=" + encodeURIComponent(me.handle || me.id);
+      location.href = "/designers/" + encodeURIComponent(me.handle || me.id);
     } catch (e) {
       showFieldError("pwErr", "Couldn't reach the server. Try again.");
       setBusy(btn, false, "", "Sign in");
@@ -358,7 +358,7 @@
       var data = await res.json();
       if (!res.ok) { showFieldError("emailErr", data.detail || "Couldn't create that account."); setBusy(btn, false, "", "Create account"); return; }
       localStorage.setItem("kazi_designer_token", data.token);
-      location.href = "pp-onboarding.html";
+      location.href = "/onboarding";
     } catch (e) {
       showFieldError("emailErr", "Couldn't reach the server. Try again.");
       setBusy(btn, false, "", "Create account");

@@ -2434,38 +2434,64 @@ LOGOS_DIR.mkdir(parents=True, exist_ok=True)
 app.mount("/logos", StaticFiles(directory=str(LOGOS_DIR)), name="logos")
 
 
-# Clean URLs: serve the .html files without the extension...
-CLEAN_PAGES = ["post", "cv-check", "account", "onboarding", "login", "signup", "designers", "admin", "terms", "privacy", "cookies"]
-for _page in CLEAN_PAGES:
-    def _make_page_route(page: str):
+# Path & Pixel cutover: clean URLs now serve the pp-*.html pages instead of
+# the pre-migration ones (retired to web/legacy/, not deleted, not routed to).
+# admin.html is the one holdout — an internal tool, not the public site, so
+# it keeps its old chrome and its slot in this same clean-page mechanism.
+PP_CLEAN_PAGES = {
+    "": "pp-jobs.html",              # homepage = job listing, same as before
+    "jobs": "pp-jobs.html",
+    "people": "pp-people.html",
+    "signin": "pp-auth.html",
+    "onboarding": "pp-onboarding.html",
+    "dashboard": "pp-dashboard.html",
+    "post-a-role": "pp-employer-onboarding.html",
+    "terms": "terms.html",
+    "privacy": "privacy.html",
+    "cookies": "cookies.html",
+    "admin": "admin.html",
+}
+for _path, _file in PP_CLEAN_PAGES.items():
+    def _make_page_route(file: str):
         def _serve():
-            return FileResponse(WEB_DIR / f"{page}.html")
+            return FileResponse(WEB_DIR / file)
         return _serve
-    app.get(f"/{_page}", include_in_schema=False)(_make_page_route(_page))
+    app.get(f"/{_path}", include_in_schema=False)(_make_page_route(_file))
 
-# ...and 301 old .html links (bookmarks, external links) to the clean path.
-_HTML_REDIRECTS = {"index": "/", **{p: f"/{p}" for p in CLEAN_PAGES}}
-for _name, _target in _HTML_REDIRECTS.items():
+# 301s for every old bookmark/link that no longer matches a same-named clean
+# path — either because the old page was retired (post, cv-check, account,
+# onboarding, login, signup, designers, index) or renamed outright (join).
+_PP_REDIRECTS = {
+    "post": "/post-a-role", "post.html": "/post-a-role",
+    "cv-check": "/resources", "cv-check.html": "/resources",
+    "account": "/dashboard", "account.html": "/dashboard",
+    "onboarding.html": "/onboarding",
+    "login": "/signin", "login.html": "/signin",
+    "signup": "/signin?view=signup", "signup.html": "/signin?view=signup",
+    "join": "/signin?view=signup",
+    "designers": "/people",
+    "index.html": "/",
+}
+for _name, _target in _PP_REDIRECTS.items():
     def _make_redirect_route(target: str):
         def _redirect():
             return RedirectResponse(url=target, status_code=301)
         return _redirect
-    app.get(f"/{_name}.html", include_in_schema=False)(_make_redirect_route(_target))
+    app.get(f"/{_name}", include_in_schema=False)(_make_redirect_route(_target))
 
 # One dynamic page route: /designers/{id-or-handle} always serves the same
-# static file — designer.html reads the identifier from location.pathname
-# client-side and fetches GET /api/designers/{identifier} itself, same
-# pattern index.html already uses to fetch jobs.json.
+# static file — pp-profile.html reads the identifier from location.pathname
+# client-side and fetches GET /api/designers/{identifier} itself.
 @app.get("/designers/{identifier}", include_in_schema=False)
 def designer_profile_page(identifier: str):
-    return FileResponse(WEB_DIR / "designer.html")
+    return FileResponse(WEB_DIR / "pp-profile.html")
 
 
-# Same pattern for a single job: /jobs/{id} always serves job.html, which
+# Same pattern for a single job: /jobs/{id} always serves pp-job.html, which
 # reads the id from location.pathname and fetches GET /api/jobs/{id} itself.
 @app.get("/jobs/{job_id}", include_in_schema=False)
 def job_details_page(job_id: str):
-    return FileResponse(WEB_DIR / "job.html")
+    return FileResponse(WEB_DIR / "pp-job.html")
 
 
 # Community: /community lists sessions/questions/work, /community/{id}

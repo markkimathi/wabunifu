@@ -120,7 +120,7 @@
   "use strict";
 
   var token = localStorage.getItem("kazi_employer_token");
-  if (!token) { location.href = "pp-auth.html?role=employer&view=signin"; return; }
+  if (!token) { location.href = "/signin?role=employer&view=signin"; return; }
 
   var ELIGIBILITY = [
     { v: "kenya", l: "Open to Kenya" }, { v: "africa", l: "Open to Africa" },
@@ -153,7 +153,7 @@
     opts = opts || {};
     opts.headers = Object.assign({}, opts.headers || {}, { "Authorization": "Bearer " + token });
     var res = await fetch(path, opts);
-    if (res.status === 401) { localStorage.removeItem("kazi_employer_token"); location.href = "pp-auth.html?role=employer&view=signin"; throw new Error("signed out"); }
+    if (res.status === 401) { localStorage.removeItem("kazi_employer_token"); location.href = "/signin?role=employer&view=signin"; throw new Error("signed out"); }
     if (!res.ok) {
       var body = await res.json().catch(function(){ return {}; });
       throw new Error((body.detail && typeof body.detail === "string") ? body.detail : "Request failed (" + res.status + ")");

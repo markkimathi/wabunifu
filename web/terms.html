@@ -3,325 +3,74 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Terms and Conditions · Kazi</title>
+<title>Terms and Conditions · Path & Pixel</title>
 <link rel="icon" type="image/png" href="favicon.png">
-<script src="theme.js?v=6"></script>
-<script src="nav.js?v=10"></script>
-<script src="confirm-dialog.js?v=1"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
 <style>
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Regular.woff2") format("woff2"),url("/fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Medium.woff2") format("woff2"),url("/fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("/fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Bold.woff2") format("woff2"),url("/fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("/fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
-
-  :root{
-    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#757575; --faint:#82828299;
-    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1;
-    --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
-    --amber:#F25C05; --amber-soft:#FDE6D8;
-    --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
-    --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1); --ease-io:cubic-bezier(.65,0,.35,1);
-  }
-  :root[data-theme="dark"]{
-    --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
-    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8;
-    --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
-    --amber:#FF9B57; --amber-soft:#3A2412;
-    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
-  }
-  *{box-sizing:border-box}
-  html{overflow-x:hidden}
-  body{overflow-wrap:break-word}
-  img,svg,video{max-width:100%;height:auto}
-  #pageLoader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
-    background:var(--canvas);transition:opacity .35s var(--ease-io),visibility .35s var(--ease-io)}
-  #pageLoader.-hide{opacity:0;visibility:hidden;pointer-events:none}
-  #pageLoader .pl-spinner{width:32px;height:32px;border-radius:50%;
-    border:3px solid var(--hairline-strong);border-top-color:var(--brand);
-    animation:pl-spin .7s linear infinite}
-  @keyframes pl-spin{to{transform:rotate(360deg)}}
-  @media(prefers-reduced-motion:reduce){#pageLoader .pl-spinner{animation:none}}
-  body{margin:0;min-height:100vh;display:flex;flex-direction:column;
-    background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
-    font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
-  body > .wrap{flex:1}
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
   a{color:inherit}
-  .wrap{max-width:720px;margin:0 auto;padding:0 24px}
-
-  header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
-    -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
-  [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
-  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;max-width:1200px;margin:0 auto;padding:0 24px}
-  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
-  .logomark{height:20px;width:auto;flex:none;display:block}
-  .bar-stat{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);
-    background:var(--surface);border:1px solid var(--hairline);border-radius:999px;padding:7px 14px;
-    font-variant-numeric:tabular-nums;box-shadow:var(--shadow);flex:none}
-  .bar-stat b{color:var(--ink);font-weight:700}
-  .bar-stat .livedot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotblink 2.6s ease-in-out infinite}
-  @keyframes dotblink{0%,100%{opacity:1}50%{opacity:.25}}
-  @media(max-width:1500px){
-    .bar-stat .stattext{display:none}
-    .bar-stat{padding:7px 10px}
-  }
-  .header-center{flex:1;min-width:0;overflow:hidden;
-    display:flex;align-items:center;justify-content:center;gap:18px}
-  .bar-right{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
-
-  .nav-links{display:flex;align-items:center;gap:24px;white-space:nowrap}
-  .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
-    transition:color .3s var(--ease-expo)}
-  .nav-links a:hover{color:var(--ink)}
-  .menu-toggle{display:none;position:relative;flex:none;width:38px;height:38px;padding:0;
-    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
-    cursor:pointer;color:var(--ink);
-    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
-  .menu-toggle:hover{border-color:var(--brand);color:var(--brand)}
-  .menu-toggle span{display:block;position:absolute;left:50%;top:50%;width:16px;height:2px;
-    border-radius:2px;background:currentColor;transition:transform .4s var(--ease-io)}
-  .menu-toggle span:first-child{transform:translate(-50%,-50%) translateY(-3px)}
-  .menu-toggle span:last-child{transform:translate(-50%,-50%) translateY(3px)}
-  .menu-toggle.-active span:first-child{transform:translate(-50%,-50%) rotate(45deg)}
-  .menu-toggle.-active span:last-child{transform:translate(-50%,-50%) rotate(-45deg)}
-
-  html.menu-open{overflow:hidden}
-  /* ---- mobile nav menu: same design language as the filter rail
-     (full-bleed canvas panel, fast simple slide, plain list rows) but
-     pulling in from the right instead of the left ---- */
-  .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
-    padding:20px 22px 40px;overflow:auto;display:flex;flex-direction:column;
-    transform:translateX(100%);transition:transform .22s ease}
-  .mobile-menu.-open{transform:translateX(0)}
-  .mm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
-  .mm-top h2{margin:0;font-size:16.5px;font-weight:800;color:var(--ink)}
-  .mm-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;
-    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
-    font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}
-  .mm-nav{display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--hairline);padding-top:6px}
-  .mm-nav a{display:block;padding:14px 8px;margin:0 -8px;border-radius:8px;
-    font-size:16px;font-weight:600;color:var(--ink);text-decoration:none;
-    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
-  .mm-nav a:hover{background:var(--hairline)}
-  .mm-nav:not(.mm-account) a:not(.nav-cta){display:flex;align-items:center;border-bottom:1px solid var(--hairline)}
-  .mm-nav:not(.mm-account) a:not(.nav-cta)::after{content:"";flex:none;width:7px;height:7px;margin-left:auto;
-    border-right:2px solid var(--muted);border-top:2px solid var(--muted);transform:rotate(45deg)}
-  .mm-nav:not(.mm-account) a:not(.nav-cta):nth-child(-n+3){border-radius:0}
-  .mm-nav:not(.mm-account) a:not(.nav-cta):nth-child(4){border-bottom:none}
-  .mm-account{margin-top:auto;display:flex;flex-direction:column;gap:10px}
-  .mm-nav button.mm-logout{display:block;width:100%;text-align:left;padding:14px 8px;margin:0 -8px;border-radius:8px;
-    font-size:16px;font-weight:600;color:var(--ink);background:none;border:0;cursor:pointer;font:inherit;
-    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
-  .mm-nav button.mm-logout:hover{background:var(--hairline)}
-  .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
-  .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
-  .nav-links a.nav-cta{background:var(--brand);color:#fff;padding:7px 16px;border-radius:999px;margin-left:10px;font-weight:700;transition:filter .3s var(--ease-expo)}
-  .nav-links a.nav-cta:hover{filter:brightness(1.12);color:#fff}
-  .nav-links a.nav-cta.active{color:#fff}
-  .nav-links a.nav-cta.active::before{content:none}
-  .mm-nav a.nav-cta{background:var(--brand);color:#fff;text-align:center;margin-top:10px;transition:filter .25s var(--ease-expo)}
-  .mm-nav a.mm-cta-outline{border:1px solid var(--hairline-strong);text-align:center}
-  .mm-nav a.mm-cta-outline:hover{border-color:var(--brand)}
-  .mm-nav a.nav-cta:hover{filter:brightness(1.12);background:var(--brand);color:#fff}
-  .mm-nav a.nav-cta.active{color:#fff}
-  .mm-nav a.nav-cta.active::before{content:none}
-
-  @media(max-width:860px){
-    body{font-size:15px}
-  }
-  @media(max-width:600px){
-    body{font-size:14px}
-  }
-  @media(max-width:860px){
-    .bar-inner{gap:10px}
-    .bar-stat{padding:6px 10px;font-size:12px;gap:5px}
-    .bar-stat .stattext{display:none}
-    .nav-links{gap:14px}
-    .nav-links a{font-size:12.5px;white-space:nowrap}
-  }
-  /* Centered nav needs real room on either side for the brand and the
-     right-side icon cluster (theme toggle + account chip) — below this
-     it starts colliding with them, so hand off to the hamburger sooner
-     than the plain "mobile" breakpoint above. */
-  @media(max-width:767px),(orientation:portrait) and (max-width:1400px){
-    .header-center{display:none}
-    .menu-toggle{display:block}
-  }
-  /* Tablet portrait: put the hamburger at the far right edge, past
-     "Create an account", instead of between the icons and it. */
-  @media(orientation:portrait) and (max-width:1400px){
-    .acct-cta{order:1}
-    .acct-menu{order:1}
-    .menu-toggle{order:2}
-  }
-
-  .acct-menu{position:relative;flex:none;display:none}
-  .acct-menu.-visible{display:block}
-  .acct-trigger{display:flex;align-items:center;gap:8px;height:38px;padding:0 12px 0 6px;
-    border-radius:999px;border:1px solid var(--hairline-strong);background:var(--surface);
-    cursor:pointer;color:var(--ink);font:inherit;font-size:13px;font-weight:600;
-    transition:border-color .3s var(--ease-expo)}
-  .acct-trigger:hover{border-color:var(--brand)}
-  .acct-cta{display:flex;align-items:center;height:38px;padding:0 16px;flex:none;
-    border-radius:999px;border:1px solid var(--hairline-strong);background:var(--surface);
-    color:var(--ink);font:inherit;font-size:13px;font-weight:600;text-decoration:none;
-    transition:border-color .3s var(--ease-expo)}
-  .acct-cta:hover{border-color:var(--brand)}
-  .acct-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none;background:var(--hairline)}
-  .acct-caret{flex:none;color:var(--muted);transition:transform .25s var(--ease-expo)}
-  .acct-menu.-open .acct-caret{transform:rotate(180deg)}
-  .acct-dropdown{position:absolute;top:calc(100% + 8px);right:0;min-width:160px;z-index:60;
-    background:var(--surface);border:1px solid var(--hairline-strong);border-radius:12px;
-    box-shadow:var(--shadow);padding:6px;display:none;flex-direction:column;gap:2px}
-  .acct-menu.-open .acct-dropdown{display:flex}
-  .acct-dropdown a,.acct-dropdown button{display:block;width:100%;text-align:left;
-    padding:9px 10px;border-radius:8px;border:0;background:none;color:var(--ink);
-    font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none}
-  .acct-dropdown a:hover,.acct-dropdown button:hover{background:var(--hairline)}
-  @media(max-width:600px){
-    .acct-menu{display:none!important}
-    .acct-cta{display:none!important}
-  }
-
-  .theme-toggle{position:relative;flex:none;width:36px;height:36px;padding:0;border-radius:50%;
-    background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
-    display:grid;place-items:center;color:var(--ink);
-    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
-  .theme-toggle:hover{border-color:var(--brand);color:var(--brand)}
-  .theme-toggle svg{position:absolute;transition:transform .5s var(--ease-expo),opacity .35s var(--ease-expo)}
-  .theme-toggle .i-moon{opacity:0;transform:rotate(-90deg) scale(.4)}
-  [data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
-  [data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:rotate(0deg) scale(1)}
+  .wrap{max-width:720px;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
 
   .legal{padding:48px 0 80px}
-  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--brand);font-weight:600;margin:0 0 14px}
+  .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--c-accent-text);font-weight:600;margin:0 0 14px}
   .legal h1{font-weight:800;font-size:clamp(28px,4vw,38px);letter-spacing:-.02em;margin:0 0 8px;line-height:1.1}
-  .legal .updated{color:var(--faint);font-size:13px;margin:0 0 36px}
+  .legal .updated{color:var(--c-text-faint);font-size:13px;margin:0 0 36px}
   .legal h2{font-weight:700;font-size:19px;margin:36px 0 12px;letter-spacing:-.01em}
-  .legal p{color:var(--muted);margin:0 0 14px;line-height:1.65}
-  .legal ul{color:var(--muted);margin:0 0 14px;padding-left:20px;line-height:1.65}
+  .legal p{color:var(--c-text-muted);margin:0 0 14px;line-height:1.65}
+  .legal ul{color:var(--c-text-muted);margin:0 0 14px;padding-left:20px;line-height:1.65}
   .legal li{margin-bottom:6px}
-  .legal a{color:var(--brand);text-decoration:underline;text-underline-offset:2px}
-
-  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
-  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
-  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
-  .foot-links a{color:var(--muted);text-decoration:none}
-  .foot-links a:hover{color:var(--ink)}
+  .legal a{color:var(--c-accent-text);text-decoration:underline;text-underline-offset:2px}
 </style>
 </head>
 <body>
-<div id="pageLoader"><span class="pl-spinner"></span></div>
 
-<header class="bar">
-  <div class="bar-inner">
-    <a class="brand" href="/">
-      <img class="logomark" src="logo.png" alt="Kazi">
-    </a>
-    <div class="header-center">
-    <nav class="nav-links">
-      <a class="nav-jobs" href="/">Jobs</a>
-      <a href="/post">Post a job</a>
-      <a href="/designers">Find a designer</a>
-      <a href="mailto:hello@odana.design">Contact us</a>
-      <a href="/cv-check" class="nav-cta">Check your CV</a>
-    </nav>
-    </div>
-    <div class="bar-right">
-      <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
-    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
-      <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-    </button>
-    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
-      <span></span><span></span>
-    </button>
-    <a href="/login" class="acct-cta" id="signinCta">Sign in</a>
-    <a href="/signup" class="acct-cta" id="acctCta">Create an account</a>
-    <div class="acct-menu" id="acctMenu">
-      <button class="acct-trigger" id="acctTrigger" type="button" aria-haspopup="true" aria-expanded="false">
-        <img class="acct-avatar" id="acctAvatar" src="" alt="">
-        <span class="acct-label">Account</span>
-        <svg class="acct-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-      </button>
-      <div class="acct-dropdown" id="acctDropdown">
-        <a href="/account">My profile</a>
-        <button type="button" id="acctLogoutBtn">Log out</button>
-      </div>
-    </div>
-    </div>
-  </div>
-</header>
+<div id="pp-nav"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Terms and Conditions"}]'></nav>
 
-<div class="mobile-menu" aria-label="Menu">
-  <div class="mm-top">
-    <h2>Menu</h2>
-    <button class="mm-close" aria-label="Close menu" type="button">&times;</button>
-  </div>
-  <nav class="mm-nav">
-      <a href="/">Jobs</a>
-      <a href="/post">Post a job</a>
-      <a href="/designers">Find a designer</a>
-      <a href="mailto:hello@odana.design">Contact us</a>
-      <a href="/cv-check" class="nav-cta">Check your CV</a>
-  </nav>
-  <nav class="mm-nav mm-account" id="mmCta">
-    <a href="/login" class="mm-cta-outline">Sign in</a>
-    <a href="/signup" class="mm-cta-outline">Create an account</a>
-  </nav>
-  <nav class="mm-nav mm-account" id="mmAccount" style="display:none">
-    <a href="/account">My profile</a>
-    <button type="button" class="mm-logout" id="mmLogoutBtn">Log out</button>
-  </nav>
-</div>
-
-<div class="wrap">
-  <div class="legal">
-    <p class="kicker">Legal</p>
-    <h1>Terms and Conditions</h1>
-    <p class="updated">Last updated 29 July 2026</p>
-
-    <h2>1. About Kazi</h2>
-    <p>Kazi is a job board for design roles open to designers in Kenya and across Africa. It works two ways: we aggregate publicly listed roles from company career pages and job boards, and employers can submit roles directly for review. Kazi is not a recruitment agency, staffing firm, or employer of record, and never hosts job applications: every "Apply" link sends you straight to the employer's own site.</p>
-
-    <h2>2. Using the board</h2>
-    <p>Kazi is free to browse. We do our best to keep listings current and to classify each one's eligibility (who can genuinely apply) accurately, but we can't guarantee that every aggregated listing is accurate, still open, or correctly classified. Always confirm the details on the employer's own site before applying.</p>
-
-    <h2>3. Eligibility badges</h2>
-    <p>The "Open to Kenya," "Open to Africa," "Worldwide remote," and "Check restrictions" badges are a best-effort classification based on the listing's stated location and text, or on what an employer told us directly. They are not a legal or contractual guarantee that you're eligible to work in any given location. Visa, work-permit, and immigration questions are between you and the employer.</p>
-
-    <h2>4. Posting a job (for employers)</h2>
-    <p>By submitting a role through "Post a job," you confirm that the role and company are real, the application link goes straight to it, and the eligibility you select genuinely reflects who can apply. We review every submission before it appears on the board and may reject or remove a listing at our discretion, including after it's published, without notice. We don't guarantee placement, how long a listing stays visible, or applicant volume.</p>
-
-    <h2>5. No warranty</h2>
-    <p>Kazi is provided "as is," without warranties of any kind. We don't guarantee that the board, any listing, or any employer's information is accurate, complete, or current. To the extent permitted by law, Kazi isn't liable for loss or damage arising from your use of the site or from your interactions with any employer or applicant.</p>
-
-    <h2>6. Prohibited use</h2>
-    <ul>
-      <li>Submitting fake, misleading, or non-genuine job listings.</li>
-      <li>Scraping or systematically extracting data from Kazi without permission.</li>
-      <li>Using the site to harass, spam, or defraud anyone.</li>
-    </ul>
-
-    <h2>7. Changes to these terms</h2>
-    <p>We may update these terms as the site evolves. Continuing to use Kazi after a change means you accept the update.</p>
-
-    <h2>8. Contact</h2>
-    <p>Questions about these terms: <a href="mailto:hello@odana.design">hello@odana.design</a></p>
-  </div>
-</div>
-
-<footer class="foot">
+<main>
   <div class="wrap">
-    <span>© Kazi</span>
-    <nav class="foot-links">
-      <a href="/terms">Terms</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/cookies">Cookies</a>
-      <a href="mailto:hello@odana.design">Contact us</a>
-    </nav>
-  </div>
-</footer>
+    <div class="legal">
+      <p class="kicker">Legal</p>
+      <h1>Terms and Conditions</h1>
+      <p class="updated">Last updated 29 July 2026</p>
 
+      <h2>1. About Kazi</h2>
+      <p>Kazi is a job board for design roles open to designers in Kenya and across Africa. It works two ways: we aggregate publicly listed roles from company career pages and job boards, and employers can submit roles directly for review. Kazi is not a recruitment agency, staffing firm, or employer of record, and never hosts job applications: every "Apply" link sends you straight to the employer's own site.</p>
+
+      <h2>2. Using the board</h2>
+      <p>Kazi is free to browse. We do our best to keep listings current and to classify each one's eligibility (who can genuinely apply) accurately, but we can't guarantee that every aggregated listing is accurate, still open, or correctly classified. Always confirm the details on the employer's own site before applying.</p>
+
+      <h2>3. Eligibility badges</h2>
+      <p>The "Open to Kenya," "Open to Africa," "Worldwide remote," and "Check restrictions" badges are a best-effort classification based on the listing's stated location and text, or on what an employer told us directly. They are not a legal or contractual guarantee that you're eligible to work in any given location. Visa, work-permit, and immigration questions are between you and the employer.</p>
+
+      <h2>4. Posting a job (for employers)</h2>
+      <p>By submitting a role through "Post a job," you confirm that the role and company are real, the application link goes straight to it, and the eligibility you select genuinely reflects who can apply. We review every submission before it appears on the board and may reject or remove a listing at our discretion, including after it's published, without notice. We don't guarantee placement, how long a listing stays visible, or applicant volume.</p>
+
+      <h2>5. No warranty</h2>
+      <p>Kazi is provided "as is," without warranties of any kind. We don't guarantee that the board, any listing, or any employer's information is accurate, complete, or current. To the extent permitted by law, Kazi isn't liable for loss or damage arising from your use of the site or from your interactions with any employer or applicant.</p>
+
+      <h2>6. Prohibited use</h2>
+      <ul>
+        <li>Submitting fake, misleading, or non-genuine job listings.</li>
+        <li>Scraping or systematically extracting data from Kazi without permission.</li>
+        <li>Using the site to harass, spam, or defraud anyone.</li>
+      </ul>
+
+      <h2>7. Changes to these terms</h2>
+      <p>We may update these terms as the site evolves. Continuing to use Kazi after a change means you accept the update.</p>
+
+      <h2>8. Contact</h2>
+      <p>Questions about these terms: <a href="mailto:hello@odana.design">hello@odana.design</a></p>
+    </div>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
 </body>
 </html>

@@ -126,7 +126,7 @@
   "use strict";
 
   var token = localStorage.getItem("kazi_designer_token");
-  if (!token) { location.href = "pp-auth.html?view=signin"; return; }
+  if (!token) { location.href = "/signin?view=signin"; return; }
 
   var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
   var MAX_DISCIPLINES = 5;
@@ -157,7 +157,7 @@
     opts = opts || {};
     opts.headers = Object.assign({}, opts.headers || {}, { "Authorization": "Bearer " + token });
     var res = await fetch(path, opts);
-    if (res.status === 401) { localStorage.removeItem("kazi_designer_token"); location.href = "pp-auth.html?view=signin"; throw new Error("signed out"); }
+    if (res.status === 401) { localStorage.removeItem("kazi_designer_token"); location.href = "/signin?view=signin"; throw new Error("signed out"); }
     if (!res.ok) {
       var body = await res.json().catch(function(){ return {}; });
       throw new Error((body.detail && typeof body.detail === "string") ? body.detail : "Request failed (" + res.status + ")");
@@ -197,14 +197,14 @@
         '<div class="stat-card"><div class="n">' + cache.matches.length + '</div><div class="l">Roles matching your disciplines</div></div>' +
       '</div>';
     if (!me.onboarding_completed) {
-      body += '<div class="form-panel"><h3>Finish setting up</h3><p style="margin:0 0 14px;font-size:14px;color:var(--c-text-subtle)">A complete profile is what shows up in the directory and on matched roles.</p><a href="pp-onboarding.html" class="pp-btn pp-btn-primary">Continue setup</a></div>';
+      body += '<div class="form-panel"><h3>Finish setting up</h3><p style="margin:0 0 14px;font-size:14px;color:var(--c-text-subtle)">A complete profile is what shows up in the directory and on matched roles.</p><a href="/onboarding" class="pp-btn pp-btn-primary">Continue setup</a></div>';
     }
-    body += '<div class="section"><div class="section-head"><h2>Roles that match you</h2><a href="pp-jobs.html" style="font-size:13.5px;font-weight:600;color:var(--c-accent-text);text-decoration:none">See all roles</a></div>';
+    body += '<div class="section"><div class="section-head"><h2>Roles that match you</h2><a href="/jobs" style="font-size:13.5px;font-weight:600;color:var(--c-accent-text);text-decoration:none">See all roles</a></div>';
     if (!cache.matches.length) {
       body += '<div class="pp-empty"><h3>No matches yet</h3><p>Add a discipline in Profile and roles that fit will show up here.</p></div>';
     } else {
       cache.matches.slice(0, 5).forEach(function(j){
-        body += '<a class="job-row" href="pp-job.html?id=' + encodeURIComponent(j.id) + '" style="text-decoration:none;color:inherit">' +
+        body += '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '" style="text-decoration:none;color:inherit">' +
           '<div class="main"><h3>' + escapeHtml(j.t) + '</h3><div class="meta">' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</div></div>' +
           eligBadge(j.elig) +
         '</a>';
@@ -219,7 +219,7 @@
   function renderSaved(){
     var body = sectionTabsHtml() + '<div class="section-head"><h2>Saved roles</h2></div>';
     if (!cache.saved.length) {
-      body += '<div class="pp-empty"><h3>Nothing saved yet</h3><p>Save a role from the jobs board and it shows up here.</p><a class="pp-btn pp-btn-primary" href="pp-jobs.html">Browse roles</a></div>';
+      body += '<div class="pp-empty"><h3>Nothing saved yet</h3><p>Save a role from the jobs board and it shows up here.</p><a class="pp-btn pp-btn-primary" href="/jobs">Browse roles</a></div>';
       return body;
     }
     cache.saved.forEach(function(j){
@@ -227,7 +227,7 @@
         '<div class="main"><h3>' + escapeHtml(j.title) + '</h3><div class="meta">' + escapeHtml(j.company) + ' · ' + escapeHtml(j.location || "Remote") + '</div></div>' +
         (j.eligibility ? eligBadge(j.eligibility) : "") +
         '<div class="actions" style="display:flex;gap:8px">' +
-          (j.url ? '<a class="pp-btn pp-btn-tertiary pp-btn-sm" href="pp-job.html?id=' + encodeURIComponent(j.job_id) + '">View</a>' : "") +
+          (j.url ? '<a class="pp-btn pp-btn-tertiary pp-btn-sm" href="/jobs/' + encodeURIComponent(j.job_id) + '">View</a>' : "") +
           '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" data-unsave="' + escapeHtml(j.job_id) + '">Remove</button>' +
         '</div>' +
       '</div>';
@@ -413,7 +413,7 @@
     var body = sectionTabsHtml() + '<div class="section-head"><h2>Account</h2></div>';
     body += '<div class="form-panel"><h3>Sign-in email</h3><p style="margin:0 0 4px;font-size:14.5px">' + escapeHtml(me.email) + '</p>' +
       '<p style="margin:0;font-size:13px;color:var(--c-text-subtle)">' + (me.email_verified ? "Verified." : "Not verified yet.") + '</p></div>';
-    body += '<div class="form-panel"><h3>Password</h3><a class="pp-btn pp-btn-secondary" href="pp-auth.html?view=reset">Reset your password</a></div>';
+    body += '<div class="form-panel"><h3>Password</h3><a class="pp-btn pp-btn-secondary" href="/signin?view=reset">Reset your password</a></div>';
     body += '<div class="form-panel"><h3>Résumé</h3>' +
       (me.resume_filename ? '<p style="margin:0 0 10px;font-size:14.5px">' + escapeHtml(me.resume_filename) + '</p>' : '<p style="margin:0 0 10px;font-size:14.5px;color:var(--c-text-subtle)">No résumé uploaded.</p>') +
       '<button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="resumeUploadBtn">Upload résumé</button>' +

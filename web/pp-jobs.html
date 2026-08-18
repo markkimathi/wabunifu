@@ -184,7 +184,7 @@
       <div class="rail-cta">
         <h4>Not hearing back?</h4>
         <p>Check your résumé against any role on this board, and we'll show you what the screener isn't finding.</p>
-        <a href="pp-resources.html">Run a résumé check</a>
+        <a href="/resources">Run a résumé check</a>
       </div>
     </aside>
 
@@ -418,7 +418,7 @@
   function renderJobRow(j){
     var tags = eligBadge(j.elig) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>';
     var saved = isSaved(j.id);
-    return '<a class="job-row" href="pp-job.html?id=' + encodeURIComponent(j.id) + '">' +
+    return '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
       '<div class="jr-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
         '<div><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + '</p></div></div>' +
       '<p class="jr-place">' + escapeHtml(j.city || "Remote") + '</p>' +

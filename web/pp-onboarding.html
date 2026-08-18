@@ -93,7 +93,7 @@
   "use strict";
 
   var token = localStorage.getItem("kazi_designer_token");
-  if (!token) { location.href = "pp-auth.html?view=signup"; return; }
+  if (!token) { location.href = "/signin?view=signup"; return; }
 
   var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
   var MAX_DISCIPLINES = 5;
@@ -473,7 +473,7 @@
       btn.textContent = "Saving…";
       try {
         await api("/api/designers/me/complete-onboarding", { method: "POST" });
-        location.href = "pp-profile.html?id=" + encodeURIComponent(me.handle || me.id);
+        location.href = "/designers/" + encodeURIComponent(me.handle || me.id);
       } catch (e) {
         errEl.textContent = e.message; errEl.hidden = false;
         btn.disabled = false; btn.textContent = original;
@@ -501,7 +501,7 @@
       me = await api("/api/designers/me");
     } catch (e) {
       localStorage.removeItem("kazi_designer_token");
-      location.href = "pp-auth.html?view=signup";
+      location.href = "/signin?view=signup";
       return;
     }
     render();

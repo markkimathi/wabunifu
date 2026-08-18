@@ -26,19 +26,19 @@
   // homepage footer; the plain glyph is dark, for the cream inner-page band.
   // Picking the wrong one makes the whole row invisible.
   var SOCIALS_FULL = [
-    { label: "facebook", file: "social-icons/facebook-2.svg" },
-    { label: "Instagram", file: "social-icons/instagram-2.svg" },
-    { label: "LinkedIn", file: "social-icons/linkedin-2.svg" },
-    { label: "TikTok", file: "social-icons/tiktok-2.svg" },
-    { label: "X", file: "social-icons/x-2.svg" },
-    { label: "YouTube", file: "social-icons/youtube-2.svg" }
+    { label: "facebook", file: "/social-icons/facebook-2.svg" },
+    { label: "Instagram", file: "/social-icons/instagram-2.svg" },
+    { label: "LinkedIn", file: "/social-icons/linkedin-2.svg" },
+    { label: "TikTok", file: "/social-icons/tiktok-2.svg" },
+    { label: "X", file: "/social-icons/x-2.svg" },
+    { label: "YouTube", file: "/social-icons/youtube-2.svg" }
   ];
   var SOCIALS_SHORT = [
-    { label: "facebook", file: "social-icons/facebook.svg" },
-    { label: "Instagram", file: "social-icons/instagram.svg" },
-    { label: "LinkedIn", file: "social-icons/linkedin.svg" },
-    { label: "TikTok", file: "social-icons/tiktok.svg" },
-    { label: "X", file: "social-icons/x.svg" }
+    { label: "facebook", file: "/social-icons/facebook.svg" },
+    { label: "Instagram", file: "/social-icons/instagram.svg" },
+    { label: "LinkedIn", file: "/social-icons/linkedin.svg" },
+    { label: "TikTok", file: "/social-icons/tiktok.svg" },
+    { label: "X", file: "/social-icons/x.svg" }
   ];
 
   var STYLE = ""
@@ -96,7 +96,7 @@
     }).join("");
     return '<footer class="pp-foot-full">' +
       '<div class="pp-foot-full-cols">' +
-        '<div class="pp-foot-brand"><img src="brand/pp-logo.png" alt="Path &amp; Pixel">' +
+        '<div class="pp-foot-brand"><img src="/brand/pp-logo.png" alt="Path &amp; Pixel">' +
           '<p>Built for designers across Africa.</p></div>' +
         '<div class="pp-foot-col"><span>Find</span>' +
           '<a href="' + ROUTES.jobs + '">Jobs</a>' +

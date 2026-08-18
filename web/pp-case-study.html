@@ -98,15 +98,15 @@
 
   function notFound(msg){
     return '<div class="state-panel"><h3>Project not found</h3><p>' + escapeHtml(msg) + '</p>' +
-      '<a class="pp-btn pp-btn-primary" href="pp-people.html">Browse the directory</a></div>';
+      '<a class="pp-btn pp-btn-primary" href="/people">Browse the directory</a></div>';
   }
 
   function render(designer, project){
     document.title = project.title + " · " + designer.display_name + " · Path & Pixel";
     var crumbs = document.getElementById("pp-breadcrumbs");
     crumbs.setAttribute("data-crumbs", JSON.stringify([
-      { label: "People", href: "pp-people.html" },
-      { label: designer.display_name, href: "pp-profile.html?id=" + encodeURIComponent(designerId) },
+      { label: "People", href: "/people" },
+      { label: designer.display_name, href: "/designers/" + encodeURIComponent(designerId) },
       { label: project.title }
     ]));
     PathPixelNav.renderBreadcrumbs(crumbs);
@@ -120,7 +120,7 @@
       '</div>' +
       (project.category ? '<div class="cat"><span class="pp-chip">' + escapeHtml(project.category) + '</span></div>' : "") +
       (project.description ? '<p class="body-text">' + escapeHtml(project.description) + '</p>' : "") +
-      '<a class="credit-card" href="pp-profile.html?id=' + encodeURIComponent(designerId) + '">' +
+      '<a class="credit-card" href="/designers/' + encodeURIComponent(designerId) + '">' +
         (designer.photo_path
           ? '<img src="' + escapeHtml(designer.photo_path) + '" alt="" style="width:44px;height:44px;border-radius:50%;object-fit:cover">'
           : '<span class="pp-avatar -sm">' + initialsOf(designer.display_name) + '</span>') +
@@ -131,7 +131,7 @@
       (others.length
         ? '<div class="more"><h3>More from ' + escapeHtml(designer.display_name) + '</h3><div class="more-grid">' +
             others.map(function(p){
-              return '<a class="more-item" href="pp-case-study.html?designer=' + encodeURIComponent(designerId) + '&project=' + encodeURIComponent(p.id) + '">' +
+              return '<a class="more-item" href="/pp-case-study.html?designer=' + encodeURIComponent(designerId) + '&project=' + encodeURIComponent(p.id) + '">' +
                 '<div class="cover-sm">' + (p.image_path ? '<img src="' + escapeHtml(p.image_path) + '" alt="">' : "") + '</div>' +
                 '<div class="t">' + escapeHtml(p.title) + '</div></a>';
             }).join("") +

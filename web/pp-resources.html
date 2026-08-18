@@ -285,7 +285,7 @@
     var msg = document.getElementById("addMsg");
     msg.className = "add-msg"; msg.textContent = "";
     var t = token();
-    if (!t) { location.href = "pp-auth.html?view=signin&next=" + encodeURIComponent("/resources"); return; }
+    if (!t) { location.href = "/signin?view=signin&next=" + encodeURIComponent("/resources"); return; }
     var amount = parseFloat(document.getElementById("addAmount").value);
     if (!amount || amount <= 0) { msg.className = "add-msg -error"; msg.textContent = "Enter a monthly amount."; return; }
     var btn = document.getElementById("addSubmitBtn");

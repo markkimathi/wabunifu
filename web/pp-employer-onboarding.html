@@ -188,7 +188,7 @@
         '<span class="big">I’m hiring</span>' +
         '<span class="note">Post a role and see who can actually apply before you shortlist.</span>' +
       '</button>' +
-      '<a href="pp-auth.html?view=signup" class="choice-secondary">' +
+      '<a href="/signin?view=signup" class="choice-secondary">' +
         '<span class="big">I’m a designer</span>' +
         '<span class="note">Build a profile and get roles you can actually apply for.</span>' +
         ICON.arrow +
@@ -202,7 +202,7 @@
       GATE_POINTS.map(function(p){
         return '<div class="gate-point"><span class="tick">' + ICON.check + '</span><p>' + escapeHtml(p) + '</p></div>';
       }).join("") +
-      '<div class="gate-aside">Joining a company that already hires on Kazi? A colleague can send you an invite instead of setting this up twice — <a href="pp-invite.html">see how that works</a>.</div>' +
+      '<div class="gate-aside">Joining a company that already hires on Kazi? A colleague can send you an invite instead of setting this up twice — <a href="/pp-invite.html">see how that works</a>.</div>' +
       stepNav({ label: "Continue" });
   }
 
@@ -297,7 +297,7 @@
       '</div>' +
       '<div class="handoff-ctas">' +
         '<a href="/post' + (qs.toString() ? "?" + qs.toString() : "") + '" class="pp-btn pp-btn-primary pp-btn-lg">Continue posting the role</a>' +
-        '<a href="pp-employer.html" class="pp-btn pp-btn-secondary pp-btn-lg">Hiring dashboard</a>' +
+        '<a href="/pp-employer.html" class="pp-btn pp-btn-secondary pp-btn-lg">Hiring dashboard</a>' +
       '</div>' +
       '<div class="dash-note">Post a role either from here or straight from your dashboard — both land in the same review queue. If you also have a designer profile, it’s untouched.</div>';
   }

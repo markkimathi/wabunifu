@@ -232,7 +232,7 @@
     root.innerHTML =
       '<header class="pp-header">' +
         '<div class="pp-header-row">' +
-          '<a class="pp-mark" href="' + ROUTES.home + '"><img src="brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
+          '<a class="pp-mark" href="' + ROUTES.home + '"><img src="/brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
           '<nav class="pp-dlinks">' + dlinks + '</nav>' +
           '<div class="pp-spacer"></div>' +
           '<button type="button" class="pp-icon-btn" data-open-search aria-label="Search Path &amp; Pixel">' + ICONS.search(18) + '</button>' +
@@ -251,7 +251,7 @@
           '</div>' +
         '</div>' +
         '<div class="pp-header-compact">' +
-          '<a class="pp-mark" href="' + ROUTES.home + '"><img src="brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
+          '<a class="pp-mark" href="' + ROUTES.home + '"><img src="/brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
           '<div class="pp-spacer"></div>' +
           '<button type="button" class="pp-tap-btn" data-open-msearch aria-label="Search">' + ICONS.search(19) + '</button>' +
           (user ? '<a class="pp-av-circle" href="' + user.href + '" style="width:30px;height:30px;font-size:11px;text-decoration:none">' +
@@ -282,7 +282,7 @@
       '</div>' +
       '<div class="pp-menu" data-menu>' +
         '<div class="pp-menu-head">' +
-          '<a class="pp-mark" href="' + ROUTES.home + '"><img src="brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
+          '<a class="pp-mark" href="' + ROUTES.home + '"><img src="/brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
           '<div class="pp-spacer"></div>' +
           '<button type="button" class="pp-tap-btn" data-close-menu aria-label="Close menu">' + ICONS.close(20) + '</button>' +
         '</div>' +
@@ -309,7 +309,7 @@
   function buildFocusedHeader(root){
     root.innerHTML =
       '<div class="pp-header-focused">' +
-        '<a href="' + ROUTES.home + '"><img src="brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
+        '<a href="' + ROUTES.home + '"><img src="/brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
       '</div>';
   }
 
