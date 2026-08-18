@@ -76,6 +76,11 @@
     display:flex;flex-direction:column;gap:14px}
   .person-card:hover{border-color:var(--c-border-hover)}
   .person-head{display:flex;align-items:flex-start;gap:12px}
+  .person-follow{flex:none;width:32px;height:32px;border-radius:50%;border:1px solid var(--c-border-strong);
+    background:var(--c-surface);color:var(--c-text-muted);cursor:pointer;display:inline-flex;
+    align-items:center;justify-content:center;padding:0}
+  .person-follow:hover{border-color:var(--c-border-hover);color:var(--c-text)}
+  .person-follow.-following{background:var(--pp-gold-200);border-color:var(--pp-gold-400);color:var(--pp-gold-800)}
   .person-head h4{margin:0;font-size:20px;font-weight:700;letter-spacing:-0.02em;line-height:1.2;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .person-head p{margin:2px 0 0;font-size:13.5px;color:var(--c-text-subtle)}
@@ -195,7 +200,10 @@
   var ICONS = {
     alert: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.5"></path><circle cx="12" cy="12" r="9"></circle></svg>',
     search: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>',
-    x: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>'
+    x: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
+    follow: function(following){
+      return '<svg width="15" height="15" viewBox="0 0 24 24" fill="' + (following ? "currentColor" : "none") + '" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7.5-4.6-10-9.3C.4 8.3 2 4.5 5.6 4 8 3.7 10 5 12 7.5 14 5 16 3.7 18.4 4 22 4.5 23.6 8.3 22 11.7 19.5 16.4 12 21 12 21z"></path></svg>';
+    }
   };
 
   // Matches AVAILABILITY_STATUSES in api/main.py exactly — these are real
@@ -208,8 +216,41 @@
 
   var state = {
     all: [], loaded: false, failed: false, query: "",
-    disciplines: new Set(), availability: new Set(), cities: new Set(), portfolioOnly: false
+    disciplines: new Set(), availability: new Set(), cities: new Set(), portfolioOnly: false,
+    followedIds: new Set()
   };
+
+  function designerToken(){ return localStorage.getItem("kazi_designer_token"); }
+
+  async function loadFollows(){
+    var token = designerToken();
+    if (!token) return;
+    try {
+      var res = await fetch("/api/designers/me/follows", { headers: { "Authorization": "Bearer " + token } });
+      if (!res.ok) return;
+      var data = await res.json();
+      state.followedIds = new Set(
+        (data.follows || []).filter(function(f){ return f.target_type === "designer"; }).map(function(f){ return f.target_id; })
+      );
+    } catch (e) {}
+  }
+
+  function toggleFollow(id, btn){
+    var token = designerToken();
+    if (!token) { location.href = "/signin?next=" + encodeURIComponent(location.pathname); return; }
+    var wasFollowing = state.followedIds.has(id);
+    // Optimistic: flip immediately, only revert if the request actually fails.
+    if (wasFollowing) state.followedIds.delete(id); else state.followedIds.add(id);
+    btn.classList.toggle("-following", !wasFollowing);
+    btn.innerHTML = ICONS.follow(!wasFollowing);
+    fetch("/api/designers/me/follows/designer/" + encodeURIComponent(id), {
+      method: "POST", headers: { "Authorization": "Bearer " + token }
+    }).catch(function(){
+      if (wasFollowing) state.followedIds.add(id); else state.followedIds.delete(id);
+      btn.classList.toggle("-following", wasFollowing);
+      btn.innerHTML = ICONS.follow(wasFollowing);
+    });
+  }
 
   function initialsOf(name){
     return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
@@ -293,6 +334,7 @@
 
   function personCard(p, idx){
     var thumbs = (p.projects || []).slice(0, 3);
+    var following = state.followedIds.has(p.id);
     return '<a class="person-card" href="/designers/' + encodeURIComponent(p.handle || p.id) + '">' +
       '<div class="person-head">' +
         (p.photo_path
@@ -300,6 +342,7 @@
           : '<span class="pp-avatar -md ' + tintFor(p.id) + '">' + initialsOf(p.display_name) + '</span>') +
         '<div style="flex:1;min-width:0"><h4>' + escapeHtml(p.display_name) + '</h4>' +
           '<p>' + escapeHtml(p.headline || (p.discipline || [])[0] || "Designer") + (p.location ? " · " + escapeHtml(p.location) : "") + '</p></div>' +
+        '<button type="button" class="person-follow' + (following ? " -following" : "") + '" data-follow="' + p.id + '" aria-label="' + (following ? "Unfollow" : "Follow") + ' ' + escapeHtml(p.display_name) + '" title="' + (following ? "Following" : "Follow") + '">' + ICONS.follow(following) + '</button>' +
       '</div>' +
       '<p class="person-line">' + escapeHtml(p.bio || "") + '</p>' +
       (thumbs.length
@@ -365,6 +408,12 @@
     }
 
     area.innerHTML = '<div class="people-grid">' + filtered.map(personCard).join("") + '</div>';
+    area.querySelectorAll("[data-follow]").forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.preventDefault(); e.stopPropagation();
+        toggleFollow(parseInt(btn.getAttribute("data-follow"), 10), btn);
+      });
+    });
   }
 
   function resetFilters(){
@@ -399,7 +448,7 @@
     renderResults();
   }
 
-  function init(){
+  async function init(){
     document.getElementById("resetFilters").addEventListener("click", resetFilters);
     document.getElementById("portfolioOnly").addEventListener("change", function(e){
       state.portfolioOnly = e.target.checked; renderResults();
@@ -417,6 +466,7 @@
     document.getElementById("closeFilters").addEventListener("click", closeFilters);
     backdrop.addEventListener("click", closeFilters);
 
+    await loadFollows();
     loadPeople();
   }
 

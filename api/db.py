@@ -117,7 +117,8 @@ CREATE TABLE IF NOT EXISTS designers (
   onboarding_completed INTEGER NOT NULL DEFAULT 0,
   email_verified INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  company_id INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_designers_status ON designers(status);
 
@@ -138,9 +139,36 @@ CREATE TABLE IF NOT EXISTS designer_projects (
   url TEXT NOT NULL DEFAULT '',
   category TEXT NOT NULL DEFAULT '',
   image_path TEXT NOT NULL DEFAULT '',
-  sort_order INTEGER NOT NULL DEFAULT 0
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  problem TEXT NOT NULL DEFAULT '',
+  results TEXT NOT NULL DEFAULT '[]',
+  credits TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_designer_projects_designer ON designer_projects(designer_id);
+
+-- Multiple gallery images per project (image_path above is just the cover).
+CREATE TABLE IF NOT EXISTS project_images (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id INTEGER NOT NULL,
+  image_path TEXT NOT NULL,
+  caption TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_project_images_project ON project_images(project_id);
+
+-- A designer's past roles, for the Profile "Experience" tab.
+CREATE TABLE IF NOT EXISTS role_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  company TEXT NOT NULL,
+  title TEXT NOT NULL,
+  start_date TEXT NOT NULL DEFAULT '',
+  end_date TEXT NOT NULL DEFAULT '',
+  is_current INTEGER NOT NULL DEFAULT 0,
+  description TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_role_history_designer ON role_history(designer_id);
 
 CREATE TABLE IF NOT EXISTS designer_sessions (
   token TEXT PRIMARY KEY,
@@ -421,6 +449,10 @@ _MIGRATIONS = [
     "ALTER TABLE submissions ADD COLUMN company_id INTEGER",
     "ALTER TABLE submissions ADD COLUMN employer_id INTEGER",
     "ALTER TABLE employers ADD COLUMN suspended INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE designers ADD COLUMN company_id INTEGER",
+    "ALTER TABLE designer_projects ADD COLUMN problem TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designer_projects ADD COLUMN results TEXT NOT NULL DEFAULT '[]'",
+    "ALTER TABLE designer_projects ADD COLUMN credits TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -745,6 +777,86 @@ def set_designer_photo(designer_id: int, photo_path: str) -> None:
     c.close()
 
 
+def set_designer_company(designer_id: int, company_id: int | None) -> None:
+    """Self-reported "I work here", for the Company page's design-team
+    grid — separate from update_designer_profile, same non-re-review
+    reasoning as update_designer_handle (not moderated content)."""
+    c = _conn()
+    c.execute("UPDATE designers SET company_id = ? WHERE id = ?", (company_id, designer_id))
+    c.commit()
+    c.close()
+
+
+def list_designers_by_company(company_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM designers WHERE company_id = ? AND status = 'approved' ORDER BY display_name",
+        (company_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def list_role_history(designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT id, company, title, start_date, end_date, is_current, description "
+        "FROM role_history WHERE designer_id = ? ORDER BY sort_order",
+        (designer_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def create_role_history(designer_id: int, company: str, title: str, start_date: str, end_date: str,
+                         is_current: bool, description: str) -> int:
+    c = _conn()
+    n = c.execute("SELECT COUNT(*) FROM role_history WHERE designer_id = ?", (designer_id,)).fetchone()[0]
+    cur = c.execute(
+        "INSERT INTO role_history (designer_id, company, title, start_date, end_date, is_current, description, sort_order) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        (designer_id, company, title, start_date, end_date, int(is_current), description, n),
+    )
+    role_id = cur.lastrowid
+    c.commit()
+    c.close()
+    return role_id
+
+
+def update_role_history(designer_id: int, role_id: int, company: str, title: str, start_date: str,
+                         end_date: str, is_current: bool, description: str) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "UPDATE role_history SET company = ?, title = ?, start_date = ?, end_date = ?, "
+        "is_current = ?, description = ? WHERE id = ? AND designer_id = ?",
+        (company, title, start_date, end_date, int(is_current), description, role_id, designer_id),
+    )
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def delete_role_history(designer_id: int, role_id: int) -> bool:
+    c = _conn()
+    cur = c.execute("DELETE FROM role_history WHERE id = ? AND designer_id = ?", (role_id, designer_id))
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
+
+
+def reorder_role_history(designer_id: int, ordered_ids: list[int]) -> None:
+    c = _conn()
+    for i, role_id in enumerate(ordered_ids):
+        c.execute(
+            "UPDATE role_history SET sort_order = ? WHERE id = ? AND designer_id = ?",
+            (i, role_id, designer_id),
+        )
+    c.commit()
+    c.close()
+
+
 def set_designer_resume(designer_id: int, resume_path: str, resume_filename: str, uploaded_at: str) -> None:
     # Unlike photo/bio/discipline, a resume isn't part of what admins review
     # for profile legitimacy (and defaults to private) — uploading or
@@ -871,12 +983,21 @@ def list_designer_links(designer_id: int) -> list[dict]:
 def list_designer_projects(designer_id: int) -> list[dict]:
     c = _conn()
     rows = c.execute(
-        "SELECT id, title, description, url, category, image_path FROM designer_projects "
-        "WHERE designer_id = ? ORDER BY sort_order",
+        "SELECT id, title, description, url, category, image_path, problem, results, credits "
+        "FROM designer_projects WHERE designer_id = ? ORDER BY sort_order",
         (designer_id,),
     ).fetchall()
     c.close()
-    return [dict(r) for r in rows]
+    out = []
+    for r in rows:
+        d = dict(r)
+        try:
+            d["results"] = json.loads(d["results"] or "[]")
+        except (ValueError, TypeError):
+            d["results"] = []
+        d["gallery"] = list_project_images(d["id"])
+        out.append(d)
+    return out
 
 
 def count_designer_projects(designer_id: int) -> int:
@@ -915,6 +1036,103 @@ def update_designer_project(designer_id: int, project_id: int, title: str, descr
     c.commit()
     c.close()
     return updated
+
+
+def update_project_story(designer_id: int, project_id: int, problem: str, results: list, credits: str) -> bool:
+    """The Case Study article fields — separate from update_designer_project
+    (title/description/url/category), same ownership-checked update shape
+    as set_project_image below."""
+    c = _conn()
+    cur = c.execute(
+        "UPDATE designer_projects SET problem = ?, results = ?, credits = ? WHERE id = ? AND designer_id = ?",
+        (problem, json.dumps(results or []), credits, project_id, designer_id),
+    )
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def list_project_images(project_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT id, image_path, caption FROM project_images WHERE project_id = ? ORDER BY sort_order",
+        (project_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def add_project_image(designer_id: int, project_id: int, image_path: str, caption: str = "") -> int | None:
+    c = _conn()
+    owns = c.execute(
+        "SELECT id FROM designer_projects WHERE id = ? AND designer_id = ?", (project_id, designer_id)
+    ).fetchone()
+    if not owns:
+        c.close()
+        return None
+    n = c.execute("SELECT COUNT(*) FROM project_images WHERE project_id = ?", (project_id,)).fetchone()[0]
+    cur = c.execute(
+        "INSERT INTO project_images (project_id, image_path, caption, sort_order) VALUES (?, ?, ?, ?)",
+        (project_id, image_path, caption, n),
+    )
+    image_id = cur.lastrowid
+    c.commit()
+    c.close()
+    return image_id
+
+
+def update_project_image_caption(designer_id: int, project_id: int, image_id: int, caption: str) -> bool:
+    c = _conn()
+    owns = c.execute(
+        "SELECT id FROM designer_projects WHERE id = ? AND designer_id = ?", (project_id, designer_id)
+    ).fetchone()
+    if not owns:
+        c.close()
+        return False
+    cur = c.execute(
+        "UPDATE project_images SET caption = ? WHERE id = ? AND project_id = ?",
+        (caption, image_id, project_id),
+    )
+    updated = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return updated
+
+
+def delete_project_image(designer_id: int, project_id: int, image_id: int) -> bool:
+    c = _conn()
+    owns = c.execute(
+        "SELECT id FROM designer_projects WHERE id = ? AND designer_id = ?", (project_id, designer_id)
+    ).fetchone()
+    if not owns:
+        c.close()
+        return False
+    cur = c.execute(
+        "DELETE FROM project_images WHERE id = ? AND project_id = ?", (image_id, project_id)
+    )
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
+
+
+def reorder_project_images(designer_id: int, project_id: int, ordered_ids: list[int]) -> bool:
+    c = _conn()
+    owns = c.execute(
+        "SELECT id FROM designer_projects WHERE id = ? AND designer_id = ?", (project_id, designer_id)
+    ).fetchone()
+    if not owns:
+        c.close()
+        return False
+    for i, image_id in enumerate(ordered_ids):
+        c.execute(
+            "UPDATE project_images SET sort_order = ? WHERE id = ? AND project_id = ?",
+            (i, image_id, project_id),
+        )
+    c.commit()
+    c.close()
+    return True
 
 
 def set_project_image(designer_id: int, project_id: int, image_path: str) -> bool:
@@ -1906,6 +2124,32 @@ def get_question(question_id: int) -> dict | None:
     row = c.execute("SELECT * FROM community_questions WHERE id = ?", (question_id,)).fetchone()
     c.close()
     return dict(row) if row else None
+
+
+def list_questions_by_designer(designer_id: int, limit: int = 20) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM community_questions WHERE designer_id = ? AND status = 'visible' "
+        "ORDER BY created_at DESC LIMIT ?",
+        (designer_id, limit),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def list_replies_by_designer(designer_id: int, limit: int = 20) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        """
+        SELECT r.*, q.title AS question_title
+        FROM community_replies r JOIN community_questions q ON q.id = r.question_id
+        WHERE r.designer_id = ? AND r.status = 'visible'
+        ORDER BY r.created_at DESC LIMIT ?
+        """,
+        (designer_id, limit),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
 
 
 def set_accepted_reply(question_id: int, reply_id: int | None) -> None:

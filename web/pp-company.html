@@ -4,9 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Company · Path & Pixel</title>
-<link rel="icon" type="image/png" href="favicon.png">
-<link rel="stylesheet" href="tokens.css">
-<link rel="stylesheet" href="pp-primitives.css">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/pp-primitives.css">
 <style>
   body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
     font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
@@ -18,14 +18,30 @@
   .head .mark{width:96px;height:96px;flex:none;border-radius:var(--pp-radius-xl);background:var(--pp-ink);color:var(--pp-gold);
     display:inline-flex;align-items:center;justify-content:center;font-size:40px;font-weight:800}
   .head h1{margin:0 0 10px;font-size:var(--pp-display-size);line-height:1.0;letter-spacing:-0.04em;font-weight:800}
+  .head .blurb{margin:0 0 14px;font-size:18px;line-height:1.55;color:var(--c-text-muted);max-width:54ch}
   .head-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;font-size:14.5px;color:var(--c-text-muted)}
   .head-meta span{display:inline-flex;align-items:center;gap:8px}
   .head-meta svg{color:var(--c-text-faint)}
-  .head-cta{flex:none}
+  .head-meta a{font-weight:600;color:var(--c-accent-text);text-decoration:none}
+  .head-cta{display:flex;gap:10px;flex:none}
+  .follow-btn.-following{background:var(--c-surface);border-color:var(--c-accent);color:var(--c-accent-text)}
 
-  .layout{padding:32px 0 64px}
+  .company-grid{padding:32px 0 64px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:44px;align-items:start}
+  @media(max-width:1023px){.company-grid{grid-template-columns:1fr}}
+  .main-col{min-width:0}
+
+  .elig-box{padding:26px;border-radius:var(--pp-radius-xl);background:var(--c-good-bg);border:1px solid var(--c-good-border);margin-bottom:36px}
+  .elig-box .elig-title{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .elig-box .elig-icon{width:34px;height:34px;flex:none;border-radius:var(--pp-radius-md);background:var(--c-good);
+    display:inline-flex;align-items:center;justify-content:center;color:#fff}
+  .elig-box h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-0.018em;color:var(--c-good-text)}
+  .elig-box p{margin:0;font-size:17px;line-height:1.65;color:var(--c-good-text);max-width:62ch}
+  .elig-box .disclaimer{margin-top:16px;font-size:14px;line-height:1.6;color:var(--c-good-text);opacity:.85}
+
+  .cs-section{margin-bottom:36px}
+  .cs-section h2{margin:0 0 6px;font-size:26px;line-height:1.12;letter-spacing:-0.024em;font-weight:700}
+  .cs-section .lead{margin:0 0 18px;font-size:16.5px;line-height:1.6;color:var(--c-text-muted);max-width:60ch}
   .roles-head{display:flex;align-items:baseline;gap:14px;margin-bottom:18px;flex-wrap:wrap}
-  .roles-head h2{margin:0;font-size:26px;line-height:1.12;letter-spacing:-0.024em;font-weight:700}
   .roles-head span{font-size:15px;color:var(--c-text-subtle)}
 
   .job-row{padding:20px 4px;border-bottom:1px solid var(--c-border);background:var(--c-surface);
@@ -42,6 +58,44 @@
   .jr-meta .pay{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
   .jr-meta .posted{font-size:12px;color:var(--c-text-faint)}
   .jr-go{color:var(--c-icon)}
+
+  .team-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  @media(max-width:539px){.team-grid{grid-template-columns:1fr}}
+  .team-card{display:flex;gap:10px;align-items:center;padding:8px;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);
+    background:var(--c-surface);text-decoration:none;color:inherit}
+  .team-card:hover{border-color:var(--c-border-hover)}
+  .team-card .who{flex:1;min-width:0}
+  .team-card .who span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .team-card .name{font-size:16.5px;font-weight:700;letter-spacing:-0.015em}
+  .team-card .role{font-size:14px;color:var(--c-text-subtle)}
+  .team-card .go{flex:none;color:var(--c-border-strong)}
+
+  .ships-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  @media(max-width:539px){.ships-grid{grid-template-columns:1fr}}
+  .ships-card{display:block;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface);
+    overflow:hidden;text-decoration:none;color:inherit}
+  .ships-card:hover{border-color:var(--c-border-hover)}
+  .ships-cover{aspect-ratio:4/3;background:var(--c-surface-inset);border-bottom:1px solid var(--c-border)}
+  .ships-cover img{width:100%;height:100%;object-fit:cover;display:block}
+  .ships-body{padding:16px 18px 18px}
+  .ships-body .t{display:block;font-size:16.5px;font-weight:700;letter-spacing:-0.015em;line-height:1.24;margin-bottom:5px}
+  .ships-body .note{display:block;font-size:14px;line-height:1.55;color:var(--c-text-subtle)}
+
+  aside.company-side{position:sticky;top:calc(var(--pp-header-height) + 24px);display:flex;flex-direction:column;gap:16px}
+  @media(max-width:1023px){aside.company-side{position:static;margin-top:36px}}
+  .side-card{padding:22px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border)}
+  .side-card h4{margin:0 0 14px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em}
+  .fact-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:14px}
+  .fact-row:last-child{margin-bottom:0}
+  .fact-row span:first-child{font-size:14.5px;color:var(--c-text-muted);flex:1;min-width:0}
+  .fact-row span:last-child{font-size:15.5px;font-weight:700;flex:none;font-variant-numeric:tabular-nums}
+  .link-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--c-border);font-size:15px;
+    text-decoration:none;color:inherit}
+  .link-row:last-child{border-bottom:none}
+  .link-row:hover{color:var(--c-accent-text)}
+  .link-row .ic{width:30px;height:30px;flex:none;border-radius:var(--pp-radius-md);background:var(--c-surface-inset);
+    display:inline-flex;align-items:center;justify-content:center;color:var(--c-text-muted)}
+  .link-row span:nth-child(2){flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
   .state-panel{padding:64px 24px;text-align:center}
   .state-panel h3{margin:0 0 8px;font-size:22px;font-weight:700}
@@ -65,8 +119,8 @@
 
 <div id="pp-footer" data-variant="short"></div>
 
-<script src="pp-nav.js"></script>
-<script src="pp-footer.js"></script>
+<script src="/pp-nav.js"></script>
+<script src="/pp-footer.js"></script>
 <script>
 (function(){
   "use strict";
@@ -74,7 +128,10 @@
   var ICONS = {
     place: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-5.5 7-11a7 7 0 10-14 0c0 5.5 7 11 7 11z"></path><circle cx="12" cy="10" r="2.6"></circle></svg>',
     roles: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="13" rx="2"></rect><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"></path></svg>',
-    chevron: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>'
+    globe: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"></path></svg>',
+    chevron: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>',
+    check: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>',
+    project: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.8"></circle><path d="M21 16l-5.5-5.5L6 20"></path></svg>'
   };
 
   var ELIG_META = {
@@ -91,6 +148,9 @@
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
     });
   }
+  function initialsOf(name){
+    return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
+  }
   function postedLabel(days){
     if (days === 0) return "Today";
     if (days === 1) return "1 day ago";
@@ -106,14 +166,18 @@
     });
     return best;
   }
+  function fmtYear(iso){
+    if (!iso) return "";
+    var d = new Date(iso);
+    return isNaN(d.getTime()) ? "" : d.getFullYear();
+  }
+  function designerToken(){ return localStorage.getItem("kazi_designer_token") || ""; }
 
-  var companyName = new URLSearchParams(location.search).get("name");
+  var params = new URLSearchParams(location.search);
+  var companyName = params.get("name");
+  var companySlug = params.get("slug");
+  var following = false;
 
-  // Best-effort client-side mirror of api/db.py's _slugify_company() — good
-  // enough to find the common case (a company with no slug collision) on
-  // the first try. A miss just falls through to the job-matched view below,
-  // same as before a real companies table existed, so this is a pure
-  // upgrade path, never a regression.
   function guessSlug(name){
     var base = (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
     if (!base || !/^[a-z]/.test(base)) base = "company" + base;
@@ -124,18 +188,19 @@
 
   async function load(){
     var content = document.getElementById("content");
-    if (!companyName) { content.innerHTML = notFound("No company specified."); return; }
+    if (!companyName && !companySlug) { content.innerHTML = notFound("No company specified."); return; }
 
     var realCompany = null;
     try {
-      var cRes = await fetch("/api/companies/" + encodeURIComponent(guessSlug(companyName)), { cache: "no-store" });
+      var slugToTry = companySlug || guessSlug(companyName);
+      var cRes = await fetch("/api/companies/" + encodeURIComponent(slugToTry), { cache: "no-store" });
       if (cRes.ok) {
         var candidate = await cRes.json();
-        if (candidate.name.toLowerCase() === companyName.toLowerCase()) realCompany = candidate;
+        if (companySlug || candidate.name.toLowerCase() === companyName.toLowerCase()) realCompany = candidate;
       }
     } catch (e) { /* fall through to the job-matched view */ }
 
-    if (realCompany) { renderReal(realCompany); return; }
+    if (realCompany) { await renderReal(realCompany); return; }
 
     var jobs;
     try {
@@ -155,11 +220,20 @@
       '<a class="pp-btn pp-btn-primary" href="/jobs">Browse open roles</a></div>';
   }
 
-  function renderReal(company){
+  async function renderReal(company){
     render(company.name, company.listings || [], company);
-    var designerToken = localStorage.getItem("kazi_designer_token");
-    if (!designerToken) return;
-    var wrap = document.querySelector(".wrap.layout");
+    var token = designerToken();
+    if (!token) return;
+    try {
+      var fRes = await fetch("/api/designers/me/follows", { headers: { Authorization: "Bearer " + token } });
+      if (fRes.ok) {
+        var fData = await fRes.json();
+        following = (fData.follows || []).some(function(f){ return f.target_type === "company" && f.target_id === company.id; });
+      }
+    } catch (e) {}
+    renderFollowBtn(company);
+
+    var wrap = document.querySelector(".main-col");
     if (!wrap) return;
     var composer = document.createElement("div");
     composer.className = "msg-composer";
@@ -175,7 +249,7 @@
       btn.disabled = true;
       try {
         await fetch("/api/designers/me/conversations", {
-          method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + designerToken },
+          method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
           body: JSON.stringify({ company_id: company.id, body: body })
         });
         document.getElementById("msgBody").value = "";
@@ -185,10 +259,32 @@
     });
   }
 
+  function renderFollowBtn(company){
+    var el = document.getElementById("followBtn");
+    if (!el) return;
+    el.textContent = following ? "Following" : "Follow";
+    el.classList.toggle("-following", following);
+    el.classList.toggle("pp-btn-secondary", following);
+    el.classList.toggle("pp-btn-dark", !following);
+    el.onclick = async function(){
+      var token = designerToken();
+      if (!token) { location.href = "/signin?next=" + encodeURIComponent(location.pathname + location.search); return; }
+      var was = following;
+      following = !following;
+      renderFollowBtn(company);
+      try {
+        var res = await fetch("/api/designers/me/follows/company/" + company.id, {
+          method: "POST", headers: { Authorization: "Bearer " + token }
+        });
+        if (!res.ok) throw new Error("failed");
+      } catch (e) { following = was; renderFollowBtn(company); }
+    };
+  }
+
   function render(name, jobs, company){
     document.title = name + " · Path & Pixel";
     var crumbs = document.getElementById("pp-breadcrumbs");
-    crumbs.setAttribute("data-crumbs", JSON.stringify([{ label: "Jobs", href: "pp-jobs.html" }, { label: name }]));
+    crumbs.setAttribute("data-crumbs", JSON.stringify([{ label: "Jobs", href: "/jobs" }, { label: name }]));
     PathPixelNav.renderBreadcrumbs(crumbs);
 
     var city = mostCommon(jobs.map(function(j){ return j.city; }));
@@ -196,23 +292,66 @@
       ? '<img src="' + escapeHtml(company.logo_path) + '" alt="" style="width:96px;height:96px;flex:none;border-radius:var(--pp-radius-xl);object-fit:cover">'
       : '<span class="mark">' + name[0].toUpperCase() + '</span>';
 
+    var team = (company && company.design_team) || [];
+    var shipped = [];
+    team.forEach(function(d){
+      (d.projects || []).slice(0, 1).forEach(function(p){ shipped.push({ designer: d, project: p }); });
+    });
+    shipped = shipped.slice(0, 4);
+
     document.getElementById("content").innerHTML =
       '<div class="head">' +
         mark +
         '<div style="flex:1;min-width:280px">' +
           '<h1>' + escapeHtml(name) + '</h1>' +
-          (company && company.blurb ? '<p style="margin:0 0 12px;font-size:15.5px;line-height:1.55;color:var(--c-text-subtle);max-width:60ch">' + escapeHtml(company.blurb) + '</p>' : "") +
+          (company && company.blurb ? '<p class="blurb">' + escapeHtml(company.blurb) + '</p>' : "") +
           '<div class="head-meta">' +
             (city ? '<span>' + ICONS.place + escapeHtml(city) + '</span>' : "") +
             '<span>' + ICONS.roles + jobs.length + ' open role' + (jobs.length === 1 ? "" : "s") + ' on Path &amp; Pixel</span>' +
+            (company && company.website ? '<a href="' + escapeHtml(company.website) + '" target="_blank" rel="noopener">' + ICONS.globe + escapeHtml(company.website.replace(/^https?:\/\//, "").replace(/\/$/, "")) + '</a>' : "") +
             (company && company.eligibility ? eligBadge(company.eligibility) : "") +
           '</div>' +
         '</div>' +
-        '<a class="pp-btn pp-btn-primary head-cta" href="/jobs?q=' + encodeURIComponent(name) + '">See all roles</a>' +
+        '<div class="head-cta">' +
+          (company ? '<button type="button" class="pp-btn pp-btn-dark" id="followBtn">Follow</button>' : "") +
+          '<a class="pp-btn pp-btn-primary" href="/jobs?q=' + encodeURIComponent(name) + '">See all roles</a>' +
+        '</div>' +
       '</div>' +
-      '<div class="wrap layout" style="padding-left:0;padding-right:0">' +
-        '<div class="roles-head"><h2>Open roles</h2><span>' + jobs.length + ' live now</span></div>' +
-        (jobs.length ? '<div>' + jobs.map(renderJobRow).join("") + '</div>' : '<p style="color:var(--c-text-subtle);font-size:15px">Nothing open right now.</p>') +
+      '<div class="company-grid">' +
+        '<div class="main-col">' +
+          (company && company.eligibility_note ? '<section class="elig-box">' +
+            '<div class="elig-title"><span class="elig-icon">' + ICONS.check + '</span><h2>How ' + escapeHtml(name) + ' hires across Africa</h2></div>' +
+            '<p>' + escapeHtml(company.eligibility_note) + '</p>' +
+            '<p class="disclaimer">Written by ' + escapeHtml(name) + ' themselves. We check it against their listings, but we don’t write it for them.</p>' +
+          '</section>' : "") +
+          '<section class="cs-section">' +
+            '<div class="roles-head"><h2>Open roles</h2><span>' + jobs.length + ' live now</span></div>' +
+            (jobs.length ? '<div>' + jobs.map(renderJobRow).join("") + '</div>' : '<p style="color:var(--c-text-subtle);font-size:15px">Nothing open right now.</p>') +
+          '</section>' +
+          (team.length ? '<section class="cs-section">' +
+            '<h2>The design team</h2>' +
+            '<p class="lead">' + team.length + ' designer' + (team.length === 1 ? "" : "s") + ' here on Path &amp; Pixel, so you can read their work before you apply.</p>' +
+            '<div class="team-grid">' + team.map(renderTeamCard).join("") + '</div>' +
+          '</section>' : "") +
+          (shipped.length ? '<section class="cs-section">' +
+            '<h2>What the design team ships</h2>' +
+            '<p class="lead">Published work from the people on this team, so you can see what you’d be joining.</p>' +
+            '<div class="ships-grid">' + shipped.map(renderShipCard).join("") + '</div>' +
+          '</section>' : "") +
+        '</div>' +
+        '<aside class="company-side">' +
+          (company ? '<div class="side-card">' +
+            '<h4>On Path &amp; Pixel</h4>' +
+            '<div class="fact-row"><span>Member since</span><span>' + fmtYear(company.created_at) + '</span></div>' +
+            '<div class="fact-row"><span>Design team here</span><span>' + team.length + '</span></div>' +
+            '<div class="fact-row"><span>Open roles</span><span>' + jobs.length + '</span></div>' +
+            '<div class="fact-row"><span>Followers</span><span>' + (company.followers_count || 0) + '</span></div>' +
+          '</div>' : "") +
+          (company && company.website ? '<div class="side-card"><h4>Elsewhere</h4>' +
+            '<a class="link-row" href="' + escapeHtml(company.website) + '" target="_blank" rel="noopener">' +
+              '<span class="ic">' + ICONS.globe + '</span><span>' + escapeHtml(company.website.replace(/^https?:\/\//, "")) + '</span>' +
+            '</a></div>' : "") +
+        '</aside>' +
       '</div>';
   }
 
@@ -222,6 +361,25 @@
       '<div class="jr-tags">' + eligBadge(j.elig) + '<span class="pp-chip">' + escapeHtml(j.cat || "Design") + '</span></div>' +
       '<div class="jr-meta"><span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span><span class="posted">' + postedLabel(j.days) + '</span></div>' +
       '<span class="jr-go">' + ICONS.chevron + '</span>' +
+    '</a>';
+  }
+
+  function renderTeamCard(d){
+    return '<a class="team-card" href="/designers/' + encodeURIComponent(d.handle || d.id) + '">' +
+      (d.photo_path
+        ? '<img src="' + escapeHtml(d.photo_path) + '" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex:none">'
+        : '<span class="pp-avatar -md">' + initialsOf(d.display_name) + '</span>') +
+      '<span class="who"><span class="name">' + escapeHtml(d.display_name) + '</span>' +
+        '<span class="role">' + escapeHtml(d.headline || (d.discipline || [])[0] || "Designer") + '</span></span>' +
+      '<span class="go">' + ICONS.chevron + '</span>' +
+    '</a>';
+  }
+
+  function renderShipCard(s){
+    return '<a class="ships-card" href="/pp-case-study.html?designer=' + encodeURIComponent(s.designer.handle || s.designer.id) + '&project=' + encodeURIComponent(s.project.id) + '">' +
+      '<div class="ships-cover">' + (s.project.image_path ? '<img src="' + escapeHtml(s.project.image_path) + '" alt="">' : "") + '</div>' +
+      '<div class="ships-body"><span class="t">' + escapeHtml(s.project.title) + '</span>' +
+        '<span class="note">' + escapeHtml(s.designer.display_name) + '</span></div>' +
     '</a>';
   }
 

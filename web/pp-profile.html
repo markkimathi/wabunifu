@@ -14,8 +14,9 @@
   .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
   a{color:inherit}
 
-  .layout{padding:28px 0 72px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:56px;align-items:start}
-  @media(max-width:1023px){.layout{grid-template-columns:1fr;gap:0}}
+  .layout{padding:28px 0 72px;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:56px;align-items:start;position:relative}
+  @media(max-width:1023px){.layout{grid-template-columns:1fr;gap:0}
+    .layout>[style*="grid-column"]{grid-column:1 !important;grid-row:auto !important}}
 
   .head-row{display:flex;align-items:flex-start;gap:28px;margin-bottom:26px;flex-wrap:wrap}
   .head-row .photo{width:132px;height:132px;border-radius:var(--pp-radius-xl);object-fit:cover;flex:none}
@@ -28,6 +29,10 @@
   @media(max-width:1023px){aside.side{position:static;padding-top:8px}}
   .side .pp-btn{flex:1}
   .side-row{display:flex;gap:10px}
+  .follow-btn.-following{background:var(--c-surface);border-color:var(--c-accent);color:var(--c-accent-text)}
+  .icon-btn{width:48px;height:48px;flex:none;border-radius:var(--pp-radius-md);border:1px solid var(--c-border-strong);
+    background:var(--c-surface);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--c-text)}
+  .icon-btn:hover{background:var(--c-bg-sunken);border-color:var(--c-border-hover)}
   .side-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
   .side-card h4{margin:0 0 12px;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-faint)}
   .contact-row{display:flex;justify-content:space-between;gap:12px;font-size:14.5px;margin-bottom:9px}
@@ -49,7 +54,7 @@
 
   .work-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
   @media(max-width:639px){.work-grid{grid-template-columns:1fr}}
-  .work-card{cursor:pointer;text-decoration:none;color:inherit}
+  .work-card{cursor:pointer;text-decoration:none;color:inherit;border:none;background:none;padding:0;text-align:left;font-family:inherit;display:block;width:100%}
   .work-cover{aspect-ratio:4/3;background:var(--c-surface-inset);overflow:hidden;border-radius:var(--pp-radius-md) var(--pp-radius-md) 0 0;border:1px solid var(--c-border);border-bottom:none}
   .work-cover img{width:100%;height:100%;object-fit:cover;display:block}
   .work-body{padding:20px;border:1px solid var(--c-border);border-top:none;border-radius:0 0 var(--pp-radius-md) var(--pp-radius-md)}
@@ -60,9 +65,74 @@
   .about-block h3{margin:0 0 14px;font-size:24px;font-weight:600;letter-spacing:-0.016em}
   .about-skills{display:flex;flex-wrap:wrap;gap:8px}
 
+  .exp-block{max-width:820px}
+  .exp-row{display:grid;grid-template-columns:132px minmax(0,1fr);gap:24px;padding:24px 0;border-bottom:1px solid var(--c-border)}
+  .exp-row:last-child{border-bottom:none}
+  @media(max-width:539px){.exp-row{grid-template-columns:1fr;gap:4px}}
+  .exp-row .years{font-size:14px;color:var(--c-text-faint);font-variant-numeric:tabular-nums;padding-top:3px}
+  .exp-row h4{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:-0.018em}
+  .exp-row .company{margin:0 0 10px;font-size:15px;color:var(--c-text-muted)}
+  .exp-row .note{margin:0;font-size:15.5px;line-height:1.6;color:var(--c-text-subtle)}
+
+  .activity-block{max-width:820px;display:flex;flex-direction:column;gap:12px}
+  .activity-row{display:flex;gap:14px;padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
+    background:var(--c-surface);align-items:flex-start}
+  .activity-tag{width:34px;height:34px;border-radius:var(--pp-radius-md);flex:none;display:inline-flex;align-items:center;
+    justify-content:center;background:var(--c-surface-inset);color:var(--c-text-muted)}
+  .activity-row p{margin:0 0 3px;font-size:15.5px;line-height:1.5;color:var(--c-text)}
+  .activity-row span{font-size:13px;color:var(--c-text-faint)}
+
   .state-panel{padding:64px 24px;text-align:center}
   .state-panel h3{margin:0 0 8px;font-size:22px;font-weight:700}
   .state-panel p{margin:0 0 20px;font-size:15px;color:var(--c-text-subtle)}
+
+  /* Modals: lightbox + message composer share the same backdrop pattern */
+  .pp-backdrop{position:fixed;inset:0;z-index:var(--pp-z-modal);background:rgba(10,10,10,.55);
+    display:flex;align-items:flex-start;justify-content:center;padding:56px 24px;box-sizing:border-box;
+    opacity:0;pointer-events:none;transition:opacity var(--pp-duration) var(--pp-ease);overflow-y:auto}
+  .pp-backdrop.-open{opacity:1;pointer-events:auto}
+  .pp-modal{background:var(--c-surface);border-radius:var(--pp-radius-xl);box-shadow:0 20px 56px rgba(10,10,10,.28);
+    width:100%;box-sizing:border-box;transform:scale(.97) translateY(6px);opacity:0;
+    transition:transform var(--pp-duration) var(--pp-ease),opacity var(--pp-duration) var(--pp-ease);flex:none}
+  .pp-backdrop.-open .pp-modal{transform:scale(1) translateY(0);opacity:1}
+
+  .lb-modal{max-width:980px;overflow:hidden}
+  .lb-head{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 24px;border-bottom:1px solid var(--c-border)}
+  .lb-head h3{margin:0 0 2px;font-size:22px;font-weight:700;letter-spacing:-0.02em}
+  .lb-head p{margin:0;font-size:14px;color:var(--c-text-faint)}
+  .lb-body{max-height:60vh;overflow-y:auto;padding:28px 32px 36px}
+  .lb-hero{aspect-ratio:16/9;background:var(--c-surface-inset);border:1px solid var(--c-border);border-radius:var(--pp-radius-md);
+    overflow:hidden;margin-bottom:24px}
+  .lb-hero img{width:100%;height:100%;object-fit:cover;display:block}
+  .lb-copy{max-width:640px;font-size:17px;line-height:1.65;color:var(--c-text-muted)}
+  .lb-stats{display:flex;gap:32px;padding:20px 0;border-top:1px solid var(--c-border);border-bottom:1px solid var(--c-border);
+    margin:24px 0;flex-wrap:wrap}
+  .lb-stats .stat-value{font-size:26px;font-weight:800;letter-spacing:-0.028em;font-variant-numeric:tabular-nums}
+  .lb-stats .stat-label{font-size:13px;color:var(--c-text-faint)}
+  .lb-gallery{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:639px){.lb-gallery{grid-template-columns:1fr 1fr}}
+  .lb-gallery img{width:100%;aspect-ratio:3/4;object-fit:cover;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);display:block}
+  .lb-credits{margin:24px 0 0;font-size:14px;color:var(--c-text-faint)}
+  .lb-cta{margin-top:24px}
+
+  .msg-modal{max-width:480px;padding:26px}
+  .msg-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:6px}
+  .msg-head h3{margin:0;font-size:21px;font-weight:700;letter-spacing:-0.018em}
+  .msg-sub{margin:0 0 20px;font-size:14.5px;line-height:1.55;color:var(--c-text-faint)}
+  .msg-modal label{display:block;font-size:13px;font-weight:600;margin-bottom:7px}
+  .msg-modal textarea{width:100%;padding:12px 14px;border-radius:var(--pp-radius-lg);background:var(--c-bg);
+    font-family:inherit;font-size:15px;line-height:1.55;color:var(--c-text);resize:vertical;border:1px solid var(--c-border-strong);
+    outline:none;box-sizing:border-box}
+  .msg-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:7px;margin-bottom:20px}
+  .msg-hint{font-size:12.5px;color:var(--c-text-faint)}
+  .msg-count{font-size:12.5px;color:var(--c-text-faint);font-variant-numeric:tabular-nums}
+  .msg-actions{display:flex;gap:10px;justify-content:flex-end}
+
+  .pp-toast{position:fixed;bottom:24px;left:0;right:0;z-index:calc(var(--pp-z-modal) + 2);display:flex;justify-content:center;
+    pointer-events:none;opacity:0;transition:opacity var(--pp-duration) var(--pp-ease)}
+  .pp-toast.-open{opacity:1}
+  .pp-toast-inner{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--pp-radius-lg);
+    background:var(--c-text);color:var(--c-bg);box-shadow:0 12px 32px rgba(10,10,10,.24);font-size:14px}
 </style>
 </head>
 <body>
@@ -76,6 +146,8 @@
 
 <div id="pp-footer" data-variant="short"></div>
 
+<div id="ppToast" class="pp-toast"><div class="pp-toast-inner" id="ppToastText"></div></div>
+
 <script src="/pp-nav.js"></script>
 <script src="/pp-footer.js"></script>
 <script>
@@ -87,7 +159,11 @@
     globe: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"></path></svg>',
     ext: '<svg class="ext" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"></path></svg>',
     download: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v12M7 11l5 5 5-5"></path><path d="M4 20h16"></path></svg>',
-    project: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.8"></circle><path d="M21 16l-5.5-5.5L6 20"></path></svg>'
+    project: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.8"></circle><path d="M21 16l-5.5-5.5L6 20"></path></svg>',
+    close: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
+    question: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 015 .5c0 1.5-2 1.7-2 3.3M12 17h.01"></path></svg>',
+    reply: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17l-5-5 5-5M4 12h11a5 5 0 015 5v1"></path></svg>',
+    session: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>'
   };
 
   var PLATFORM_ICON = {
@@ -112,6 +188,12 @@
     "": { label: "Availability not set", positive: false }
   };
 
+  var ACTIVITY_META = {
+    question: { icon: ICONS.question, verb: "Asked", bg: "var(--c-surface-inset)" },
+    reply: { icon: ICONS.reply, verb: "Replied to", bg: "var(--c-surface-inset)" },
+    session: { icon: ICONS.session, verb: "Attended", bg: "var(--c-surface-inset)" }
+  };
+
   function escapeHtml(s){
     return (s || "").replace(/[&<>"']/g, function(c){
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
@@ -120,6 +202,12 @@
   function initialsOf(name){
     return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
   }
+  function fmtDate(iso){
+    if (!iso) return "";
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  }
 
   function pathId(){
     var parts = location.pathname.split("/").filter(Boolean);
@@ -127,6 +215,12 @@
   }
   var identifier = pathId();
   var designer = null;
+  var currentUser = null;
+  var isOwn = false;
+  var following = false;
+  var activeProject = null;
+
+  function designerToken(){ return localStorage.getItem("kazi_designer_token") || ""; }
 
   async function loadProfile(){
     var content = document.getElementById("content");
@@ -140,6 +234,26 @@
       return;
     }
     renderProfile();
+    await loadViewerState();
+    renderSideActions();
+  }
+
+  async function loadViewerState(){
+    var token = designerToken();
+    if (!token) return;
+    try {
+      var res = await fetch("/api/designers/me", { headers: { Authorization: "Bearer " + token } });
+      if (!res.ok) return;
+      currentUser = await res.json();
+      isOwn = currentUser.id === designer.id;
+      if (!isOwn) {
+        var fRes = await fetch("/api/designers/me/follows", { headers: { Authorization: "Bearer " + token } });
+        if (fRes.ok) {
+          var data = await fRes.json();
+          following = (data.follows || []).some(function(f){ return f.target_type === "designer" && f.target_id === designer.id; });
+        }
+      }
+    } catch (e) { /* stay signed-out */ }
   }
 
   function notFoundHtml(msg){
@@ -157,6 +271,14 @@
 
     var avail = AVAIL_META[designer.availability_status || ""] || AVAIL_META[""];
     var discChips = (designer.discipline || []).map(function(d){ return '<span class="pp-chip">' + escapeHtml(d) + '</span>'; }).join("");
+
+    var tabs = [
+      { id: "work", label: "Work", count: (designer.projects || []).length }
+    ];
+    if (designer.skills && designer.skills.length) tabs.push({ id: "about", label: "About" });
+    if (designer.role_history && designer.role_history.length) tabs.push({ id: "experience", label: "Experience" });
+    tabs.push({ id: "community", label: "Community" });
+    if (tabs.every(function(t){ return t.id !== currentTab; })) currentTab = "work";
 
     document.getElementById("content").innerHTML =
       '<div class="layout">' +
@@ -179,24 +301,49 @@
         '</div>' +
 
         '<aside class="side" style="grid-column:2;grid-row:1 / span 2">' +
-          '<div class="side-row">' +
-            '<button type="button" class="pp-btn pp-btn-secondary" id="shareBtn">' + ICONS.share + 'Share</button>' +
-          '</div>' +
+          '<div class="side-row" id="sideActions"></div>' +
           (designer.phone || designer.contact_email ? contactCardHtml() : "") +
           (linksCardHtml()) +
         '</aside>' +
 
         '<div style="grid-column:1;grid-row:2">' +
           '<div class="pp-tabs tabs-bar" id="tabsBar">' +
-            '<button type="button" class="pp-tab -active" data-tab="work">Work<span class="pp-tab-count">' + (designer.projects || []).length + '</span></button>' +
-            (designer.skills && designer.skills.length ? '<button type="button" class="pp-tab" data-tab="about">About</button>' : "") +
+            tabs.map(function(t){
+              return '<button type="button" class="pp-tab' + (t.id === currentTab ? " -active" : "") + '" data-tab="' + t.id + '">' +
+                escapeHtml(t.label) + (t.count !== undefined ? '<span class="pp-tab-count">' + t.count + '</span>' : "") + '</button>';
+            }).join("") +
           '</div>' +
           '<div id="tabPanel"></div>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      '<div class="pp-backdrop" id="lbBackdrop"></div>' +
+      '<div class="pp-backdrop" id="msgBackdrop"></div>';
 
     wireInteractions();
+    renderSideActions();
     renderTabPanel();
+  }
+
+  function renderSideActions(){
+    var el = document.getElementById("sideActions");
+    if (!el) return;
+    if (isOwn) {
+      el.innerHTML = '<a class="pp-btn pp-btn-secondary" style="flex:1" href="/dashboard">Edit your profile</a>' +
+        '<button type="button" class="icon-btn" id="shareBtn" aria-label="Share profile">' + ICONS.share + '</button>';
+    } else {
+      el.innerHTML =
+        '<button type="button" class="pp-btn follow-btn' + (following ? " -following pp-btn-secondary" : " pp-btn-primary") + '" id="followBtn">' +
+          (following ? "Following" : "Follow") +
+        '</button>' +
+        '<button type="button" class="pp-btn pp-btn-secondary" id="messageBtn">Message</button>' +
+        '<button type="button" class="icon-btn" id="shareBtn" aria-label="Share profile">' + ICONS.share + '</button>';
+    }
+    var shareBtn = document.getElementById("shareBtn");
+    if (shareBtn) shareBtn.addEventListener("click", onShare);
+    var followBtn = document.getElementById("followBtn");
+    if (followBtn) followBtn.addEventListener("click", onToggleFollow);
+    var messageBtn = document.getElementById("messageBtn");
+    if (messageBtn) messageBtn.addEventListener("click", openMessage);
   }
 
   function contactCardHtml(){
@@ -237,17 +384,192 @@
         return;
       }
       panel.innerHTML = '<div class="work-grid">' + projects.map(function(p){
-        return '<a class="work-card" href="/pp-case-study.html?designer=' + encodeURIComponent(identifier) + '&project=' + encodeURIComponent(p.id) + '">' +
+        return '<button type="button" class="work-card" data-project="' + p.id + '">' +
           '<div class="work-cover">' + (p.image_path ? '<img src="' + escapeHtml(p.image_path) + '" alt="">' : "") + '</div>' +
           '<div class="work-body"><h4>' + escapeHtml(p.title) + '</h4>' +
             (p.description ? '<p>' + escapeHtml(p.description) + '</p>' : "") + '</div>' +
-        '</a>';
+        '</button>';
       }).join("") + '</div>';
-    } else {
+      panel.querySelectorAll("[data-project]").forEach(function(card){
+        card.addEventListener("click", function(){ openLightbox(parseInt(card.getAttribute("data-project"), 10)); });
+      });
+    } else if (currentTab === "about") {
       panel.innerHTML = '<div class="about-block"><h3>Skills</h3><div class="about-skills">' +
         (designer.skills || []).map(function(s){ return '<span class="pp-chip">' + escapeHtml(s) + '</span>'; }).join("") +
       '</div></div>';
+    } else if (currentTab === "experience") {
+      var roles = (designer.role_history || []).slice().sort(function(a, b){
+        if (!!a.is_current !== !!b.is_current) return a.is_current ? -1 : 1;
+        return (b.start_date || "").localeCompare(a.start_date || "");
+      });
+      panel.innerHTML = '<div class="exp-block">' + roles.map(function(r){
+        var span = (r.start_date || "") + " – " + (r.is_current ? "Present" : (r.end_date || ""));
+        return '<div class="exp-row">' +
+          '<span class="years">' + escapeHtml(span) + '</span>' +
+          '<div><h4>' + escapeHtml(r.title) + '</h4>' +
+            '<p class="company">' + escapeHtml(r.company) + '</p>' +
+            (r.description ? '<p class="note">' + escapeHtml(r.description) + '</p>' : "") +
+          '</div>' +
+        '</div>';
+      }).join("") + '</div>';
+    } else if (currentTab === "community") {
+      panel.innerHTML = '<div class="activity-block"><p style="color:var(--c-text-faint);font-size:14px">Loading activity…</p></div>';
+      loadActivity();
     }
+  }
+
+  async function loadActivity(){
+    var panel = document.getElementById("tabPanel");
+    var items = [];
+    try {
+      var res = await fetch("/api/designers/" + encodeURIComponent(identifier) + "/activity", { cache: "no-store" });
+      if (res.ok) items = (await res.json()).activity || [];
+    } catch (e) { /* fall through to empty state */ }
+    if (currentTab !== "community") return;
+    if (!items.length) {
+      panel.innerHTML = '<div class="pp-empty" style="max-width:420px">' +
+        '<h3>No community activity yet</h3><p>' + escapeHtml(designer.display_name) + ' hasn\'t asked, answered or joined a session yet.</p></div>';
+      return;
+    }
+    panel.innerHTML = '<div class="activity-block">' + items.map(function(a){
+      var meta = ACTIVITY_META[a.type] || ACTIVITY_META.question;
+      return '<div class="activity-row">' +
+        '<span class="activity-tag">' + meta.icon + '</span>' +
+        '<div style="flex:1;min-width:0"><p>' + meta.verb + ' <strong>' + escapeHtml(a.text) + '</strong></p>' +
+          '<span>' + fmtDate(a.when) + '</span></div>' +
+      '</div>';
+    }).join("") + '</div>';
+  }
+
+  function openLightbox(projectId){
+    activeProject = (designer.projects || []).find(function(p){ return p.id === projectId; });
+    if (!activeProject) return;
+    var backdrop = document.getElementById("lbBackdrop");
+    var results = activeProject.results || [];
+    backdrop.innerHTML = '<div class="pp-modal lb-modal">' +
+      '<div class="lb-head"><div><h3>' + escapeHtml(activeProject.title) + '</h3>' +
+        (activeProject.category ? '<p>' + escapeHtml(activeProject.category) + '</p>' : '') + '</div>' +
+        '<button type="button" class="icon-btn" id="lbClose" aria-label="Close">' + ICONS.close + '</button></div>' +
+      '<div class="lb-body">' +
+        (activeProject.image_path ? '<div class="lb-hero"><img src="' + escapeHtml(activeProject.image_path) + '" alt=""></div>' : '') +
+        '<div class="lb-copy">' +
+          (activeProject.problem ? '<p>' + escapeHtml(activeProject.problem) + '</p>' : '') +
+          (!activeProject.problem && activeProject.description ? '<p>' + escapeHtml(activeProject.description) + '</p>' : '') +
+        '</div>' +
+        (results.length ? '<div class="lb-stats">' + results.map(function(s){
+          return '<div><div class="stat-value">' + escapeHtml(s.value) + '</div><div class="stat-label">' + escapeHtml(s.label) + '</div></div>';
+        }).join("") + '</div>' : '') +
+        (activeProject.gallery && activeProject.gallery.length ? '<div class="lb-gallery">' + activeProject.gallery.map(function(g){
+          return '<img src="' + escapeHtml(g.image_path) + '" alt="' + escapeHtml(g.caption || "") + '">';
+        }).join("") + '</div>' : '') +
+        (activeProject.credits ? '<p class="lb-credits">' + escapeHtml(activeProject.credits) + '</p>' : '') +
+        '<div class="lb-cta"><a class="pp-btn pp-btn-secondary" href="/pp-case-study.html?designer=' + encodeURIComponent(identifier) + '&project=' + encodeURIComponent(activeProject.id) + '">View full case study</a></div>' +
+      '</div>' +
+    '</div>';
+    backdrop.querySelector("#lbClose").addEventListener("click", closeLightbox);
+    backdrop.addEventListener("click", function(e){ if (e.target === backdrop) closeLightbox(); });
+    requestAnimationFrame(function(){ backdrop.classList.add("-open"); });
+    document.addEventListener("keydown", onEscClose);
+  }
+  function closeLightbox(){
+    var backdrop = document.getElementById("lbBackdrop");
+    backdrop.classList.remove("-open");
+    setTimeout(function(){ backdrop.innerHTML = ""; }, 200);
+    document.removeEventListener("keydown", onEscClose);
+  }
+
+  function onShare(){
+    var url = location.href;
+    if (navigator.share) {
+      navigator.share({ title: designer.display_name, url: url }).catch(function(){});
+    } else {
+      navigator.clipboard.writeText(url).then(function(){ showToast("Link copied."); });
+    }
+  }
+
+  async function onToggleFollow(){
+    var token = designerToken();
+    if (!token) { location.href = "/signin?next=" + encodeURIComponent(location.pathname); return; }
+    var wasFollowing = following;
+    following = !following;
+    renderSideActions();
+    try {
+      var res = await fetch("/api/designers/me/follows/designer/" + designer.id, {
+        method: "POST", headers: { Authorization: "Bearer " + token }
+      });
+      if (!res.ok) throw new Error("failed");
+    } catch (e) {
+      following = wasFollowing;
+      renderSideActions();
+    }
+  }
+
+  function openMessage(){
+    var backdrop = document.getElementById("msgBackdrop");
+    if (!designerToken()) { location.href = "/signin?next=" + encodeURIComponent(location.pathname); return; }
+    backdrop.innerHTML = '<div class="pp-modal msg-modal">' +
+      '<div class="msg-head"><h3>Message ' + escapeHtml(designer.display_name.split(" ")[0]) + '</h3>' +
+        '<button type="button" class="icon-btn" id="msgClose" aria-label="Close" style="width:36px;height:36px">' + ICONS.close + '</button></div>' +
+      '<p class="msg-sub">They usually reply within a few days. Say what the work is and whether there’s a budget, it saves everyone a round.</p>' +
+      '<label for="msgNote">Your message</label>' +
+      '<textarea id="msgNote" rows="5" maxlength="4000" placeholder="Hi ' + escapeHtml(designer.display_name.split(" ")[0]) + ', I’d love to talk about…"></textarea>' +
+      '<div class="msg-foot"><span class="msg-hint" id="msgHint"></span><span class="msg-count" id="msgCount">0 / 4000</span></div>' +
+      '<div class="msg-actions">' +
+        '<button type="button" class="pp-btn pp-btn-secondary" id="msgCancel">Cancel</button>' +
+        '<button type="button" class="pp-btn pp-btn-primary" id="msgSend" disabled>Send message</button>' +
+      '</div>' +
+    '</div>';
+    var note = backdrop.querySelector("#msgNote");
+    var count = backdrop.querySelector("#msgCount");
+    var send = backdrop.querySelector("#msgSend");
+    note.addEventListener("input", function(){
+      count.textContent = note.value.length + " / 4000";
+      send.disabled = note.value.trim().length === 0;
+    });
+    backdrop.querySelector("#msgClose").addEventListener("click", closeMessage);
+    backdrop.querySelector("#msgCancel").addEventListener("click", closeMessage);
+    backdrop.addEventListener("click", function(e){ if (e.target === backdrop) closeMessage(); });
+    send.addEventListener("click", function(){ sendMessage(note.value.trim(), send, backdrop.querySelector("#msgHint")); });
+    requestAnimationFrame(function(){ backdrop.classList.add("-open"); note.focus(); });
+    document.addEventListener("keydown", onEscClose);
+  }
+  function closeMessage(){
+    var backdrop = document.getElementById("msgBackdrop");
+    backdrop.classList.remove("-open");
+    setTimeout(function(){ backdrop.innerHTML = ""; }, 200);
+    document.removeEventListener("keydown", onEscClose);
+  }
+  async function sendMessage(body, sendBtn, hintEl){
+    if (!body) return;
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending…";
+    try {
+      var res = await fetch("/api/designers/me/conversations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + designerToken() },
+        body: JSON.stringify({ peer_designer_id: designer.id, body: body })
+      });
+      if (!res.ok) throw new Error("failed");
+      closeMessage();
+      showToast("Message sent. " + designer.display_name.split(" ")[0] + " usually replies within a few days.");
+    } catch (e) {
+      hintEl.textContent = "Couldn't send that — try again.";
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Send message";
+    }
+  }
+
+  function onEscClose(e){
+    if (e.key === "Escape") { closeLightbox(); closeMessage(); }
+  }
+
+  var toastTimer = null;
+  function showToast(text){
+    var el = document.getElementById("ppToast");
+    document.getElementById("ppToastText").textContent = text;
+    el.classList.add("-open");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove("-open"); }, 3200);
   }
 
   function wireInteractions(){
@@ -257,20 +579,6 @@
         document.querySelectorAll("#tabsBar [data-tab]").forEach(function(b){ b.classList.toggle("-active", b === btn); });
         renderTabPanel();
       });
-    });
-
-    document.getElementById("shareBtn").addEventListener("click", function(){
-      var url = location.href;
-      if (navigator.share) {
-        navigator.share({ title: designer.display_name, url: url }).catch(function(){});
-      } else {
-        navigator.clipboard.writeText(url).then(function(){
-          var btn = document.getElementById("shareBtn");
-          var original = btn.innerHTML;
-          btn.textContent = "Link copied";
-          setTimeout(function(){ btn.innerHTML = original; }, 2000);
-        });
-      }
     });
 
     var resumeBtn = document.getElementById("resumeBtn");

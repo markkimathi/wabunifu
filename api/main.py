@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 import os
 import re
+from uuid import uuid4
 from typing import Optional
 import sys
 from pathlib import Path
@@ -50,6 +51,10 @@ from .db import (  # noqa: E402
     create_email_token, consume_email_token,
     list_designer_projects, count_designer_projects, create_designer_project,
     update_designer_project, set_project_image, delete_designer_project, reorder_designer_projects,
+    update_project_story, list_project_images, add_project_image, delete_project_image, reorder_project_images,
+    update_project_image_caption,
+    list_role_history, create_role_history, update_role_history, delete_role_history, reorder_role_history,
+    set_designer_company, list_designers_by_company,
     create_company, get_company, get_company_by_slug, get_company_by_domain,
     update_company, set_company_logo, list_companies, set_company_status,
     create_employer, get_employer, get_employer_by_email, list_employers_for_company,
@@ -69,6 +74,7 @@ from .db import (  # noqa: E402
     update_community_session, set_session_status, count_session_seats, get_booking,
     book_session, cancel_booking, list_session_bookings, list_bookings_for_designer,
     create_question, list_questions, get_question, set_accepted_reply, set_question_status,
+    list_questions_by_designer, list_replies_by_designer,
     create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
     toggle_follow_target, list_followed_target_ids, list_follows_for_designer, count_followers,
     count_stale_questions, get_reply_leaderboard, list_work_worth_reading,
@@ -148,6 +154,9 @@ MAX_RESUME_BYTES = 5 * 1024 * 1024
 # MAX_PROJECTS covers at once, so files are named "{designer_id}_{project_id}.jpg".
 PROJECTS_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "projects"
 MAX_PROJECTS = 6
+MAX_RESULT_STATS = 6
+MAX_PROJECT_IMAGES = 8
+MAX_ROLE_HISTORY = 10
 
 # Company logos, same volume, same reason — one file per company, fixed name.
 LOGOS_DIR = Path(os.environ.get("KAZI_DB_PATH", str(Path(__file__).parent / "kazi_submissions.db"))).parent / "logos"
@@ -461,6 +470,76 @@ class ProjectIn(BaseModel):
 
 class ProjectReorder(BaseModel):
     ids: list[int]
+
+
+class ResultStat(BaseModel):
+    value: str
+    label: str
+
+    @field_validator("value", "label")
+    @classmethod
+    def _clean(cls, v: str) -> str:
+        return (v or "").strip()[:60]
+
+
+class ProjectStoryIn(BaseModel):
+    problem: str = ""
+    results: list[ResultStat] = []
+    credits: str = ""
+
+    @field_validator("problem", "credits")
+    @classmethod
+    def _clean_text(cls, v: str) -> str:
+        return (v or "").strip()[:2000]
+
+    @field_validator("results")
+    @classmethod
+    def _cap_results(cls, v: list) -> list:
+        return v[:MAX_RESULT_STATS]
+
+
+class ProjectImageCaption(BaseModel):
+    caption: str = ""
+
+    @field_validator("caption")
+    @classmethod
+    def _clean(cls, v: str) -> str:
+        return (v or "").strip()[:140]
+
+
+class RoleHistoryIn(BaseModel):
+    company: str
+    title: str
+    start_date: str = ""
+    end_date: str = ""
+    is_current: bool = False
+    description: str = ""
+
+    @field_validator("company", "title")
+    @classmethod
+    def _required(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("company and title are both required")
+        return v[:120]
+
+    @field_validator("start_date", "end_date")
+    @classmethod
+    def _clean_date(cls, v: str) -> str:
+        return (v or "").strip()[:40]
+
+    @field_validator("description")
+    @classmethod
+    def _clean_description(cls, v: str) -> str:
+        return (v or "").strip()[:1000]
+
+
+class RoleHistoryReorder(BaseModel):
+    ids: list[int]
+
+
+class DesignerCompanySet(BaseModel):
+    company_id: Optional[int] = None
 
 
 # ---------------------------------------------------------------------------
@@ -1068,7 +1147,13 @@ def _designer_public(d: dict) -> dict:
         "skills": parse_multi_field(d.get("skills")),
         "links": list_designer_links(d["id"]),
         "projects": list_designer_projects(d["id"]),
+        "role_history": list_role_history(d["id"]),
+        "followers_count": count_followers("designer", d["id"]),
     }
+    company_id = d.get("company_id")
+    if company_id:
+        company = get_company(company_id)
+        out["company"] = { "id": company["id"], "name": company["name"], "slug": company["slug"] } if company else None
     # Resumes are opt-in public (default private) — only surface them here
     # (the directory/public-profile view) when the designer has switched
     # resume_public on. designer_me() below always includes them regardless,
@@ -1271,6 +1356,123 @@ async def designer_upload_project_image(project_id: int, file: UploadFile = File
     image_path = f"/project-images/{stored_name}"
     set_project_image(designer["id"], project_id, image_path)
     return {"ok": True, "image_path": image_path}
+
+
+@app.put("/api/designers/me/projects/{project_id}/story")
+def designer_update_project_story(project_id: int, payload: ProjectStoryIn, designer: dict = Depends(require_designer)):
+    updated = update_project_story(
+        designer["id"], project_id, payload.problem, [r.model_dump() for r in payload.results], payload.credits
+    )
+    if not updated:
+        raise HTTPException(404, "No such project.")
+    project = next(p for p in list_designer_projects(designer["id"]) if p["id"] == project_id)
+    return {"ok": True, **project}
+
+
+@app.post("/api/designers/me/projects/{project_id}/images")
+async def designer_upload_project_gallery_image(project_id: int, file: UploadFile = File(...),
+                                                  designer: dict = Depends(require_designer)):
+    if not any(p["id"] == project_id for p in list_designer_projects(designer["id"])):
+        raise HTTPException(404, "No such project.")
+    if len(list_project_images(project_id)) >= MAX_PROJECT_IMAGES:
+        raise HTTPException(400, f"You can add up to {MAX_PROJECT_IMAGES} images per project.")
+    data = await file.read()
+    try:
+        jpeg_bytes = project_image_module.process_project_image(data)
+    except project_image_module.UnsupportedImage as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    PROJECTS_DIR.mkdir(parents=True, exist_ok=True)
+    stored_name = f"{designer['id']}_{project_id}_{uuid4().hex[:8]}.jpg"
+    (PROJECTS_DIR / stored_name).write_bytes(jpeg_bytes)
+    image_path = f"/project-images/{stored_name}"
+    image_id = add_project_image(designer["id"], project_id, image_path)
+    if image_id is None:
+        raise HTTPException(404, "No such project.")
+    return {"ok": True, "id": image_id, "image_path": image_path, "caption": ""}
+
+
+@app.put("/api/designers/me/projects/{project_id}/images/{image_id}")
+def designer_caption_project_image(project_id: int, image_id: int, payload: ProjectImageCaption,
+                                    designer: dict = Depends(require_designer)):
+    updated = update_project_image_caption(designer["id"], project_id, image_id, payload.caption)
+    if not updated:
+        raise HTTPException(404, "No such image.")
+    return {"ok": True}
+
+
+@app.delete("/api/designers/me/projects/{project_id}/images/{image_id}")
+def designer_delete_project_image(project_id: int, image_id: int, designer: dict = Depends(require_designer)):
+    project = next((p for p in list_designer_projects(designer["id"]) if p["id"] == project_id), None)
+    if not project:
+        raise HTTPException(404, "No such project.")
+    image = next((im for im in list_project_images(project_id) if im["id"] == image_id), None)
+    if image and image.get("image_path"):
+        f = PROJECTS_DIR / Path(image["image_path"]).name
+        if f.exists():
+            f.unlink()
+    deleted = delete_project_image(designer["id"], project_id, image_id)
+    if not deleted:
+        raise HTTPException(404, "No such image.")
+    return {"ok": True}
+
+
+@app.put("/api/designers/me/projects/{project_id}/images/reorder")
+def designer_reorder_project_images(project_id: int, payload: ProjectReorder, designer: dict = Depends(require_designer)):
+    ok = reorder_project_images(designer["id"], project_id, payload.ids)
+    if not ok:
+        raise HTTPException(404, "No such project.")
+    return {"ok": True}
+
+
+@app.get("/api/designers/me/role-history")
+def designer_list_role_history(designer: dict = Depends(require_designer)):
+    return {"role_history": list_role_history(designer["id"])}
+
+
+@app.post("/api/designers/me/role-history")
+def designer_create_role_history(payload: RoleHistoryIn, designer: dict = Depends(require_designer)):
+    if len(list_role_history(designer["id"])) >= MAX_ROLE_HISTORY:
+        raise HTTPException(400, f"You can add up to {MAX_ROLE_HISTORY} roles.")
+    role_id = create_role_history(
+        designer["id"], payload.company, payload.title, payload.start_date,
+        payload.end_date, payload.is_current, payload.description,
+    )
+    return {"ok": True, "id": role_id, **payload.model_dump()}
+
+
+@app.put("/api/designers/me/role-history/reorder")
+def designer_reorder_role_history(payload: RoleHistoryReorder, designer: dict = Depends(require_designer)):
+    reorder_role_history(designer["id"], payload.ids)
+    return {"ok": True}
+
+
+@app.put("/api/designers/me/role-history/{role_id}")
+def designer_update_role_history(role_id: int, payload: RoleHistoryIn, designer: dict = Depends(require_designer)):
+    updated = update_role_history(
+        designer["id"], role_id, payload.company, payload.title, payload.start_date,
+        payload.end_date, payload.is_current, payload.description,
+    )
+    if not updated:
+        raise HTTPException(404, "No such role.")
+    return {"ok": True, "id": role_id, **payload.model_dump()}
+
+
+@app.delete("/api/designers/me/role-history/{role_id}")
+def designer_delete_role_history(role_id: int, designer: dict = Depends(require_designer)):
+    deleted = delete_role_history(designer["id"], role_id)
+    if not deleted:
+        raise HTTPException(404, "No such role.")
+    return {"ok": True}
+
+
+@app.put("/api/designers/me/company")
+def designer_set_company(payload: DesignerCompanySet, designer: dict = Depends(require_designer)):
+    if payload.company_id is not None:
+        company = get_company(payload.company_id)
+        if not company or company["status"] != "approved":
+            raise HTTPException(404, "no such company")
+    set_designer_company(designer["id"], payload.company_id)
+    return {"ok": True}
 
 
 @app.post("/api/designers/me/photo")
@@ -1698,7 +1900,9 @@ def company_public_page(identifier: str):
         company = get_company_by_slug(identifier)
     if not company or company["status"] != "approved":
         raise HTTPException(404, "no such company")
-    return {**company, "listings": _company_listings(company)}
+    team = [_designer_public(d) for d in list_designers_by_company(company["id"])]
+    return {**company, "listings": _company_listings(company), "design_team": team,
+            "followers_count": count_followers("company", company["id"])}
 
 
 @app.put("/api/employers/me/company")
@@ -2463,6 +2667,28 @@ def designer_public_profile(identifier: str):
     if not designer or designer["status"] != "approved":
         raise HTTPException(404, "no such designer")
     return _designer_public(designer)
+
+
+@app.get("/api/designers/{identifier}/activity")
+def designer_public_activity(identifier: str):
+    """Community activity feed for a public profile's Community tab —
+    questions asked, replies posted, and sessions attended, merged and
+    sorted newest-first. Capped per source in db.py, then capped again here
+    after merging so the feed itself stays short."""
+    designer = get_designer(int(identifier)) if identifier.isdigit() else None
+    if not designer:
+        designer = get_designer_by_handle(identifier)
+    if not designer or designer["status"] != "approved":
+        raise HTTPException(404, "no such designer")
+    items = []
+    for q in list_questions_by_designer(designer["id"]):
+        items.append({"type": "question", "text": q["title"], "when": q["created_at"]})
+    for r in list_replies_by_designer(designer["id"]):
+        items.append({"type": "reply", "text": r["question_title"], "when": r["created_at"]})
+    for b in list_bookings_for_designer(designer["id"]):
+        items.append({"type": "session", "text": b["title"], "when": b["session_date"]})
+    items.sort(key=lambda i: i["when"], reverse=True)
+    return {"activity": items[:20]}
 
 
 # Serve processed profile photos. Registered before the catch-all web/ mount
