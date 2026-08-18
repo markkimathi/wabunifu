@@ -93,6 +93,8 @@
   .avail-opt{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--c-border-strong);
     border-radius:var(--pp-radius-md);cursor:pointer;margin-bottom:8px;background:var(--c-surface)}
   .avail-opt.-active{border-color:var(--pp-gold);background:var(--c-bg-sunken)}
+  .avail-opt input{position:absolute;opacity:0;width:1px;height:1px}
+  .avail-opt:focus-within{outline:var(--pp-focus-outline);outline-offset:var(--pp-focus-offset)}
   .avail-opt .dot{width:18px;height:18px;flex:none;border-radius:50%;border:2px solid var(--c-border-strong)}
   .avail-opt.-active .dot{border-color:var(--pp-gold);background:var(--pp-gold)}
 
@@ -463,7 +465,7 @@
     var body = '<div class="section-head"><h2>Availability</h2></div>';
     body += '<div class="form-panel"><form id="availForm">' +
       AVAILABILITY.map(function(a){
-        return '<label class="avail-opt' + (current === a ? " -active" : "") + '"><span class="dot"></span><input type="radio" name="avail" value="' + a + '" style="display:none"' + (current === a ? " checked" : "") + '><span>' + a + '</span></label>';
+        return '<label class="avail-opt' + (current === a ? " -active" : "") + '"><span class="dot"></span><input type="radio" name="avail" value="' + a + '"' + (current === a ? " checked" : "") + '><span>' + a + '</span></label>';
       }).join("") +
       '<div class="form-actions" style="margin-top:12px"><button type="submit" class="pp-btn pp-btn-primary" id="availSubmitBtn">Save</button><span class="save-note" id="availSaveNote" hidden>Saved.</span></div>' +
     '</form></div>';

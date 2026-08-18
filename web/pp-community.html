@@ -90,7 +90,7 @@
   .reply-item .head .when{margin-left:auto;font-size:12px;color:var(--c-text-faint)}
   .reply-item p{margin:0;font-size:14.5px;line-height:1.55}
   .reply-compose{display:flex;gap:10px;align-items:flex-end}
-  .reply-compose textarea{flex:1;min-width:0;padding:10px 13px;border-radius:var(--pp-radius-md);
+  .reply-compose textarea{flex:1;min-width:0;padding:10px 13px;border-radius:var(--pp-radius-lg);
     background:var(--c-surface);border:1px solid var(--c-border-strong);font-family:var(--pp-font);
     font-size:14.5px;line-height:1.5;resize:none;color:var(--c-text)}
   .reply-compose textarea:focus{outline:none;border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
@@ -111,7 +111,7 @@
   .work-foot .info p:first-child{font-size:14px;font-weight:600}
   .work-foot .info p:last-child{font-size:12.5px;color:var(--c-text-faint)}
 
-  .composer-overlay{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);display:flex;
+  .composer-overlay{position:fixed;inset:0;z-index:var(--pp-z-modal);background:rgba(0,0,0,.45);display:flex;
     align-items:flex-start;justify-content:center;padding:80px 20px;overflow-y:auto}
   .composer{width:100%;max-width:600px;border-radius:var(--pp-radius-lg);background:var(--c-surface);
     box-shadow:0 24px 64px rgba(0,0,0,.3);overflow:hidden}
