@@ -79,6 +79,14 @@
     // `hidden` attribute (clear buttons, the recent-searches row); an author
     // `display` declaration otherwise beats the UA [hidden] rule.
     + ".pp-search-clear[hidden],.pp-recent-row[hidden]{display:none!important}"
+    // #pp-nav is a bare mount div with only the header inside it, so its
+    // own box is auto-height == the header's height. A sticky element
+    // can't stick past the bottom edge of its containing block, so
+    // without this the header would stop sticking the instant the page
+    // scrolls past ~57px (its own height) and scroll away with the rest
+    // of the page. display:contents removes #pp-nav from the box tree so
+    // the header's containing block is <body> (the full page) instead.
+    + "#pp-nav{display:contents}"
     // ---- desktop header (>=1024px) ----
     + ".pp-header{position:sticky;top:0;z-index:var(--pp-z-header,6);background:var(--c-bg);border-bottom:1px solid var(--c-border)}"
     + ".pp-header-row{max-width:var(--pp-container);margin:0 auto;padding:0 var(--pp-page-margin);height:var(--pp-header-height);display:none;align-items:center;gap:20px}"
