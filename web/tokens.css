@@ -300,6 +300,23 @@
 }
 
 [data-pp-theme="dark"] {
+  /* The numbered gold ramp is also theme-reactive, not fixed like the
+     stone/ink neutrals — a light-mode tint (near-white, ~1.05:1 on white)
+     reads as a near-invisible near-black on an actual dark surface, and
+     the light-mode "gold text" stop (gold-800, 5.49:1 on white) drops
+     below AA on #0A0A0A. Every component that reaches for --pp-gold-2xx
+     as a tint background or --pp-gold-7xx/8xx as gold text picks these up
+     automatically since they're the same custom properties, just re-scoped
+     under this selector. */
+  --pp-gold-100:      #171206;
+  --pp-gold-200:      #241B04;
+  --pp-gold-300:      #332708;
+  --pp-gold-400:      #4A380C;
+  --pp-gold-600:      #FFC42B;
+  --pp-gold-700:      #FFD166;
+  --pp-gold-800:      #FFD166;
+  --pp-gold-900:      #FFE7A8;
+
   --c-bg:             #0A0A0A;
   --c-bg-sunken:      #121215;
   --c-surface:        #17171A;  /* a raised card lightens; shadows do nothing here */

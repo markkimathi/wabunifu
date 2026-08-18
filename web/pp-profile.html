@@ -21,6 +21,8 @@
   .head-row{display:flex;align-items:flex-start;gap:28px;margin-bottom:26px;flex-wrap:wrap}
   .head-row .photo{width:132px;height:132px;border-radius:var(--pp-radius-xl);object-fit:cover;flex:none}
   .head-row h1{margin:0 0 6px;font-size:44px;line-height:1.05;letter-spacing:-0.036em;font-weight:800}
+  .verified-badge{display:inline-flex;vertical-align:middle;margin-left:4px;transform:translateY(-3px)}
+  .verified-badge svg{display:block}
   .head-row .meta{margin:0 0 14px;font-size:18px;color:var(--c-text-muted)}
   .head-tags{display:flex;flex-wrap:wrap;gap:8px}
   .bio{margin:0 0 28px;font-size:18px;line-height:1.6;color:var(--c-text);max-width:64ch}
@@ -125,6 +127,7 @@
     outline:none;box-sizing:border-box}
   .msg-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:7px;margin-bottom:20px}
   .msg-hint{font-size:12.5px;color:var(--c-text-faint)}
+  .msg-hint.-warn{color:var(--c-bad-text)}
   .msg-count{font-size:12.5px;color:var(--c-text-faint);font-variant-numeric:tabular-nums}
   .msg-actions{display:flex;gap:10px;justify-content:flex-end}
 
@@ -163,7 +166,8 @@
     close: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
     question: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M9.5 9a2.5 2.5 0 015 .5c0 1.5-2 1.7-2 3.3M12 17h.01"></path></svg>',
     reply: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17l-5-5 5-5M4 12h11a5 5 0 015 5v1"></path></svg>',
-    session: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>'
+    session: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>',
+    verified: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--c-good)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M8 12.5l2.5 2.5L16 9.5"></path></svg>'
   };
 
   var PLATFORM_ICON = {
@@ -288,7 +292,7 @@
               ? '<img class="photo" src="' + escapeHtml(designer.photo_path) + '" alt="">'
               : '<span class="pp-avatar -lg" style="border-radius:var(--pp-radius-xl);width:132px;height:132px;font-size:40px">' + initialsOf(designer.display_name) + '</span>') +
             '<div style="flex:1;min-width:280px">' +
-              '<h1>' + escapeHtml(designer.display_name) + '</h1>' +
+              '<h1 class="name-row">' + escapeHtml(designer.display_name) + ' <span class="verified-badge" title="Reviewed and published by Path & Pixel">' + ICONS.verified + '</span></h1>' +
               '<p class="meta">' + [designer.headline, designer.location, designer.years_experience ? designer.years_experience + " years" : ""]
                 .filter(Boolean).map(escapeHtml).join(" · ") + '</p>' +
               '<div class="head-tags">' +
@@ -512,8 +516,8 @@
         '<button type="button" class="icon-btn" id="msgClose" aria-label="Close" style="width:36px;height:36px">' + ICONS.close + '</button></div>' +
       '<p class="msg-sub">They usually reply within a few days. Say what the work is and whether there’s a budget, it saves everyone a round.</p>' +
       '<label for="msgNote">Your message</label>' +
-      '<textarea id="msgNote" rows="5" maxlength="4000" placeholder="Hi ' + escapeHtml(designer.display_name.split(" ")[0]) + ', I’d love to talk about…"></textarea>' +
-      '<div class="msg-foot"><span class="msg-hint" id="msgHint"></span><span class="msg-count" id="msgCount">0 / 4000</span></div>' +
+      '<textarea id="msgNote" rows="5" maxlength="600" placeholder="Hi ' + escapeHtml(designer.display_name.split(" ")[0]) + ', I’d love to talk about…"></textarea>' +
+      '<div class="msg-foot"><span class="msg-hint" id="msgHint">A sentence on the work goes furthest.</span><span class="msg-count" id="msgCount">0 / 600</span></div>' +
       '<div class="msg-actions">' +
         '<button type="button" class="pp-btn pp-btn-secondary" id="msgCancel">Cancel</button>' +
         '<button type="button" class="pp-btn pp-btn-primary" id="msgSend" disabled>Send message</button>' +
@@ -522,9 +526,14 @@
     var note = backdrop.querySelector("#msgNote");
     var count = backdrop.querySelector("#msgCount");
     var send = backdrop.querySelector("#msgSend");
+    var hint = backdrop.querySelector("#msgHint");
     note.addEventListener("input", function(){
-      count.textContent = note.value.length + " / 4000";
-      send.disabled = note.value.trim().length === 0;
+      count.textContent = note.value.length + " / 600";
+      var valid = note.value.trim().length >= 20;
+      send.disabled = !valid;
+      hint.textContent = note.value.length === 0 ? "A sentence on the work goes furthest."
+        : (valid ? "Ready to send." : "A little more. Twenty characters minimum.");
+      hint.classList.toggle("-warn", note.value.length > 0 && !valid);
     });
     backdrop.querySelector("#msgClose").addEventListener("click", closeMessage);
     backdrop.querySelector("#msgCancel").addEventListener("click", closeMessage);

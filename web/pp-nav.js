@@ -558,6 +558,12 @@
     try {
       var savedTheme = localStorage.getItem("pp_theme");
       if (savedTheme) document.documentElement.setAttribute("data-pp-theme", savedTheme);
+      else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        // First visit, no explicit choice yet: follow the OS. Deliberately
+        // not persisted to localStorage, so it keeps tracking the system
+        // setting until the visitor makes an explicit choice via the toggle.
+        document.documentElement.setAttribute("data-pp-theme", "dark");
+      }
     } catch (e) {}
 
     var navRoot = document.getElementById("pp-nav");

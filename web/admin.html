@@ -102,13 +102,11 @@
     font:inherit;font-size:14.5px;font-weight:500;color:var(--c-text-muted);background:transparent;
     cursor:pointer;text-align:left;white-space:nowrap}
   .side-nav button:hover{background:var(--c-bg-sunken)}
-  .side-nav button.active{background:var(--pp-ink);color:#fff;font-weight:600}
-  [data-pp-theme="dark"] .side-nav button.active{background:var(--pp-gold);color:var(--pp-ink)}
+  .side-nav button.active{background:var(--pp-gold-200);color:var(--pp-gold-800);font-weight:600}
   .side-nav button svg{flex:none;opacity:.8}
   .side-badge{margin-left:auto;padding:1px 8px;border-radius:999px;background:var(--c-surface-inset);
     color:var(--c-text-subtle);font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
-  .side-nav button.active .side-badge{background:rgba(255,255,255,.18);color:#fff}
-  [data-pp-theme="dark"] .side-nav button.active .side-badge{background:rgba(10,10,10,.18);color:var(--pp-ink)}
+  .side-nav button.active .side-badge{background:var(--pp-gold-400);color:var(--pp-gold-900)}
   .side-badge:empty{display:none}
 
   main{min-width:0}
@@ -203,7 +201,6 @@
   .rule-chip{height:42px;padding:0 14px;border-radius:9px;border:1px solid var(--c-border-strong);
     background:var(--c-surface);color:var(--c-text);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
   .rule-chip.-active{background:var(--pp-ink);color:#fff;border-color:var(--pp-ink)}
-  [data-pp-theme="dark"] .rule-chip.-active{background:var(--c-bad);color:#fff;border-color:var(--c-bad)}
 
   .form-panel{border:1px solid var(--c-border);border-radius:var(--pp-radius-xl);padding:20px;
     background:var(--c-surface);margin-bottom:20px}
@@ -221,14 +218,19 @@
   .save-note{color:var(--c-good-text);font-size:13.5px;font-weight:600}
 
   /* ---- dashboard ---- */
+  .mod-lead{display:flex;align-items:flex-end;gap:56px;flex-wrap:wrap;padding-bottom:24px;
+    border-bottom:1px solid var(--c-border);margin-bottom:24px}
+  .mod-lead-main,.mod-lead-sub{border:0;background:transparent;padding:0;font:inherit;text-align:left;
+    cursor:pointer;display:flex;flex-direction:column}
+  .mod-lead-main .mod-lead-n{font-size:52px;font-weight:800;letter-spacing:-.03em;line-height:.9;
+    color:var(--c-text);font-variant-numeric:tabular-nums}
+  .mod-lead-sub .mod-lead-n{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1;
+    color:var(--c-text);font-variant-numeric:tabular-nums}
+  .mod-lead-l{font-size:13px;color:var(--c-text-subtle);margin-top:8px}
+  .mod-lead-main:hover .mod-lead-n,.mod-lead-sub:hover .mod-lead-n{color:var(--pp-gold-800)}
   .view-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
   .view-head h1{margin:0 0 2px}
   .view-head .sub{margin:0}
-  #rangeSelect{font:inherit;font-size:13.5px;border:1px solid var(--c-border-strong);background:var(--c-surface);
-    border-radius:8px;padding:8px 32px 8px 12px;color:var(--c-text);cursor:pointer;appearance:none;-webkit-appearance:none;
-    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
-    background-repeat:no-repeat;background-position:right 10px center;background-size:13px}
-
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
   .stat-tile{border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);padding:18px 20px;background:var(--c-surface)}
   .stat-tile .stat-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
@@ -417,11 +419,22 @@
         <h1>Dashboard</h1>
         <p class="sub">Visits, searches, and applies across the board.</p>
       </div>
-      <select id="rangeSelect">
-        <option value="7">Last 7 days</option>
-        <option value="30" selected>Last 30 days</option>
-        <option value="90">Last 90 days</option>
-      </select>
+      <div class="tabs" id="rangeTabs" style="margin-bottom:0">
+        <button type="button" data-days="7">Last 7 days</button>
+        <button type="button" data-days="30" class="active">Last 30 days</button>
+        <button type="button" data-days="90">Last 90 days</button>
+      </div>
+    </div>
+
+    <div class="mod-lead" id="modLead">
+      <button type="button" class="mod-lead-main" id="modLeadQueue">
+        <span class="mod-lead-n" id="modQueueN">–</span>
+        <span class="mod-lead-l">Listings waiting for review</span>
+      </button>
+      <button type="button" class="mod-lead-sub" id="modLeadReports">
+        <span class="mod-lead-n" id="modReportsN">–</span>
+        <span class="mod-lead-l">Open reports</span>
+      </button>
     </div>
 
     <div class="stat-grid" id="statGrid"></div>
@@ -609,6 +622,14 @@
         <textarea id="reviewReason" rows="2" placeholder="The description says applicants must have the right to work in Nigeria." style="width:100%;font:inherit;font-size:14.5px;line-height:1.55;border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-md);padding:12px 14px;background:var(--c-bg);color:var(--c-text);resize:vertical;box-sizing:border-box"></textarea>
         <span style="display:block;margin-top:7px;font-size:13px;color:var(--c-text-faint)">Sent to the employer. They can reply and ask us to look again.</span>
       </label>
+      <div style="padding:16px;border-radius:var(--pp-radius-md);border:1px solid var(--c-border);background:var(--c-bg-sunken);margin-top:18px">
+        <div style="font-size:13.5px;font-weight:600;margin-bottom:11px">Also check</div>
+        <div style="display:flex;flex-direction:column;gap:9px" id="reviewChecks">
+          <label class="pp-check-row"><input type="checkbox" data-check="pay"><span>Pay range is present and plausible</span></label>
+          <label class="pp-check-row"><input type="checkbox" data-check="link"><span>Application link resolves to the company's own site</span></label>
+          <label class="pp-check-row"><input type="checkbox" data-check="copy"><span>Description says what the person will do, not just the company values</span></label>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="reject" id="reviewReject" type="button" style="padding:10px 16px">Reject</button>
@@ -824,8 +845,12 @@ async function refreshBadges() {
     document.getElementById("badgeDesigners").textContent = d.length || "";
     document.getElementById("badgeEmployers").textContent = e.length || "";
     document.getElementById("badgeReports").textContent = r.length || "";
+    document.getElementById("modQueueN").textContent = q.length;
+    document.getElementById("modReportsN").textContent = r.length;
   } catch (e) { /* badges are a nicety, not worth surfacing an error for */ }
 }
+document.getElementById("modLeadQueue").addEventListener("click", () => document.querySelector('.side-nav [data-view="queue"]').click());
+document.getElementById("modLeadReports").addEventListener("click", () => document.querySelector('.side-nav [data-view="reports"]').click());
 
 /* ---------- dashboard ---------- */
 const PAGE_LABELS = {
@@ -834,10 +859,16 @@ const PAGE_LABELS = {
 };
 function pageLabel(path) { return PAGE_LABELS[path] || path; }
 
-document.getElementById("rangeSelect").addEventListener("change", loadDashboard);
+document.querySelectorAll("#rangeTabs button").forEach(b => {
+  b.addEventListener("click", () => {
+    document.querySelectorAll("#rangeTabs button").forEach(x => x.classList.remove("active"));
+    b.classList.add("active");
+    loadDashboard();
+  });
+});
 
 async function loadDashboard() {
-  const days = document.getElementById("rangeSelect").value;
+  const days = document.querySelector("#rangeTabs button.active").dataset.days;
   try {
     const d = await api(`/api/admin/analytics?days=${days}`);
     renderStats(d);
@@ -1195,6 +1226,7 @@ function openReviewModal(id) {
   }
   document.getElementById("reviewClaimed").textContent = eligLabel(sub.eligibility);
   document.getElementById("reviewReason").value = "";
+  document.querySelectorAll("#reviewChecks input[type=checkbox]").forEach(c => { c.checked = false; });
   renderReviewEligOptions();
   reviewModalBackdrop.classList.add("-open");
 }
@@ -1216,9 +1248,9 @@ function renderReviewEligOptions() {
 function updateReviewFoot() {
   const changed = reviewPicked !== reviewSub.eligibility;
   document.getElementById("reviewReasonWrap").style.display = changed ? "block" : "none";
-  const reasonOk = document.getElementById("reviewReason").value.trim().length > 0;
+  const reasonOk = document.getElementById("reviewReason").value.trim().length > 10;
   document.getElementById("reviewNote").textContent = changed
-    ? (reasonOk ? "The employer will be told why it changed" : "Say why you changed it")
+    ? (reasonOk ? "The employer will be told why it changed" : "Say a bit more about why you changed it")
     : "Publishing as the employer submitted it";
   document.getElementById("reviewPublish").textContent = changed ? "Change and publish" : "Publish";
   document.getElementById("reviewPublish").disabled = changed && !reasonOk;
