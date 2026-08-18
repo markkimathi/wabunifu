@@ -18,7 +18,7 @@
   .deck{max-width:900px}
   .kicker{display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap}
   .kicker .meta{font-size:14px;color:var(--c-text-faint)}
-  .deck h1{margin:0 0 20px;font-size:44px;line-height:1.06;letter-spacing:-0.032em;font-weight:800;text-wrap:balance}
+  .deck h1{margin:0 0 20px;font-size:var(--pp-display-size);line-height:1.06;letter-spacing:-0.032em;font-weight:800;text-wrap:balance}
   .deck .sub{margin:0 0 32px;font-size:20px;line-height:1.5;color:var(--c-text-muted);text-wrap:pretty}
 
   .cover{border-radius:var(--pp-radius-xl);overflow:hidden;border:1px solid var(--c-border);margin-bottom:36px;
@@ -47,7 +47,7 @@
   .stat-card .v{font-size:32px;font-weight:800;letter-spacing:-0.028em;line-height:1.05;margin-bottom:6px;font-variant-numeric:tabular-nums}
   .stat-card .l{font-size:15px;line-height:1.45;color:var(--c-text-muted)}
 
-  .credits-card{padding:26px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .credits-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
   .credits-card h2{margin:0 0 14px;font-size:19px;font-weight:700;letter-spacing:-0.016em}
   .credits-card p{margin:0;font-size:15.5px;line-height:1.6;color:var(--c-text-muted)}
 
@@ -75,7 +75,7 @@
 
   .prevnext{display:grid;grid-template-columns:1fr 1fr;gap:14px;border-top:1px solid var(--c-border);padding:32px 0 64px;margin-top:12px}
   @media(max-width:639px){.prevnext{grid-template-columns:1fr}}
-  .pn-card{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);
+  .pn-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);
     display:flex;flex-direction:column;text-decoration:none;color:inherit}
   .pn-card:hover{border-color:var(--c-border-hover)}
   .pn-card .dir{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--c-text-faint);margin-bottom:10px}
@@ -123,9 +123,9 @@
   .msg-hint.-warn{color:var(--c-bad-text)}
   .msg-count{font-size:12.5px;color:var(--c-text-faint);font-variant-numeric:tabular-nums}
   .msg-actions{display:flex;gap:10px;justify-content:flex-end}
-  .icon-btn{width:36px;height:36px;flex:none;border-radius:var(--pp-radius-md);border:none;background:var(--c-surface-inset);
-    cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--c-text)}
-  .icon-btn:hover{background:var(--c-bg-sunken)}
+  .icon-btn{width:44px;height:44px;flex:none;border-radius:var(--pp-radius-lg);border:1px solid var(--c-border-strong);
+    background:var(--c-surface);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--c-text)}
+  .icon-btn:hover{background:var(--c-bg-sunken);border-color:var(--c-border-hover)}
 </style>
 </head>
 <body>

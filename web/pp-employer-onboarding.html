@@ -21,7 +21,7 @@
 
   .step-kicker{display:block;font-size:11px;font-weight:700;letter-spacing:0.09em;text-transform:uppercase;
     color:var(--c-text-faint);margin-bottom:12px}
-  .step-title{margin:0 0 8px;font-size:34px;line-height:1.06;letter-spacing:-0.03em;font-weight:800}
+  .step-title{margin:0 0 8px;font-size:var(--pp-h1-size);line-height:1.06;letter-spacing:-0.03em;font-weight:800}
   .step-sub{margin:0 0 26px;font-size:16px;line-height:1.55;color:var(--c-text-subtle)}
   .step-nav{display:flex;align-items:center;gap:12px;margin-top:28px;padding-top:22px;border-top:1px solid var(--c-border)}
   .gate-note{flex:1;font-size:13.5px;color:var(--c-text-faint);text-align:right}
@@ -288,7 +288,7 @@
     if (state.name.trim()) qs.set("company", state.name.trim());
     if (state.reach) qs.set("eligibility", state.reach);
     return '<span class="handoff-icon">' + ICON.doc + '</span>' +
-      '<h1 class="step-title" style="font-size:38px">' + escapeHtml(company) + ' is set up. Now the role.</h1>' +
+      '<h1 class="step-title">' + escapeHtml(company) + ' is set up. Now the role.</h1>' +
       '<p class="step-sub">We’ll carry what you entered into the posting form, so eligibility is already answered.</p>' +
       '<div class="carry-card"><h3>Carried over</h3>' +
         carried.map(function(c){

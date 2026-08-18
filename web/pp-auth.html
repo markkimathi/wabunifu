@@ -26,7 +26,7 @@
   .value-side blockquote{margin:0;padding-top:20px;border-top:1px solid var(--pp-border-dark,#1F1F1F);
     font-size:15px;line-height:1.6;color:var(--pp-text-faint-on-dark,#D2D2D6);font-style:normal}
 
-  h1{margin:0 0 8px;font-size:40px;line-height:1.02;letter-spacing:-0.036em;font-weight:800}
+  h1{margin:0 0 8px;font-size:var(--pp-h1-size);line-height:1.02;letter-spacing:-0.036em;font-weight:800}
   .sub{margin:0 0 24px;font-size:16px;line-height:1.55;color:var(--c-text-muted)}
   .role-toggle{display:flex;gap:6px;padding:5px;border:1px solid var(--c-border);border-radius:999px;
     background:var(--c-bg-sunken);margin-bottom:24px}
@@ -215,7 +215,7 @@
 
   function renderSent(){
     return '<div class="sent-icon">' + ICONS.mail + '</div>' +
-      '<h1 style="font-size:36px">Check your email</h1>' +
+      '<h1>Check your email</h1>' +
       '<p class="sub">We\'ve sent a reset link to <strong>' + escapeHtml(sentTo) + '</strong>. It works once, and expires in an hour.</p>' +
       '<p class="sub">Nothing after a couple of minutes? Check spam, or make sure that\'s the address you signed up with.</p>' +
       '<div class="stack">' +
