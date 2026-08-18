@@ -206,6 +206,7 @@ class JobSubmission(BaseModel):
     eligibility: str
     salary: Optional[str] = None
     agreed_to_terms: bool = False
+    cross_border_note: str = ""
 
     @field_validator("title", "company", "url", "contact_email", "discipline", "eligibility", "description")
     @classmethod
@@ -1003,6 +1004,7 @@ def _combined_jobs() -> tuple[list[dict], str | None]:
                 location=s["location"], work_type=s["work_type"], discipline=s["discipline"],
                 level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
                 desc=desc_html or None, desc_text=desc_text or None, posted_at=s["created_at"][:10],
+                cross_border_note=s.get("cross_border_note", ""),
             ).to_web()
         )
 
@@ -1932,6 +1934,7 @@ def _company_listings(company: dict) -> list[dict]:
                 location=s["location"], work_type=s["work_type"], discipline=s["discipline"],
                 level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
                 desc=desc_html or None, desc_text=desc_text or None, posted_at=s["created_at"][:10],
+                cross_border_note=s.get("cross_border_note", ""),
             ).to_web()
         )
     return out

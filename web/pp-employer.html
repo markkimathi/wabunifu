@@ -64,6 +64,75 @@
   .form-actions{display:flex;gap:10px;margin-top:16px}
   .fielderr{font-size:13px;color:var(--c-bad-text);margin-top:6px}
 
+  /* Post-a-role wizard */
+  .wiz-steps{display:flex;align-items:center;gap:0;margin-bottom:28px}
+  .wiz-step-wrap{display:flex;align-items:center;flex:1;min-width:0}
+  .wiz-step-wrap:last-child{flex:none}
+  .wiz-step-btn{display:flex;align-items:center;gap:10px;border:none;background:transparent;font-family:var(--pp-font);
+    padding:0;text-align:left;min-width:0}
+  .wiz-step-dot{width:28px;height:28px;flex:none;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;
+    font-size:12.5px;font-weight:700;background:var(--c-surface-inset);color:var(--c-text-faint);border:1px solid var(--c-border)}
+  .wiz-step-dot.-done{background:var(--pp-gold);color:var(--pp-ink);border-color:var(--pp-gold)}
+  .wiz-step-dot.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
+  .wiz-step-label{font-size:14px;color:var(--c-text-faint);white-space:nowrap}
+  .wiz-step-label.-active{color:var(--c-text);font-weight:600}
+  .wiz-step-rule{flex:1;height:1px;background:var(--c-border);margin:0 12px;min-width:16px}
+
+  .wiz-layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:36px;align-items:start}
+  @media(max-width:900px){.wiz-layout{grid-template-columns:1fr}}
+  .wiz-main{min-width:0}
+  .wiz-side{position:sticky;top:24px;display:flex;flex-direction:column;gap:16px}
+  @media(max-width:900px){.wiz-side{position:static}}
+
+  .wiz-chip-row{display:flex;flex-wrap:wrap;gap:8px}
+  .wiz-chip{height:38px;padding:0 15px;border-radius:999px;font-family:var(--pp-font);font-size:14px;font-weight:500;
+    cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
+  .wiz-chip.-active{background:var(--c-text);color:var(--c-bg);font-weight:600}
+
+  .wiz-callout{padding:20px;border-radius:var(--pp-radius-lg);background:var(--pp-gold-200);border:1px solid var(--pp-gold-400);margin-bottom:22px}
+  .wiz-callout h4{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.014em;color:var(--pp-gold-800)}
+  .wiz-callout p{margin:0;font-size:14.5px;line-height:1.55;color:var(--pp-gold-800)}
+
+  .wiz-elig-list{display:flex;flex-direction:column;gap:10px;margin-bottom:22px}
+  .wiz-elig-card{display:flex;align-items:flex-start;gap:12px;padding:16px;border-radius:var(--pp-radius-md);
+    cursor:pointer;text-align:left;font-family:var(--pp-font);width:100%;background:var(--c-surface);border:1px solid var(--c-border)}
+  .wiz-elig-card.-active{background:var(--pp-gold-200);border-color:var(--pp-gold)}
+  .wiz-elig-radio{width:18px;height:18px;flex:none;margin-top:2px;border-radius:50%;border:2px solid var(--c-border-strong);
+    display:inline-flex;align-items:center;justify-content:center}
+  .wiz-elig-card.-active .wiz-elig-radio{border-color:var(--pp-gold-800)}
+  .wiz-elig-radio span{width:8px;height:8px;border-radius:50%;background:transparent}
+  .wiz-elig-card.-active .wiz-elig-radio span{background:var(--pp-gold-800)}
+  .wiz-elig-label{display:block;font-size:15.5px;font-weight:600;margin-bottom:3px}
+  .wiz-elig-note{display:block;font-size:14px;line-height:1.5;color:var(--c-text-subtle)}
+
+  .wiz-preview{padding:18px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border)}
+  .wiz-preview-label{display:block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-faint);margin-bottom:10px}
+  .wiz-preview-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
+  .wiz-preview-mark{width:40px;height:40px;flex:none;border-radius:9px;background:var(--pp-ink);color:var(--pp-gold);
+    display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:800}
+  .wiz-preview-head h4{margin:0 0 2px;font-size:16px;font-weight:700;letter-spacing:-0.014em;line-height:1.25}
+  .wiz-preview-head p{margin:0;font-size:13px;color:var(--c-text-faint)}
+  .wiz-preview-tags{display:flex;flex-wrap:wrap;gap:6px}
+  .wiz-preview-note{margin:10px 0 0;font-size:12.5px;line-height:1.5;color:var(--c-text-faint)}
+
+  .wiz-cost{padding-top:16px;border-top:1px solid var(--c-border)}
+  .wiz-cost h4{margin:0 0 10px;font-size:14px;font-weight:700;letter-spacing:-0.01em}
+  .wiz-cost .price{font-size:32px;font-weight:800;letter-spacing:-0.03em}
+  .wiz-cost .per{font-size:13.5px;color:var(--c-text-faint);margin-left:6px}
+  .wiz-cost p{margin:8px 0 0;font-size:13.5px;line-height:1.55;color:var(--c-text-faint)}
+
+  .wiz-checks{padding:18px;border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken);border:1px solid var(--c-border);margin-bottom:18px}
+  .wiz-checks h4{margin:0 0 12px;font-size:16px;font-weight:700}
+  .wiz-check-row{display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;font-size:14.5px;line-height:1.5}
+  .wiz-check-row:last-child{margin-bottom:0}
+  .wiz-check-row .mark{width:18px;height:18px;flex:none;margin-top:1px;border-radius:50%;background:var(--c-good-bg);
+    color:var(--c-good-text);display:inline-flex;align-items:center;justify-content:center}
+  .wiz-check-row.-bad .mark{background:var(--c-bad-bg);color:var(--c-bad-text)}
+
+  .wiz-foot{display:flex;align-items:center;gap:12px;margin-top:28px;padding-top:20px;border-top:1px solid var(--c-border)}
+  .wiz-foot .spacer{flex:1}
+  .wiz-foot .gate-note{font-size:13px;color:var(--c-text-faint)}
+
   .applicant-picker{margin-bottom:18px}
   .board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
   @media(max-width:900px){.board{grid-template-columns:1fr;gap:20px}}
@@ -178,6 +247,9 @@
   var me = null;
   var section = "listings";
   var showNewListing = false;
+  var wizardStep = 1;
+  var wizardMax = 1;
+  var wizardData = null;
   var applicantListingId = null;
   var showNewApplicant = false;
   var activeThreadId = null;
@@ -248,44 +320,237 @@
 
   // ---------------- Listings ----------------
 
+  var ELIG_DETAIL = {
+    kenya: { tag: "Narrowest reach", note: "Only candidates already able to work in your home country. Fastest to fill, smallest pool." },
+    africa: { tag: "Recommended", note: "Anyone able to work from an African country, however you make that work — contractor, EOR, or a local entity." },
+    world: { tag: "Widest reach", note: "Open to remote candidates anywhere. Largest pool, and the clearest signal to designers outside Africa." },
+    check: { tag: "Uncertain", note: "You're not sure yet. This shows candidates a flag to check with you before assuming they can apply." }
+  };
+  function needsProof(elig){ return elig === "africa" || elig === "world"; }
+
+  function blankWizardData(){
+    return {
+      id: null,
+      title: "", company: (me.company ? me.company.name : ""), location: "", work_type: "Remote",
+      discipline: "", level: "Mid",
+      url: (me.company && me.company.website ? "https://" + me.company.website.replace(/^https?:\/\//, "") : ""),
+      eligibility: (me.company && me.company.eligibility) || "africa",
+      cross_border_note: "", salary: "",
+      contact_email: me.email || "", description: ""
+    };
+  }
+  function wizardDataFromListing(l){
+    return {
+      id: l.id, title: l.title || "", company: l.company || "", location: l.location || "", work_type: l.work_type || "Remote",
+      discipline: l.discipline || "", level: l.level || "Mid", url: l.url || "",
+      eligibility: l.eligibility || "africa", cross_border_note: l.cross_border_note || "", salary: l.salary || "",
+      contact_email: l.contact_email || "", description: l.description || ""
+    };
+  }
+
+  function wizStepsHtml(){
+    var steps = [{ n: 1, label: "Draft" }, { n: 2, label: "Eligibility" }, { n: 3, label: "Preview" }];
+    return '<div class="wiz-steps">' + steps.map(function(s){
+      var done = s.n < wizardStep, active = s.n === wizardStep, reachable = s.n <= wizardMax;
+      return '<div class="wiz-step-wrap">' +
+        '<button type="button" class="wiz-step-btn" data-goto-step="' + s.n + '"' + (reachable ? "" : " disabled") + '>' +
+          '<span class="wiz-step-dot' + (done ? " -done" : (active ? " -active" : "")) + '">' + (done ? "✓" : s.n) + '</span>' +
+          '<span class="wiz-step-label' + (active ? " -active" : "") + '">' + s.label + '</span>' +
+        '</button>' +
+        (s.n < 3 ? '<span class="wiz-step-rule"></span>' : "") +
+      '</div>';
+    }).join("") + '</div>';
+  }
+
+  function wizPreviewHtml(){
+    var d = wizardData;
+    var elig = ELIGIBILITY.filter(function(e){ return e.v === d.eligibility; })[0] || ELIGIBILITY[1];
+    var eligPositive = d.eligibility === "africa" || d.eligibility === "world" || d.eligibility === "kenya";
+    return '<div class="wiz-preview">' +
+      '<span class="wiz-preview-label">How it will look in Jobs</span>' +
+      '<div class="wiz-preview-head">' +
+        '<span class="wiz-preview-mark">' + escapeHtml((d.title || d.company || "?")[0].toUpperCase()) + '</span>' +
+        '<div style="flex:1;min-width:0"><h4>' + escapeHtml(d.title || "Job title") + '</h4>' +
+          '<p>' + escapeHtml([d.company || "Company", d.location || "Location"].join(" · ")) + '</p></div>' +
+      '</div>' +
+      '<div class="wiz-preview-tags">' +
+        '<span class="pp-elig' + (eligPositive ? " -positive" : " -check") + '">' + (eligPositive ? '<span class="pp-elig-dot"></span>' : "") + escapeHtml(elig.l) + '</span>' +
+        '<span class="pp-chip">' + escapeHtml(d.salary || "Not disclosed") + '</span>' +
+        '<span class="pp-chip">Just now</span>' +
+      '</div>' +
+      '<p class="wiz-preview-note">This updates as you type. It\'s the whole card, and it\'s what designers decide from.</p>' +
+    '</div>';
+  }
+
+  function wizStep1Html(){
+    var d = wizardData;
+    return '<div class="field-block"><label class="pp-field-label">Role title</label>' +
+        '<div class="pp-field-input"><input id="wTitle" value="' + escapeHtml(d.title) + '" placeholder="Senior Product Designer"></div>' +
+        '<p style="margin:7px 0 0;font-size:13px;color:var(--c-text-faint)">The title a designer would search for, not your internal level code.</p></div>' +
+      '<div class="field-row2">' +
+        '<div class="field-block"><label class="pp-field-label">Company</label>' +
+          '<div class="pp-field-input"><input id="wCompany" value="' + escapeHtml(d.company) + '" placeholder="Paystack"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">Where the team sits</label>' +
+          '<div class="pp-field-input"><input id="wLocation" value="' + escapeHtml(d.location) + '" placeholder="Lagos, or Remote"></div></div>' +
+      '</div>' +
+      '<div class="field-block"><label class="pp-field-label">Work type</label>' +
+        '<div class="wiz-chip-row" id="wWorkType">' + WORK_TYPES.map(function(w){
+          return '<button type="button" class="wiz-chip' + (d.work_type === w ? " -active" : "") + '" data-pick-worktype="' + w + '">' + w + '</button>';
+        }).join("") + '</div></div>' +
+      '<div class="field-block"><label class="pp-field-label">Discipline</label>' +
+        '<div class="wiz-chip-row" id="wDiscipline">' + DISCIPLINES.map(function(w){
+          return '<button type="button" class="wiz-chip' + (d.discipline === w ? " -active" : "") + '" data-pick-discipline="' + escapeHtml(w) + '">' + escapeHtml(w) + '</button>';
+        }).join("") + '</div></div>' +
+      '<div class="field-block"><label class="pp-field-label">Seniority</label>' +
+        '<div class="wiz-chip-row" id="wLevel">' + LEVELS.map(function(w){
+          return '<button type="button" class="wiz-chip' + (d.level === w ? " -active" : "") + '" data-pick-level="' + w + '">' + w + '</button>';
+        }).join("") + '</div></div>' +
+      '<div class="field-block"><label class="pp-field-label">Link to your application page</label>' +
+        '<div class="pp-field-input"><input id="wUrl" value="' + escapeHtml(d.url) + '" placeholder="yoursite.com/careers/senior-product-designer"></div>' +
+        '<p style="margin:7px 0 0;font-size:13px;color:var(--c-text-faint)">Every Apply button on Path &amp; Pixel goes straight here. We do not collect applications.</p></div>' +
+      '<div class="field-block"><label class="pp-field-label">Where we reach you about this listing</label>' +
+        '<div class="pp-field-input"><input id="wContactEmail" value="' + escapeHtml(d.contact_email) + '"></div></div>' +
+      '<div class="fielderr" id="wizStep1Err" hidden></div>';
+  }
+
+  function wizStep2Html(){
+    var d = wizardData;
+    return '<div class="wiz-callout"><h4>This is the question the whole platform is built on</h4>' +
+        '<p>Designers across Africa lose hours to roles that were never open to them. Answer this accurately and your listing reaches people who can actually take the job. Answer it loosely and you get applications you have to reject.</p></div>' +
+      '<label class="pp-field-label" style="display:block;margin-bottom:12px">Who can take this role?</label>' +
+      '<div class="wiz-elig-list">' + ELIGIBILITY.map(function(e){
+        var detail = ELIG_DETAIL[e.v] || {};
+        var active = d.eligibility === e.v;
+        return '<button type="button" class="wiz-elig-card' + (active ? " -active" : "") + '" data-pick-elig="' + e.v + '">' +
+          '<span class="wiz-elig-radio"><span></span></span>' +
+          '<span style="flex:1;min-width:0">' +
+            (detail.tag ? '<span class="pp-chip" style="margin-bottom:6px;display:inline-block">' + escapeHtml(detail.tag) + '</span>' : "") +
+            '<span class="wiz-elig-label">' + escapeHtml(e.l) + '</span>' +
+            '<span class="wiz-elig-note">' + escapeHtml(detail.note || "") + '</span>' +
+          '</span>' +
+        '</button>';
+      }).join("") + '</div>' +
+      (needsProof(d.eligibility) ? '<div class="field-block"><label class="pp-field-label">How do you employ someone outside your own country?</label>' +
+        '<textarea id="wCrossBorder" class="pp-textarea" rows="2" placeholder="Contractor agreements through Deel, or an entity in Kenya and Nigeria">' + escapeHtml(d.cross_border_note) + '</textarea>' +
+        '<p style="margin:7px 0 0;font-size:13px;color:var(--c-text-faint)">Shown on the listing. One sentence is enough, and it saves candidates a message.</p></div>' : "") +
+      '<div class="field-row2">' +
+        '<div class="field-block"><label class="pp-field-label">Pay range, if you\'re sharing it</label>' +
+          '<div class="pp-field-input"><input id="wSalary" value="' + escapeHtml(d.salary) + '" placeholder="$4,500 – $6,200 / mo"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">&nbsp;</label>' +
+          '<p style="margin:0;font-size:13.5px;line-height:1.5;color:var(--c-text-faint);padding-top:12px">Listings with real pay get about twice the qualified applicants. Yours is never shown to anyone but candidates.</p></div>' +
+      '</div>' +
+      '<div class="fielderr" id="wizStep2Err" hidden></div>';
+  }
+
+  function wizStep3Html(){
+    var d = wizardData;
+    var checks = [
+      { ok: !!d.title.trim(), label: "Role title and company set" },
+      { ok: !!d.url.trim(), label: "Candidates have somewhere to apply" },
+      { ok: !needsProof(d.eligibility) || !!d.cross_border_note.trim(), label: "Eligibility answer backed with how you actually hire" }
+    ];
+    return '<div class="field-block"><label class="pp-field-label" style="display:flex;justify-content:space-between">' +
+        '<span>What the person will actually do</span><span style="font-weight:400;color:var(--c-text-faint)">' + d.description.length + ' / 900</span></label>' +
+        '<textarea id="wDescription" class="pp-textarea" rows="7" maxlength="900" placeholder="The problem this person owns, who they work with, and what the first three months look like.">' + escapeHtml(d.description) + '</textarea>' +
+        '<p style="margin:7px 0 0;font-size:13px;color:var(--c-text-faint)">Skip the values paragraph. Designers scroll past it, and it\'s the same at every company.</p></div>' +
+      '<div class="wiz-checks"><h4>Before it goes live</h4>' +
+        checks.map(function(c){
+          return '<div class="wiz-check-row' + (c.ok ? "" : " -bad") + '"><span class="mark">' + (c.ok ? "✓" : "!") + '</span><span>' + escapeHtml(c.label) + '</span></div>';
+        }).join("") +
+      '</div>' +
+      '<p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--c-text-faint);max-width:60ch">A person reads every listing before it publishes, usually within a working day. If the eligibility answer does not match the job description we come back to you rather than quietly changing it.</p>' +
+      '<div class="fielderr" id="wizStep3Err" hidden></div>';
+  }
+
   function listingFormHtml(listing){
-    listing = listing || {};
-    return '<div class="form-panel"><h3>' + (listing.id ? "Edit listing" : "Post a role") + '</h3>' +
-      '<form id="listingForm">' +
-        '<div class="field-block"><label class="pp-field-label">Job title</label>' +
-          '<div class="pp-field-input"><input id="lTitle" value="' + escapeHtml(listing.title || "") + '" placeholder="e.g. Senior Product Designer"></div></div>' +
-        '<div class="field-row2">' +
-          '<div class="field-block"><label class="pp-field-label">Company</label>' +
-            '<div class="pp-field-input"><input id="lCompany" value="' + escapeHtml(listing.company || (me.company ? me.company.name : "")) + '"></div></div>' +
-          '<div class="field-block"><label class="pp-field-label">Location</label>' +
-            '<div class="pp-field-input"><input id="lLocation" value="' + escapeHtml(listing.location || "") + '" placeholder="Remote"></div></div>' +
+    if (!wizardData) wizardData = listing && listing.id ? wizardDataFromListing(listing) : blankWizardData();
+    var d = wizardData;
+    var stepHtml = wizardStep === 1 ? wizStep1Html() : wizardStep === 2 ? wizStep2Html() : wizStep3Html();
+    var backLabel = wizardStep === 1 ? null : "Back";
+    var nextLabel = wizardStep === 3 ? (d.id ? "Save changes" : "Submit for review") : "Continue";
+    var gateNote = wizardStep === 2 && needsProof(d.eligibility) && !d.cross_border_note.trim()
+      ? "Add how you hire abroad to continue." : "";
+    return '<div class="form-panel"><h3>' + (d.id ? "Edit listing" : "Post a role") + '</h3>' +
+      wizStepsHtml() +
+      '<div class="wiz-layout">' +
+        '<div class="wiz-main"><form id="listingForm" onsubmit="return false">' + stepHtml + '</form></div>' +
+        '<div class="wiz-side">' + wizPreviewHtml() +
+          '<div class="wiz-cost"><h4>What posting costs</h4>' +
+            '<div><span class="price">Free</span><span class="per">for 30 days</span></div>' +
+            '<p>After that, $180 for another 30 days. No commission, no candidate fees.</p></div>' +
         '</div>' +
-        '<div class="field-row2">' +
-          '<div class="field-block"><label class="pp-field-label">Work type</label>' +
-            '<div class="pp-field-input"><select id="lWorkType">' + WORK_TYPES.map(function(w){ return '<option' + (listing.work_type === w ? " selected" : "") + '>' + w + '</option>'; }).join("") + '</select></div></div>' +
-          '<div class="field-block"><label class="pp-field-label">Level</label>' +
-            '<div class="pp-field-input"><select id="lLevel">' + LEVELS.map(function(w){ return '<option' + (listing.level === w ? " selected" : "") + '>' + w + '</option>'; }).join("") + '</select></div></div>' +
-        '</div>' +
-        '<div class="field-row2">' +
-          '<div class="field-block"><label class="pp-field-label">Job function</label>' +
-            '<div class="pp-field-input"><select id="lDiscipline">' + DISCIPLINES.map(function(w){ return '<option' + (listing.discipline === w ? " selected" : "") + '>' + w + '</option>'; }).join("") + '</select></div></div>' +
-          '<div class="field-block"><label class="pp-field-label">Who can apply</label>' +
-            '<div class="pp-field-input"><select id="lElig">' + ELIGIBILITY.map(function(e){ return '<option value="' + e.v + '"' + (listing.eligibility === e.v ? " selected" : (!listing.id && me.company && me.company.eligibility === e.v ? " selected" : "")) + '>' + e.l + '</option>'; }).join("") + '</select></div></div>' +
-        '</div>' +
-        '<div class="field-block"><label class="pp-field-label">Where candidates actually apply</label>' +
-          '<div class="pp-field-input"><input id="lUrl" value="' + escapeHtml(listing.url || (me.company ? "https://" + (me.company.website || "").replace(/^https?:\/\//, "") : "")) + '" placeholder="https://yoursite.com/careers/role"></div></div>' +
-        '<div class="field-block"><label class="pp-field-label">Where we reach you about this listing</label>' +
-          '<div class="pp-field-input"><input id="lContactEmail" value="' + escapeHtml(listing.contact_email || (me.email || "")) + '"></div></div>' +
-        '<div class="field-block"><label class="pp-field-label">Pay, if you\'re sharing it</label>' +
-          '<div class="pp-field-input"><input id="lSalary" value="' + escapeHtml(listing.salary || "") + '" placeholder="$4,000 – $6,000 / mo"></div></div>' +
-        '<div class="field-block"><label class="pp-field-label">Description</label>' +
-          '<textarea id="lDescription" class="pp-textarea" rows="4" placeholder="What the role involves, what makes it worth applying to.">' + escapeHtml(listing.description || "") + '</textarea></div>' +
-        '<div class="fielderr" id="listingErr" hidden></div>' +
-        '<div class="form-actions">' +
-          '<button type="submit" class="pp-btn pp-btn-primary" id="listingSubmitBtn">' + (listing.id ? "Save changes" : "Submit for review") + '</button>' +
-          '<button type="button" class="pp-btn pp-btn-tertiary" id="listingCancelBtn">Cancel</button>' +
-        '</div>' +
-      '</form></div>';
+      '</div>' +
+      '<div class="wiz-foot">' +
+        (backLabel ? '<button type="button" class="pp-btn pp-btn-tertiary" id="wizBackBtn">' + backLabel + '</button>' : "") +
+        '<button type="button" class="pp-btn pp-btn-tertiary" id="listingCancelBtn">Cancel</button>' +
+        '<div class="spacer"></div>' +
+        (gateNote ? '<span class="gate-note">' + escapeHtml(gateNote) + '</span>' : "") +
+        '<button type="button" class="pp-btn pp-btn-primary" id="wizNextBtn">' + nextLabel + '</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function readWizardStepFields(){
+    if (!wizardData) return;
+    var get = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : null; };
+    if (wizardStep === 1) {
+      if (get("wTitle") !== null) wizardData.title = get("wTitle");
+      if (get("wCompany") !== null) wizardData.company = get("wCompany");
+      if (get("wLocation") !== null) wizardData.location = get("wLocation");
+      if (get("wUrl") !== null) wizardData.url = get("wUrl");
+      if (get("wContactEmail") !== null) wizardData.contact_email = get("wContactEmail");
+    } else if (wizardStep === 2) {
+      if (get("wCrossBorder") !== null) wizardData.cross_border_note = get("wCrossBorder");
+      if (get("wSalary") !== null) wizardData.salary = get("wSalary");
+    } else if (wizardStep === 3) {
+      if (get("wDescription") !== null) wizardData.description = get("wDescription");
+    }
+  }
+
+  function updateWizPreview(){
+    var el = document.querySelector(".wiz-preview");
+    if (el) el.outerHTML = wizPreviewHtml();
+  }
+
+  function wireWizardStep(){
+    if (!wizardData) return;
+    if (wizardStep === 1) {
+      document.querySelectorAll("[data-pick-worktype]").forEach(function(btn){
+        btn.addEventListener("click", function(){ wizardData.work_type = btn.getAttribute("data-pick-worktype"); render(); });
+      });
+      document.querySelectorAll("[data-pick-discipline]").forEach(function(btn){
+        btn.addEventListener("click", function(){ wizardData.discipline = btn.getAttribute("data-pick-discipline"); render(); });
+      });
+      document.querySelectorAll("[data-pick-level]").forEach(function(btn){
+        btn.addEventListener("click", function(){ wizardData.level = btn.getAttribute("data-pick-level"); render(); });
+      });
+      ["wTitle", "wCompany", "wLocation"].forEach(function(id){
+        var el = document.getElementById(id);
+        if (el) el.addEventListener("input", function(){
+          if (id === "wTitle") wizardData.title = el.value;
+          if (id === "wCompany") wizardData.company = el.value;
+          if (id === "wLocation") wizardData.location = el.value;
+          updateWizPreview();
+        });
+      });
+    } else if (wizardStep === 2) {
+      document.querySelectorAll("[data-pick-elig]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          readWizardStepFields();
+          wizardData.eligibility = btn.getAttribute("data-pick-elig");
+          render();
+        });
+      });
+      var salaryEl = document.getElementById("wSalary");
+      if (salaryEl) salaryEl.addEventListener("input", function(){ wizardData.salary = salaryEl.value; updateWizPreview(); });
+    } else if (wizardStep === 3) {
+      var descEl = document.getElementById("wDescription");
+      if (descEl) descEl.addEventListener("input", function(){
+        wizardData.description = descEl.value;
+        var counter = descEl.closest(".field-block").querySelector(".pp-field-label span:last-child");
+        if (counter) counter.textContent = descEl.value.length + " / 900";
+      });
+    }
   }
 
   function renderListings(state){
@@ -564,7 +829,7 @@
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
 
-  function setSection(s){ section = s; showNewListing = false; showNewApplicant = false; loadSection(); }
+  function setSection(s){ section = s; showNewListing = false; wizardData = null; showNewApplicant = false; loadSection(); }
 
   function showErr(id, msg){
     var el = document.getElementById(id);
@@ -583,13 +848,18 @@
 
     // Listings
     var addListingBtn = document.getElementById("addListingBtn");
-    if (addListingBtn) addListingBtn.addEventListener("click", function(){ cache.editingListing = null; showNewListing = true; render(); });
+    if (addListingBtn) addListingBtn.addEventListener("click", function(){
+      cache.editingListing = null; wizardData = blankWizardData(); wizardStep = 1; wizardMax = 1;
+      showNewListing = true; render();
+    });
     var listingCancelBtn = document.getElementById("listingCancelBtn");
-    if (listingCancelBtn) listingCancelBtn.addEventListener("click", function(){ showNewListing = false; render(); });
+    if (listingCancelBtn) listingCancelBtn.addEventListener("click", function(){ showNewListing = false; wizardData = null; render(); });
     document.querySelectorAll("[data-edit-listing]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var id = parseInt(btn.getAttribute("data-edit-listing"), 10);
         cache.editingListing = cache.listings.filter(function(l){ return l.id === id; })[0];
+        wizardData = wizardDataFromListing(cache.editingListing);
+        wizardStep = 1; wizardMax = 3;
         showNewListing = true;
         render();
       });
@@ -607,40 +877,67 @@
         loadSection();
       });
     });
-    var listingForm = document.getElementById("listingForm");
-    if (listingForm) listingForm.addEventListener("submit", async function(e){
-      e.preventDefault();
-      showErr("listingErr", "");
-      var editing = cache.editingListing;
-      var payload = {
-        title: document.getElementById("lTitle").value.trim(),
-        company: document.getElementById("lCompany").value.trim(),
-        url: document.getElementById("lUrl").value.trim(),
-        contact_email: document.getElementById("lContactEmail").value.trim(),
-        description: document.getElementById("lDescription").value.trim(),
-        location: document.getElementById("lLocation").value.trim(),
-        work_type: document.getElementById("lWorkType").value,
-        discipline: document.getElementById("lDiscipline").value,
-        level: document.getElementById("lLevel").value,
-        eligibility: document.getElementById("lElig").value,
-        salary: document.getElementById("lSalary").value.trim(),
-        agreed_to_terms: true
-      };
-      var btn = document.getElementById("listingSubmitBtn");
-      btn.disabled = true;
-      try {
-        if (editing && editing.id) {
-          await api("/api/employers/me/listings/" + editing.id, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-          toast("Saved. Back in the review queue.");
-        } else {
-          await api("/api/employers/me/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-          toast("Submitted for review.");
+    wireWizardStep();
+    document.querySelectorAll("[data-goto-step]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var n = parseInt(btn.getAttribute("data-goto-step"), 10);
+        if (n > wizardMax) return;
+        readWizardStepFields();
+        wizardStep = n;
+        render();
+      });
+    });
+    var wizBackBtn = document.getElementById("wizBackBtn");
+    if (wizBackBtn) wizBackBtn.addEventListener("click", function(){
+      readWizardStepFields();
+      wizardStep -= 1;
+      render();
+    });
+    var wizNextBtn = document.getElementById("wizNextBtn");
+    if (wizNextBtn) wizNextBtn.addEventListener("click", async function(){
+      readWizardStepFields();
+      var errId = "wizStep" + wizardStep + "Err";
+      showErr(errId, "");
+      if (wizardStep === 1) {
+        if (!wizardData.title || !wizardData.company || !wizardData.location || !wizardData.discipline || !wizardData.url || !wizardData.contact_email) {
+          showErr(errId, "Fill in the role title, company, location, discipline and application link.");
+          return;
         }
-        showNewListing = false;
-        loadSection();
-      } catch (err) {
-        showErr("listingErr", err.message);
-        btn.disabled = false;
+        wizardStep = 2; wizardMax = Math.max(wizardMax, 2); render();
+      } else if (wizardStep === 2) {
+        if (needsProof(wizardData.eligibility) && !wizardData.cross_border_note) {
+          showErr(errId, "Add a sentence on how you employ someone outside your own country.");
+          return;
+        }
+        wizardStep = 3; wizardMax = Math.max(wizardMax, 3); render();
+      } else {
+        if (!wizardData.description) {
+          showErr(errId, "Describe what the person will actually do.");
+          return;
+        }
+        var payload = {
+          title: wizardData.title, company: wizardData.company, url: wizardData.url,
+          contact_email: wizardData.contact_email, description: wizardData.description,
+          location: wizardData.location, work_type: wizardData.work_type,
+          discipline: wizardData.discipline, level: wizardData.level,
+          eligibility: wizardData.eligibility, cross_border_note: wizardData.cross_border_note,
+          salary: wizardData.salary, agreed_to_terms: true
+        };
+        wizNextBtn.disabled = true;
+        try {
+          if (wizardData.id) {
+            await api("/api/employers/me/listings/" + wizardData.id, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            toast("Saved. Back in the review queue.");
+          } else {
+            await api("/api/employers/me/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            toast("Submitted for review.");
+          }
+          showNewListing = false; wizardData = null;
+          loadSection();
+        } catch (err) {
+          showErr(errId, err.message);
+          wizNextBtn.disabled = false;
+        }
       }
     });
 

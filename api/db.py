@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS submissions (
   salary TEXT,
   description TEXT NOT NULL DEFAULT '',
   agreed_to_terms INTEGER NOT NULL DEFAULT 0,
+  cross_border_note TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
 );
@@ -461,6 +462,7 @@ _MIGRATIONS = [
     "ALTER TABLE designers ADD COLUMN locked_until TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE employers ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE employers ADD COLUMN locked_until TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE submissions ADD COLUMN cross_border_note TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -533,11 +535,11 @@ def insert_submission(data: dict, company_id: int | None = None, employer_id: in
         INSERT INTO submissions
           (title, company, url, contact_email, location, work_type,
            discipline, level, eligibility, salary, description, agreed_to_terms,
-           company_id, employer_id, status, created_at)
+           cross_border_note, company_id, employer_id, status, created_at)
         VALUES
           (:title, :company, :url, :contact_email, :location, :work_type,
            :discipline, :level, :eligibility, :salary, :description, :agreed_to_terms,
-           :company_id, :employer_id, 'pending', :created_at)
+           :cross_border_note, :company_id, :employer_id, 'pending', :created_at)
     """, row)
     c.commit()
     sub_id = cur.lastrowid
