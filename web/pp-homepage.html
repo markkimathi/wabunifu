@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Path & Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+
+  /* ---- hero ---- */
+  .hero{padding:56px 0 64px}
+  @media(min-width:1024px){.hero{padding:80px 0 88px}}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,0.85fr);gap:48px;align-items:center}
+  @media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
+  .hero h1{margin:0 0 20px;font-size:44px;line-height:0.98;letter-spacing:-0.03em;font-weight:800;text-wrap:balance}
+  @media(min-width:1024px){.hero h1{font-size:64px}}
+  .hero p{margin:0 0 28px;font-size:17px;line-height:1.6;color:var(--c-text-muted);max-width:44ch}
+  @media(min-width:1024px){.hero p{font-size:19px}}
+  .hero-search{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 16px;border-radius:var(--pp-radius-lg);
+    background:var(--c-surface);border:1px solid var(--c-border-strong);box-shadow:var(--pp-shadow-md);max-width:560px}
+  .hero-search svg{flex:none;color:var(--c-text-faint)}
+  .hero-search input{border:none;outline:none;font-family:var(--pp-font);font-size:16px;flex:1;min-width:0;background:transparent;color:var(--c-text);padding:9px 0}
+  .hero-try{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+  .hero-try>span{font-size:13.5px;color:var(--c-text-subtle);padding:6px 0}
+  .hero-try a{padding:6px 12px;border-radius:999px;border:1px solid var(--c-border);background:var(--c-surface);
+    font-size:13.5px;font-weight:500;color:var(--c-text-muted)}
+  .hero-try a:hover{border-color:var(--c-border-hover);color:var(--c-text)}
+  .hero-side{display:flex;flex-direction:column;gap:16px}
+  @media(max-width:900px){.hero-side{display:none}}
+  .hero-image{aspect-ratio:4/5;border-radius:var(--pp-radius-xl);background:var(--c-surface-inset);border:1px solid var(--c-border)}
+  .hero-joined{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg)}
+  .hero-joined p{margin:0;font-size:13px;line-height:1.45;color:var(--c-text-muted)}
+
+  /* ---- shared section head ---- */
+  .sec{padding:56px 0}
+  @media(min-width:1024px){.sec{padding:80px 0}}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-bottom:32px;flex-wrap:wrap}
+  .sec-head h2{margin:0 0 10px;font-size:30px;line-height:1.05;letter-spacing:-0.03em;font-weight:800;max-width:18ch}
+  @media(min-width:1024px){.sec-head h2{font-size:40px}}
+  .sec-head p{margin:0;font-size:15.5px;line-height:1.55;color:var(--c-text-muted);max-width:52ch}
+  .sec-head .see-all{font-size:14.5px;font-weight:600;color:var(--c-accent-text);white-space:nowrap;flex:none}
+
+  /* ---- roles ---- */
+  .sec-roles{background:var(--c-surface);border-top:1px solid var(--c-border);border-bottom:1px solid var(--c-border)}
+  .role-list{border-top:1px solid var(--c-border)}
+  .role-row{padding:20px 4px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  .role-row:hover{background:var(--c-bg-sunken)}
+  .role-main{display:flex;align-items:center;gap:14px;flex:1;min-width:220px}
+  .role-main h4{margin:0 0 2px;font-size:16.5px;font-weight:700;letter-spacing:-0.012em}
+  .role-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle)}
+  .role-tags{display:flex;flex-wrap:wrap;gap:7px}
+  .role-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;margin-left:auto}
+  .role-meta .pay{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  .role-meta .posted{font-size:12px;color:var(--c-text-faint)}
+
+  /* ---- people ---- */
+  .people-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+  .p-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);
+    display:flex;flex-direction:column;gap:12px}
+  .p-card:hover{border-color:var(--c-border-hover)}
+  .p-card h4{margin:0 0 2px;font-size:16.5px;font-weight:700;letter-spacing:-0.012em}
+  .p-card .role{margin:0;font-size:13.5px;color:var(--c-text-subtle)}
+  .p-card .line{margin:0;font-size:13.5px;line-height:1.5;color:var(--c-text-muted);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .p-thumbs{display:flex;gap:6px}
+  .p-thumbs .t{flex:1;aspect-ratio:4/3;border-radius:7px;background:var(--c-surface-inset);border:1px solid var(--c-border);overflow:hidden}
+  .p-thumbs .t img{width:100%;height:100%;object-fit:cover;display:block}
+  .p-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--c-surface-inset)}
+
+  /* ---- work (dark) ---- */
+  .sec-work{background:var(--pp-ink);color:var(--pp-white)}
+  .sec-work .sec-head h2{color:var(--pp-white)}
+  .sec-work .sec-head p{color:var(--pp-text-subtle-on-dark)}
+  .sec-work .sec-head .see-all{color:var(--pp-gold)}
+  .work-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+  .w-cover{aspect-ratio:4/3;border-radius:var(--pp-radius-lg);background:var(--pp-ink-raised);border:1px solid var(--pp-stone-700);margin-bottom:12px;overflow:hidden}
+  .w-cover img{width:100%;height:100%;object-fit:cover;display:block}
+  .w-card h4{margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-0.012em;color:var(--pp-white)}
+  .w-card .meta{margin:0 0 10px;font-size:13px;color:var(--pp-text-subtle-on-dark)}
+  .w-author{display:flex;align-items:center;gap:9px}
+  .w-author span.name{font-size:13px;color:var(--pp-text-faint-on-dark)}
+
+  /* ---- why / eligibility explainer ---- */
+  .why-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}
+  @media(max-width:900px){.why-grid{grid-template-columns:1fr}}
+  .why-grid h2{margin:0;font-size:30px;line-height:1.08;letter-spacing:-0.025em;font-weight:700;text-wrap:balance}
+  @media(min-width:1024px){.why-grid h2{font-size:36px}}
+  .why-copy p{margin:0 0 16px;font-size:16px;line-height:1.65;color:var(--c-text-muted)}
+  .why-stats{display:flex;flex-wrap:wrap;gap:28px;padding-top:8px}
+  .why-stats .n{font-size:28px;font-weight:800;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
+  .why-stats .l{font-size:13px;color:var(--c-text-subtle)}
+
+  /* ---- community teaser ---- */
+  .sec-community{background:var(--c-bg-sunken)}
+  .community-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+  .c-card{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .c-card .tag{margin-bottom:12px}
+  .c-card h4{margin:0 0 7px;font-size:17px;font-weight:700;letter-spacing:-0.012em}
+  .c-card p{margin:0 0 14px;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)}
+  .c-card a{font-size:13.5px;font-weight:600;color:var(--c-accent-text)}
+
+  /* ---- resume banner ---- */
+  .resume-banner{padding:30px 32px;border:1px solid var(--c-border);border-radius:var(--pp-radius-xl);background:var(--c-surface);
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:center}
+  @media(max-width:760px){.resume-banner{grid-template-columns:1fr}}
+  .resume-banner h3{margin:0 0 8px;font-size:23px;line-height:1.15;letter-spacing:-0.02em;font-weight:700}
+  .resume-banner p{margin:0;font-size:14.5px;line-height:1.55;color:var(--c-text-muted)}
+  .resume-banner .cta{display:flex;flex-direction:column;gap:8px;align-items:stretch}
+  .resume-banner .cta span{font-size:12.5px;color:var(--c-text-faint);text-align:center}
+
+  /* ---- join banner ---- */
+  .join-banner{padding:44px 40px;border-radius:var(--pp-radius-xl);background:var(--pp-gold);
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:36px;align-items:center}
+  @media(max-width:760px){.join-banner{grid-template-columns:1fr;padding:32px 24px}}
+  .join-banner h3{margin:0 0 10px;font-size:28px;line-height:1.1;letter-spacing:-0.025em;font-weight:800;color:var(--pp-ink);text-wrap:balance}
+  @media(min-width:1024px){.join-banner h3{font-size:34px}}
+  .join-banner p{margin:0;font-size:15.5px;line-height:1.55;color:var(--pp-stone-900);max-width:54ch}
+  .join-banner .ctas{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+
+  .skeleton-row{padding:20px 4px;border-bottom:1px solid var(--c-border);display:flex;gap:16px;align-items:center}
+  .skeleton-block{background:var(--c-surface-inset);border-radius:5px;animation:pp-pulse 1.4s ease-in-out infinite}
+  @keyframes pp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  @media(prefers-reduced-motion:reduce){.skeleton-block{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="home"></div>
+
+<main>
+  <div class="wrap hero">
+    <div class="hero-grid">
+      <div>
+        <h1>Design work you can actually get</h1>
+        <p>You know how it usually goes. You're three paragraphs into a job description, already picturing yourself in it, and then you hit the line that quietly rules you out. We hated that too, so now we read every posting to the bottom and tell you up front whether it's open to you where you live.</p>
+        <div class="hero-search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+          <input type="text" id="heroSearch" placeholder="Product designer, brand, motion…">
+          <button class="pp-btn pp-btn-primary" id="heroSearchBtn" type="button">Find roles</button>
+        </div>
+        <div class="hero-try">
+          <span>Try</span>
+          <a href="/jobs?elig=africa">Open across Africa</a>
+          <a href="/jobs?q=remote">Remote, paid in USD</a>
+          <a href="/jobs?level=Junior">Junior-friendly</a>
+        </div>
+      </div>
+      <div class="hero-side">
+        <div class="hero-image"></div>
+        <div class="hero-joined" id="heroJoined"></div>
+      </div>
+    </div>
+  </div>
+
+  <section class="sec sec-roles">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <h2>Roles you can apply for today</h2>
+          <p>We read every posting properly, so you're never left guessing what a company actually meant. And when they haven't said where they can hire? We'll tell you that too.</p>
+        </div>
+        <a class="see-all" href="/jobs" id="rolesSeeAll">See all roles →</a>
+      </div>
+      <div class="role-list" id="roleList"></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <h2>Designers worth knowing</h2>
+          <p>No leaderboard here, nobody climbed anything. Just designers who published something this month, and yes, they'd love to hear from you.</p>
+        </div>
+        <a class="see-all" href="/people">Browse everyone →</a>
+      </div>
+      <div class="people-grid" id="peopleGrid"></div>
+    </div>
+  </section>
+
+  <section class="sec sec-work" id="workSection" hidden>
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <h2>Work from people here</h2>
+          <p>Case studies people published here this month. The thinking is still in them, not just the tidy final screens.</p>
+        </div>
+        <a class="see-all" href="/people">See more work →</a>
+      </div>
+      <div class="work-grid" id="workGrid"></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap why-grid">
+      <h2>Most job boards were never built with you in mind</h2>
+      <div class="why-copy">
+        <p>A role posted in Berlin rarely stops to think about whether someone in Nairobi could take it. So we do that reading for you, and we say it plainly: open across Africa, global remote, or worth checking. Then we hand you straight to the company's own page.</p>
+        <p>We don't touch your application, take a cut, or sell your details. There's nothing clever going on behind the scenes. We just make good work visible, yours to the people hiring and theirs to you, long before you spend an afternoon on a role that was never open to you.</p>
+        <div class="why-stats" id="whyStats"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec sec-community">
+    <div class="wrap">
+      <div class="sec-head" style="margin-bottom:24px">
+        <div>
+          <h2>Community, small on purpose</h2>
+          <p>We'd rather six designers get a proper portfolio review than six hundred join another feed. Everything here is running right now, and there's usually room for you.</p>
+        </div>
+      </div>
+      <div class="community-grid">
+        <div class="c-card">
+          <span class="pp-status -new tag">Thursdays</span>
+          <h4>Portfolio reviews</h4>
+          <p>Forty minutes, six designers, and a reviewer who has been exactly where you are. Bring the case study you like least. You'll leave with three things to change.</p>
+          <a href="/community">See this week's session →</a>
+        </div>
+        <div class="c-card">
+          <span class="pp-status -good tag">Mentors</span>
+          <h4>Sessions with people ahead of you</h4>
+          <p>Designers at companies across the continent keep a few slots open each month, for the questions you'd rather not ask in public. All free.</p>
+          <a href="/community">See who's available →</a>
+        </div>
+        <div class="c-card">
+          <span class="pp-status -neutral tag">Every Friday</span>
+          <h4>The week in roles</h4>
+          <p>One email on Friday: the roles you can actually apply for, and who joined this week. Written by a person, for people.</p>
+          <a href="/resources">Read last week's →</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" style="padding-bottom:0">
+    <div class="wrap">
+      <div class="resume-banner">
+        <div>
+          <span class="pp-status -good" style="margin-bottom:14px;display:inline-flex">Free tool</span>
+          <h3>Find out why your résumé keeps getting filtered out</h3>
+          <p>Paste in the job description, add your résumé, and we'll show you the words the screener is hunting for that you haven't used. It takes about a minute, and we keep none of it.</p>
+        </div>
+        <div class="cta">
+          <a class="pp-btn pp-btn-dark" href="/resources">Check my résumé</a>
+          <span>No account needed</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="wrap">
+      <div class="join-banner">
+        <div>
+          <h3>A profile recruiters actually finish reading</h3>
+          <p>Ten minutes is all it takes, and you'll have a link to send instead of a PDF nobody opens. Your work, shown your way, with roles narrowed down to the ones actually open to you.</p>
+        </div>
+        <div class="ctas">
+          <a class="pp-btn pp-btn-dark" href="/onboarding">Create your profile</a>
+          <a class="pp-btn pp-btn-secondary" style="background:transparent;border-color:var(--pp-ink)" href="/post-a-role">I'm hiring designers</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="pp-footer" data-variant="full"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var ICONS = {
+    save: '<svg width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>'
+  };
+
+  // Same 3-tier collapse as pp-jobs.html's eligBadge — kazi/kenya and
+  // africa share one "Open across Africa" tier, P&P is Africa-first.
+  var ELIG_META = {
+    africa: { label: "Open across Africa", positive: true },
+    kenya: { label: "Open across Africa", positive: true },
+    world: { label: "Global remote", positive: true },
+    check: { label: "Worth checking", positive: false }
+  };
+  function eligBadge(elig){
+    var m = ELIG_META[elig] || ELIG_META.check;
+    if (m.positive) return '<span class="pp-elig -positive"><span class="pp-elig-dot"></span>' + m.label + '</span>';
+    return '<span class="pp-elig -check">' + m.label + '</span>';
+  }
+  function eligGroup(elig){ return (elig === "kenya" || elig === "africa") ? "africa" : elig; }
+
+  function escapeHtml(s){
+    return (s || "").replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+  function initialsOf(name){
+    return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0, 2).join("").toUpperCase();
+  }
+  var TINTS = ["-tint-gold", "-tint-green", "-tint-dark", ""];
+  function tintFor(id){ return TINTS[id % TINTS.length]; }
+  function postedLabel(days){
+    if (days === 0) return "Today";
+    if (days === 1) return "1 day ago";
+    return days + " days ago";
+  }
+
+  function roleRowHtml(j){
+    return '<a class="role-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
+      '<div class="role-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
+        '<div><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div></div>' +
+      '<div class="role-tags">' + eligBadge(j.elig) + '<span class="pp-chip">' + escapeHtml(j.cat || "Design") + '</span></div>' +
+      '<div class="role-meta"><span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span>' +
+        '<span class="posted">' + postedLabel(j.days) + '</span></div>' +
+    '</a>';
+  }
+
+  function personCardHtml(p){
+    var thumbs = (p.projects || []).slice(0, 3);
+    return '<a class="p-card" href="/designers/' + encodeURIComponent(p.handle || p.id) + '">' +
+      (p.photo_path
+        ? '<img src="' + escapeHtml(p.photo_path) + '" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover">'
+        : '<span class="pp-avatar -md ' + tintFor(p.id) + '">' + initialsOf(p.display_name) + '</span>') +
+      '<div><h4>' + escapeHtml(p.display_name) + '</h4><p class="role">' + escapeHtml(p.headline || (p.discipline || [])[0] || "Designer") + (p.location ? " · " + escapeHtml(p.location) : "") + '</p></div>' +
+      (p.bio ? '<p class="line">' + escapeHtml(p.bio) + '</p>' : '<div style="flex:1"></div>') +
+      (thumbs.length
+        ? '<div class="p-thumbs">' + thumbs.map(function(pr){
+            return '<div class="t">' + (pr.image_path ? '<img src="' + escapeHtml(pr.image_path) + '" alt="">' : "") + '</div>';
+          }).join("") + '</div>'
+        : "") +
+      '<div class="p-foot">' +
+        '<span class="pp-status -neutral">' + escapeHtml(p.availability_status || "Availability not set") + '</span>' +
+        '<span style="font-size:12px;color:var(--c-text-faint)">' + (p.projects || []).length + ' project' + ((p.projects || []).length === 1 ? "" : "s") + '</span>' +
+      '</div>' +
+    '</a>';
+  }
+
+  function workCardHtml(w){
+    return '<a class="w-card" href="/pp-case-study.html?designer=' + encodeURIComponent(w.designerId) + '&project=' + encodeURIComponent(w.id) + '">' +
+      '<div class="w-cover">' + (w.image_path ? '<img src="' + escapeHtml(w.image_path) + '" alt="">' : "") + '</div>' +
+      '<h4>' + escapeHtml(w.title) + '</h4>' +
+      '<p class="meta">' + escapeHtml(w.category || "Case study") + '</p>' +
+      '<div class="w-author"><span class="pp-avatar -xs -tint-gold" style="background:var(--pp-ink-raised);color:var(--pp-gold)">' + initialsOf(w.authorName) + '</span>' +
+        '<span class="name">' + escapeHtml(w.authorName) + '</span></div>' +
+    '</a>';
+  }
+
+  function skeletonRows(n){
+    return Array.from({ length: n }).map(function(){
+      return '<div class="skeleton-row" aria-hidden="true">' +
+        '<span class="skeleton-block" style="width:44px;height:44px;border-radius:8px;flex:none"></span>' +
+        '<div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">' +
+        '<span class="skeleton-block" style="height:16px;width:50%"></span>' +
+        '<span class="skeleton-block" style="height:12px;width:30%"></span></div></div>';
+    }).join("");
+  }
+
+  async function loadRoles(){
+    var list = document.getElementById("roleList");
+    var stats = document.getElementById("whyStats");
+    list.innerHTML = skeletonRows(4);
+    try {
+      var res = await fetch("/api/jobs", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      var jobs = data.jobs || [];
+      document.getElementById("rolesSeeAll").textContent = "See all " + jobs.length.toLocaleString() + " roles →";
+      if (!jobs.length) {
+        list.innerHTML = '<p style="padding:24px 4px;color:var(--c-text-subtle);font-size:14.5px">No roles listed right now — check back soon.</p>';
+      } else {
+        list.innerHTML = jobs.slice(0, 5).map(roleRowHtml).join("");
+      }
+      var africaCount = jobs.filter(function(j){ return eligGroup(j.elig) === "africa"; }).length;
+      stats.innerHTML =
+        '<div><div class="n">' + jobs.length.toLocaleString() + '</div><div class="l">open design roles</div></div>' +
+        '<div><div class="n">' + africaCount.toLocaleString() + '</div><div class="l">open across Africa</div></div>' +
+        '<div><div class="n">0</div><div class="l">fees, ever</div></div>';
+    } catch (e) {
+      list.innerHTML = '<p style="padding:24px 4px;color:var(--c-text-subtle);font-size:14.5px">Roles didn\'t load. <a href="/jobs" style="color:var(--c-accent-text);font-weight:600">Browse the board directly →</a></p>';
+      stats.innerHTML =
+        '<div><div class="n">—</div><div class="l">open design roles</div></div>' +
+        '<div><div class="n">—</div><div class="l">open across Africa</div></div>' +
+        '<div><div class="n">0</div><div class="l">fees, ever</div></div>';
+    }
+  }
+
+  async function loadPeople(){
+    var grid = document.getElementById("peopleGrid");
+    var joined = document.getElementById("heroJoined");
+    grid.innerHTML = skeletonRows(4);
+    try {
+      var res = await fetch("/api/designers", { cache: "no-store" });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      var designers = data.designers || [];
+
+      if (!designers.length) {
+        grid.innerHTML = '<p style="color:var(--c-text-subtle);font-size:14.5px">Nobody\'s listed yet — <a href="/onboarding" style="color:var(--c-accent-text);font-weight:600">be the first →</a></p>';
+      } else {
+        grid.innerHTML = designers.slice(0, 4).map(personCardHtml).join("");
+      }
+
+      var weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+      var recent = designers.filter(function(p){ return new Date(p.created_at).getTime() >= weekAgo; });
+      if (recent.length) {
+        var cities = Array.from(new Set(recent.map(function(p){ return p.location; }).filter(Boolean))).slice(0, 3);
+        var stack = recent.slice(0, 4).map(function(p, i){
+          return '<span class="pp-avatar -sm ' + tintFor(p.id) + '" style="margin-left:' + (i ? "-10px" : "0") + ';border:2px solid var(--c-surface)">' + initialsOf(p.display_name) + '</span>';
+        }).join("");
+        joined.innerHTML = '<div style="display:flex">' + stack + '</div>' +
+          '<p>' + recent.length + (recent.length === 1 ? " designer joined" : " designers joined") + ' this week' +
+          (cities.length ? ", from " + escapeHtml(cities.join(", ")) : "") + '.</p>';
+      } else {
+        joined.parentElement.removeChild(joined);
+      }
+
+      var work = [];
+      designers.forEach(function(p){
+        (p.projects || []).slice(0, 1).forEach(function(pr){
+          work.push({ id: pr.id, title: pr.title, category: pr.category, image_path: pr.image_path,
+            designerId: p.handle || p.id, authorName: p.display_name });
+        });
+      });
+      if (work.length) {
+        document.getElementById("workSection").hidden = false;
+        document.getElementById("workGrid").innerHTML = work.slice(0, 3).map(workCardHtml).join("");
+      }
+    } catch (e) {
+      grid.innerHTML = '<p style="color:var(--c-text-subtle);font-size:14.5px">The directory didn\'t load. <a href="/people" style="color:var(--c-accent-text);font-weight:600">Browse it directly →</a></p>';
+      if (joined && joined.parentElement) joined.parentElement.removeChild(joined);
+    }
+  }
+
+  function init(){
+    var input = document.getElementById("heroSearch");
+    function runSearch(){
+      var q = input.value.trim();
+      location.href = q ? "/jobs?q=" + encodeURIComponent(q) : "/jobs";
+    }
+    document.getElementById("heroSearchBtn").addEventListener("click", runSearch);
+    input.addEventListener("keydown", function(e){ if (e.key === "Enter") runSearch(); });
+
+    loadRoles();
+    loadPeople();
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>

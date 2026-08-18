@@ -365,7 +365,8 @@
     if (state.payOnly && (!j.pay || j.pay === "Not disclosed")) return false;
     if (state.query) {
       var q = state.query.toLowerCase();
-      if ((j.t || "").toLowerCase().indexOf(q) === -1 && (j.co || "").toLowerCase().indexOf(q) === -1) return false;
+      if ((j.t || "").toLowerCase().indexOf(q) === -1 && (j.co || "").toLowerCase().indexOf(q) === -1 &&
+          (j.city || "").toLowerCase().indexOf(q) === -1) return false;
     }
     return true;
   }
@@ -673,8 +674,18 @@
     });
     renderSortMenu();
 
-    var qParam = new URLSearchParams(location.search).get("q");
+    var params = new URLSearchParams(location.search);
+    var qParam = params.get("q");
     if (qParam) { searchInput.value = qParam; state.query = qParam; }
+    // Homepage "Try" chips: narrow to one eligibility tier or level instead
+    // of just linking to the board with no filter applied.
+    var eligParam = params.get("elig");
+    if (eligParam && ELIG_META[eligParam]) {
+      state.elig = { africa: false, world: false, check: false };
+      state.elig[eligGroup(eligParam)] = true;
+    }
+    var levelParam = params.get("level");
+    if (levelParam && LEVELS.indexOf(levelParam) !== -1) state.levels.add(levelParam);
 
     var rail = document.getElementById("filterRail");
     var backdrop = document.getElementById("railBackdrop");

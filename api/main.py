@@ -2486,7 +2486,7 @@ app.mount("/logos", StaticFiles(directory=str(LOGOS_DIR)), name="logos")
 # admin.html is the one holdout — an internal tool, not the public site, so
 # it keeps its old chrome and its slot in this same clean-page mechanism.
 PP_CLEAN_PAGES = {
-    "": "pp-jobs.html",              # homepage = job listing, same as before
+    "": "pp-homepage.html",
     "jobs": "pp-jobs.html",
     "people": "pp-people.html",
     "signin": "pp-auth.html",
