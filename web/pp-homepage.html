@@ -34,7 +34,10 @@
   .hero-try a:hover{border-color:var(--c-border-hover);color:var(--c-text)}
   .hero-side{display:flex;flex-direction:column;gap:16px}
   @media(max-width:900px){.hero-side{display:none}}
-  .hero-image{aspect-ratio:4/5;border-radius:var(--pp-radius-xl);background:var(--c-surface-inset);border:1px solid var(--c-border)}
+  .hero-videos{position:relative;aspect-ratio:4/5;border-radius:var(--pp-radius-xl);overflow:hidden;background:var(--c-surface-inset);border:1px solid var(--c-border)}
+  .hero-vtrack{display:flex;height:100%;transition:transform .6s var(--pp-ease)}
+  .hero-vslide{flex:0 0 100%;height:100%}
+  .hero-vslide video{width:100%;height:100%;object-fit:cover;display:block}
   .hero-joined{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg)}
   .hero-joined p{margin:0;font-size:13px;line-height:1.45;color:var(--c-text-muted)}
 
@@ -153,7 +156,14 @@
         </div>
       </div>
       <div class="hero-side">
-        <div class="hero-image"></div>
+        <div class="hero-videos" aria-hidden="true">
+          <div class="hero-vtrack" id="heroVTrack">
+            <div class="hero-vslide"><video muted playsinline preload="auto" src="video/1.mp4"></video></div>
+            <div class="hero-vslide"><video muted playsinline preload="auto" src="video/2.mp4"></video></div>
+            <div class="hero-vslide"><video muted playsinline preload="auto" src="video/3.mp4"></video></div>
+            <div class="hero-vslide"><video muted playsinline preload="auto" src="video/4.mp4"></video></div>
+          </div>
+        </div>
         <div class="hero-joined" id="heroJoined"></div>
       </div>
     </div>
@@ -441,6 +451,24 @@
     }
   }
 
+  function startHeroVideos(){
+    var track = document.getElementById("heroVTrack");
+    if (!track) return;
+    var videos = Array.prototype.slice.call(track.querySelectorAll("video"));
+    if (!videos.length) return;
+    var i = 0;
+    function goTo(n){
+      i = (n + videos.length) % videos.length;
+      track.style.transform = "translateX(-" + (i * 100) + "%)";
+      videos.forEach(function(v, idx){
+        if (idx === i) { v.currentTime = 0; v.play().catch(function(){}); }
+        else v.pause();
+      });
+    }
+    videos.forEach(function(v, idx){ v.addEventListener("ended", function(){ goTo(idx + 1); }); });
+    goTo(0);
+  }
+
   function init(){
     var input = document.getElementById("heroSearch");
     function runSearch(){
@@ -450,6 +478,7 @@
     document.getElementById("heroSearchBtn").addEventListener("click", runSearch);
     input.addEventListener("keydown", function(e){ if (e.key === "Enter") runSearch(); });
 
+    startHeroVideos();
     loadRoles();
     loadPeople();
   }
