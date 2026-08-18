@@ -67,6 +67,38 @@
   .billing-panel h3{margin:0 0 8px;font-size:19px;font-weight:700}
   .billing-panel p{margin:0;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle);max-width:56ch}
 
+  .thread-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:0;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-lg);overflow:hidden;min-height:420px}
+  @media(max-width:760px){.thread-layout{grid-template-columns:1fr}}
+  .thread-list{border-right:1px solid var(--c-border);overflow-y:auto;max-height:560px}
+  @media(max-width:760px){.thread-list{border-right:none;border-bottom:1px solid var(--c-border);max-height:220px}}
+  .thread-item{display:block;width:100%;text-align:left;padding:14px 16px;border:none;border-bottom:1px solid var(--c-border);
+    background:var(--c-surface);cursor:pointer;font-family:var(--pp-font);color:var(--c-text)}
+  .thread-item.-active{background:var(--c-bg-sunken)}
+  .thread-item .name{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .thread-item .preview{font-size:13px;color:var(--c-text-subtle);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .unread-dot{width:8px;height:8px;border-radius:50%;background:var(--pp-gold);flex:none}
+  .thread-body{display:flex;flex-direction:column;background:var(--c-bg)}
+  .thread-messages{flex:1;padding:18px;overflow-y:auto;max-height:460px;display:flex;flex-direction:column;gap:10px}
+  .msg-row{display:flex;flex-direction:column;max-width:70%}
+  .msg-row.-me{align-self:flex-end;align-items:flex-end}
+  .msg-row.-them{align-self:flex-start;align-items:flex-start}
+  .msg-bubble{padding:10px 14px;border-radius:14px;font-size:14.5px;line-height:1.5}
+  .msg-row.-me .msg-bubble{background:var(--c-text);color:var(--c-bg);border-bottom-right-radius:4px}
+  .msg-row.-them .msg-bubble{background:var(--c-surface-inset);color:var(--c-text);border-bottom-left-radius:4px}
+  .msg-report-btn{margin-top:3px;border:none;background:transparent;font-family:var(--pp-font);
+    font-size:11.5px;color:var(--c-text-faint);cursor:pointer;padding:2px 4px}
+  .msg-report-btn:hover{color:var(--c-bad-text)}
+  .msg-report-box{margin-top:6px;padding:10px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);
+    border:1px solid var(--c-border);display:flex;flex-direction:column;gap:8px;width:220px}
+  .msg-report-box textarea{width:100%;box-sizing:border-box;font-family:var(--pp-font);font-size:13px;
+    border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-sm);padding:6px 8px;background:var(--c-surface);color:var(--c-text)}
+  .msg-report-box .row{display:flex;gap:6px;justify-content:flex-end}
+  .thread-composer{display:flex;gap:10px;padding:14px;border-top:1px solid var(--c-border)}
+  .thread-composer input{flex:1;height:44px;padding:0 14px;border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-md);
+    background:var(--c-surface);font-family:var(--pp-font);font-size:14.5px;color:var(--c-text)}
+  .thread-composer input:focus{outline:none;border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+
   .state-panel{padding:48px 16px;text-align:center;color:var(--c-text-subtle);font-size:14.5px}
   .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:12px 18px;border-radius:10px;
     background:var(--c-text);color:var(--c-bg);font-size:14px;font-weight:600;z-index:50;box-shadow:0 8px 24px rgba(10,10,10,.2)}
@@ -100,6 +132,7 @@
   var STAGES = ["Applied", "Reviewing", "Interviewing", "Offer"];
   var SECTIONS = [
     { key: "listings", label: "Listings" }, { key: "applicants", label: "Applicants" },
+    { key: "messages", label: "Messages" },
     { key: "team", label: "Team" }, { key: "company", label: "Company" }, { key: "billing", label: "Billing" }
   ];
 
@@ -108,6 +141,7 @@
   var showNewListing = false;
   var applicantListingId = null;
   var showNewApplicant = false;
+  var activeThreadId = null;
 
   function escapeHtml(s){
     return (s || "").replace(/[&<>"']/g, function(c){
@@ -342,6 +376,87 @@
     return body;
   }
 
+  // ---------------- Messages ----------------
+
+  function renderMessages(){
+    var body = sectionTabsHtml() + '<div class="section-head"><h2>Messages</h2></div>';
+    if (!cache.conversations.length) {
+      body += '<div class="pp-empty"><h3>No conversations yet</h3><p>When a designer messages your company, the thread shows up here.</p></div>';
+      return body;
+    }
+    if (!activeThreadId) activeThreadId = cache.conversations[0].id;
+    var active = cache.conversations.filter(function(c){ return c.id === activeThreadId; })[0] || cache.conversations[0];
+    body += '<div class="thread-layout">' +
+      '<div class="thread-list">' + cache.conversations.map(function(c){
+        return '<button type="button" class="thread-item' + (c.id === active.id ? " -active" : "") + '" data-thread="' + c.id + '">' +
+          '<span class="name">' + (c.unread_count ? '<span class="unread-dot"></span>' : "") + escapeHtml(c.designer_name) + '</span>' +
+          '<span class="preview">' + escapeHtml(c.last_message ? c.last_message.body : "") + '</span>' +
+        '</button>';
+      }).join("") + '</div>' +
+      '<div class="thread-body">' +
+        '<div class="thread-messages" id="threadMessages"><p style="color:var(--c-text-faint);font-size:13.5px">Loading…</p></div>' +
+        '<form class="thread-composer" id="composerForm"><input id="composerInput" placeholder="Write a reply…" autocomplete="off"><button type="submit" class="pp-btn pp-btn-primary">Send</button></form>' +
+      '</div>' +
+    '</div>';
+    return body;
+  }
+
+  function renderThreadMessages(){
+    var el = document.getElementById("threadMessages");
+    if (!el) return;
+    if (!cache.messages.length) { el.innerHTML = '<p style="color:var(--c-text-faint);font-size:13.5px">Say hello.</p>'; return; }
+    el.innerHTML = cache.messages.map(function(m){
+      var mine = m.sender_type === "employer";
+      return '<div class="msg-row ' + (mine ? "-me" : "-them") + '">' +
+        '<div class="msg-bubble">' + escapeHtml(m.body) + '</div>' +
+        (mine ? "" : '<button type="button" class="msg-report-btn" data-report-msg="' + m.id + '">Report</button>' +
+          '<div class="msg-report-box" data-report-box-msg="' + m.id + '" style="display:none"></div>') +
+      '</div>';
+    }).join("");
+    el.scrollTop = el.scrollHeight;
+    wireMessageReportButtons();
+  }
+
+  var MSG_REPORT_BOX_HTML =
+    '<textarea rows="2" placeholder="Why report this? (optional)"></textarea>' +
+    '<div class="row"><button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm report-cancel">Cancel</button>' +
+    '<button type="button" class="pp-btn pp-btn-danger pp-btn-sm report-send">Send</button></div>';
+
+  function wireMessageReportButtons(){
+    document.querySelectorAll("[data-report-msg]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var id = btn.getAttribute("data-report-msg");
+        var box = document.querySelector('[data-report-box-msg="' + id + '"]');
+        if (box.style.display !== "none") { box.style.display = "none"; return; }
+        box.innerHTML = MSG_REPORT_BOX_HTML;
+        box.style.display = "flex";
+        box.querySelector(".report-cancel").addEventListener("click", function(){ box.style.display = "none"; });
+        box.querySelector(".report-send").addEventListener("click", async function(){
+          var sendBtn = box.querySelector(".report-send");
+          sendBtn.disabled = true;
+          try {
+            await api("/api/employers/me/conversations/" + activeThreadId + "/messages/" + id + "/report", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ summary: box.querySelector("textarea").value.trim() })
+            });
+            box.style.display = "none";
+            toast("Report sent — a person will review it.");
+          } catch (e) {}
+          sendBtn.disabled = false;
+        });
+      });
+    });
+  }
+
+  async function loadThread(id){
+    activeThreadId = id;
+    var data = await api("/api/employers/me/conversations/" + id + "/messages");
+    cache.messages = data.messages;
+    renderThreadMessages();
+    var convData = await api("/api/employers/me/conversations");
+    cache.conversations = convData.conversations;
+  }
+
   // ---------------- Billing ----------------
 
   function renderBilling(){
@@ -352,7 +467,7 @@
 
   // ---------------- Data + wiring ----------------
 
-  var cache = { listings: [], applicants: [], team: null };
+  var cache = { listings: [], applicants: [], team: null, conversations: [], messages: [] };
 
   async function loadSection(){
     var content = document.getElementById("content");
@@ -367,6 +482,10 @@
     if (section === "team") {
       cache.team = await api("/api/employers/me/team");
     }
+    if (section === "messages") {
+      var convData = await api("/api/employers/me/conversations");
+      cache.conversations = convData.conversations;
+    }
     render();
   }
 
@@ -379,11 +498,13 @@
     var body = "";
     if (section === "listings") body = renderListings(cache);
     else if (section === "applicants") body = renderApplicants(cache);
+    else if (section === "messages") body = renderMessages();
     else if (section === "team") body = renderTeam(cache);
     else if (section === "company") body = renderCompany(cache);
     else body = renderBilling();
     content.innerHTML = head + body;
     wire();
+    if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
 
   function setSection(s){ section = s; showNewListing = false; showNewApplicant = false; loadSection(); }
@@ -517,6 +638,22 @@
         await api("/api/employers/me/applicants/" + btn.getAttribute("data-remove-applicant"), { method: "DELETE" });
         loadSection();
       });
+    });
+
+    // Messages
+    document.querySelectorAll("[data-thread]").forEach(function(btn){
+      btn.addEventListener("click", function(){ loadThread(parseInt(btn.getAttribute("data-thread"), 10)).then(render); });
+    });
+    var composerForm = document.getElementById("composerForm");
+    if (composerForm) composerForm.addEventListener("submit", async function(e){
+      e.preventDefault();
+      var input = document.getElementById("composerInput");
+      var body = input.value.trim();
+      if (!body) return;
+      input.value = "";
+      await api("/api/employers/me/conversations/" + activeThreadId + "/messages", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ body: body }) });
+      await loadThread(activeThreadId);
+      render();
     });
 
     // Team
