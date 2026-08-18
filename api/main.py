@@ -83,6 +83,7 @@ from .db import (  # noqa: E402
     count_stale_questions, get_reply_leaderboard, list_work_worth_reading,
     get_pay_median, create_pay_submission, list_pay_ranges, list_pay_submissions, set_pay_submission_status,
     get_message, create_report, list_reports, get_report, resolve_report, set_employer_suspended,
+    override_submission_eligibility, suspend_designer, unsuspend_designer,
 )
 from . import geoip  # noqa: E402
 from . import ats_check  # noqa: E402
@@ -876,6 +877,37 @@ class ReportResolve(BaseModel):
         return v
 
 
+class DesignerSuspend(BaseModel):
+    rule: str
+    reason: str
+
+    @field_validator("rule")
+    @classmethod
+    def _valid_rule(cls, v: str) -> str:
+        if v not in {"eligibility", "work", "conduct", "spam"}:
+            raise ValueError("rule must be one of eligibility, work, conduct, spam")
+        return v
+
+    @field_validator("reason")
+    @classmethod
+    def _valid_reason(cls, v: str) -> str:
+        if len(v.strip()) < 10:
+            raise ValueError("reason must be at least 10 characters")
+        return v.strip()
+
+
+class EligibilityOverride(BaseModel):
+    eligibility: str
+    reason: str = ""
+
+    @field_validator("eligibility")
+    @classmethod
+    def _valid_eligibility(cls, v: str) -> str:
+        if v not in ELIGIBILITY:
+            raise ValueError(f"eligibility must be one of {ELIGIBILITY}")
+        return v
+
+
 class PaySubmissionIn(BaseModel):
     discipline: str
     level: str
@@ -1068,6 +1100,19 @@ def admin_reject(sub_id: int, _: None = Depends(require_admin)):
     if not get_submission(sub_id):
         raise HTTPException(404, "no such submission")
     set_status(sub_id, "rejected")
+    return {"ok": True}
+
+
+@app.post("/api/admin/submissions/{sub_id}/eligibility")
+def admin_override_eligibility(sub_id: int, payload: EligibilityOverride, _: None = Depends(require_admin)):
+    """Correcting the employer's own eligibility claim during review — the
+    review modal calls this before approve/reject when the admin picked a
+    different tier than what was submitted. Recorded with a reason so the
+    employer can be told why, and eligibility_source flips to 'admin-set' so
+    every listing surface can show the tier was corrected, not claimed."""
+    if not get_submission(sub_id):
+        raise HTTPException(404, "no such submission")
+    override_submission_eligibility(sub_id, payload.eligibility, payload.reason)
     return {"ok": True}
 
 
@@ -2482,6 +2527,57 @@ def admin_verify_designer_email(designer_id: int, _: None = Depends(require_admi
     if not get_designer(designer_id):
         raise HTTPException(404, "no such designer")
     set_designer_email_verified(designer_id)
+    return {"ok": True}
+
+
+@app.get("/api/admin/designers/{designer_id}")
+def admin_get_designer(designer_id: int, _: None = Depends(require_admin)):
+    """The designer detail page: full profile plus the moderation-relevant
+    surface — activity feed and reports against them — a plain list row
+    doesn't carry. Same activity-merge shape as the public /activity
+    endpoint, just without the approved-only gate."""
+    d = get_designer(designer_id)
+    if not d:
+        raise HTTPException(404, "no such designer")
+    activity = []
+    for q in list_questions_by_designer(designer_id):
+        activity.append({"type": "question", "text": q["title"], "when": q["created_at"]})
+    for r in list_replies_by_designer(designer_id):
+        activity.append({"type": "reply", "text": r["question_title"], "when": r["created_at"]})
+    for b in list_bookings_for_designer(designer_id):
+        activity.append({"type": "session", "text": b["title"], "when": b["session_date"]})
+    activity.sort(key=lambda i: i["when"], reverse=True)
+    reports = [r for r in list_reports() if r["kind"] == "profile" and r["target_id"] == designer_id]
+    return {
+        **d,
+        "discipline": parse_multi_field(d["discipline"]),
+        "skills": parse_multi_field(d.get("skills")),
+        "links": list_designer_links(designer_id),
+        "projects": list_designer_projects(designer_id),
+        "role_history": list_role_history(designer_id),
+        "followers_count": count_followers("designer", designer_id),
+        "activity": activity[:20],
+        "reports": reports,
+    }
+
+
+@app.post("/api/admin/designers/{designer_id}/suspend")
+def admin_suspend_designer(designer_id: int, payload: DesignerSuspend, _: None = Depends(require_admin)):
+    """Her profile comes down and she can't message or apply — status flips
+    to 'suspended', which the public directory/profile queries and
+    require_designer() already treat as invisible/blocked. Community posts
+    stay up, credited to the account as-is."""
+    if not get_designer(designer_id):
+        raise HTTPException(404, "no such designer")
+    suspend_designer(designer_id, payload.rule, payload.reason)
+    return {"ok": True}
+
+
+@app.post("/api/admin/designers/{designer_id}/unsuspend")
+def admin_unsuspend_designer(designer_id: int, _: None = Depends(require_admin)):
+    if not get_designer(designer_id):
+        raise HTTPException(404, "no such designer")
+    unsuspend_designer(designer_id)
     return {"ok": True}
 
 

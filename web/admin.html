@@ -3,319 +3,248 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Admin · Kazi</title>
+<title>Admin · Path &amp; Pixel</title>
 <link rel="icon" type="image/png" href="favicon.png">
-<script src="theme.js?v=6"></script>
-<script src="nav.js?v=10"></script>
-<script src="confirm-dialog.js?v=1"></script>
-<script src="password-toggle.js?v=1"></script>
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<script src="pp-confirm.js"></script>
 <style>
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Regular.woff2") format("woff2"),url("/fonts/grift/Grift-Regular.woff") format("woff");font-weight:400;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Medium.woff2") format("woff2"),url("/fonts/grift/Grift-Medium.woff") format("woff");font-weight:500;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-SemiBold.woff2") format("woff2"),url("/fonts/grift/Grift-SemiBold.woff") format("woff");font-weight:600;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-Bold.woff2") format("woff2"),url("/fonts/grift/Grift-Bold.woff") format("woff");font-weight:700;font-style:normal;font-display:swap}
-  @font-face{font-family:Grift;src:url("/fonts/grift/Grift-ExtraBold.woff2") format("woff2"),url("/fonts/grift/Grift-ExtraBold.woff") format("woff");font-weight:800;font-style:normal;font-display:swap}
-
-  :root{
-    --canvas:#FFFFFF; --surface:#FFFFFF; --ink:#0B1623; --muted:#757575; --faint:#82828299;
-    --hairline:#EEEEEE; --hairline-strong:#D2D0D0; --brand:#6D28A1; --brand-soft:#F1E7FA;
-    --green:#089111; --green-soft:#E1F5E3; --green-ink:#076C0D;
-    --amber:#F25C05; --amber-soft:#FDE6D8;
-    --blue:#2F6FE4; --blue-soft:#E4ECFC;
-    --red:#D3322A; --red-soft:#FBE4E2;
-    --shadow:0 1px 2px rgba(11,22,35,.04), 0 8px 24px -12px rgba(11,22,35,.10);
-    --radius:16px; --ease-expo:cubic-bezier(.19,1,.22,1); --ease-io:cubic-bezier(.65,0,.35,1);
-  }
-  :root[data-theme="dark"]{
-    --canvas:#0B1420; --surface:#121B29; --ink:#EDEFF2; --muted:#94A0AC; --faint:#94A0AC99;
-    --hairline:#1E2937; --hairline-strong:#2B3947; --brand:#A868E8; --brand-soft:#251A38;
-    --green:#22B368; --green-soft:#12301D; --green-ink:#5FE3A0;
-    --amber:#FF9B57; --amber-soft:#3A2412;
-    --blue:#5B9BFF; --blue-soft:#152A46;
-    --red:#FF6B5B; --red-soft:#3A1712;
-    --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -12px rgba(0,0,0,.55);
-  }
+  /* Staff-only surface: a documented exception (see Coverage register) —
+     denser ink bar at 60px with a 26px mark, always-open search, no
+     breadcrumbs, no public footer. Everything else below the bar reuses
+     tokens.css/pp-primitives.css exactly like the public pages. */
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;min-height:100vh}
   *{box-sizing:border-box}
-  html{overflow-x:hidden}
-  body{overflow-wrap:break-word}
-  img,svg,video{max-width:100%;height:auto}
+  a{color:inherit;text-decoration:none}
   #pageLoader{position:fixed;inset:0;z-index:9999;display:flex;align-items:center;justify-content:center;
-    background:var(--canvas);transition:opacity .35s var(--ease-io),visibility .35s var(--ease-io)}
+    background:var(--c-bg);transition:opacity .35s var(--pp-ease),visibility .35s var(--pp-ease)}
   #pageLoader.-hide{opacity:0;visibility:hidden;pointer-events:none}
   #pageLoader .pl-spinner{width:32px;height:32px;border-radius:50%;
-    border:3px solid var(--hairline-strong);border-top-color:var(--brand);
-    animation:pl-spin .7s linear infinite}
+    border:3px solid var(--c-border-strong);border-top-color:var(--pp-gold);animation:pl-spin .7s linear infinite}
   @keyframes pl-spin{to{transform:rotate(360deg)}}
   @media(prefers-reduced-motion:reduce){#pageLoader .pl-spinner{animation:none}}
-  body{margin:0;min-height:100vh;display:flex;flex-direction:column;
-    background:var(--canvas);color:var(--ink);font-family:"Grift",system-ui,sans-serif;
-    font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased}
-  body > .wrap{flex:1}
-  a{color:inherit}
-  .wrap{width:100%;max-width:960px;margin:0 auto;padding:0 24px}
-  @media(min-width:768px){.wrap{padding:0 32px}}
-  @media(min-width:1280px){.wrap{padding:0 48px}}
-  #appWrap.wrap{max-width:1600px;margin:0 auto}
 
-  header.bar{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.9);
-    -webkit-backdrop-filter:saturate(1.4) blur(10px);backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--hairline)}
-  [data-theme="dark"] header.bar{background:rgba(11,20,32,.82)}
-  .bar-inner{position:relative;display:flex;align-items:center;gap:20px;height:64px;width:100%;padding:0 24px}
-  .brand{display:flex;align-items:center;gap:10px;text-decoration:none;flex:none}
-  .logomark{height:20px;width:auto;flex:none;display:block}
-  .bar-stat{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--muted);
-    background:var(--surface);border:1px solid var(--hairline);border-radius:999px;padding:7px 14px;
-    font-variant-numeric:tabular-nums;box-shadow:var(--shadow);flex:none}
-  .bar-stat b{color:var(--ink);font-weight:700}
-  .bar-stat .livedot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:dotblink 2.6s ease-in-out infinite}
-  @keyframes dotblink{0%,100%{opacity:1}50%{opacity:.25}}
-  @media(max-width:1500px){
-    .bar-stat .stattext{display:none}
-    .bar-stat{padding:7px 10px}
-  }
-  .header-center{flex:1;min-width:0;overflow:hidden;
-    display:flex;align-items:center;justify-content:center;gap:18px}
-  .bar-right{display:flex;align-items:center;gap:16px;flex:none;margin-left:auto}
-  .tag{font-size:12px;font-weight:600;color:var(--muted);background:var(--surface);
-    border:1px solid var(--hairline-strong);padding:4px 10px;border-radius:999px}
-
-  .nav-links{display:flex;align-items:center;gap:24px;white-space:nowrap}
-  .nav-links a{font-size:13.5px;font-weight:600;color:var(--muted);text-decoration:none;
-    transition:color .3s var(--ease-expo)}
-  .nav-links a:hover{color:var(--ink)}
-
-  footer.foot{border-top:1px solid var(--hairline);padding:26px 0;color:var(--muted);font-size:13px}
-  footer.foot .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;align-items:center}
-  .foot-links{display:flex;gap:16px;flex-wrap:wrap}
-  .foot-links a{color:var(--muted);text-decoration:none}
-  .foot-links a:hover{color:var(--ink)}
-
-  .menu-toggle{display:none;position:relative;flex:none;width:38px;height:38px;padding:0;
-    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
-    cursor:pointer;color:var(--ink);
-    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
-  .menu-toggle:hover{border-color:var(--brand);color:var(--brand)}
-  .menu-toggle span{display:block;position:absolute;left:50%;top:50%;width:16px;height:2px;
-    border-radius:2px;background:currentColor;transition:transform .4s var(--ease-io)}
-  .menu-toggle span:first-child{transform:translate(-50%,-50%) translateY(-3px)}
-  .menu-toggle span:last-child{transform:translate(-50%,-50%) translateY(3px)}
-  .menu-toggle.-active span:first-child{transform:translate(-50%,-50%) rotate(45deg)}
-  .menu-toggle.-active span:last-child{transform:translate(-50%,-50%) rotate(-45deg)}
-
-  html.menu-open{overflow:hidden}
-  /* ---- mobile nav menu: same design language as the filter rail
-     (full-bleed canvas panel, fast simple slide, plain list rows) but
-     pulling in from the right instead of the left ---- */
-  .mobile-menu{position:fixed;inset:0;z-index:300;background:var(--canvas);
-    padding:20px 22px 40px;overflow:auto;display:flex;flex-direction:column;
-    transform:translateX(100%);transition:transform .22s ease}
-  .mobile-menu.-open{transform:translateX(0)}
-  .mm-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:2px}
-  .mm-top h2{margin:0;font-size:16.5px;font-weight:800;color:var(--ink)}
-  .mm-close{display:flex;align-items:center;justify-content:center;width:34px;height:34px;padding:0;
-    border-radius:50%;background:var(--surface);border:1px solid var(--hairline-strong);
-    font-size:20px;line-height:1;cursor:pointer;color:var(--ink)}
-  .mm-nav{display:flex;flex-direction:column;margin-top:14px;border-top:1px solid var(--hairline);padding-top:6px}
-  .mm-nav a{display:block;padding:14px 8px;margin:0 -8px;border-radius:8px;
-    font-size:16px;font-weight:600;color:var(--ink);text-decoration:none;
-    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
-  .mm-nav a:hover{background:var(--hairline)}
-  .mm-nav:not(.mm-account) a:not(.nav-cta){display:flex;align-items:center;border-bottom:1px solid var(--hairline)}
-  .mm-nav:not(.mm-account) a:not(.nav-cta)::after{content:"";flex:none;width:7px;height:7px;margin-left:auto;
-    border-right:2px solid var(--muted);border-top:2px solid var(--muted);transform:rotate(45deg)}
-  .mm-nav:not(.mm-account) a:not(.nav-cta):nth-child(-n+3){border-radius:0}
-  .mm-nav:not(.mm-account) a:not(.nav-cta):nth-child(4){border-bottom:none}
-  .mm-account{margin-top:auto;display:flex;flex-direction:column;gap:10px}
-  .mm-nav button.mm-logout{display:block;width:100%;text-align:left;padding:14px 8px;margin:0 -8px;border-radius:8px;
-    font-size:16px;font-weight:600;color:var(--ink);background:none;border:0;cursor:pointer;font:inherit;
-    transition:background .25s var(--ease-expo),color .25s var(--ease-expo)}
-  .mm-nav button.mm-logout:hover{background:var(--hairline)}
-  .nav-links a.active,.mm-nav a.active{color:var(--brand);font-weight:600}
-  .nav-links a.active::before,.mm-nav a.active::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand);margin-right:4px;vertical-align:middle}
-  .nav-links a.nav-cta{background:var(--brand);color:#fff;padding:7px 16px;border-radius:999px;margin-left:10px;font-weight:700;transition:filter .3s var(--ease-expo)}
-  .nav-links a.nav-cta:hover{filter:brightness(1.12);color:#fff}
-  .nav-links a.nav-cta.active{color:#fff}
-  .nav-links a.nav-cta.active::before{content:none}
-  .mm-nav a.nav-cta{background:var(--brand);color:#fff;text-align:center;margin-top:10px;transition:filter .25s var(--ease-expo)}
-  .mm-nav a.mm-cta-outline{border:1px solid var(--hairline-strong);text-align:center}
-  .mm-nav a.mm-cta-outline:hover{border-color:var(--brand)}
-  .mm-nav a.nav-cta:hover{filter:brightness(1.12);background:var(--brand);color:#fff}
-  .mm-nav a.nav-cta.active{color:#fff}
-  .mm-nav a.nav-cta.active::before{content:none}
-
+  /* ---- staff bar ---- */
+  .staffbar{position:sticky;top:0;z-index:var(--pp-z-header);height:60px;
+    background:var(--pp-ink);border-bottom:1px solid var(--pp-ink-raised)}
+  [data-pp-theme="dark"] .staffbar{background:var(--pp-ink-raised);border-bottom-color:#2E2E34}
+  .staffbar-inner{max-width:1600px;margin:0 auto;height:100%;padding:0 24px;
+    display:flex;align-items:center;gap:16px}
+  .staffbar-brand{display:flex;align-items:center;gap:10px;flex:none}
+  .staffbar-brand img{width:26px;height:26px;display:block}
+  .staffbar-brand span{font-size:14px;font-weight:700;letter-spacing:.02em;color:#fff}
+  .staffbar-tag{padding:3px 9px;border-radius:6px;background:rgba(255,255,255,.1);
+    color:var(--pp-gold);font-size:11.5px;font-weight:600;flex:none}
+  .staffbar-search{display:flex;align-items:center;gap:10px;height:38px;padding:0 14px;
+    border-radius:9px;background:rgba(255,255,255,.08);flex:1;max-width:320px;min-width:0}
+  .staffbar-search svg{flex:none;color:#8E8E97}
+  .staffbar-search input{border:0;outline:0;background:transparent;color:#fff;font:inherit;
+    font-size:14px;flex:1;min-width:0}
+  .staffbar-search input::placeholder{color:#8E8E97}
+  .staffbar-right{display:flex;align-items:center;gap:14px;margin-left:auto;flex:none}
+  .staffbar-live{font-size:13.5px;color:#A8A8B0}
+  .staffbar-live:hover{color:var(--pp-gold)}
+  .staffbar-icon{width:36px;height:36px;flex:none;border-radius:50%;border:1px solid rgba(255,255,255,.16);
+    background:transparent;color:#fff;cursor:pointer;display:grid;place-items:center;padding:0}
+  .staffbar-icon:hover{background:rgba(255,255,255,.08)}
+  .staffbar-icon svg{position:absolute}
+  .staffbar-icon .i-moon{opacity:0;transform:rotate(-90deg) scale(.4)}
+  [data-pp-theme="dark"] .staffbar-icon .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
+  [data-pp-theme="dark"] .staffbar-icon .i-moon{opacity:1;transform:rotate(0) scale(1)}
+  .staffbar-icon svg{transition:transform .4s var(--pp-ease),opacity .3s var(--pp-ease)}
+  .acct-chip{position:relative;flex:none}
+  .acct-trigger{display:flex;align-items:center;gap:9px;height:36px;padding:4px 12px 4px 4px;
+    border-radius:999px;border:1px solid rgba(255,255,255,.16);background:transparent;cursor:pointer;
+    font:inherit;color:#fff;font-size:13.5px;font-weight:500}
+  .acct-trigger:hover{background:rgba(255,255,255,.08)}
+  .acct-avatar{width:26px;height:26px;border-radius:50%;background:var(--pp-gold);color:var(--pp-ink);
+    display:grid;place-items:center;font-size:11px;font-weight:700;flex:none}
+  .acct-dropdown{position:absolute;top:calc(100% + 8px);right:0;min-width:170px;z-index:21;
+    background:var(--c-surface);border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-lg);
+    box-shadow:var(--pp-shadow-xl);padding:6px;display:none;flex-direction:column;gap:2px}
+  .acct-chip.-open .acct-dropdown{display:flex}
+  .acct-dropdown a,.acct-dropdown button{display:block;width:100%;text-align:left;padding:9px 10px;
+    border-radius:8px;border:0;background:none;color:var(--c-text);font:inherit;font-size:13.5px;
+    font-weight:600;cursor:pointer;text-decoration:none}
+  .acct-dropdown a:hover,.acct-dropdown button:hover{background:var(--c-bg-sunken)}
   @media(max-width:860px){
-    body{font-size:15px}
-  }
-  @media(max-width:600px){
-    body{font-size:14px}
-  }
-  @media(max-width:860px){
-    .bar-inner{gap:10px}
-    .bar-stat{padding:6px 10px;font-size:12px;gap:5px}
-    .bar-stat .stattext{display:none}
-    .nav-links{gap:14px}
-    .nav-links a{font-size:12.5px;white-space:nowrap}
-  }
-  /* Centered nav needs real room on either side for the brand and the
-     right-side icon cluster (theme toggle + account chip) — below this
-     it starts colliding with them, so hand off to the hamburger sooner
-     than the plain "mobile" breakpoint above. */
-  @media(max-width:767px),(orientation:portrait) and (max-width:1400px){
-    .header-center{display:none}
-    .menu-toggle{display:block}
-  }
-  /* Tablet portrait: put the hamburger at the far right edge, past
-     "Create an account", instead of between the icons and it. */
-  @media(orientation:portrait) and (max-width:1400px){
-    .acct-cta{order:1}
-    .acct-menu{order:1}
-    .menu-toggle{order:2}
+    .staffbar-search,.staffbar-live{display:none}
   }
 
-  .acct-menu{position:relative;flex:none;display:none}
-  .acct-menu.-visible{display:block}
-  .acct-trigger{display:flex;align-items:center;gap:8px;height:38px;padding:0 12px 0 6px;
-    border-radius:999px;border:1px solid var(--hairline-strong);background:var(--surface);
-    cursor:pointer;color:var(--ink);font:inherit;font-size:13px;font-weight:600;
-    transition:border-color .3s var(--ease-expo)}
-  .acct-trigger:hover{border-color:var(--brand)}
-  .acct-cta{display:flex;align-items:center;height:38px;padding:0 16px;flex:none;
-    border-radius:999px;border:1px solid var(--hairline-strong);background:var(--surface);
-    color:var(--ink);font:inherit;font-size:13px;font-weight:600;text-decoration:none;
-    transition:border-color .3s var(--ease-expo)}
-  .acct-cta:hover{border-color:var(--brand)}
-  .acct-avatar{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:none;background:var(--hairline)}
-  .acct-caret{flex:none;color:var(--muted);transition:transform .25s var(--ease-expo)}
-  .acct-menu.-open .acct-caret{transform:rotate(180deg)}
-  .acct-dropdown{position:absolute;top:calc(100% + 8px);right:0;min-width:160px;z-index:60;
-    background:var(--surface);border:1px solid var(--hairline-strong);border-radius:12px;
-    box-shadow:var(--shadow);padding:6px;display:none;flex-direction:column;gap:2px}
-  .acct-menu.-open .acct-dropdown{display:flex}
-  .acct-dropdown a,.acct-dropdown button{display:block;width:100%;text-align:left;
-    padding:9px 10px;border-radius:8px;border:0;background:none;color:var(--ink);
-    font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none}
-  .acct-dropdown a:hover,.acct-dropdown button:hover{background:var(--hairline)}
-  @media(max-width:600px){
-    .acct-menu{display:none!important}
-    .acct-cta{display:none!important}
+  /* ---- gate (sign-in) ---- */
+  .gate-wrap{min-height:calc(100vh - 60px);display:flex;align-items:center;justify-content:center;padding:24px}
+  .gate{max-width:380px;width:100%;padding:32px;border:1px solid var(--c-border);border-radius:var(--pp-radius-xl);
+    background:var(--c-surface);text-align:center}
+  .gate h1{margin:0 0 6px;font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .gate p{margin:0 0 18px;color:var(--c-text-subtle);font-size:14.5px}
+  .gate input{width:100%;font:inherit;font-size:16px;border:1px solid var(--c-border-strong);
+    border-radius:var(--pp-radius-lg);padding:12px 14px;background:var(--c-bg);color:var(--c-text);
+    box-sizing:border-box}
+  .gate .err{color:var(--c-bad-text);font-size:13px;margin-top:10px}
+
+  /* ---- shell: sidebar + content ---- */
+  .admin-shell{max-width:1600px;margin:0 auto;padding:28px 24px 80px;display:grid;
+    grid-template-columns:224px minmax(0,1fr);gap:32px;align-items:start}
+  @media(max-width:900px){.admin-shell{grid-template-columns:1fr;padding:20px 16px 60px}}
+
+  .side-nav{position:sticky;top:84px;display:flex;flex-direction:column;gap:20px}
+  .side-group{display:flex;flex-direction:column;gap:2px}
+  .side-group-title{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--c-text-faint);padding:0 12px;margin-bottom:6px}
+  @media(max-width:900px){
+    .side-nav{position:static;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;gap:8px;
+      padding-bottom:4px;-webkit-overflow-scrolling:touch}
+    .side-group{flex-direction:row;gap:6px;flex:none}
+    .side-group-title{display:none}
   }
+  .side-nav button{display:flex;align-items:center;gap:10px;padding:9px 12px;border:0;border-radius:9px;
+    font:inherit;font-size:14.5px;font-weight:500;color:var(--c-text-muted);background:transparent;
+    cursor:pointer;text-align:left;white-space:nowrap}
+  .side-nav button:hover{background:var(--c-bg-sunken)}
+  .side-nav button.active{background:var(--pp-ink);color:#fff;font-weight:600}
+  [data-pp-theme="dark"] .side-nav button.active{background:var(--pp-gold);color:var(--pp-ink)}
+  .side-nav button svg{flex:none;opacity:.8}
+  .side-badge{margin-left:auto;padding:1px 8px;border-radius:999px;background:var(--c-surface-inset);
+    color:var(--c-text-subtle);font-size:11.5px;font-weight:700;font-variant-numeric:tabular-nums;flex:none}
+  .side-nav button.active .side-badge{background:rgba(255,255,255,.18);color:#fff}
+  [data-pp-theme="dark"] .side-nav button.active .side-badge{background:rgba(10,10,10,.18);color:var(--pp-ink)}
+  .side-badge:empty{display:none}
 
-  .theme-toggle{position:relative;flex:none;width:36px;height:36px;padding:0;border-radius:50%;
-    background:var(--surface);border:1px solid var(--hairline-strong);cursor:pointer;
-    display:grid;place-items:center;color:var(--ink);
-    transition:border-color .3s var(--ease-expo),color .3s var(--ease-expo)}
-  .theme-toggle:hover{border-color:var(--brand);color:var(--brand)}
-  .theme-toggle svg{position:absolute;transition:transform .5s var(--ease-expo),opacity .35s var(--ease-expo)}
-  .theme-toggle .i-moon{opacity:0;transform:rotate(-90deg) scale(.4)}
-  [data-theme="dark"] .theme-toggle .i-sun{opacity:0;transform:rotate(90deg) scale(.4)}
-  [data-theme="dark"] .theme-toggle .i-moon{opacity:1;transform:rotate(0deg) scale(1)}
+  main{min-width:0}
+  h1{font-weight:800;font-size:32px;letter-spacing:-.026em;margin:0 0 5px;line-height:1.1}
+  .sub{color:var(--c-text-muted);font-size:15.5px;line-height:1.55;margin:0 0 20px;max-width:66ch}
 
-  h1{font-weight:800;font-size:24px;letter-spacing:-.02em;margin:32px 0 4px}
-  .sub{color:var(--muted);font-size:14px;margin:0 0 24px}
-
-  .gate{max-width:380px;margin:80px auto;text-align:center}
-  .gate input{width:100%;font:inherit;font-size:14.5px;border:1px solid var(--hairline-strong);
-    border-radius:10px;padding:12px 14px;margin-top:14px;background:var(--surface);color:var(--ink)}
-  /* iOS Safari auto-zooms on focus into any input under 16px. Must come
-     after the base rule above: same selector, so source order decides. */
-  @media(max-width:600px){
-    .gate input{font-size:16px}
-  }
-  .gate button{margin-top:12px;width:100%;background:var(--ink);color:var(--canvas);border:0;font:inherit;
-    font-weight:700;font-size:14.5px;padding:12px;border-radius:999px;cursor:pointer}
-  .gate button:hover{background:var(--brand)}
-  .gate .err{color:#a5341f;font-size:13px;margin-top:10px}
-  [data-theme="dark"] .gate .err{color:#FF6B5B}
-
-  .tabs{display:flex;gap:8px;margin-bottom:18px}
+  .tabs{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
   .tabs button{font:inherit;font-size:13.5px;font-weight:600;padding:8px 14px;border-radius:999px;
-    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
-  .tabs button.active{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
+    border:1px solid var(--c-border-strong);background:var(--c-surface);color:var(--c-text-subtle);cursor:pointer}
+  .tabs button.active{background:var(--pp-ink);color:#fff;border-color:var(--pp-ink)}
+  [data-pp-theme="dark"] .tabs button.active{background:var(--pp-gold);color:var(--pp-ink);border-color:var(--pp-gold)}
 
-  .item{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;margin-bottom:12px;
-    display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+  .item{border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);padding:18px 20px;margin-bottom:12px;
+    display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;background:var(--c-surface)}
   .item h3{margin:0 0 4px;font-size:16.5px;font-weight:700}
-  .item .meta{font-size:13px;color:var(--muted);margin:0 0 8px}
-  .item .meta b{color:var(--ink)}
-  .item .desc{font-size:13.5px;color:var(--muted);line-height:1.5;margin:0 0 8px;white-space:pre-wrap;overflow-wrap:anywhere;
-    max-width:60ch}
+  .item .meta{font-size:13px;color:var(--c-text-subtle);margin:0 0 8px}
+  .item .meta b{color:var(--c-text)}
+  .item .desc{font-size:13.5px;color:var(--c-text-subtle);line-height:1.5;margin:0 0 8px;white-space:pre-wrap;
+    overflow-wrap:anywhere;max-width:60ch}
   .item .badges{display:flex;flex-wrap:wrap;gap:6px;font-size:12px}
-  .item .badges span{background:var(--green-soft);color:var(--green-ink);padding:3px 9px;border-radius:999px;font-weight:600}
-  .item a.applylink{font-size:12.5px;color:var(--brand);word-break:break-all}
-  .actions{display:flex;gap:8px;flex:none}
-  .actions button{font:inherit;font-size:13px;font-weight:700;padding:8px 14px;border-radius:999px;border:0;cursor:pointer}
-  .approve{background:var(--green);color:#fff}
-  .reject{background:var(--amber-soft);color:var(--amber)}
-  .status{font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:999px}
-  .status.approved{background:var(--green-soft);color:var(--green-ink)}
-  .status.rejected{background:var(--amber-soft);color:var(--amber)}
+  .item .badges span{background:var(--c-good-bg);color:var(--c-good-text);padding:3px 9px;border-radius:999px;font-weight:600}
+  .item a.applylink{font-size:12.5px;color:var(--pp-gold-800);word-break:break-all}
+  .actions{display:flex;flex-direction:column;gap:8px;flex:none;min-width:120px}
+  .actions button{font:inherit;font-size:13px;font-weight:700;padding:9px 14px;border-radius:999px;border:0;cursor:pointer}
+  .approve{background:var(--pp-ink);color:#fff}
+  .approve:hover{filter:brightness(1.2)}
+  [data-pp-theme="dark"] .approve{background:var(--pp-gold);color:var(--pp-ink)}
+  .reject{background:var(--c-surface);color:var(--c-bad-text);border:1px solid var(--c-bad-border)}
+  .reject:hover{background:var(--c-bad-bg)}
+  .quiet{background:var(--c-surface);color:var(--c-text-subtle);border:1px solid var(--c-border-strong)}
+  .quiet:hover{background:var(--c-bg-sunken)}
+  .status{font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;display:inline-block}
+  .status.approved{background:var(--c-good-bg);color:var(--c-good-text)}
+  .status.rejected{background:var(--c-bad-bg);color:var(--c-bad-text)}
+  .status.suspended{background:var(--c-bad-bg);color:var(--c-bad-text)}
+  .status.pending{background:var(--pp-gold-200);color:var(--pp-gold-800)}
 
-  .empty{text-align:center;padding:60px 20px;color:var(--muted);border:1px dashed var(--hairline-strong);border-radius:var(--radius)}
+  .empty{text-align:center;padding:60px 20px;color:var(--c-text-subtle);border:1px dashed var(--c-border-strong);
+    border-radius:var(--pp-radius-lg)}
 
-  .urgent{background:var(--red-soft);color:var(--red)}
-  .kind-badge{background:var(--brand-soft);color:var(--brand);padding:3px 9px;border-radius:999px;font-weight:600}
-  .report-quote{font-size:13.5px;color:var(--ink);line-height:1.5;margin:0 0 8px;padding:10px 12px;
-    background:var(--surface);border:1px solid var(--hairline);border-radius:10px;white-space:pre-wrap;overflow-wrap:anywhere;max-width:60ch}
-  .dismiss{background:var(--surface);color:var(--muted);border:1px solid var(--hairline-strong)}
+  .urgent{background:var(--c-bad-bg);color:var(--c-bad-text)}
+  .kind-badge{background:var(--pp-gold-200);color:var(--pp-gold-800);padding:3px 9px;border-radius:999px;font-weight:600}
+  .report-quote{font-size:13.5px;color:var(--c-text);line-height:1.5;margin:0 0 8px;padding:10px 12px;
+    background:var(--c-bg-sunken);border:1px solid var(--c-border);border-radius:10px;white-space:pre-wrap;
+    overflow-wrap:anywhere;max-width:60ch}
+  .dismiss{background:var(--c-surface);color:var(--c-text-subtle);border:1px solid var(--c-border-strong)}
 
-  .modal-backdrop{position:fixed;inset:0;z-index:60;background:rgba(11,22,35,.5);display:flex;align-items:center;justify-content:center;padding:20px}
-  .modal-panel{background:var(--canvas);border-radius:var(--radius);padding:24px;max-width:440px;width:100%;box-shadow:var(--shadow)}
-  .modal-panel h3{margin:0 0 6px;font-size:19px}
-  .modal-panel .sub{margin:0 0 18px}
-  .modal-options{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
-  .modal-opt{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--hairline-strong);border-radius:12px;cursor:pointer}
-  .modal-opt input{margin-top:3px}
-  .modal-opt b{display:block;font-size:14px}
-  .modal-opt span{display:block;font-size:12.5px;color:var(--muted)}
-  .modal-actions{display:flex;justify-content:flex-end;gap:10px}
-  .modal-cancel{font:inherit;font-size:13.5px;font-weight:700;padding:10px 16px;border-radius:999px;border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
+  .pp-backdrop{position:fixed;inset:0;z-index:var(--pp-z-modal);background:rgba(10,10,10,.55);
+    display:flex;align-items:flex-start;justify-content:center;padding:56px 24px;box-sizing:border-box;
+    opacity:0;pointer-events:none;transition:opacity var(--pp-duration) var(--pp-ease);overflow-y:auto}
+  .pp-backdrop.-open{opacity:1;pointer-events:auto}
+  .pp-modal{background:var(--c-surface);border-radius:var(--pp-radius-xl);box-shadow:0 24px 64px rgba(10,10,10,.32);
+    width:100%;max-width:560px;box-sizing:border-box;transform:scale(.97) translateY(6px);opacity:0;
+    transition:transform var(--pp-duration) var(--pp-ease),opacity var(--pp-duration) var(--pp-ease);
+    flex:none;overflow:hidden;display:flex;flex-direction:column;max-height:100%}
+  .pp-backdrop.-open .pp-modal{transform:scale(1) translateY(0);opacity:1}
+  .pp-modal.-wide{max-width:720px}
+  .modal-head{padding:20px 24px;border-bottom:1px solid var(--c-border);display:flex;align-items:flex-start;
+    gap:16px;flex:none}
+  .modal-head h3{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:-.015em}
+  .modal-head p{margin:0;font-size:13.5px;color:var(--c-text-faint)}
+  .modal-close{width:34px;height:34px;flex:none;border:0;border-radius:9px;background:var(--c-surface-inset);
+    color:var(--c-text-muted);cursor:pointer;display:grid;place-items:center}
+  .modal-close:hover{background:var(--c-border)}
+  .modal-body{padding:22px 24px;overflow-y:auto}
+  .modal-foot{padding:16px 24px;border-top:1px solid var(--c-border);background:var(--c-bg-sunken);
+    display:flex;align-items:center;gap:10px;flex:none}
+  .modal-note{font-size:13px;color:var(--c-text-faint);flex:1}
 
-  .form-panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:20px;background:var(--surface);margin-bottom:20px}
+  .excerpt-box{padding:16px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);
+    border:1px solid var(--c-border);margin-bottom:20px}
+  .excerpt-box span{display:block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--c-text-faint);margin-bottom:8px}
+  .excerpt-box p{margin:0;font-size:14.5px;line-height:1.6;color:var(--c-text);max-height:180px;overflow-y:auto}
+
+  .elig-row{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;border-radius:var(--pp-radius-md);
+    border:1px solid var(--c-border-strong);background:var(--c-surface);cursor:pointer;width:100%;text-align:left;
+    font:inherit;margin-bottom:9px}
+  .elig-row:hover{border-color:var(--c-border-hover)}
+  .elig-row.-active{border-color:var(--pp-gold);background:var(--pp-gold-200)}
+  .elig-row .dot{width:18px;height:18px;flex:none;margin-top:2px;border-radius:50%;border:2px solid var(--c-border-strong);
+    display:grid;place-items:center}
+  .elig-row.-active .dot{border-color:var(--pp-gold-700)}
+  .elig-row .dot i{width:8px;height:8px;border-radius:50%;background:transparent}
+  .elig-row.-active .dot i{background:var(--pp-gold-700)}
+  .elig-row b{font-size:14.5px;font-weight:600}
+  .elig-row .was-claimed{font-size:11px;font-weight:600;padding:2px 8px;border-radius:5px;margin-left:8px;
+    background:var(--c-surface-inset);color:var(--c-text-subtle)}
+  .elig-row span.note{display:block;font-size:13.5px;line-height:1.5;color:var(--c-text-subtle);margin-top:2px}
+
+  .rule-chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+  .rule-chip{height:42px;padding:0 14px;border-radius:9px;border:1px solid var(--c-border-strong);
+    background:var(--c-surface);color:var(--c-text);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer}
+  .rule-chip.-active{background:var(--pp-ink);color:#fff;border-color:var(--pp-ink)}
+  [data-pp-theme="dark"] .rule-chip.-active{background:var(--c-bad);color:#fff;border-color:var(--c-bad)}
+
+  .form-panel{border:1px solid var(--c-border);border-radius:var(--pp-radius-xl);padding:20px;
+    background:var(--c-surface);margin-bottom:20px}
   .form-panel h3{margin:0 0 16px;font-size:16.5px}
   .field-block{display:block;margin-bottom:14px}
-  .field-block .field-label{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-bottom:6px}
-  .field-block input, .field-block textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--hairline-strong);
-    border-radius:10px;padding:10px 12px;background:var(--canvas);color:var(--ink);box-sizing:border-box;resize:vertical}
-  .field-block input:focus, .field-block textarea:focus{outline:2px solid var(--brand);outline-offset:1px}
+  .field-block .field-label{display:block;font-size:12.5px;font-weight:700;color:var(--c-text-subtle);margin-bottom:6px}
+  .field-block input, .field-block textarea{width:100%;font:inherit;font-size:14px;border:1px solid var(--c-border-strong);
+    border-radius:var(--pp-radius-md);padding:10px 12px;background:var(--c-bg);color:var(--c-text);box-sizing:border-box;resize:vertical}
+  .field-block input:focus, .field-block textarea:focus{outline:2px solid var(--pp-gold);outline-offset:1px}
   .field-row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:600px){.field-row2{grid-template-columns:1fr}}
   .form-actions{display:flex;align-items:center;gap:12px;margin-top:4px}
   .form-actions button{font:inherit;font-size:13.5px;font-weight:700;padding:10px 18px;border-radius:999px;border:0;cursor:pointer}
-  .fielderr{color:#a5341f;font-size:13px;margin:8px 0 0}
-  [data-theme="dark"] .fielderr{color:#FF6B5B}
-  .save-note{color:var(--green-ink);font-size:13.5px;font-weight:600}
+  .fielderr{color:var(--c-bad-text);font-size:13px;margin:8px 0 0}
+  .save-note{color:var(--c-good-text);font-size:13.5px;font-weight:600}
 
   /* ---- dashboard ---- */
-  .view-switch{display:flex;gap:8px;margin:32px 0 20px}
-  .view-switch button{font:inherit;font-size:13.5px;font-weight:700;padding:9px 16px;border-radius:999px;
-    border:1px solid var(--hairline-strong);background:var(--surface);color:var(--muted);cursor:pointer}
-  .view-switch button.active{background:var(--ink);color:var(--canvas);border-color:var(--ink)}
-
-  .dash-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
-  .dash-head h1{margin:0 0 2px}
-  .dash-head .sub{margin:0}
-  #rangeSelect{font:inherit;font-size:13.5px;border:1px solid var(--hairline-strong);background:var(--surface);
-    border-radius:8px;padding:8px 32px 8px 12px;color:var(--ink);cursor:pointer;appearance:none;-webkit-appearance:none;
+  .view-head{display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px}
+  .view-head h1{margin:0 0 2px}
+  .view-head .sub{margin:0}
+  #rangeSelect{font:inherit;font-size:13.5px;border:1px solid var(--c-border-strong);background:var(--c-surface);
+    border-radius:8px;padding:8px 32px 8px 12px;color:var(--c-text);cursor:pointer;appearance:none;-webkit-appearance:none;
     background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%23828282" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>');
     background-repeat:no-repeat;background-position:right 10px center;background-size:13px}
 
   .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:16px}
-  .stat-tile{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;background:var(--surface);
-    box-shadow:var(--shadow)}
+  .stat-tile{border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);padding:18px 20px;background:var(--c-surface)}
   .stat-tile .stat-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px}
   .stat-icon{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;flex:none}
   .stat-tile .n{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
-  .stat-tile .l{font-size:12.5px;color:var(--muted);margin-top:3px}
+  .stat-tile .l{font-size:12.5px;color:var(--c-text-subtle);margin-top:3px}
   .delta{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;font-weight:700;padding:2px 7px;border-radius:999px}
-  .delta.up{background:var(--green-soft);color:var(--green-ink)}
-  .delta.down{background:var(--red-soft);color:var(--red)}
-  .delta-sub{font-size:11px;color:var(--faint);margin-left:6px}
+  .delta.up{background:var(--c-good-bg);color:var(--c-good-text)}
+  .delta.down{background:var(--c-bad-bg);color:var(--c-bad-text)}
+  .delta-sub{font-size:11px;color:var(--c-text-faint);margin-left:6px}
   .stat-tile .delta-row{margin-top:9px;display:flex;align-items:center;flex-wrap:wrap;gap:2px}
 
-  .panel{border:1px solid var(--hairline);border-radius:var(--radius);padding:18px 20px;margin-bottom:16px;background:var(--surface);
-    box-shadow:var(--shadow)}
+  .panel{border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);padding:18px 20px;margin-bottom:16px;
+    background:var(--c-surface)}
   .panel h3{margin:0 0 16px;font-size:13.5px;font-weight:700}
-  .attrib{margin:12px 0 0;font-size:11px;color:var(--muted)}
+  .attrib{margin:12px 0 0;font-size:11px;color:var(--c-text-faint)}
   .attrib a{color:inherit}
   .dash-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
   .dash-grid .panel{margin-bottom:0}
@@ -325,134 +254,165 @@
   .trend-panel{display:flex;gap:28px;flex-wrap:wrap;align-items:stretch}
   .trend-summary{flex:none;min-width:150px;display:flex;flex-direction:column;justify-content:center}
   .trend-summary .n{font-size:32px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
-  .trend-summary .l{font-size:12.5px;color:var(--muted);margin-top:4px}
+  .trend-summary .l{font-size:12.5px;color:var(--c-text-subtle);margin-top:4px}
   .trend-chart-wrap{flex:1;min-width:220px;position:relative}
   .trend-chart-wrap svg{display:block;width:100%;height:170px}
   .trend-tooltip{position:absolute;top:0;transform:translate(-50%,-100%) translateY(-8px);
-    background:var(--ink);color:var(--canvas);font-size:11.5px;padding:7px 11px;border-radius:9px;
+    background:var(--pp-ink);color:#fff;font-size:11.5px;padding:7px 11px;border-radius:9px;
     white-space:nowrap;pointer-events:none;display:none;text-align:center;line-height:1.35;z-index:2}
   .trend-tooltip b{font-size:12.5px}
-  .trend-tooltip span{display:block;color:var(--faint)}
-  [data-theme="dark"] .trend-tooltip span{color:#94A0AC}
-  .bar-chart-empty{color:var(--muted);font-size:13px;padding:30px 0;text-align:center}
+  .trend-tooltip span{display:block;color:#A8A8B0}
+  .bar-chart-empty{color:var(--c-text-subtle);font-size:13px;padding:30px 0;text-align:center}
 
   .weekday-chart{display:flex;align-items:flex-end;gap:8px;height:110px;padding-top:26px}
   .weekday-chart .col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0;position:relative}
-  .weekday-chart .col .peak-n{position:absolute;top:-24px;font-size:12px;font-weight:800;color:var(--ink);white-space:nowrap}
-  .weekday-chart .col .bar{width:100%;max-width:30px;background:var(--hairline-strong);border-radius:6px 6px 3px 3px;min-height:3px}
-  .weekday-chart .col.peak .bar{background:var(--brand)}
-  .weekday-chart .col .lbl{font-size:10.5px;color:var(--faint);margin-top:8px}
+  .weekday-chart .col .peak-n{position:absolute;top:-24px;font-size:12px;font-weight:800;color:var(--c-text);white-space:nowrap}
+  .weekday-chart .col .bar{width:100%;max-width:30px;background:var(--c-border-strong);border-radius:6px 6px 3px 3px;min-height:3px}
+  .weekday-chart .col.peak .bar{background:var(--pp-gold)}
+  .weekday-chart .col .lbl{font-size:10.5px;color:var(--c-text-faint);margin-top:8px}
 
   .hbar-row{display:flex;align-items:center;gap:10px;font-size:13px;margin-bottom:12px}
   .hbar-row:last-child{margin-bottom:0}
-  .hbar-row .lbl{width:70px;flex:none;color:var(--ink);font-weight:600;text-transform:capitalize}
-  .hbar-row .track{flex:1;height:8px;background:var(--hairline);border-radius:999px;overflow:hidden}
+  .hbar-row .lbl{width:70px;flex:none;color:var(--c-text);font-weight:600;text-transform:capitalize}
+  .hbar-row .track{flex:1;height:8px;background:var(--c-surface-inset);border-radius:999px;overflow:hidden}
   .hbar-row .fill{height:100%;border-radius:999px}
-  .hbar-row .n{width:32px;flex:none;text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-size:12px}
+  .hbar-row .n{width:32px;flex:none;text-align:right;color:var(--c-text-subtle);font-variant-numeric:tabular-nums;font-size:12px}
 
   .rank-list{display:flex;flex-direction:column}
   .rank-row{display:flex;justify-content:space-between;align-items:center;gap:10px;font-size:13.5px;
-    padding:9px 0;border-bottom:1px solid var(--hairline)}
+    padding:9px 0;border-bottom:1px solid var(--c-border)}
   .rank-row:last-child{border-bottom:0;padding-bottom:0}
   .rank-row:first-child{padding-top:0}
   .rank-row .who{display:flex;align-items:center;gap:10px;overflow:hidden;min-width:0}
   .rank-avatar{width:26px;height:26px;border-radius:50%;flex:none;display:grid;place-items:center;
-    font-size:11px;font-weight:800;color:var(--brand);background:var(--brand-soft)}
-  .rank-row .name{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
-  .rank-row .sub{color:var(--muted);font-size:12px}
-  .rank-row .n{flex:none;font-weight:700;font-size:12px;color:var(--brand);background:var(--brand-soft);
+    font-size:11px;font-weight:800;color:var(--pp-gold-800);background:var(--pp-gold-200)}
+  .rank-row .name{color:var(--c-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+  .rank-row .sub{color:var(--c-text-subtle);font-size:12px}
+  .rank-row .n{flex:none;font-weight:700;font-size:12px;color:var(--pp-gold-800);background:var(--pp-gold-200);
     padding:3px 9px;border-radius:999px;font-variant-numeric:tabular-nums}
+
+  /* ---- designer detail ---- */
+  .back-link{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;font:inherit;
+    font-size:14.5px;font-weight:600;color:var(--c-text-subtle);cursor:pointer;padding:0;margin-bottom:18px}
+  .back-link:hover{color:var(--c-text)}
+  .dd-head{display:flex;gap:18px;align-items:flex-start;margin-bottom:24px;flex-wrap:wrap}
+  .dd-avatar{width:60px;height:60px;flex:none;border-radius:50%;background:var(--c-surface-inset);
+    display:grid;place-items:center;font-size:19px;font-weight:700;color:var(--c-text-subtle);overflow:hidden}
+  .dd-avatar img{width:100%;height:100%;object-fit:cover}
+  .dd-name{flex:1;min-width:200px}
+  .dd-name h2{margin:0 0 4px;font-size:28px;font-weight:800;letter-spacing:-.02em}
+  .dd-name p{margin:0 0 10px;font-size:14.5px;color:var(--c-text-subtle)}
+  .dd-badges{display:flex;gap:8px;flex-wrap:wrap}
+  .dd-actions{display:flex;gap:8px;flex:none}
+  .dd-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:22px}
+  @media(max-width:700px){.dd-stats{grid-template-columns:repeat(2,1fr)}}
+  .dd-stat{padding:16px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border)}
+  .dd-stat .n{font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.1;margin-bottom:3px;
+    font-variant-numeric:tabular-nums}
+  .dd-stat .l{font-size:12.5px;color:var(--c-text-subtle)}
+  .dd-panels{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:800px){.dd-panels{grid-template-columns:1fr}}
+  .dd-activity-row{display:flex;gap:12px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--c-border)}
+  .dd-activity-row:last-child{border-bottom:0}
+  .dd-activity-row .ic{width:20px;flex:none;color:var(--c-text-faint)}
+  .dd-activity-row .tx{flex:1;min-width:0;font-size:14.5px;line-height:1.5}
+  .dd-activity-row .wh{font-size:12.5px;color:var(--c-text-faint);flex:none}
+
+  .toast-wrap{position:fixed;bottom:24px;left:0;right:0;z-index:var(--pp-z-toast);display:flex;
+    justify-content:center;pointer-events:none}
+  .toast{display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:10px;background:var(--pp-ink);
+    box-shadow:0 12px 32px rgba(10,10,10,.28);opacity:0;transform:translateY(8px);
+    transition:opacity .25s var(--pp-ease),transform .25s var(--pp-ease)}
+  .toast.-show{opacity:1;transform:translateY(0)}
+  .toast span{font-size:14px;color:#fff}
 </style>
 </head>
 <body>
 <div id="pageLoader"><span class="pl-spinner"></span></div>
 
-<header class="bar">
-  <div class="bar-inner">
-    <a class="brand" href="/">
-      <img class="logomark" src="logo.png" alt="Kazi">
+<header class="staffbar">
+  <div class="staffbar-inner">
+    <a class="staffbar-brand" href="/admin">
+      <img src="/brand/pp-icon.png" alt="Path &amp; Pixel">
+      <span>Admin</span>
     </a>
-    <div class="header-center">
-    <nav class="nav-links">
-      <a class="nav-jobs" href="/">Jobs</a>
-      <a href="/post">Post a job</a>
-      <a href="/designers">Find a designer</a>
-      <a href="mailto:hello@odana.design">Contact us</a>
-      <a href="/cv-check" class="nav-cta">Check your CV</a>
-    </nav>
+    <span class="staffbar-tag">Staff only</span>
+    <div class="staffbar-search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="adminSearch" placeholder="Filter this list…" autocomplete="off">
     </div>
-    <div class="bar-right">
-      <div class="bar-stat"><span class="livedot"></span><b id="liveCount">–</b><span class="stattext"> roles · updated daily</span></div>
-      <span class="tag">Admin</span>
-    <button class="theme-toggle" aria-label="Toggle dark mode" aria-pressed="false" type="button">
-      <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
-    </button>
-    <button class="menu-toggle" aria-label="Open menu" aria-expanded="false" type="button">
-      <span></span><span></span>
-    </button>
-    <a href="/login" class="acct-cta" id="signinCta">Sign in</a>
-    <a href="/signup" class="acct-cta" id="acctCta">Create an account</a>
-    <div class="acct-menu" id="acctMenu">
-      <button class="acct-trigger" id="acctTrigger" type="button" aria-haspopup="true" aria-expanded="false">
-        <img class="acct-avatar" id="acctAvatar" src="" alt="">
-        <span class="acct-label">Account</span>
-        <svg class="acct-caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+    <div class="staffbar-right">
+      <a class="staffbar-live" href="/" target="_blank" rel="noopener">View live site</a>
+      <button class="staffbar-icon" id="themeToggle" type="button" aria-label="Toggle dark mode">
+        <svg class="i-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+        <svg class="i-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>
       </button>
-      <div class="acct-dropdown" id="acctDropdown">
-        <a href="/account">My profile</a>
-        <button type="button" id="acctLogoutBtn">Log out</button>
+      <div class="acct-chip" id="acctChip">
+        <button class="acct-trigger" id="acctTrigger" type="button">
+          <span class="acct-avatar">A</span>
+        </button>
+        <div class="acct-dropdown">
+          <button type="button" id="signOutBtn">Sign out</button>
+        </div>
       </div>
-    </div>
     </div>
   </div>
 </header>
 
-<div class="mobile-menu" aria-label="Menu">
-  <div class="mm-top">
-    <h2>Menu</h2>
-    <button class="mm-close" aria-label="Close menu" type="button">&times;</button>
-  </div>
-  <nav class="mm-nav">
-      <a href="/">Jobs</a>
-      <a href="/post">Post a job</a>
-      <a href="/designers">Find a designer</a>
-      <a href="mailto:hello@odana.design">Contact us</a>
-      <a href="/cv-check" class="nav-cta">Check your CV</a>
-  </nav>
-  <nav class="mm-nav mm-account" id="mmCta">
-    <a href="/login" class="mm-cta-outline">Sign in</a>
-    <a href="/signup" class="mm-cta-outline">Create an account</a>
-  </nav>
-  <nav class="mm-nav mm-account" id="mmAccount" style="display:none">
-    <a href="/account">My profile</a>
-    <button type="button" class="mm-logout" id="mmLogoutBtn">Log out</button>
-  </nav>
-</div>
-
-<div class="wrap" id="gateWrap">
+<div class="gate-wrap" id="gateWrap">
   <div class="gate">
-    <h1 style="margin-top:0">Admin sign-in</h1>
-    <p class="sub">Enter the admin token to review employer submissions.</p>
+    <h1>Admin sign-in</h1>
+    <p>Enter the admin token to review employer submissions.</p>
     <input type="password" id="tokenInput" placeholder="Admin token" autocomplete="off">
-    <button id="tokenSubmit">Continue</button>
+    <button id="tokenSubmit" class="pp-btn pp-btn-dark pp-btn-block" style="margin-top:12px">Continue</button>
     <p class="err" id="gateErr" style="display:none"></p>
   </div>
 </div>
 
-<div class="wrap" id="appWrap" style="display:none">
-  <div class="view-switch">
-    <button data-view="dashboard" class="active">Dashboard</button>
-    <button data-view="queue">Review queue</button>
-    <button data-view="designers">Designer profiles</button>
-    <button data-view="employers">Employers</button>
-    <button data-view="reports">Reports</button>
-    <button data-view="community">Community</button>
-    <button data-view="paydata">Pay data</button>
-  </div>
+<div class="admin-shell" id="appWrap" style="display:none">
+  <nav class="side-nav" aria-label="Admin sections">
+    <div class="side-group">
+      <span class="side-group-title">Watch</span>
+      <button data-view="dashboard" class="active" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
+        Dashboard
+      </button>
+    </div>
+    <div class="side-group">
+      <span class="side-group-title">Moderate</span>
+      <button data-view="queue" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        Review queue <span class="side-badge" id="badgeQueue"></span>
+      </button>
+      <button data-view="reports" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+        Reports <span class="side-badge" id="badgeReports"></span>
+      </button>
+      <button data-view="paydata" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Pay data
+      </button>
+    </div>
+    <div class="side-group">
+      <span class="side-group-title">People</span>
+      <button data-view="designers" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Designer profiles <span class="side-badge" id="badgeDesigners"></span>
+      </button>
+      <button data-view="employers" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="18" height="14" rx="1.5"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+        Employers <span class="side-badge" id="badgeEmployers"></span>
+      </button>
+      <button data-view="community" type="button">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+        Community
+      </button>
+    </div>
+  </nav>
 
+  <main>
   <section id="dashboardView">
-    <div class="dash-head">
+    <div class="view-head">
       <div>
         <h1>Dashboard</h1>
         <p class="sub">Visits, searches, and applies across the board.</p>
@@ -502,7 +462,7 @@
 
   <section id="queueView" style="display:none">
     <h1>Review queue</h1>
-    <p class="sub">Approve a listing and it appears on the board within seconds. Nothing goes live without a click here.</p>
+    <p class="sub">Every listing is read before it publishes. The job is to check one thing above all: does the eligibility the employer chose match what the job description actually says. Approve a listing and it appears on the board within seconds — nothing goes live without a click here.</p>
 
     <div class="tabs">
       <button data-status="pending" class="active">Pending</button>
@@ -526,6 +486,14 @@
     </div>
 
     <div id="designerList"></div>
+  </section>
+
+  <section id="designerDetailView" style="display:none">
+    <button class="back-link" id="ddBack" type="button">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      All designers
+    </button>
+    <div id="ddBody"><div class="empty">Loading…</div></div>
   </section>
 
   <section id="employersView" style="display:none">
@@ -611,36 +579,112 @@
 
     <div id="payList"></div>
   </section>
+  </main>
 </div>
 
-<div class="modal-backdrop" id="reportModalBackdrop" style="display:none">
-  <div class="modal-panel">
-    <h3>Resolve report</h3>
-    <p class="sub" id="reportModalSummary"></p>
-    <div class="modal-options">
-      <label class="modal-opt"><input type="radio" name="rmodalAction" value="keep" checked><div><b>Keep</b><span>The content stays. No rule was broken.</span></div></label>
-      <label class="modal-opt"><input type="radio" name="rmodalAction" value="remove"><div><b>Remove</b><span>Take the content down. Doesn't affect the account.</span></div></label>
-      <label class="modal-opt"><input type="radio" name="rmodalAction" value="suspend"><div><b>Suspend</b><span>Suspend the account that posted it.</span></div></label>
-      <label class="modal-opt"><input type="radio" name="rmodalAction" value="ask"><div><b>Ask</b><span>Not enough here to decide — follow up with someone first.</span></div></label>
+<!-- Review modal: per-listing decision, eligibility override lives here -->
+<div class="pp-backdrop" id="reviewModalBackdrop">
+  <div class="pp-modal -wide">
+    <div class="modal-head">
+      <div style="flex:1;min-width:0">
+        <h3 id="reviewTitle"></h3>
+        <p id="reviewMeta"></p>
+      </div>
+      <button class="modal-close" id="reviewClose" type="button" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
     </div>
-    <div class="modal-actions">
-      <button class="modal-cancel" id="reportModalCancel">Cancel</button>
-      <button class="approve" id="reportModalConfirm">Resolve</button>
+    <div class="modal-body">
+      <div class="excerpt-box" id="reviewExcerptBox" style="display:none">
+        <span>What the description says</span>
+        <p id="reviewExcerpt"></p>
+      </div>
+      <div style="font-size:13.5px;font-weight:600;margin-bottom:5px">Eligibility</div>
+      <p style="margin:0 0 12px;font-size:14px;line-height:1.55;color:var(--c-text-subtle)">
+        The employer claimed <strong id="reviewClaimed" style="font-weight:600;color:var(--c-text)"></strong>. Set what is actually true. If you change it, tell them why.
+      </p>
+      <div id="reviewEligOptions"></div>
+      <label id="reviewReasonWrap" style="display:none;margin-top:6px">
+        <span style="display:block;font-size:13.5px;font-weight:600;margin-bottom:7px">Why you changed it</span>
+        <textarea id="reviewReason" rows="2" placeholder="The description says applicants must have the right to work in Nigeria." style="width:100%;font:inherit;font-size:14.5px;line-height:1.55;border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-md);padding:12px 14px;background:var(--c-bg);color:var(--c-text);resize:vertical;box-sizing:border-box"></textarea>
+        <span style="display:block;margin-top:7px;font-size:13px;color:var(--c-text-faint)">Sent to the employer. They can reply and ask us to look again.</span>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="reject" id="reviewReject" type="button" style="padding:10px 16px">Reject</button>
+      <span class="modal-note" id="reviewNote"></span>
+      <button class="approve" id="reviewPublish" type="button" style="padding:10px 18px">Publish</button>
     </div>
   </div>
 </div>
 
-<footer class="foot">
-  <div class="wrap">
-    <span>© Kazi</span>
-    <nav class="foot-links">
-      <a href="/terms">Terms</a>
-      <a href="/privacy">Privacy</a>
-      <a href="/cookies">Cookies</a>
-      <a href="mailto:hello@odana.design">Contact us</a>
-    </nav>
+<!-- Suspend modal: named rule + required reason, not a generic confirm -->
+<div class="pp-backdrop" id="suspendModalBackdrop">
+  <div class="pp-modal">
+    <div class="modal-head">
+      <div style="flex:1;min-width:0">
+        <h3 id="suspendTitle" style="color:var(--c-bad-text)"></h3>
+      </div>
+      <button class="modal-close" id="suspendClose" type="button" aria-label="Close">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0 0 16px;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle)">Their profile comes down and they can't message or apply. Their community posts stay, credited to a suspended account. They can be told why, and can reply.</p>
+      <div style="font-size:13.5px;font-weight:600;margin-bottom:9px">Which rule was broken</div>
+      <div class="rule-chips" id="suspendRules">
+        <button class="rule-chip" data-rule="eligibility" type="button">False eligibility claims</button>
+        <button class="rule-chip" data-rule="work" type="button">Work that is not theirs</button>
+        <button class="rule-chip" data-rule="conduct" type="button">Conduct in messages</button>
+        <button class="rule-chip" data-rule="spam" type="button">Spam or repeat posting</button>
+      </div>
+      <label>
+        <span style="display:block;font-size:13.5px;font-weight:600;margin-bottom:7px">Reason, in their words not ours</span>
+        <textarea id="suspendReason" rows="3" placeholder="What happened, and what they would need to do to come back." style="width:100%;font:inherit;font-size:14.5px;line-height:1.55;border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-md);padding:12px 14px;background:var(--c-bg);color:var(--c-text);resize:vertical;box-sizing:border-box"></textarea>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <div style="flex:1"></div>
+      <button class="quiet" id="suspendCancel" type="button" style="padding:10px 16px">Cancel</button>
+      <button class="reject" id="suspendConfirm" type="button" style="padding:10px 18px;opacity:.5" disabled>Suspend account</button>
+    </div>
   </div>
-</footer>
+</div>
+
+<div class="pp-backdrop" id="reportModalBackdrop">
+  <div class="pp-modal">
+    <div class="modal-head">
+      <div style="flex:1"><h3>Resolve report</h3><p id="reportModalSummary"></p></div>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:9px">
+        <label class="modal-opt" style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--c-border-strong);border-radius:11px;cursor:pointer">
+          <input type="radio" name="rmodalAction" value="keep" checked style="margin-top:3px">
+          <div><b style="display:block;font-size:14.5px;font-weight:600">Leave it up</b><span style="display:block;font-size:12.5px;color:var(--c-text-subtle)">No rule was broken.</span></div>
+        </label>
+        <label class="modal-opt" style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--c-border-strong);border-radius:11px;cursor:pointer">
+          <input type="radio" name="rmodalAction" value="remove" style="margin-top:3px">
+          <div><b style="display:block;font-size:14.5px;font-weight:600">Remove the content and warn the account</b><span style="display:block;font-size:12.5px;color:var(--c-text-subtle)">Take the content down. Doesn't suspend the account.</span></div>
+        </label>
+        <label class="modal-opt" style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--c-border-strong);border-radius:11px;cursor:pointer">
+          <input type="radio" name="rmodalAction" value="suspend" style="margin-top:3px">
+          <div><b style="display:block;font-size:14.5px;font-weight:600;color:var(--c-bad-text)">Suspend the account and remove the content</b><span style="display:block;font-size:12.5px;color:var(--c-text-subtle)">For repeat or serious violations.</span></div>
+        </label>
+        <label class="modal-opt" style="display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--c-border-strong);border-radius:11px;cursor:pointer">
+          <input type="radio" name="rmodalAction" value="ask" style="margin-top:3px">
+          <div><b style="display:block;font-size:14.5px;font-weight:600">Ask the account to explain first</b><span style="display:block;font-size:12.5px;color:var(--c-text-subtle)">Not enough here to decide.</span></div>
+        </label>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div style="flex:1"></div>
+      <button class="quiet" id="reportModalCancel" type="button" style="padding:10px 16px">Cancel</button>
+      <button class="approve" id="reportModalConfirm" type="button" style="padding:10px 18px">Apply decision</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap"><div class="toast" id="toast"><span id="toastMsg"></span></div></div>
 
 <script>
 const TOKEN_KEY = "kazi_admin_token";
@@ -651,13 +695,56 @@ const appWrap = document.getElementById("appWrap");
 const gateErr = document.getElementById("gateErr");
 const list = document.getElementById("list");
 
+/* ---------- theme (same pp_theme key/attribute as the public pages) ---------- */
+(function(){
+  const saved = localStorage.getItem("pp_theme");
+  if (saved) document.documentElement.setAttribute("data-pp-theme", saved);
+  document.getElementById("themeToggle").addEventListener("click", () => {
+    const next = document.documentElement.getAttribute("data-pp-theme") === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-pp-theme", next);
+    try { localStorage.setItem("pp_theme", next); } catch (e) {}
+  });
+})();
+
+/* ---------- account menu + sign out ---------- */
+const acctChip = document.getElementById("acctChip");
+document.getElementById("acctTrigger").addEventListener("click", (e) => {
+  e.stopPropagation();
+  acctChip.classList.toggle("-open");
+});
+document.addEventListener("click", () => acctChip.classList.remove("-open"));
+document.getElementById("signOutBtn").addEventListener("click", async () => {
+  const ok = await window.showPPConfirm({
+    title: "Sign out?", description: "You'll need the admin token again to get back in.",
+    confirmLabel: "Sign out", safeLabel: "Stay signed in",
+  });
+  if (!ok) return;
+  localStorage.removeItem(TOKEN_KEY);
+  token = "";
+  location.reload();
+});
+
+/* ---------- toast ---------- */
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  document.getElementById("toastMsg").textContent = msg;
+  el.classList.add("-show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("-show"), 3200);
+}
+
 async function api(path, opts = {}) {
   const res = await fetch(path, {
     ...opts,
     headers: {...(opts.headers||{}), "Authorization": `Bearer ${token}`},
   });
   if (res.status === 401) throw new Error("unauthorized");
-  if (!res.ok) throw new Error(`request failed (${res.status})`);
+  if (!res.ok) {
+    let msg = `request failed (${res.status})`;
+    try { const body = await res.json(); if (body && body.detail) msg = typeof body.detail === "string" ? body.detail : (body.detail.message || msg); } catch (e) {}
+    throw new Error(msg);
+  }
   return res.json();
 }
 
@@ -666,48 +753,84 @@ async function tryEnter() {
     await api("/api/admin/submissions?status=pending");
     localStorage.setItem(TOKEN_KEY, token);
     gateWrap.style.display = "none";
-    appWrap.style.display = "block";
+    appWrap.style.display = "grid";
     loadDashboard();
+    refreshBadges();
   } catch (e) {
     gateErr.textContent = "That token didn't work.";
     gateErr.style.display = "block";
   }
 }
 
-/* ---------- dashboard <-> review queue <-> designer profiles switch ---------- */
+/* ---------- side nav view switch ---------- */
 const dashboardView = document.getElementById("dashboardView");
 const queueView = document.getElementById("queueView");
 const designersView = document.getElementById("designersView");
+const designerDetailView = document.getElementById("designerDetailView");
 const employersView = document.getElementById("employersView");
 const reportsView = document.getElementById("reportsView");
 const communityView = document.getElementById("communityView");
 const paydataView = document.getElementById("paydataView");
-document.querySelectorAll(".view-switch button").forEach(b => {
+
+function setActiveView(view) {
+  document.querySelectorAll(".side-nav button[data-view]").forEach(x => x.classList.toggle("active", x.dataset.view === view));
+  dashboardView.style.display = view === "dashboard" ? "block" : "none";
+  queueView.style.display = view === "queue" ? "block" : "none";
+  designersView.style.display = view === "designers" ? "block" : "none";
+  designerDetailView.style.display = view === "designer-detail" ? "block" : "none";
+  employersView.style.display = view === "employers" ? "block" : "none";
+  reportsView.style.display = view === "reports" ? "block" : "none";
+  communityView.style.display = view === "community" ? "block" : "none";
+  paydataView.style.display = view === "paydata" ? "block" : "none";
+  document.getElementById("adminSearch").value = "";
+  filterCurrentList("");
+}
+
+document.querySelectorAll(".side-nav button[data-view]").forEach(b => {
   b.addEventListener("click", () => {
-    document.querySelectorAll(".view-switch button").forEach(x => x.classList.remove("active"));
-    b.classList.add("active");
     const view = b.dataset.view;
-    dashboardView.style.display = view === "dashboard" ? "block" : "none";
-    queueView.style.display = view === "queue" ? "block" : "none";
-    designersView.style.display = view === "designers" ? "block" : "none";
-    employersView.style.display = view === "employers" ? "block" : "none";
-    reportsView.style.display = view === "reports" ? "block" : "none";
-    communityView.style.display = view === "community" ? "block" : "none";
-    paydataView.style.display = view === "paydata" ? "block" : "none";
+    setActiveView(view);
     if (view === "dashboard") loadDashboard();
     else if (view === "queue") loadTab(document.querySelector("#queueView .tabs button.active").dataset.status);
     else if (view === "designers") loadDesignerTab(document.querySelector("#designersView .tabs button.active").dataset.dstatus);
     else if (view === "employers") loadEmployerTab(document.querySelector("#employersView .tabs button.active").dataset.estatus);
     else if (view === "reports") loadReportTab(document.querySelector("#reportsView .tabs button.active").dataset.rstatus);
     else if (view === "community") loadCommunityView();
-    else loadPayTab(document.querySelector("#paydataView .tabs button.active").dataset.pstatus);
+    else if (view === "paydata") loadPayTab(document.querySelector("#paydataView .tabs button.active").dataset.pstatus);
   });
 });
 
+/* Always-open search: filters the .item rows in whichever list view is
+   showing. Cosmetic no-op on dashboard/community, which aren't row lists. */
+document.getElementById("adminSearch").addEventListener("input", (e) => filterCurrentList(e.target.value));
+function filterCurrentList(q) {
+  const query = q.trim().toLowerCase();
+  const visible = [queueView, designersView, employersView, reportsView, paydataView].find(v => v.style.display !== "none");
+  if (!visible) return;
+  visible.querySelectorAll(".item").forEach(row => {
+    row.style.display = !query || row.textContent.toLowerCase().includes(query) ? "" : "none";
+  });
+}
+
+async function refreshBadges() {
+  try {
+    const [q, d, e, r] = await Promise.all([
+      api("/api/admin/submissions?status=pending"),
+      api("/api/admin/designers?status=pending"),
+      api("/api/admin/companies?status=pending"),
+      api("/api/admin/reports?status=open"),
+    ]);
+    document.getElementById("badgeQueue").textContent = q.length || "";
+    document.getElementById("badgeDesigners").textContent = d.length || "";
+    document.getElementById("badgeEmployers").textContent = e.length || "";
+    document.getElementById("badgeReports").textContent = r.length || "";
+  } catch (e) { /* badges are a nicety, not worth surfacing an error for */ }
+}
+
 /* ---------- dashboard ---------- */
 const PAGE_LABELS = {
-  "/": "Jobs (home)", "/post": "Post a job", "/cv-check": "CV Checker", "/admin": "Admin",
-  "/terms": "Terms", "/privacy": "Privacy", "/cookies": "Cookies",
+  "/": "Homepage", "/jobs": "Jobs", "/people": "Find a designer", "/post-a-role": "Post a role",
+  "/admin": "Admin", "/terms": "Terms", "/privacy": "Privacy", "/cookies": "Cookies",
 };
 function pageLabel(path) { return PAGE_LABELS[path] || path; }
 
@@ -754,10 +877,10 @@ function renderStats(d) {
   const applyRate = d.total_views ? (d.total_applies / d.total_views) * 100 : 0;
   const prevApplyRate = d.prev_views ? (d.prev_applies / d.prev_views) * 100 : 0;
   const tiles = [
-    { n: d.total_views.toLocaleString(), l: "Pageviews", icon: "eye", bg: "var(--blue-soft)", fg: "var(--blue)", delta: deltaRow(d.total_views, d.prev_views) },
-    { n: d.total_searches.toLocaleString(), l: "Searches", icon: "search", bg: "var(--brand-soft)", fg: "var(--brand)", delta: deltaRow(d.total_searches, d.prev_searches) },
-    { n: d.total_applies.toLocaleString(), l: "Apply clicks", icon: "click", bg: "var(--green-soft)", fg: "var(--green-ink)", delta: deltaRow(d.total_applies, d.prev_applies) },
-    { n: `${applyRate.toFixed(1)}%`, l: "Apply rate", icon: "target", bg: "var(--amber-soft)", fg: "var(--amber)", delta: deltaRow(Math.round(applyRate * 10), Math.round(prevApplyRate * 10)) },
+    { n: d.total_views.toLocaleString(), l: "Pageviews", icon: "eye", bg: "var(--c-good-bg)", fg: "var(--c-good-text)", delta: deltaRow(d.total_views, d.prev_views) },
+    { n: d.total_searches.toLocaleString(), l: "Searches", icon: "search", bg: "var(--pp-gold-200)", fg: "var(--pp-gold-800)", delta: deltaRow(d.total_searches, d.prev_searches) },
+    { n: d.total_applies.toLocaleString(), l: "Apply clicks", icon: "click", bg: "var(--c-good-bg)", fg: "var(--c-good-text)", delta: deltaRow(d.total_applies, d.prev_applies) },
+    { n: `${applyRate.toFixed(1)}%`, l: "Apply rate", icon: "target", bg: "var(--pp-gold-200)", fg: "var(--pp-gold-800)", delta: deltaRow(Math.round(applyRate * 10), Math.round(prevApplyRate * 10)) },
   ];
   document.getElementById("statGrid").innerHTML = tiles.map(t => `
     <div class="stat-tile">
@@ -819,14 +942,14 @@ function renderTrendPanel(d) {
       <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" id="trendSvg">
         <defs>
           <linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="var(--brand)" stop-opacity="0.28"/>
-            <stop offset="100%" stop-color="var(--brand)" stop-opacity="0"/>
+            <stop offset="0%" stop-color="var(--pp-gold)" stop-opacity="0.28"/>
+            <stop offset="100%" stop-color="var(--pp-gold)" stop-opacity="0"/>
           </linearGradient>
         </defs>
         <path d="${areaPath}" fill="url(#trendFill)" stroke="none"></path>
-        <path d="${linePath}" fill="none" stroke="var(--brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
-        <line id="trendGuide" x1="${last[0]}" y1="0" x2="${last[0]}" y2="${H}" stroke="var(--hairline-strong)" stroke-width="1" style="display:none"></line>
-        <circle id="trendDot" cx="${last[0]}" cy="${last[1]}" r="4" fill="var(--brand)" stroke="var(--surface)" stroke-width="2"></circle>
+        <path d="${linePath}" fill="none" stroke="var(--pp-gold-700)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
+        <line id="trendGuide" x1="${last[0]}" y1="0" x2="${last[0]}" y2="${H}" stroke="var(--c-border-strong)" stroke-width="1" style="display:none"></line>
+        <circle id="trendDot" cx="${last[0]}" cy="${last[1]}" r="4" fill="var(--pp-gold-700)" stroke="var(--c-surface)" stroke-width="2"></circle>
         <rect id="trendCapture" x="0" y="0" width="${W}" height="${H}" fill="transparent"></rect>
       </svg>
     </div>`;
@@ -883,7 +1006,7 @@ function renderWeekdayChart(byWeekday) {
   }).join("");
 }
 
-const DEVICE_COLORS = { desktop: "var(--brand)", mobile: "var(--blue)", tablet: "var(--green)" };
+const DEVICE_COLORS = { desktop: "var(--pp-gold-700)", mobile: "var(--c-good)", tablet: "var(--pp-gold)" };
 function renderDeviceBars(byDevice) {
   const el = document.getElementById("deviceBars");
   if (!byDevice.length) { el.innerHTML = `<div class="empty">No data yet.</div>`; return; }
@@ -891,7 +1014,7 @@ function renderDeviceBars(byDevice) {
   el.innerHTML = byDevice.map(r => `
     <div class="hbar-row">
       <span class="lbl">${escapeHtml(r.device)}</span>
-      <span class="track"><span class="fill" style="width:${Math.round((r.n/max)*100)}%;background:${DEVICE_COLORS[r.device] || "var(--brand)"}"></span></span>
+      <span class="track"><span class="fill" style="width:${Math.round((r.n/max)*100)}%;background:${DEVICE_COLORS[r.device] || "var(--pp-gold-700)"}"></span></span>
       <span class="n">${r.n}</span>
     </div>
   `).join("");
@@ -974,6 +1097,7 @@ document.querySelectorAll("#paydataView .tabs button").forEach(b => {
   });
 });
 
+/* ---------- review queue ---------- */
 async function loadTab(status) {
   list.innerHTML = `<div class="empty">Loading…</div>`;
   try {
@@ -984,7 +1108,9 @@ async function loadTab(status) {
   }
 }
 
+let queueRowsCache = [];
 function render(rows, status) {
+  queueRowsCache = rows;
   if (!rows.length) {
     list.innerHTML = `<div class="empty">Nothing here.</div>`;
     return;
@@ -996,17 +1122,17 @@ function render(rows, status) {
         <p class="meta"><b>${escapeHtml(r.company)}</b> · ${escapeHtml(r.location || "Remote")} · ${escapeHtml(r.work_type)} · ${escapeHtml(r.level)}</p>
         <div class="badges">
           <span>${escapeHtml(r.discipline)}</span>
-          <span>${eligLabel(r.eligibility)}</span>
+          <span>${eligLabel(r.eligibility)}${r.eligibility_source === "admin-set" ? " · admin-set" : ""}</span>
           ${r.salary ? `<span>${escapeHtml(r.salary)}</span>` : ""}
         </div>
-        ${r.description ? `<p class="desc">${escapeHtml(r.description)}</p>` : ""}
+        ${r.description ? `<p class="desc">${escapeHtml(r.description.slice(0, 220))}${r.description.length > 220 ? "…" : ""}</p>` : ""}
         <p class="meta" style="margin-top:8px">Submitted by ${escapeHtml(r.contact_email)} · ${new Date(r.created_at).toLocaleDateString()}</p>
         <a class="applylink" href="${escapeAttr(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.url)}</a>
       </div>
       <div class="actions">
         ${r.status === "pending" ? `
-          <button class="approve" data-action="approve">Approve</button>
-          <button class="reject" data-action="reject">Reject</button>
+          <button class="approve" data-review="${r.id}">Review</button>
+          <button class="quiet" data-action="approve">Approve as is</button>
         ` : `<span class="status ${r.status}">${r.status}</span>`}
       </div>
     </div>
@@ -1021,11 +1147,16 @@ function render(rows, status) {
         await api(`/api/admin/submissions/${id}/${action}`, { method: "POST" });
         const activeTab = document.querySelector("#queueView .tabs button.active").dataset.status;
         loadTab(activeTab);
+        refreshBadges();
+        showToast(action === "approve" ? "Published." : "Rejected.");
       } catch (e) {
-        await window.showAlertDialog({title: "Failed", description: e.message});
+        showToast(`Couldn't ${action}: ${e.message}`);
         btn.disabled = false;
       }
     });
+  });
+  list.querySelectorAll("[data-review]").forEach(btn => {
+    btn.addEventListener("click", () => openReviewModal(btn.dataset.review));
   });
 }
 
@@ -1036,6 +1167,105 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function escapeAttr(s) { return escapeHtml(s); }
+
+/* ---------- review modal (eligibility override lives here) ---------- */
+const ELIG_TIERS = [
+  { key: "kenya", label: "Open to Kenya", note: "The employer can hire or contract someone based in Kenya." },
+  { key: "africa", label: "Open across Africa", note: "The employer can hire or contract someone in another African country." },
+  { key: "world", label: "Worldwide remote", note: "No location requirement stated anywhere in the description." },
+  { key: "check", label: "Worth checking", note: "The description restricts by country, or is ambiguous enough that a candidate should ask." },
+];
+let reviewSub = null;
+let reviewPicked = "";
+const reviewModalBackdrop = document.getElementById("reviewModalBackdrop");
+
+function openReviewModal(id) {
+  const sub = queueRowsCache.find(r => String(r.id) === String(id));
+  if (!sub) return;
+  reviewSub = sub;
+  reviewPicked = sub.eligibility;
+  document.getElementById("reviewTitle").textContent = sub.title;
+  document.getElementById("reviewMeta").textContent = `${sub.company} · submitted ${new Date(sub.created_at).toLocaleDateString()}`;
+  const excerptBox = document.getElementById("reviewExcerptBox");
+  if (sub.description) {
+    excerptBox.style.display = "block";
+    document.getElementById("reviewExcerpt").textContent = sub.description.slice(0, 600);
+  } else {
+    excerptBox.style.display = "none";
+  }
+  document.getElementById("reviewClaimed").textContent = eligLabel(sub.eligibility);
+  document.getElementById("reviewReason").value = "";
+  renderReviewEligOptions();
+  reviewModalBackdrop.classList.add("-open");
+}
+function renderReviewEligOptions() {
+  document.getElementById("reviewEligOptions").innerHTML = ELIG_TIERS.map(t => `
+    <button type="button" class="elig-row${reviewPicked === t.key ? " -active" : ""}" data-pick="${t.key}">
+      <span class="dot"><i></i></span>
+      <span>
+        <b>${escapeHtml(t.label)}</b>${t.key === reviewSub.eligibility ? `<span class="was-claimed">Employer's choice</span>` : ""}
+        <span class="note">${escapeHtml(t.note)}</span>
+      </span>
+    </button>
+  `).join("");
+  document.getElementById("reviewEligOptions").querySelectorAll("[data-pick]").forEach(b => {
+    b.addEventListener("click", () => { reviewPicked = b.dataset.pick; renderReviewEligOptions(); updateReviewFoot(); });
+  });
+  updateReviewFoot();
+}
+function updateReviewFoot() {
+  const changed = reviewPicked !== reviewSub.eligibility;
+  document.getElementById("reviewReasonWrap").style.display = changed ? "block" : "none";
+  const reasonOk = document.getElementById("reviewReason").value.trim().length > 0;
+  document.getElementById("reviewNote").textContent = changed
+    ? (reasonOk ? "The employer will be told why it changed" : "Say why you changed it")
+    : "Publishing as the employer submitted it";
+  document.getElementById("reviewPublish").textContent = changed ? "Change and publish" : "Publish";
+  document.getElementById("reviewPublish").disabled = changed && !reasonOk;
+  document.getElementById("reviewPublish").style.opacity = (changed && !reasonOk) ? ".5" : "1";
+}
+document.getElementById("reviewReason").addEventListener("input", updateReviewFoot);
+function closeReviewModal() { reviewModalBackdrop.classList.remove("-open"); reviewSub = null; }
+document.getElementById("reviewClose").addEventListener("click", closeReviewModal);
+reviewModalBackdrop.addEventListener("mousedown", (e) => { if (e.target === reviewModalBackdrop) closeReviewModal(); });
+
+async function applyReviewEligibilityIfChanged() {
+  if (reviewPicked === reviewSub.eligibility) return;
+  await api(`/api/admin/submissions/${reviewSub.id}/eligibility`, {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ eligibility: reviewPicked, reason: document.getElementById("reviewReason").value.trim() }),
+  });
+}
+document.getElementById("reviewPublish").addEventListener("click", async () => {
+  const btn = document.getElementById("reviewPublish");
+  btn.disabled = true;
+  try {
+    await applyReviewEligibilityIfChanged();
+    await api(`/api/admin/submissions/${reviewSub.id}/approve`, { method: "POST" });
+    closeReviewModal();
+    loadTab(document.querySelector("#queueView .tabs button.active").dataset.status);
+    refreshBadges();
+    showToast("Published.");
+  } catch (e) {
+    showToast(`Couldn't publish: ${e.message}`);
+    btn.disabled = false;
+  }
+});
+document.getElementById("reviewReject").addEventListener("click", async () => {
+  const btn = document.getElementById("reviewReject");
+  btn.disabled = true;
+  try {
+    await applyReviewEligibilityIfChanged();
+    await api(`/api/admin/submissions/${reviewSub.id}/reject`, { method: "POST" });
+    closeReviewModal();
+    loadTab(document.querySelector("#queueView .tabs button.active").dataset.status);
+    refreshBadges();
+    showToast("Rejected.");
+  } catch (e) {
+    showToast(`Couldn't reject: ${e.message}`);
+    btn.disabled = false;
+  }
+});
 
 /* ---------- designer profile review queue ---------- */
 const designerList = document.getElementById("designerList");
@@ -1058,7 +1288,7 @@ function renderDesigners(rows, status) {
   designerList.innerHTML = rows.map(d => `
     <div class="item" data-id="${d.id}">
       <div>
-        <h3>${escapeHtml(d.display_name)}${d.handle ? ` <span style="font-weight:400;color:var(--muted)">@${escapeHtml(d.handle)}</span>` : ""}</h3>
+        <h3>${escapeHtml(d.display_name)}${d.handle ? ` <span style="font-weight:400;color:var(--c-text-faint)">@${escapeHtml(d.handle)}</span>` : ""}</h3>
         <p class="meta"><b>${escapeHtml(d.email)}</b> · ${escapeHtml((d.discipline && d.discipline.length) ? d.discipline.join(", ") : "No discipline set")} · ${escapeHtml(d.location || "No location set")}</p>
         ${d.skills && d.skills.length ? `<p class="meta">Skills: ${escapeHtml(d.skills.join(", "))}</p>` : ""}
         <div class="badges">
@@ -1074,6 +1304,7 @@ function renderDesigners(rows, status) {
           <button class="approve" data-daction="approve">Approve</button>
           <button class="reject" data-daction="reject">Reject</button>
         ` : `<span class="status ${d.status}">${d.status}</span>`}
+        <button class="quiet" data-dopen="${d.id}">Open</button>
       </div>
     </div>
   `).join("");
@@ -1087,13 +1318,157 @@ function renderDesigners(rows, status) {
         await api(`/api/admin/designers/${id}/${action}`, { method: "POST" });
         const activeTab = document.querySelector("#designersView .tabs button.active").dataset.dstatus;
         loadDesignerTab(activeTab);
+        refreshBadges();
       } catch (e) {
-        await window.showAlertDialog({title: "Failed", description: e.message});
+        showToast(`Couldn't ${action}: ${e.message}`);
         btn.disabled = false;
       }
     });
   });
+  designerList.querySelectorAll("[data-dopen]").forEach(btn => {
+    btn.addEventListener("click", () => openDesignerDetail(btn.dataset.dopen));
+  });
 }
+
+/* ---------- designer detail + suspend ---------- */
+let ddCurrent = null;
+document.getElementById("ddBack").addEventListener("click", () => {
+  setActiveView("designers");
+  loadDesignerTab(document.querySelector("#designersView .tabs button.active").dataset.dstatus);
+});
+
+async function openDesignerDetail(id) {
+  setActiveView("designer-detail");
+  document.getElementById("ddBody").innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    const d = await api(`/api/admin/designers/${id}`);
+    ddCurrent = d;
+    renderDesignerDetail(d);
+  } catch (e) {
+    document.getElementById("ddBody").innerHTML = `<div class="empty">Couldn't load: ${e.message}</div>`;
+  }
+}
+
+const ACTIVITY_ICONS = {
+  question: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 2-3 4"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="10"/></svg>',
+  reply: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>',
+  session: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+};
+function renderDesignerDetail(d) {
+  const initialsStr = initials(d.display_name);
+  const isSuspended = d.status === "suspended";
+  document.getElementById("ddBody").innerHTML = `
+    <div class="dd-head">
+      <div class="dd-avatar">${d.photo_path ? `<img src="${escapeAttr(d.photo_path)}" alt="">` : escapeHtml(initialsStr)}</div>
+      <div class="dd-name">
+        <h2>${escapeHtml(d.display_name)}</h2>
+        <p>${d.handle ? `pathandpixel.com/${escapeHtml(d.handle)} · ` : ""}${escapeHtml((d.discipline || []).join(", ") || "No discipline set")}${d.location ? ` · ${escapeHtml(d.location)}` : ""} · joined ${new Date(d.created_at).toLocaleDateString()}</p>
+        <div class="dd-badges">
+          <span class="status ${d.status}">${escapeHtml(d.status)}</span>
+          <span class="status ${d.email_verified ? "approved" : "pending"}">${d.email_verified ? "Email verified" : "Email not verified"}</span>
+        </div>
+        ${isSuspended && d.suspend_reason ? `<p class="meta" style="margin-top:10px;max-width:60ch">Suspended for <b>${escapeHtml(d.suspend_rule)}</b>: ${escapeHtml(d.suspend_reason)}</p>` : ""}
+      </div>
+      <div class="dd-actions">
+        ${d.handle ? `<a class="quiet" style="padding:10px 16px;border-radius:999px;display:inline-block" href="/designers/${escapeAttr(d.handle)}" target="_blank" rel="noopener">View public profile</a>` : ""}
+        ${isSuspended
+          ? `<button class="approve" id="ddUnsuspend" style="padding:10px 16px">Unsuspend</button>`
+          : `<button class="reject" id="ddSuspend" style="padding:10px 16px">Suspend</button>`}
+      </div>
+    </div>
+
+    <div class="dd-stats">
+      <div class="dd-stat"><div class="n">${(d.projects || []).length}</div><div class="l">Featured projects</div></div>
+      <div class="dd-stat"><div class="n">${d.followers_count || 0}</div><div class="l">Followers</div></div>
+      <div class="dd-stat"><div class="n">${(d.activity || []).filter(a => a.type === "question").length}</div><div class="l">Questions asked</div></div>
+      <div class="dd-stat"><div class="n">${(d.activity || []).filter(a => a.type === "reply").length}</div><div class="l">Replies posted</div></div>
+    </div>
+
+    <div class="dd-panels">
+      <div class="panel">
+        <h3 style="font-size:16.5px">Recent activity</h3>
+        ${(d.activity || []).length ? d.activity.map(a => `
+          <div class="dd-activity-row">
+            <span class="ic">${ACTIVITY_ICONS[a.type] || ""}</span>
+            <span class="tx">${a.type === "question" ? "Asked" : a.type === "reply" ? "Replied to" : "Attended"} “${escapeHtml(a.text)}”</span>
+            <span class="wh">${new Date(a.when).toLocaleDateString()}</span>
+          </div>
+        `).join("") : `<p style="margin:0;font-size:13.5px;color:var(--c-text-subtle)">Nothing yet.</p>`}
+      </div>
+      <div class="panel">
+        <h3 style="font-size:16.5px">Reports against this profile</h3>
+        ${(d.reports || []).length
+          ? d.reports.map(r => `<div class="dd-activity-row"><span class="tx">${escapeHtml(r.summary || "Reported")}</span><span class="wh">${new Date(r.created_at).toLocaleDateString()}</span></div>`).join("")
+          : `<div class="empty" style="padding:28px">Nothing has been reported. If a message or a post is reported, it appears here and in the Reports queue at the same time.</div>`}
+      </div>
+    </div>
+  `;
+  const suspendBtn = document.getElementById("ddSuspend");
+  if (suspendBtn) suspendBtn.addEventListener("click", () => openSuspendModal(d));
+  const unsuspendBtn = document.getElementById("ddUnsuspend");
+  if (unsuspendBtn) unsuspendBtn.addEventListener("click", async () => {
+    unsuspendBtn.disabled = true;
+    try {
+      await api(`/api/admin/designers/${d.id}/unsuspend`, { method: "POST" });
+      showToast("Unsuspended.");
+      openDesignerDetail(d.id);
+      refreshBadges();
+    } catch (e) {
+      showToast(`Couldn't unsuspend: ${e.message}`);
+      unsuspendBtn.disabled = false;
+    }
+  });
+}
+
+/* ---------- suspend modal ---------- */
+const suspendModalBackdrop = document.getElementById("suspendModalBackdrop");
+let suspendTarget = null;
+let suspendRulePicked = "";
+function openSuspendModal(d) {
+  suspendTarget = d;
+  suspendRulePicked = "";
+  document.getElementById("suspendTitle").textContent = `Suspend ${d.display_name}`;
+  document.getElementById("suspendReason").value = "";
+  document.querySelectorAll("#suspendRules .rule-chip").forEach(b => b.classList.remove("-active"));
+  updateSuspendConfirmState();
+  suspendModalBackdrop.classList.add("-open");
+}
+function closeSuspendModal() { suspendModalBackdrop.classList.remove("-open"); suspendTarget = null; }
+document.getElementById("suspendClose").addEventListener("click", closeSuspendModal);
+document.getElementById("suspendCancel").addEventListener("click", closeSuspendModal);
+suspendModalBackdrop.addEventListener("mousedown", (e) => { if (e.target === suspendModalBackdrop) closeSuspendModal(); });
+document.querySelectorAll("#suspendRules .rule-chip").forEach(b => {
+  b.addEventListener("click", () => {
+    suspendRulePicked = b.dataset.rule;
+    document.querySelectorAll("#suspendRules .rule-chip").forEach(x => x.classList.toggle("-active", x === b));
+    updateSuspendConfirmState();
+  });
+});
+document.getElementById("suspendReason").addEventListener("input", updateSuspendConfirmState);
+function updateSuspendConfirmState() {
+  const ok = !!suspendRulePicked && document.getElementById("suspendReason").value.trim().length > 10;
+  const btn = document.getElementById("suspendConfirm");
+  btn.disabled = !ok;
+  btn.style.opacity = ok ? "1" : ".5";
+}
+document.getElementById("suspendConfirm").addEventListener("click", async () => {
+  const btn = document.getElementById("suspendConfirm");
+  btn.disabled = true;
+  try {
+    await api(`/api/admin/designers/${suspendTarget.id}/suspend`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rule: suspendRulePicked, reason: document.getElementById("suspendReason").value.trim() }),
+    });
+    const id = suspendTarget.id;
+    closeSuspendModal();
+    showToast("Suspended.");
+    openDesignerDetail(id);
+    refreshBadges();
+  } catch (e) {
+    showToast(`Couldn't suspend: ${e.message}`);
+    updateSuspendConfirmState();
+  }
+});
 
 /* ---------- employers (companies) ---------- */
 const employerList = document.getElementById("employerList");
@@ -1116,7 +1491,7 @@ function renderEmployers(rows) {
   employerList.innerHTML = rows.map(c => `
     <div class="item" data-id="${c.id}">
       <div>
-        <h3>${escapeHtml(c.name)} <span style="font-weight:400;color:var(--muted)">/${escapeHtml(c.slug)}</span></h3>
+        <h3>${escapeHtml(c.name)} <span style="font-weight:400;color:var(--c-text-faint)">/${escapeHtml(c.slug)}</span></h3>
         <p class="meta"><b>${escapeHtml(c.website || "No website set")}</b> · ${c.team_size} ${c.team_size === 1 ? "person" : "people"} on the team</p>
         ${c.eligibility ? `<p class="meta">Reach: ${escapeHtml(c.eligibility)}${c.eligibility_note ? ` — ${escapeHtml(c.eligibility_note)}` : ""}</p>` : ""}
         ${c.blurb ? `<p class="desc">${escapeHtml(c.blurb)}</p>` : ""}
@@ -1140,8 +1515,9 @@ function renderEmployers(rows) {
         await api(`/api/admin/companies/${id}/${action}`, { method: "POST" });
         const activeTab = document.querySelector("#employersView .tabs button.active").dataset.estatus;
         loadEmployerTab(activeTab);
+        refreshBadges();
       } catch (e) {
-        await window.showAlertDialog({title: "Failed", description: e.message});
+        showToast(`Couldn't ${action}: ${e.message}`);
         btn.disabled = false;
       }
     });
@@ -1150,7 +1526,7 @@ function renderEmployers(rows) {
 
 /* ---------- reports ---------- */
 const reportList = document.getElementById("reportList");
-const KIND_LABELS = { message: "Message", community_reply: "Reply", community_question: "Question" };
+const KIND_LABELS = { message: "Message", community_reply: "Reply", community_question: "Question", profile: "Profile" };
 const STALE_HOURS = 48;
 
 async function loadReportTab(status) {
@@ -1202,8 +1578,9 @@ function renderReports(rows) {
         await api(`/api/admin/reports/${id}/resolve`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action: "keep" }) });
         const activeTab = document.querySelector("#reportsView .tabs button.active").dataset.rstatus;
         loadReportTab(activeTab);
+        refreshBadges();
       } catch (e) {
-        await window.showAlertDialog({title: "Failed", description: e.message});
+        showToast(`Couldn't dismiss: ${e.message}`);
         btn.disabled = false;
       }
     });
@@ -1216,21 +1593,22 @@ function openReportModal(id) {
   reportModalId = id;
   document.getElementById("reportModalSummary").textContent = "Choose what happens to this report.";
   reportModalBackdrop.querySelector('input[value="keep"]').checked = true;
-  reportModalBackdrop.style.display = "flex";
+  reportModalBackdrop.classList.add("-open");
 }
-document.getElementById("reportModalCancel").addEventListener("click", () => { reportModalBackdrop.style.display = "none"; });
-reportModalBackdrop.addEventListener("click", (e) => { if (e.target === reportModalBackdrop) reportModalBackdrop.style.display = "none"; });
+document.getElementById("reportModalCancel").addEventListener("click", () => { reportModalBackdrop.classList.remove("-open"); });
+reportModalBackdrop.addEventListener("mousedown", (e) => { if (e.target === reportModalBackdrop) reportModalBackdrop.classList.remove("-open"); });
 document.getElementById("reportModalConfirm").addEventListener("click", async () => {
   const action = reportModalBackdrop.querySelector('input[name="rmodalAction"]:checked').value;
   const btn = document.getElementById("reportModalConfirm");
   btn.disabled = true;
   try {
     await api(`/api/admin/reports/${reportModalId}/resolve`, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({ action }) });
-    reportModalBackdrop.style.display = "none";
+    reportModalBackdrop.classList.remove("-open");
     const activeTab = document.querySelector("#reportsView .tabs button.active").dataset.rstatus;
     loadReportTab(activeTab);
+    refreshBadges();
   } catch (e) {
-    await window.showAlertDialog({title: "Failed", description: e.message});
+    showToast(`Couldn't resolve: ${e.message}`);
   }
   btn.disabled = false;
 });
@@ -1269,7 +1647,7 @@ async function loadSessionList() {
           await api(`/api/admin/community/sessions/${btn.dataset.scancel}/cancel`, { method: "POST" });
           loadSessionList();
         } catch (e) {
-          await window.showAlertDialog({title: "Failed", description: e.message});
+          showToast(`Couldn't cancel: ${e.message}`);
           btn.disabled = false;
         }
       });
@@ -1392,7 +1770,7 @@ function renderPaySubmissions(rows) {
         const activeTab = document.querySelector("#paydataView .tabs button.active").dataset.pstatus;
         loadPayTab(activeTab);
       } catch (e) {
-        await window.showAlertDialog({title: "Failed", description: e.message});
+        showToast(`Couldn't save: ${e.message}`);
         btn.disabled = false;
       }
     });
@@ -1400,6 +1778,7 @@ function renderPaySubmissions(rows) {
 }
 
 if (token) tryEnter();
+document.getElementById("pageLoader").classList.add("-hide");
 </script>
 </body>
 </html>

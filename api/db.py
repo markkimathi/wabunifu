@@ -62,6 +62,9 @@ CREATE TABLE IF NOT EXISTS submissions (
   description TEXT NOT NULL DEFAULT '',
   agreed_to_terms INTEGER NOT NULL DEFAULT 0,
   cross_border_note TEXT NOT NULL DEFAULT '',
+  eligibility_source TEXT NOT NULL DEFAULT 'employer-claimed',
+  eligibility_override_reason TEXT NOT NULL DEFAULT '',
+  eligibility_overridden_at TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
 );
@@ -121,7 +124,9 @@ CREATE TABLE IF NOT EXISTS designers (
   created_at TEXT NOT NULL,
   company_id INTEGER,
   failed_login_attempts INTEGER NOT NULL DEFAULT 0,
-  locked_until TEXT NOT NULL DEFAULT ''
+  locked_until TEXT NOT NULL DEFAULT '',
+  suspend_reason TEXT NOT NULL DEFAULT '',
+  suspend_rule TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_designers_status ON designers(status);
 
@@ -463,6 +468,11 @@ _MIGRATIONS = [
     "ALTER TABLE employers ADD COLUMN failed_login_attempts INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE employers ADD COLUMN locked_until TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE submissions ADD COLUMN cross_border_note TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN suspend_reason TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN suspend_rule TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE submissions ADD COLUMN eligibility_source TEXT NOT NULL DEFAULT 'employer-claimed'",
+    "ALTER TABLE submissions ADD COLUMN eligibility_override_reason TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE submissions ADD COLUMN eligibility_overridden_at TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -597,6 +607,20 @@ def get_submission(sub_id: int) -> dict | None:
 def set_status(sub_id: int, status: str) -> None:
     c = _conn()
     c.execute("UPDATE submissions SET status = ? WHERE id = ?", (status, sub_id))
+    c.commit()
+    c.close()
+
+
+def override_submission_eligibility(sub_id: int, eligibility: str, reason: str) -> None:
+    """Admin correcting the employer's own eligibility claim during review —
+    recorded with a source flag and reason so every listing surface can show
+    it was admin-set, and the employer can be told why (see review modal)."""
+    c = _conn()
+    c.execute(
+        "UPDATE submissions SET eligibility = ?, eligibility_source = 'admin-set', "
+        "eligibility_override_reason = ?, eligibility_overridden_at = ? WHERE id = ?",
+        (eligibility, reason, datetime.now(timezone.utc).isoformat(timespec="seconds"), sub_id),
+    )
     c.commit()
     c.close()
 
@@ -958,6 +982,31 @@ def mark_onboarding_completed(designer_id: int) -> None:
 def set_designer_status(designer_id: int, status: str) -> None:
     c = _conn()
     c.execute("UPDATE designers SET status = ? WHERE id = ?", (status, designer_id))
+    c.commit()
+    c.close()
+
+
+def suspend_designer(designer_id: int, rule: str, reason: str) -> None:
+    """Suspending sets status='suspended' directly rather than a separate
+    flag — require_designer() already gates on this exact value, and the
+    public directory/profile queries already only ever surface
+    status='approved', so a suspended profile disappears from both without
+    any extra filtering."""
+    c = _conn()
+    c.execute(
+        "UPDATE designers SET status = 'suspended', suspend_rule = ?, suspend_reason = ? WHERE id = ?",
+        (rule, reason, designer_id),
+    )
+    c.commit()
+    c.close()
+
+
+def unsuspend_designer(designer_id: int) -> None:
+    c = _conn()
+    c.execute(
+        "UPDATE designers SET status = 'approved', suspend_rule = '', suspend_reason = '' WHERE id = ?",
+        (designer_id,),
+    )
     c.commit()
     c.close()
 
