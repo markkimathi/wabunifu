@@ -250,6 +250,12 @@ CREATE TABLE IF NOT EXISTS designer_saved_jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_saved_jobs_designer ON designer_saved_jobs(designer_id);
 
+-- Original shape (company_id NOT NULL, no peer_designer_id). Every run —
+-- fresh database or not — goes through _migrate_conversations_peer_support()
+-- right after this script, which is the single source of truth for the
+-- final (nullable company_id + peer_designer_id) shape; CREATE TABLE IF NOT
+-- EXISTS can't safely declare that shape here because it's a no-op against
+-- an already-existing table, so a plain SCHEMA edit alone can't upgrade one.
 CREATE TABLE IF NOT EXISTS conversations (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   designer_id INTEGER NOT NULL,
@@ -348,6 +354,20 @@ CREATE TABLE IF NOT EXISTS question_follows (
 );
 CREATE INDEX IF NOT EXISTS idx_question_follows_question ON question_follows(question_id);
 
+-- Generic follow: a designer following another designer's profile or a
+-- company's page (distinct from question_follows above, which is
+-- "notify me about this thread", not a profile relationship).
+CREATE TABLE IF NOT EXISTS follows (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  follower_designer_id INTEGER NOT NULL,
+  target_type TEXT NOT NULL,
+  target_id INTEGER NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(follower_designer_id, target_type, target_id)
+);
+CREATE INDEX IF NOT EXISTS idx_follows_follower ON follows(follower_designer_id);
+CREATE INDEX IF NOT EXISTS idx_follows_target ON follows(target_type, target_id);
+
 CREATE TABLE IF NOT EXISTS pay_submissions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   designer_id INTEGER NOT NULL,
@@ -404,6 +424,38 @@ _MIGRATIONS = [
 ]
 
 
+def _migrate_conversations_peer_support(c: sqlite3.Connection) -> None:
+    """conversations.company_id was NOT NULL from launch (every thread was
+    designer<->company). Peer (designer<->designer) messaging needs
+    company_id nullable plus a new peer_designer_id column — SQLite can't
+    relax a NOT NULL via ALTER, so this rebuilds the table once. Guarded by
+    checking for the new column first, since this runs on every _conn()."""
+    cols = [r["name"] for r in c.execute("PRAGMA table_info(conversations)").fetchall()]
+    if "peer_designer_id" in cols:
+        return
+    c.executescript("""
+        CREATE TABLE conversations_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          designer_id INTEGER NOT NULL,
+          company_id INTEGER,
+          peer_designer_id INTEGER,
+          started_by TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          last_message_at TEXT NOT NULL
+        );
+        INSERT INTO conversations_new (id, designer_id, company_id, peer_designer_id, started_by, created_at, last_message_at)
+          SELECT id, designer_id, company_id, NULL, started_by, created_at, last_message_at FROM conversations;
+        DROP TABLE conversations;
+        ALTER TABLE conversations_new RENAME TO conversations;
+        CREATE UNIQUE INDEX idx_conversations_designer_company ON conversations(designer_id, company_id) WHERE company_id IS NOT NULL;
+        CREATE UNIQUE INDEX idx_conversations_peer_pair ON conversations(designer_id, peer_designer_id) WHERE peer_designer_id IS NOT NULL;
+        CREATE INDEX idx_conversations_designer ON conversations(designer_id);
+        CREATE INDEX idx_conversations_company ON conversations(company_id);
+        CREATE INDEX idx_conversations_peer ON conversations(peer_designer_id);
+    """)
+    c.commit()
+
+
 def _conn() -> sqlite3.Connection:
     DB.parent.mkdir(parents=True, exist_ok=True)
     c = sqlite3.connect(DB)
@@ -415,6 +467,7 @@ def _conn() -> sqlite3.Connection:
         except sqlite3.OperationalError:
             pass  # column already exists
     c.commit()
+    _migrate_conversations_peer_support(c)
     return c
 
 
@@ -1506,6 +1559,31 @@ def get_or_create_conversation(designer_id: int, company_id: int, started_by: st
     return conversation_id
 
 
+def get_or_create_peer_conversation(designer_a_id: int, designer_b_id: int, started_by_id: int) -> int:
+    """Designer-to-designer equivalent of get_or_create_conversation().
+    Storage is normalised (designer_id = the smaller id) so a conversation
+    started from either side's profile lands in the same row — otherwise
+    A messaging B and B messaging A would create two separate threads."""
+    lo, hi = sorted((designer_a_id, designer_b_id))
+    c = _conn()
+    row = c.execute(
+        "SELECT id FROM conversations WHERE designer_id = ? AND peer_designer_id = ?", (lo, hi)
+    ).fetchone()
+    if row:
+        c.close()
+        return row["id"]
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    cur = c.execute(
+        "INSERT INTO conversations (designer_id, peer_designer_id, started_by, created_at, last_message_at) "
+        "VALUES (?, ?, ?, ?, ?)",
+        (lo, hi, str(started_by_id), now, now),
+    )
+    c.commit()
+    conversation_id = cur.lastrowid
+    c.close()
+    return conversation_id
+
+
 def get_conversation(conversation_id: int) -> dict | None:
     c = _conn()
     row = c.execute("SELECT * FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
@@ -1513,7 +1591,11 @@ def get_conversation(conversation_id: int) -> dict | None:
     return dict(row) if row else None
 
 
-def _conversation_summaries(rows: list[sqlite3.Row], reader_type: str) -> list[dict]:
+def _conversation_summaries(rows: list[sqlite3.Row], reader_type: str, reader_designer_id: int | None = None) -> list[dict]:
+    """reader_designer_id disambiguates unread counts on a PEER
+    (designer<->designer) conversation, where sender_type is 'designer' on
+    both sides so 'sender_type != reader_type' can't tell the two apart —
+    it's ignored for company conversations, where that check already works."""
     c = _conn()
     out = []
     for row in rows:
@@ -1525,10 +1607,16 @@ def _conversation_summaries(rows: list[sqlite3.Row], reader_type: str) -> list[d
             "SELECT body, sender_type, created_at FROM messages WHERE conversation_id = ? "
             "ORDER BY id DESC LIMIT 1", (conv["id"],)
         ).fetchone()
-        unread = c.execute(
-            "SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND sender_type != ? AND read_at = ''",
-            (conv["id"], reader_type),
-        ).fetchone()[0]
+        if conv.get("peer_designer_id") is not None and reader_designer_id is not None:
+            unread = c.execute(
+                "SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND sender_designer_id != ? AND read_at = ''",
+                (conv["id"], reader_designer_id),
+            ).fetchone()[0]
+        else:
+            unread = c.execute(
+                "SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND sender_type != ? AND read_at = ''",
+                (conv["id"], reader_type),
+            ).fetchone()[0]
         conv["last_message"] = dict(last) if last else None
         conv["unread_count"] = unread
         out.append(conv)
@@ -1539,10 +1627,11 @@ def _conversation_summaries(rows: list[sqlite3.Row], reader_type: str) -> list[d
 def list_conversations_for_designer(designer_id: int) -> list[dict]:
     c = _conn()
     rows = c.execute(
-        "SELECT * FROM conversations WHERE designer_id = ? ORDER BY last_message_at DESC, id DESC", (designer_id,)
+        "SELECT * FROM conversations WHERE designer_id = ? OR peer_designer_id = ? "
+        "ORDER BY last_message_at DESC, id DESC", (designer_id, designer_id)
     ).fetchall()
     c.close()
-    return _conversation_summaries(rows, "designer")
+    return _conversation_summaries(rows, "designer", reader_designer_id=designer_id)
 
 
 def list_conversations_for_company(company_id: int) -> list[dict]:
@@ -1580,14 +1669,25 @@ def create_message(conversation_id: int, sender_type: str, sender_designer_id: i
     return message_id
 
 
-def mark_conversation_read(conversation_id: int, reader_type: str) -> None:
+def mark_conversation_read(conversation_id: int, reader_type: str, reader_designer_id: int | None = None) -> None:
     """Marks every message NOT sent by the reader as read — i.e. opening a
-    thread clears the other side's unread count, never your own messages."""
+    thread clears the other side's unread count, never your own messages.
+    On a peer conversation, sender_type is 'designer' on both sides, so
+    reader_designer_id is what actually tells the two apart (see
+    _conversation_summaries for the same distinction)."""
     c = _conn()
-    c.execute(
-        "UPDATE messages SET read_at = ? WHERE conversation_id = ? AND sender_type != ? AND read_at = ''",
-        (datetime.now(timezone.utc).isoformat(timespec="seconds"), conversation_id, reader_type),
-    )
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    conv = c.execute("SELECT peer_designer_id FROM conversations WHERE id = ?", (conversation_id,)).fetchone()
+    if conv and conv["peer_designer_id"] is not None and reader_designer_id is not None:
+        c.execute(
+            "UPDATE messages SET read_at = ? WHERE conversation_id = ? AND sender_designer_id != ? AND read_at = ''",
+            (now, conversation_id, reader_designer_id),
+        )
+    else:
+        c.execute(
+            "UPDATE messages SET read_at = ? WHERE conversation_id = ? AND sender_type != ? AND read_at = ''",
+            (now, conversation_id, reader_type),
+        )
     c.commit()
     c.close()
 
@@ -1903,6 +2003,59 @@ def toggle_follow(question_id: int, designer_id: int) -> bool:
     c.commit()
     c.close()
     return True
+
+
+def toggle_follow_target(follower_designer_id: int, target_type: str, target_id: int) -> bool:
+    """Generic follow used by Profile/Company/People — target_type is
+    'designer' or 'company'. Returns the new following state."""
+    c = _conn()
+    existing = c.execute(
+        "SELECT id FROM follows WHERE follower_designer_id = ? AND target_type = ? AND target_id = ?",
+        (follower_designer_id, target_type, target_id),
+    ).fetchone()
+    if existing:
+        c.execute("DELETE FROM follows WHERE id = ?", (existing["id"],))
+        c.commit()
+        c.close()
+        return False
+    c.execute(
+        "INSERT INTO follows (follower_designer_id, target_type, target_id, created_at) VALUES (?, ?, ?, ?)",
+        (follower_designer_id, target_type, target_id, datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+    return True
+
+
+def list_followed_target_ids(follower_designer_id: int, target_type: str) -> set[int]:
+    """Batch-check helper for directory/listing pages — one query instead
+    of N is-following checks per card."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT target_id FROM follows WHERE follower_designer_id = ? AND target_type = ?",
+        (follower_designer_id, target_type),
+    ).fetchall()
+    c.close()
+    return {r["target_id"] for r in rows}
+
+
+def list_follows_for_designer(follower_designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT target_type, target_id, created_at FROM follows WHERE follower_designer_id = ? ORDER BY created_at DESC",
+        (follower_designer_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def count_followers(target_type: str, target_id: int) -> int:
+    c = _conn()
+    n = c.execute(
+        "SELECT COUNT(*) FROM follows WHERE target_type = ? AND target_id = ?", (target_type, target_id)
+    ).fetchone()[0]
+    c.close()
+    return n
 
 
 def count_stale_questions(days: int = 2) -> list[dict]:

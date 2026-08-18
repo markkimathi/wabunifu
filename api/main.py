@@ -30,7 +30,7 @@ from fastapi import (
 )
 from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "scraper"))
@@ -63,13 +63,14 @@ from .db import (  # noqa: E402
     create_applicant, list_applicants_for_submission, count_applicants_by_submission,
     update_applicant, set_applicant_stage, delete_applicant,
     save_job, list_saved_jobs, unsave_job,
-    get_or_create_conversation, get_conversation, list_conversations_for_designer,
+    get_or_create_conversation, get_or_create_peer_conversation, get_conversation, list_conversations_for_designer,
     list_conversations_for_company, list_messages, create_message, mark_conversation_read,
     create_community_session, list_community_sessions, get_community_session,
     update_community_session, set_session_status, count_session_seats, get_booking,
     book_session, cancel_booking, list_session_bookings, list_bookings_for_designer,
     create_question, list_questions, get_question, set_accepted_reply, set_question_status,
     create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
+    toggle_follow_target, list_followed_target_ids, list_follows_for_designer, count_followers,
     count_stale_questions, get_reply_leaderboard, list_work_worth_reading,
     get_pay_median, create_pay_submission, list_pay_ranges, list_pay_submissions, set_pay_submission_status,
     get_message, create_report, list_reports, get_report, resolve_report, set_employer_suspended,
@@ -666,7 +667,8 @@ class MessageIn(BaseModel):
 
 
 class DesignerConversationStart(BaseModel):
-    company_id: int
+    company_id: Optional[int] = None
+    peer_designer_id: Optional[int] = None
     body: str
 
     @field_validator("body")
@@ -676,6 +678,12 @@ class DesignerConversationStart(BaseModel):
         if not v:
             raise ValueError("a message can't be empty")
         return v[:4000]
+
+    @model_validator(mode="after")
+    def _exactly_one_target(self):
+        if (self.company_id is None) == (self.peer_designer_id is None):
+            raise ValueError("exactly one of company_id or peer_designer_id is required")
+        return self
 
 
 class EmployerConversationStart(BaseModel):
@@ -1436,7 +1444,14 @@ def designer_matches(designer: dict = Depends(require_designer)):
     return {"jobs": matches[:20]}
 
 
-def _designer_conversation_out(conv: dict) -> dict:
+def _designer_conversation_out(conv: dict, viewer_designer_id: int) -> dict:
+    if conv.get("peer_designer_id") is not None:
+        other_id = conv["peer_designer_id"] if conv["designer_id"] == viewer_designer_id else conv["designer_id"]
+        other = get_designer(other_id)
+        return {
+            **conv, "peer": _designer_public(other) if other else None,
+            "company_name": "", "company_slug": "",
+        }
     company = get_company(conv["company_id"])
     return {**conv, "company_name": company["name"] if company else "", "company_slug": company["slug"] if company else ""}
 
@@ -1444,22 +1459,30 @@ def _designer_conversation_out(conv: dict) -> dict:
 @app.get("/api/designers/me/conversations")
 def designer_list_conversations(designer: dict = Depends(require_designer)):
     convs = list_conversations_for_designer(designer["id"])
-    return {"conversations": [_designer_conversation_out(c) for c in convs]}
+    return {"conversations": [_designer_conversation_out(c, designer["id"]) for c in convs]}
 
 
 @app.post("/api/designers/me/conversations")
 def designer_start_conversation(payload: DesignerConversationStart, designer: dict = Depends(require_designer)):
-    company = get_company(payload.company_id)
-    if not company or company["status"] != "approved":
-        raise HTTPException(404, "no such company")
-    conversation_id = get_or_create_conversation(designer["id"], payload.company_id, "designer")
+    if payload.peer_designer_id is not None:
+        if payload.peer_designer_id == designer["id"]:
+            raise HTTPException(400, "can't message yourself")
+        peer = get_designer(payload.peer_designer_id)
+        if not peer or peer["status"] != "approved":
+            raise HTTPException(404, "no such designer")
+        conversation_id = get_or_create_peer_conversation(designer["id"], payload.peer_designer_id, designer["id"])
+    else:
+        company = get_company(payload.company_id)
+        if not company or company["status"] != "approved":
+            raise HTTPException(404, "no such company")
+        conversation_id = get_or_create_conversation(designer["id"], payload.company_id, "designer")
     create_message(conversation_id, "designer", designer["id"], None, payload.body)
     return {"ok": True, "conversation_id": conversation_id}
 
 
 def _require_own_conversation(conversation_id: int, designer_id: int) -> dict:
     conv = get_conversation(conversation_id)
-    if not conv or conv["designer_id"] != designer_id:
+    if not conv or (conv["designer_id"] != designer_id and conv.get("peer_designer_id") != designer_id):
         raise HTTPException(404, "no such conversation")
     return conv
 
@@ -1467,7 +1490,7 @@ def _require_own_conversation(conversation_id: int, designer_id: int) -> dict:
 @app.get("/api/designers/me/conversations/{conversation_id}/messages")
 def designer_get_messages(conversation_id: int, designer: dict = Depends(require_designer)):
     _require_own_conversation(conversation_id, designer["id"])
-    mark_conversation_read(conversation_id, "designer")
+    mark_conversation_read(conversation_id, "designer", designer["id"])
     return {"messages": list_messages(conversation_id)}
 
 
@@ -1487,6 +1510,30 @@ def designer_report_message(conversation_id: int, message_id: int, payload: Repo
         raise HTTPException(404, "no such message")
     create_report("message", message_id, designer["id"], None, payload.summary)
     return {"ok": True}
+
+
+FOLLOW_TARGET_TYPES = {"designer", "company"}
+
+
+@app.get("/api/designers/me/follows")
+def designer_list_follows(designer: dict = Depends(require_designer)):
+    return {"follows": list_follows_for_designer(designer["id"])}
+
+
+@app.post("/api/designers/me/follows/{target_type}/{target_id}")
+def designer_toggle_follow(target_type: str, target_id: int, designer: dict = Depends(require_designer)):
+    if target_type not in FOLLOW_TARGET_TYPES:
+        raise HTTPException(400, "unknown follow target type")
+    if target_type == "designer":
+        if target_id == designer["id"]:
+            raise HTTPException(400, "can't follow yourself")
+        if not get_designer(target_id):
+            raise HTTPException(404, "no such designer")
+    else:
+        if not get_company(target_id):
+            raise HTTPException(404, "no such company")
+    following = toggle_follow_target(designer["id"], target_type, target_id)
+    return {"ok": True, "following": following, "followers": count_followers(target_type, target_id)}
 
 
 # ---------------------------------------------------------------------------

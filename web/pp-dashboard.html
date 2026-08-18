@@ -14,6 +14,30 @@
   .wrap{max-width:var(--pp-container-wide);width:100%;margin:0 auto;padding:28px var(--pp-page-margin) 64px;box-sizing:border-box}
   a{color:inherit}
 
+  /* Dashboard rail: full 248px labelled rail at desktop, 68px icon-only
+     between 1024-1279px, replaced entirely by a horizontal chip row below
+     1024px — three patterns on one markup, per the design's "Dashboard at
+     1180" tablet-landscape spec (rail collapses, not a drawer). */
+  .dash-layout{display:flex;align-items:flex-start;gap:32px}
+  .dash-rail{display:none;flex:none;width:var(--pp-sidebar);flex-direction:column;gap:2px;
+    position:sticky;top:24px}
+  @media(min-width:1024px){.dash-rail{display:flex}}
+  @media(min-width:1024px) and (max-width:1279px){.dash-rail{width:var(--pp-sidebar-collapsed)}}
+  .dash-rail-item{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border:none;
+    border-radius:var(--pp-radius-md);background:transparent;color:var(--c-text-muted);cursor:pointer;
+    font-family:var(--pp-font);font-size:14.5px;font-weight:500;text-align:left;white-space:nowrap;overflow:hidden}
+  .dash-rail-item svg{flex:none}
+  .dash-rail-item:hover{background:var(--c-bg-sunken);color:var(--c-text)}
+  .dash-rail-item.-active{background:var(--pp-gold-200);color:var(--pp-gold-800);font-weight:600}
+  @media(min-width:1024px) and (max-width:1279px){.dash-rail-item{width:44px;padding:0;justify-content:center}}
+  .dash-rail-label{overflow:hidden;text-overflow:ellipsis}
+  @media(min-width:1024px) and (max-width:1279px){.dash-rail-label{display:none}}
+  .dash-rail-spacer{flex:1;min-height:16px}
+  .dash-rail-signout{color:var(--c-text)}
+  .dash-main{flex:1;min-width:0}
+  .dash-chips-mobile{margin-bottom:22px}
+  @media(min-width:1024px){.dash-chips-mobile{display:none}}
+
   .dash-head h1{margin:0 0 4px;font-size:30px;line-height:1.1;letter-spacing:-0.026em;font-weight:800}
   .dash-head p{margin:0 0 20px;font-size:14.5px;color:var(--c-text-subtle)}
 
@@ -114,7 +138,15 @@
 
 <div id="pp-nav" data-shell="focused"></div>
 
-<main><div class="wrap" id="content"><div class="state-panel">Loading…</div></div></main>
+<main>
+  <div class="wrap dash-layout">
+    <aside class="dash-rail" id="dashRail"></aside>
+    <div class="dash-main">
+      <div class="dash-chips-mobile" id="dashChipsMobile"></div>
+      <div id="content"><div class="state-panel">Loading…</div></div>
+    </div>
+  </div>
+</main>
 
 <div id="pp-footer" data-variant="legal"></div>
 
@@ -134,6 +166,15 @@
   var AVATAR_COUNT = 28;
   var DEFAULT_AVATAR = "/avatars/avatar-1.png";
   var AVAILABILITY = ["Available", "Open to offers", "Not available"];
+  var RAIL_ICONS = {
+    overview: '<rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="10" width="8" height="11" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/>',
+    saved: '<path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>',
+    messages: '<path d="M21 15a2 2 0 01-2 2H8l-4 4V5a2 2 0 012-2h13a2 2 0 012 2z"/>',
+    analytics: '<rect x="3" y="12" width="4" height="8" rx="1"/><rect x="10" y="7" width="4" height="13" rx="1"/><rect x="17" y="3" width="4" height="17" rx="1"/>',
+    profile: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>',
+    availability: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    account: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>'
+  };
   var SECTIONS = [
     { key: "overview", label: "Overview" }, { key: "saved", label: "Saved roles" },
     { key: "messages", label: "Messages" }, { key: "analytics", label: "Analytics" },
@@ -173,11 +214,33 @@
     setTimeout(function(){ el.remove(); }, 2600);
   }
 
-  function sectionTabsHtml(){
-    return '<div class="pp-tabs-scroll" style="margin-bottom:22px">' +
+  function railIcon(key){
+    return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + RAIL_ICONS[key] + '</svg>';
+  }
+
+  // 248px labelled rail (desktop) / 68px icon-only rail (tablet landscape,
+  // both via CSS on the same markup) — the primary nav at >=1024px, with
+  // Sign out pinned at the bottom per the design's dashboard rail spec.
+  function railHtml(){
+    return SECTIONS.map(function(s){
+      return '<button type="button" class="dash-rail-item' + (section === s.key ? " -active" : "") + '" data-section="' + s.key + '" title="' + s.label + '">' +
+        railIcon(s.key) + '<span class="dash-rail-label">' + s.label + '</span></button>';
+    }).join("") +
+    '<div class="dash-rail-spacer"></div>' +
+    '<button type="button" class="dash-rail-item dash-rail-signout" data-rail-signout title="Sign out">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>' +
+      '<span class="dash-rail-label">Sign out</span></button>';
+  }
+
+  // Same section switch as a horizontally scrolling chip row, replacing
+  // the rail below 1024px per the design's tablet-portrait/mobile pattern.
+  function chipsMobileHtml(){
+    return '<div class="pp-tabs-scroll">' +
       SECTIONS.map(function(s){
         return '<button type="button" class="pp-tab-chip' + (section === s.key ? " -active" : "") + '" data-section="' + s.key + '">' + s.label + '</button>';
       }).join("") +
+      '<button type="button" class="pp-tab-chip" data-rail-signout>Sign out</button>' +
     '</div>';
   }
 
@@ -190,7 +253,7 @@
   // ---------------- Overview ----------------
 
   function renderOverview(){
-    var body = sectionTabsHtml() +
+    var body =
       '<div class="stat-row">' +
         '<div class="stat-card"><div class="n">' + (cache.stats ? cache.stats.profile_views : "—") + '</div><div class="l">Profile views, last 90 days</div></div>' +
         '<div class="stat-card"><div class="n">' + cache.saved.length + '</div><div class="l">Saved roles</div></div>' +
@@ -217,7 +280,7 @@
   // ---------------- Saved roles ----------------
 
   function renderSaved(){
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Saved roles</h2></div>';
+    var body = '<div class="section-head"><h2>Saved roles</h2></div>';
     if (!cache.saved.length) {
       body += '<div class="pp-empty"><h3>Nothing saved yet</h3><p>Save a role from the jobs board and it shows up here.</p><a class="pp-btn pp-btn-primary" href="/jobs">Browse roles</a></div>';
       return body;
@@ -238,7 +301,7 @@
   // ---------------- Messages ----------------
 
   function renderMessages(){
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Messages</h2></div>';
+    var body = '<div class="section-head"><h2>Messages</h2></div>';
     if (!cache.conversations.length) {
       body += '<div class="pp-empty"><h3>No conversations yet</h3><p>Message a company from their page and the thread shows up here.</p></div>';
       return body;
@@ -319,7 +382,7 @@
   // ---------------- Analytics ----------------
 
   function renderAnalytics(){
-    return sectionTabsHtml() + '<div class="section-head"><h2>Analytics</h2></div>' +
+    return '<div class="section-head"><h2>Analytics</h2></div>' +
       '<div class="stat-row"><div class="stat-card"><div class="n">' + (cache.stats ? cache.stats.profile_views : "—") + '</div><div class="l">Profile views, last 90 days</div></div></div>' +
       '<p style="font-size:13.5px;color:var(--c-text-subtle);max-width:60ch">This counts visits to your public profile page. We don\'t track or show who looked — just how many.</p>';
   }
@@ -333,7 +396,7 @@
       var path = "/avatars/avatar-" + n + ".png";
       avatarOpts += '<button type="button" class="avatar-option' + (path === current ? " -selected" : "") + '" data-avatar="' + path + '"><img src="' + path + '" alt=""></button>';
     }
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Profile</h2></div>';
+    var body = '<div class="section-head"><h2>Profile</h2></div>';
     body += '<div class="form-panel"><form id="profileForm">' +
       '<div class="photo-block"><img id="photoPreview" src="' + escapeHtml(current) + '" alt="">' +
         '<div><button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="photoUploadBtn">Upload a photo</button>' +
@@ -397,7 +460,7 @@
 
   function renderAvailability(){
     var current = me.availability_status || "";
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Availability</h2></div>';
+    var body = '<div class="section-head"><h2>Availability</h2></div>';
     body += '<div class="form-panel"><form id="availForm">' +
       AVAILABILITY.map(function(a){
         return '<label class="avail-opt' + (current === a ? " -active" : "") + '"><span class="dot"></span><input type="radio" name="avail" value="' + a + '" style="display:none"' + (current === a ? " checked" : "") + '><span>' + a + '</span></label>';
@@ -410,7 +473,7 @@
   // ---------------- Account ----------------
 
   function renderAccount(){
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Account</h2></div>';
+    var body = '<div class="section-head"><h2>Account</h2></div>';
     body += '<div class="form-panel"><h3>Sign-in email</h3><p style="margin:0 0 4px;font-size:14.5px">' + escapeHtml(me.email) + '</p>' +
       '<p style="margin:0;font-size:13px;color:var(--c-text-subtle)">' + (me.email_verified ? "Verified." : "Not verified yet.") + '</p></div>';
     body += '<div class="form-panel"><h3>Password</h3><a class="pp-btn pp-btn-secondary" href="/signin?view=reset">Reset your password</a></div>';
@@ -437,6 +500,8 @@
     else if (section === "availability") body = renderAvailability();
     else body = renderAccount();
     content.innerHTML = head + body;
+    document.getElementById("dashRail").innerHTML = railHtml();
+    document.getElementById("dashChipsMobile").innerHTML = chipsMobileHtml();
     if (section === "profile") { selectedDisciplines = (me.discipline || []).slice(); selectedSkills = (me.skills || []).slice(); renderDisciplineChips(); renderSkillChips(); }
     wire();
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
@@ -472,6 +537,9 @@
   function wire(){
     document.querySelectorAll("[data-section]").forEach(function(btn){
       btn.addEventListener("click", function(){ setSection(btn.getAttribute("data-section")); });
+    });
+    document.querySelectorAll("[data-rail-signout]").forEach(function(btn){
+      btn.addEventListener("click", function(){ window.PathPixelNav.signOut("designer"); });
     });
 
     // Saved
@@ -607,7 +675,7 @@
       if (!ok) return;
       await api("/api/designers/me", { method: "DELETE" });
       localStorage.removeItem("kazi_designer_token");
-      location.href = "index.html";
+      location.href = "/";
     });
   }
 

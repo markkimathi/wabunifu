@@ -35,13 +35,13 @@
     else document.addEventListener("DOMContentLoaded", fn);
   }
 
-  // Placeholder routes: the real pages land in later migration phases
-  // (see README's suggested build order). One place to update once they exist.
   var ROUTES = {
     home: "/", jobs: "/jobs", people: "/people",
     community: "/community", resources: "/resources",
     postRole: "/post-a-role", signin: "/signin", join: "/join"
   };
+
+  var DESIGNER_TOKEN_KEY = "kazi_designer_token";
 
   var NAV_ITEMS = [
     { key: "home", label: "Home", href: ROUTES.home,
@@ -101,10 +101,19 @@
     + ".pp-btn-ghost:hover{background:var(--c-bg-sunken);border-color:var(--c-border-hover)}"
     + ".pp-btn-gold{font-size:var(--pp-button-size);font-weight:var(--pp-button-weight);padding:0 18px;height:40px;display:inline-flex;align-items:center;border-radius:9px;background:var(--c-accent);color:var(--c-on-accent);white-space:nowrap;text-decoration:none}"
     + ".pp-btn-gold:hover{background:var(--c-accent-hover)}"
-    + ".pp-avatar-chip{display:inline-flex;align-items:center;gap:9px;flex:none;padding:4px 4px 4px 12px;border-radius:999px;border:1px solid var(--c-border);text-decoration:none;color:var(--c-text)}"
+    + ".pp-avatar-menu{position:relative;flex:none}"
+    + ".pp-avatar-chip{display:inline-flex;align-items:center;gap:9px;flex:none;padding:4px 4px 4px 12px;border-radius:999px;border:1px solid var(--c-border);background:transparent;text-decoration:none;color:var(--c-text);font:inherit;cursor:pointer}"
     + ".pp-avatar-chip:hover{background:var(--c-bg-sunken)}"
     + ".pp-avatar-chip .pp-av-name{font-size:14px;font-weight:500}"
     + ".pp-av-circle{width:32px;height:32px;border-radius:50%;background:var(--pp-gold-300);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--pp-gold-800)}"
+    + ".pp-avatar-dropdown{position:absolute;top:calc(100% + 8px);right:0;min-width:180px;z-index:var(--pp-z-menu,21);"
+    + "background:var(--c-surface);border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-lg);"
+    + "box-shadow:var(--pp-shadow-lg);padding:6px;display:none;flex-direction:column;gap:2px}"
+    + ".pp-avatar-dropdown.-open{display:flex}"
+    + ".pp-avatar-dropdown a,.pp-avatar-dropdown button{display:block;width:100%;text-align:left;"
+    + "padding:9px 10px;border-radius:8px;border:0;background:none;color:var(--c-text);"
+    + "font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;text-decoration:none}"
+    + ".pp-avatar-dropdown a:hover,.pp-avatar-dropdown button:hover{background:var(--c-bg-sunken)}"
     // ---- desktop search drop ----
     + ".pp-search-drop{border-top:1px solid var(--c-border);background:var(--c-bg);display:none}"
     + ".pp-search-drop.-open{display:block}"
@@ -158,10 +167,15 @@
     + ".pp-menu-caption{display:block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-faint);margin:24px 0 6px}"
     + ".pp-menu-foot{flex:none;padding:14px 16px 18px;border-top:1px solid var(--c-border);display:flex;gap:10px}"
     + ".pp-menu-foot .pp-btn-ghost,.pp-menu-foot .pp-btn-gold{flex:1;justify-content:center;height:48px}"
-    + ".pp-menu-user{flex:none;padding:12px 16px 18px;border-top:1px solid var(--c-border);display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--c-text)}"
+    + ".pp-menu-user-wrap{flex:none;border-top:1px solid var(--c-border)}"
+    + ".pp-menu-user{padding:12px 16px 4px;display:flex;align-items:center;gap:11px;text-decoration:none;color:var(--c-text)}"
     + ".pp-menu-user .pp-av-circle{width:40px;height:40px;font-size:14px}"
     + ".pp-menu-user-name{font-size:15px;font-weight:700}"
     + ".pp-menu-user-sub{font-size:12.5px;color:var(--c-accent-text)}"
+    // Ink, not red — sign out is disruptive but recoverable, and only
+    // genuine account loss (Close account) takes --c-bad-text per house rules.
+    + ".pp-menu-signout{display:block;width:calc(100% - 32px);margin:6px 16px 18px;padding:12px 4px;border:none;"
+    + "background:none;font:inherit;font-size:14.5px;font-weight:600;color:var(--c-text);text-align:left;cursor:pointer}"
     // ---- focused-flow shell (sign in/up, reset, onboarding) ----
     + ".pp-header-focused{padding:32px var(--pp-page-margin) 0}"
     + ".pp-header-focused a{display:inline-flex}"
@@ -195,12 +209,84 @@
       '<span>' + item.label + '</span>' + ICONS.chevronRight(19) + '</a>';
   }
 
+  function initialsOf(user){
+    return user.initials || (user.name || "").split(" ").map(function(w){return w[0];}).slice(0,2).join("").toUpperCase();
+  }
+
+  // pp-nav.js is meant to be self-contained (one <script> tag, see the
+  // header comment) — no page actually populates data-user, so this is the
+  // only source of signed-in state: read the same token pp-dashboard.html
+  // etc. already store, and ask the API who that is.
+  function resolveSignedInUser(cb){
+    var token;
+    try { token = localStorage.getItem(DESIGNER_TOKEN_KEY); } catch (e) { token = null; }
+    if (!token) { cb(null); return; }
+    fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + token } })
+      .then(function(res){
+        if (!res.ok) {
+          if (res.status === 401) { try { localStorage.removeItem(DESIGNER_TOKEN_KEY); } catch (e) {} }
+          return null;
+        }
+        return res.json();
+      })
+      .then(function(me){
+        cb(me ? { name: me.display_name, initials: initialsOf({ name: me.display_name }), href: "/designers/" + encodeURIComponent(me.handle || me.id) } : null);
+      })
+      .catch(function(){ cb(null); });
+  }
+
+  function ensureConfirmLoaded(cb){
+    if (window.showPPConfirm) { cb(); return; }
+    var s = document.createElement("script");
+    s.src = "/pp-confirm.js";
+    s.onload = cb;
+    s.onerror = cb; // doSignOut() falls back to a plain confirm() if this never defines showPPConfirm
+    document.head.appendChild(s);
+  }
+
+  // kind: "designer" (default, used by this file's own avatar menu) or
+  // "employer" (used by pp-employer.html's dashboard rail) — same flow,
+  // different token key and logout endpoint. Exposed on PathPixelNav so
+  // both dashboards can call it instead of duplicating the confirm +
+  // logout-call + token-clear sequence.
+  function doSignOut(kind){
+    kind = kind === "employer" ? "employer" : "designer";
+    var tokenKey = kind === "employer" ? "kazi_employer_token" : DESIGNER_TOKEN_KEY;
+    var logoutUrl = kind === "employer" ? "/api/employers/logout" : "/api/designers/logout";
+    ensureConfirmLoaded(function(){
+      var proceed = window.showPPConfirm
+        ? window.showPPConfirm({
+            title: "Sign out?",
+            description: "You'll need to sign back in to see your saved roles and messages.",
+            confirmLabel: "Sign out", safeLabel: "Stay signed in", danger: false
+          })
+        : Promise.resolve(confirm("Sign out?"));
+      proceed.then(function(ok){
+        if (!ok) return;
+        var token;
+        try { token = localStorage.getItem(tokenKey); } catch (e) { token = null; }
+        var done = token
+          ? fetch(logoutUrl, { method: "POST", headers: { "Authorization": "Bearer " + token } }).catch(function(){})
+          : Promise.resolve();
+        done.then(function(){
+          try { localStorage.removeItem(tokenKey); } catch (e) {}
+          location.href = "/";
+        });
+      });
+    });
+  }
+
   function authControlsHtml(user){
     if (user) {
-      var initials = user.initials || (user.name || "").split(" ").map(function(w){return w[0];}).slice(0,2).join("").toUpperCase();
-      return '<a class="pp-avatar-chip" href="' + (user.href || "#") + '">' +
-        '<span class="pp-av-name">' + user.name + '</span>' +
-        '<span class="pp-av-circle">' + initials + '</span></a>';
+      return '<div class="pp-avatar-menu" data-avatar-menu>' +
+        '<button type="button" class="pp-avatar-chip" data-avatar-trigger aria-haspopup="true" aria-expanded="false">' +
+          '<span class="pp-av-name">' + user.name + '</span>' +
+          '<span class="pp-av-circle">' + initialsOf(user) + '</span></button>' +
+        '<div class="pp-avatar-dropdown" data-avatar-dropdown>' +
+          '<a href="' + (user.href || "#") + '">My profile</a>' +
+          '<button type="button" data-sign-out>Sign out</button>' +
+        '</div>' +
+      '</div>';
     }
     return '<div class="pp-auth">' +
       '<a class="pp-btn-ghost" href="' + ROUTES.signin + '">Sign in</a>' +
@@ -294,10 +380,14 @@
           menuRowHtml({ label: "Post a role", href: ROUTES.postRole }, false) +
         '</div>' +
         (user
-          ? '<a class="pp-menu-user" href="' + user.href + '">' +
-              '<span class="pp-av-circle">' + (user.initials || "") + '</span>' +
-              '<span style="flex:1;min-width:0"><span class="pp-menu-user-name" style="display:block">' + user.name + '</span>' +
-              '<span class="pp-menu-user-sub">View your profile</span></span>' + ICONS.chevronRight(18) + '</a>'
+          ? '<div class="pp-menu-user-wrap">' +
+              '<a class="pp-menu-user" href="' + user.href + '">' +
+                '<span class="pp-av-circle">' + initialsOf(user) + '</span>' +
+                '<span style="flex:1;min-width:0"><span class="pp-menu-user-name" style="display:block">' + user.name + '</span>' +
+                '<span class="pp-menu-user-sub">View your profile</span></span>' + ICONS.chevronRight(18) +
+              '</a>' +
+              '<button type="button" class="pp-menu-signout" data-sign-out>Sign out</button>' +
+            '</div>'
           : '<div class="pp-menu-foot">' +
               '<a class="pp-btn-ghost" href="' + ROUTES.signin + '">Sign in</a>' +
               '<a class="pp-btn-gold" href="' + ROUTES.join + '">Join for free</a></div>') +
@@ -383,6 +473,26 @@
         try { localStorage.setItem("pp_theme", next); } catch (e) {}
       });
     });
+
+    var avatarMenu = root.querySelector("[data-avatar-menu]");
+    if (avatarMenu) {
+      var avatarTrigger = root.querySelector("[data-avatar-trigger]");
+      var avatarDropdown = root.querySelector("[data-avatar-dropdown]");
+      avatarTrigger.addEventListener("click", function(e){
+        e.stopPropagation();
+        var open = avatarDropdown.classList.toggle("-open");
+        avatarTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+      });
+      document.addEventListener("click", function(e){
+        if (!avatarMenu.contains(e.target)) {
+          avatarDropdown.classList.remove("-open");
+          avatarTrigger.setAttribute("aria-expanded", "false");
+        }
+      });
+    }
+    root.querySelectorAll("[data-sign-out]").forEach(function(btn){
+      btn.addEventListener("click", function(){ doSignOut("designer"); });
+    });
   }
 
   function buildBreadcrumbs(el){
@@ -420,12 +530,22 @@
     opts = opts || {};
     var shell = opts.shell || el.getAttribute("data-shell") || "full";
     var active = opts.active || el.getAttribute("data-active") || "";
-    var user = opts.user;
-    if (user === undefined) {
-      try { user = JSON.parse(el.getAttribute("data-user") || "null"); } catch (e) { user = null; }
+    if (shell === "focused") { buildFocusedHeader(el); return; }
+
+    var explicitUser = opts.user;
+    if (explicitUser === undefined) {
+      var attr = el.getAttribute("data-user");
+      explicitUser = attr ? (function(){ try { return JSON.parse(attr); } catch (e) { return null; } })() : undefined;
     }
-    if (shell === "focused") buildFocusedHeader(el);
-    else buildFullHeader(el, active, user);
+    if (explicitUser !== undefined) { buildFullHeader(el, active, explicitUser); return; }
+
+    // No caller-supplied state (the common case — no page sets data-user):
+    // paint signed-out immediately so the header never sits blank, then
+    // swap in the real state once the token check resolves.
+    buildFullHeader(el, active, null);
+    resolveSignedInUser(function(user){
+      if (user) buildFullHeader(el, active, user);
+    });
   }
 
   function renderBreadcrumbs(el, crumbs){
@@ -447,6 +567,6 @@
     if (crumbsEl) buildBreadcrumbs(crumbsEl);
   }
 
-  window.PathPixelNav = { ROUTES: ROUTES, render: render, renderBreadcrumbs: renderBreadcrumbs, injectStyle: injectStyle };
+  window.PathPixelNav = { ROUTES: ROUTES, render: render, renderBreadcrumbs: renderBreadcrumbs, injectStyle: injectStyle, signOut: doSignOut };
   ready(init);
 })();

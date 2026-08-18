@@ -14,6 +14,29 @@
   .wrap{max-width:var(--pp-container-wide);width:100%;margin:0 auto;padding:28px var(--pp-page-margin) 64px;box-sizing:border-box}
   a{color:inherit}
 
+  /* Dashboard rail — same pattern as pp-dashboard.html: 248px labelled
+     rail (desktop), 68px icon-only (1024-1279px), horizontal chip row
+     below 1024px. See that file for the fuller comment. */
+  .dash-layout{display:flex;align-items:flex-start;gap:32px}
+  .dash-rail{display:none;flex:none;width:var(--pp-sidebar);flex-direction:column;gap:2px;
+    position:sticky;top:24px}
+  @media(min-width:1024px){.dash-rail{display:flex}}
+  @media(min-width:1024px) and (max-width:1279px){.dash-rail{width:var(--pp-sidebar-collapsed)}}
+  .dash-rail-item{display:flex;align-items:center;gap:12px;height:44px;padding:0 12px;border:none;
+    border-radius:var(--pp-radius-md);background:transparent;color:var(--c-text-muted);cursor:pointer;
+    font-family:var(--pp-font);font-size:14.5px;font-weight:500;text-align:left;white-space:nowrap;overflow:hidden}
+  .dash-rail-item svg{flex:none}
+  .dash-rail-item:hover{background:var(--c-bg-sunken);color:var(--c-text)}
+  .dash-rail-item.-active{background:var(--pp-gold-200);color:var(--pp-gold-800);font-weight:600}
+  @media(min-width:1024px) and (max-width:1279px){.dash-rail-item{width:44px;padding:0;justify-content:center}}
+  .dash-rail-label{overflow:hidden;text-overflow:ellipsis}
+  @media(min-width:1024px) and (max-width:1279px){.dash-rail-label{display:none}}
+  .dash-rail-spacer{flex:1;min-height:16px}
+  .dash-rail-signout{color:var(--c-text)}
+  .dash-main{flex:1;min-width:0}
+  .dash-chips-mobile{margin-bottom:22px}
+  @media(min-width:1024px){.dash-chips-mobile{display:none}}
+
   .dash-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
   .dash-head h1{margin:0 0 4px;font-size:30px;line-height:1.1;letter-spacing:-0.026em;font-weight:800}
   .dash-head p{margin:0;font-size:14.5px;color:var(--c-text-subtle)}
@@ -108,7 +131,15 @@
 
 <div id="pp-nav" data-shell="focused"></div>
 
-<main><div class="wrap" id="content"><div class="state-panel">Loading…</div></div></main>
+<main>
+  <div class="wrap dash-layout">
+    <aside class="dash-rail" id="dashRail"></aside>
+    <div class="dash-main">
+      <div class="dash-chips-mobile" id="dashChipsMobile"></div>
+      <div id="content"><div class="state-panel">Loading…</div></div>
+    </div>
+  </div>
+</main>
 
 <div id="pp-footer" data-variant="legal"></div>
 
@@ -130,6 +161,14 @@
   var LEVELS = ["Junior", "Mid", "Senior", "Lead"];
   var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
   var STAGES = ["Applied", "Reviewing", "Interviewing", "Offer"];
+  var RAIL_ICONS = {
+    listings: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4V3a1 1 0 011-1h6a1 1 0 011 1v1"/><path d="M3 10h18"/>',
+    applicants: '<rect x="3" y="5" width="7" height="14" rx="1.5"/><rect x="14.5" y="5" width="7" height="8" rx="1.5"/>',
+    messages: '<path d="M21 15a2 2 0 01-2 2H8l-4 4V5a2 2 0 012-2h13a2 2 0 012 2z"/>',
+    team: '<circle cx="9" cy="8" r="3.4"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><path d="M16 5.5a3.2 3.2 0 010 6M17 14.6a6.2 6.2 0 014.5 5.4"/>',
+    company: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1"/>',
+    billing: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19"/><path d="M6 15h4"/>'
+  };
   var SECTIONS = [
     { key: "listings", label: "Listings" }, { key: "applicants", label: "Applicants" },
     { key: "messages", label: "Messages" },
@@ -172,11 +211,28 @@
   function canWrite(){ return me && !me.is_pending_approval && (me.team_role === "owner" || me.team_role === "can_post"); }
   function isOwner(){ return me && !me.is_pending_approval && me.team_role === "owner"; }
 
-  function sectionTabsHtml(){
-    return '<div class="pp-tabs-scroll" style="margin-bottom:22px">' +
+  function railIcon(key){
+    return '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + RAIL_ICONS[key] + '</svg>';
+  }
+
+  function railHtml(){
+    return SECTIONS.map(function(s){
+      return '<button type="button" class="dash-rail-item' + (section === s.key ? " -active" : "") + '" data-section="' + s.key + '" title="' + s.label + '">' +
+        railIcon(s.key) + '<span class="dash-rail-label">' + s.label + '</span></button>';
+    }).join("") +
+    '<div class="dash-rail-spacer"></div>' +
+    '<button type="button" class="dash-rail-item dash-rail-signout" data-rail-signout title="Sign out">' +
+      '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>' +
+      '<span class="dash-rail-label">Sign out</span></button>';
+  }
+
+  function chipsMobileHtml(){
+    return '<div class="pp-tabs-scroll">' +
       SECTIONS.map(function(s){
         return '<button type="button" class="pp-tab-chip' + (section === s.key ? " -active" : "") + '" data-section="' + s.key + '">' + s.label + '</button>';
       }).join("") +
+      '<button type="button" class="pp-tab-chip" data-rail-signout>Sign out</button>' +
     '</div>';
   }
 
@@ -234,8 +290,7 @@
 
   function renderListings(state){
     var listings = state.listings || [];
-    var body = sectionTabsHtml() +
-      '<div class="section-head"><h2>Listings</h2>' +
+    var body =       '<div class="section-head"><h2>Listings</h2>' +
       (canWrite() && !showNewListing ? '<button type="button" class="pp-btn pp-btn-primary" id="addListingBtn">Post a role</button>' : "") +
       '</div>';
     if (showNewListing) body += listingFormHtml(state.editingListing || {});
@@ -295,7 +350,7 @@
 
   function renderApplicants(state){
     var listings = (state.listings || []).filter(function(l){ return l.status !== "rejected"; });
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Applicants</h2></div>';
+    var body = '<div class="section-head"><h2>Applicants</h2></div>';
     if (!listings.length) {
       return body + '<div class="pp-empty"><h3>Post a role first</h3><p>Applicants are tracked per listing — add one from the Listings tab.</p></div>';
     }
@@ -319,7 +374,7 @@
 
   function renderTeam(state){
     var team = state.team || { members: [], pending_invites: [] };
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Team</h2></div>';
+    var body = '<div class="section-head"><h2>Team</h2></div>';
     if (team.pending_invites.length) {
       body += '<h3 style="font-size:14px;color:var(--c-text-subtle);margin:0 0 10px">Invited, not yet joined</h3>';
       team.pending_invites.forEach(function(inv){
@@ -360,7 +415,7 @@
 
   function renderCompany(state){
     var c = me.company || {};
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Company page</h2></div>';
+    var body = '<div class="section-head"><h2>Company page</h2></div>';
     body += '<div class="form-panel"><form id="companyForm">' +
       '<div class="field-block"><label class="pp-field-label">Company name</label><div class="pp-field-input"><input id="cName" value="' + escapeHtml(c.name || "") + '"' + (isOwner() ? "" : " disabled") + '></div></div>' +
       '<div class="field-block"><label class="pp-field-label">Website</label><div class="pp-field-input"><input id="cWebsite" value="' + escapeHtml(c.website || "") + '"' + (isOwner() ? "" : " disabled") + '></div></div>' +
@@ -379,7 +434,7 @@
   // ---------------- Messages ----------------
 
   function renderMessages(){
-    var body = sectionTabsHtml() + '<div class="section-head"><h2>Messages</h2></div>';
+    var body = '<div class="section-head"><h2>Messages</h2></div>';
     if (!cache.conversations.length) {
       body += '<div class="pp-empty"><h3>No conversations yet</h3><p>When a designer messages your company, the thread shows up here.</p></div>';
       return body;
@@ -460,7 +515,7 @@
   // ---------------- Billing ----------------
 
   function renderBilling(){
-    return sectionTabsHtml() + '<div class="section-head"><h2>Billing</h2></div>' +
+    return '<div class="section-head"><h2>Billing</h2></div>' +
       '<div class="billing-panel"><h3>Hiring tools are free right now</h3>' +
       '<p>Kazi isn\'t charging for posting roles or managing applicants yet. If that changes, you\'ll see it here first — nothing changes automatically, and nothing is billed today.</p></div>';
   }
@@ -503,6 +558,8 @@
     else if (section === "company") body = renderCompany(cache);
     else body = renderBilling();
     content.innerHTML = head + body;
+    document.getElementById("dashRail").innerHTML = railHtml();
+    document.getElementById("dashChipsMobile").innerHTML = chipsMobileHtml();
     wire();
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
@@ -519,6 +576,9 @@
   function wire(){
     document.querySelectorAll("[data-section]").forEach(function(btn){
       btn.addEventListener("click", function(){ setSection(btn.getAttribute("data-section")); });
+    });
+    document.querySelectorAll("[data-rail-signout]").forEach(function(btn){
+      btn.addEventListener("click", function(){ window.PathPixelNav.signOut("employer"); });
     });
 
     // Listings

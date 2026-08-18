@@ -36,7 +36,32 @@
   .rail{border:1px solid var(--c-border);border-radius:var(--pp-radius-xl);background:var(--c-surface);
     padding:20px;display:flex;flex-direction:column;gap:22px;position:sticky;top:150px;max-height:560px;overflow-y:auto}
   @media(min-width:1024px){.rail{top:190px}}
-  @media(max-width:1023px){.rail{position:static;max-height:none}}
+  /* Below 1024px the rail leaves the flow entirely and becomes an overlay:
+     a bottom sheet on mobile, a right-hand drawer at tablet portrait —
+     hidden by default, opened via the "Filters" button next to Sort. */
+  @media(max-width:1023px){
+    .rail{position:fixed;inset:auto 0 0 0;max-height:85vh;z-index:var(--pp-z-modal,20);
+      border-radius:var(--pp-radius-xl) var(--pp-radius-xl) 0 0;margin:0;
+      transform:translateY(100%);transition:transform var(--pp-duration-slow) var(--pp-ease);visibility:hidden}
+    .rail.-open{transform:translateY(0);visibility:visible}
+  }
+  @media(min-width:768px) and (max-width:1023px){
+    .rail{inset:0 0 0 auto;width:340px;max-height:none;height:100%;border-radius:0;transform:translateX(100%)}
+    .rail.-open{transform:translateX(0)}
+  }
+  .rail-backdrop{display:none}
+  @media(max-width:1023px){
+    .rail-backdrop{display:block;position:fixed;inset:0;z-index:19;background:rgba(10,10,10,.45);
+      opacity:0;pointer-events:none;transition:opacity var(--pp-duration) var(--pp-ease)}
+    .rail-backdrop.-open{opacity:1;pointer-events:auto}
+  }
+  .filters-toggle{display:none;align-items:center;gap:8px;height:40px;padding:0 12px;border:1px solid var(--c-border-strong);
+    border-radius:9px;background:var(--c-surface);font-family:var(--pp-font);font-size:14px;font-weight:500;
+    color:var(--c-text);cursor:pointer;white-space:nowrap}
+  @media(max-width:1023px){.filters-toggle{display:inline-flex}}
+  .filters-toggle .n{padding:1px 7px;border-radius:999px;background:var(--pp-gold);color:var(--pp-ink);font-size:12px;font-weight:700}
+  .rail-close{display:none;border:none;background:transparent;color:var(--c-text-muted);cursor:pointer;padding:4px;margin:-4px}
+  @media(max-width:1023px){.rail-close{display:inline-flex}}
   .rail-head{display:flex;align-items:center;justify-content:space-between}
   .rail-head span{font-size:15px;font-weight:700}
   .rail-reset{border:none;background:transparent;font-family:var(--pp-font);font-size:13.5px;font-weight:600;
@@ -153,9 +178,18 @@
     </div>
   </div>
 
+  <div class="rail-backdrop" id="railBackdrop"></div>
+
   <div class="wrap layout">
-    <aside class="rail">
-      <div class="rail-head"><span>Filters</span><button class="rail-reset" id="resetFilters" type="button">Reset</button></div>
+    <aside class="rail" id="filterRail">
+      <div class="rail-head"><span>Filters</span>
+        <div style="display:flex;align-items:center;gap:14px">
+          <button class="rail-reset" id="resetFilters" type="button">Reset</button>
+          <button class="rail-close" id="closeFilters" type="button" aria-label="Close filters">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
+      </div>
 
       <div class="rail-group">
         <span class="rail-label">Where you can apply from</span>
@@ -191,12 +225,18 @@
     <div>
       <div class="results-head">
         <div class="results-count" id="resultsCount"></div>
-        <div class="sort-wrap">
-          <span>Sort</span>
-          <button class="sort-btn" id="sortBtn" type="button">Newest
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="filters-toggle" id="openFilters" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
+            Filters<span class="n" id="filtersCount" hidden>0</span>
           </button>
-          <div class="sort-menu" id="sortMenu"></div>
+          <div class="sort-wrap">
+            <span>Sort</span>
+            <button class="sort-btn" id="sortBtn" type="button">Newest
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>
+            </button>
+            <div class="sort-menu" id="sortMenu"></div>
+          </div>
         </div>
       </div>
 
@@ -409,10 +449,21 @@
     }).join("");
   }
 
+  function activeFilterCount(){
+    var n = 0;
+    ["africa", "world", "check"].forEach(function(k){ if (!state.elig[k]) n++; });
+    n += state.disciplines.size + state.levels.size + (state.payOnly ? 1 : 0);
+    return n;
+  }
+
   function renderResultsHead(filteredCount){
     var countEl = document.getElementById("resultsCount");
     var label = filteredCount + (filteredCount === 1 ? " role" : " roles");
     countEl.innerHTML = '<span>' + label + '</span>' + activeChipsHtml();
+    var badge = document.getElementById("filtersCount");
+    var n = activeFilterCount();
+    badge.textContent = n;
+    badge.hidden = !n;
   }
 
   function renderJobRow(j){
@@ -624,6 +675,14 @@
 
     var qParam = new URLSearchParams(location.search).get("q");
     if (qParam) { searchInput.value = qParam; state.query = qParam; }
+
+    var rail = document.getElementById("filterRail");
+    var backdrop = document.getElementById("railBackdrop");
+    function openFilters(){ rail.classList.add("-open"); backdrop.classList.add("-open"); document.body.style.overflow = "hidden"; }
+    function closeFilters(){ rail.classList.remove("-open"); backdrop.classList.remove("-open"); document.body.style.overflow = ""; }
+    document.getElementById("openFilters").addEventListener("click", openFilters);
+    document.getElementById("closeFilters").addEventListener("click", closeFilters);
+    backdrop.addEventListener("click", closeFilters);
 
     loadJobs();
   }
