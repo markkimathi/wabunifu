@@ -292,6 +292,24 @@ CREATE TABLE IF NOT EXISTS designer_saved_jobs (
 );
 CREATE INDEX IF NOT EXISTS idx_saved_jobs_designer ON designer_saved_jobs(designer_id);
 
+-- A named filter set, so a designer hunting one specific kind of role doesn't
+-- rebuild the same query on every visit. `filters` is the board's own filter
+-- state as JSON rather than a column per filter: the board owns what a filter
+-- means, and adding one there shouldn't need a migration here.
+-- last_notified_at is the digest's high-water mark — roles posted after it are
+-- what the next email has to report.
+CREATE TABLE IF NOT EXISTS designer_saved_searches (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  name TEXT NOT NULL,
+  filters TEXT NOT NULL DEFAULT '{}',
+  alerts INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  last_notified_at TEXT NOT NULL DEFAULT '',
+  UNIQUE(designer_id, name)
+);
+CREATE INDEX IF NOT EXISTS idx_saved_searches_designer ON designer_saved_searches(designer_id);
+
 -- Original shape (company_id NOT NULL, no peer_designer_id). Every run —
 -- fresh database or not — goes through _migrate_conversations_peer_support()
 -- right after this script, which is the single source of truth for the
@@ -1892,6 +1910,83 @@ def unsave_job(designer_id: int, job_id: str) -> bool:
     c.commit()
     c.close()
     return deleted
+
+
+# ---------------- Saved searches ----------------
+
+def save_search(designer_id: int, name: str, filters: dict, alerts: bool) -> dict:
+    """Upsert by name, so re-saving under a name someone already used updates
+    that search rather than silently making a near-duplicate they'd have to
+    tell apart later."""
+    c = _conn()
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    c.execute(
+        "INSERT INTO designer_saved_searches (designer_id, name, filters, alerts, created_at) "
+        "VALUES (?, ?, ?, ?, ?) "
+        "ON CONFLICT(designer_id, name) DO UPDATE SET filters = excluded.filters, alerts = excluded.alerts",
+        (designer_id, name, json.dumps(filters), 1 if alerts else 0, now),
+    )
+    c.commit()
+    row = c.execute(
+        "SELECT * FROM designer_saved_searches WHERE designer_id = ? AND name = ?", (designer_id, name)
+    ).fetchone()
+    c.close()
+    return dict(row)
+
+
+def list_saved_searches(designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM designer_saved_searches WHERE designer_id = ? ORDER BY created_at DESC",
+        (designer_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def delete_saved_search(designer_id: int, search_id: int) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "DELETE FROM designer_saved_searches WHERE designer_id = ? AND id = ?", (designer_id, search_id)
+    )
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
+
+
+def set_search_alerts(designer_id: int, search_id: int, alerts: bool) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "UPDATE designer_saved_searches SET alerts = ? WHERE designer_id = ? AND id = ?",
+        (1 if alerts else 0, designer_id, search_id),
+    )
+    changed = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return changed
+
+
+def searches_with_alerts() -> list[dict]:
+    """Every alert-enabled search with the owner's email and country attached —
+    what the weekly digest iterates. Suspended and unverified accounts are
+    excluded here rather than at send time, so there is one place that decides
+    who is emailable."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT s.*, d.email, d.display_name, d.country "
+        "FROM designer_saved_searches s JOIN designers d ON d.id = s.designer_id "
+        "WHERE s.alerts = 1 AND d.email_verified = 1 AND d.status != 'suspended'"
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def mark_search_notified(search_id: int, when: str) -> None:
+    c = _conn()
+    c.execute("UPDATE designer_saved_searches SET last_notified_at = ? WHERE id = ?", (when, search_id))
+    c.commit()
+    c.close()
 
 
 # ---------------------------------------------------------------------------

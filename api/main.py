@@ -47,6 +47,8 @@ from .db import (  # noqa: E402
     LOGIN_LOCKOUT_THRESHOLD, LOGIN_LOCKOUT_MINUTES,
     update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
     designers_missing_country, set_designer_country,
+    save_search, list_saved_searches, delete_saved_search, set_search_alerts,
+    searches_with_alerts, mark_search_notified,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
     mark_onboarding_completed,
     set_designer_resume, clear_designer_resume, set_resume_visibility,
@@ -1411,6 +1413,67 @@ def designer_me(designer: dict = Depends(require_designer)):
             "resume_uploaded_at": designer.get("resume_uploaded_at", ""),
             "resume_url": "/api/designers/me/resume/download" if designer.get("resume_path") else "",
             "resume_public": bool(designer.get("resume_public"))}
+
+
+class SavedSearchIn(BaseModel):
+    name: str
+    filters: dict = {}
+    alerts: bool = False
+
+    @field_validator("name")
+    @classmethod
+    def _valid_name(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            raise ValueError("give this search a name")
+        if len(v) > 60:
+            raise ValueError("keep the name under 60 characters")
+        return v
+
+
+class SearchAlertsIn(BaseModel):
+    alerts: bool
+
+
+MAX_SAVED_SEARCHES = 10
+
+
+@app.get("/api/designers/me/searches")
+def designer_list_searches(designer: dict = Depends(require_designer)):
+    return {"searches": [_search_out(s) for s in list_saved_searches(designer["id"])]}
+
+
+def _search_out(s: dict) -> dict:
+    try:
+        filters = json.loads(s.get("filters") or "{}")
+    except Exception:
+        filters = {}
+    return {"id": s["id"], "name": s["name"], "filters": filters,
+            "alerts": bool(s["alerts"]), "created_at": s["created_at"]}
+
+
+@app.post("/api/designers/me/searches")
+def designer_save_search(payload: SavedSearchIn, designer: dict = Depends(require_designer)):
+    existing = list_saved_searches(designer["id"])
+    # Only a new name counts against the cap; re-saving one is an edit.
+    if len(existing) >= MAX_SAVED_SEARCHES and payload.name not in [e["name"] for e in existing]:
+        raise HTTPException(400, f"you can keep up to {MAX_SAVED_SEARCHES} saved searches")
+    return _search_out(save_search(designer["id"], payload.name, payload.filters, payload.alerts))
+
+
+@app.delete("/api/designers/me/searches/{search_id}")
+def designer_delete_search(search_id: int, designer: dict = Depends(require_designer)):
+    if not delete_saved_search(designer["id"], search_id):
+        raise HTTPException(404, "no such saved search")
+    return {"ok": True}
+
+
+@app.put("/api/designers/me/searches/{search_id}/alerts")
+def designer_search_alerts(search_id: int, payload: SearchAlertsIn,
+                           designer: dict = Depends(require_designer)):
+    if not set_search_alerts(designer["id"], search_id, payload.alerts):
+        raise HTTPException(404, "no such saved search")
+    return {"ok": True}
 
 
 @app.get("/api/countries")

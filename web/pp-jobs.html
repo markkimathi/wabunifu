@@ -92,6 +92,26 @@
     font-family:var(--pp-font);font-size:13.5px;max-width:100%}
   .elig-notice select:focus-visible{outline:var(--pp-focus-outline);outline-offset:var(--pp-focus-offset)}
 
+  .save-search-btn{display:inline-flex;align-items:center;gap:8px;height:40px;padding:0 12px;
+    border:1px solid var(--c-border-strong);border-radius:9px;background:var(--c-surface);
+    font-family:var(--pp-font);font-size:14px;font-weight:500;color:var(--c-text);cursor:pointer;white-space:nowrap}
+  .save-search-btn:hover{background:var(--c-bg-sunken);border-color:var(--c-border-hover)}
+  .save-search-btn.-saved{background:var(--pp-gold-200);border-color:var(--pp-gold-400);color:var(--pp-gold-800)}
+
+  /* Saved searches sit at the top of the rail: they are a shortcut back into a
+     filter set, so they belong with the filters rather than beside the results. */
+  .ss-row{display:flex;align-items:center;gap:6px}
+  .ss-apply{flex:1;min-width:0;text-align:left;padding:7px 9px;border:1px solid transparent;border-radius:var(--pp-radius-sm);
+    background:var(--c-surface-inset);font-family:var(--pp-font);font-size:13.5px;font-weight:500;
+    color:var(--c-text-muted);cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ss-apply:hover{border-color:var(--c-border-hover);color:var(--c-text)}
+  .ss-apply.-active{background:var(--c-text);color:var(--c-bg)}
+  .ss-bell,.ss-del{flex:none;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;
+    border:none;background:none;border-radius:var(--pp-radius-sm);color:var(--c-text-faint);cursor:pointer;padding:0}
+  .ss-bell:hover,.ss-del:hover{background:var(--c-surface-inset);color:var(--c-text)}
+  .ss-bell.-on{color:var(--pp-gold-800)}
+  .ss-hint{margin:2px 0 0;font-size:12px;line-height:1.45;color:var(--c-text-faint)}
+
   .results-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
   .results-count{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .results-count>span{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -206,6 +226,11 @@
         </div>
       </div>
 
+      <div class="rail-group" id="savedSearchGroup" hidden>
+        <span class="rail-label">Saved searches</span>
+        <div id="savedSearchList"></div>
+      </div>
+
       <div class="rail-group">
         <span class="rail-label">Where you can apply from</span>
         <div id="eligFilters"></div>
@@ -246,6 +271,10 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M7 12h10M10 18h4"/></svg>
             Filters<span class="n" id="filtersCount" hidden>0</span>
           </button>
+          <button class="save-search-btn" id="saveSearchBtn" type="button" hidden>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
+            Save this search
+          </button>
           <div class="sort-wrap">
             <span>Sort</span>
             <button class="sort-btn" id="sortBtn" type="button">Newest
@@ -278,7 +307,8 @@
     x: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
     alert: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.5"></path><circle cx="12" cy="12" r="9"></circle></svg>',
     search: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>',
-    check: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>'
+    check: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>',
+    bell: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.7 21a2 2 0 01-3.4 0"></path></svg>'
   };
 
   var LEVELS = ["Junior", "Mid", "Senior", "Lead"];
@@ -496,6 +526,7 @@
     badge.textContent = n;
     badge.hidden = !n;
     renderEligNotice();
+    renderSaveSearchBtn();
   }
 
   // Never hide roles silently. If a country is filtering the board, say so, say
@@ -549,6 +580,195 @@
       renderFilterRail();
       renderResults();
     });
+  }
+
+  /* ---------------- Saved searches ----------------
+     A named filter set. Signed in it lives on the account and can raise a
+     weekly alert; signed out it still persists locally, because rebuilding the
+     same query every visit is the annoyance, and that doesn't require an
+     account to be worth fixing. Alerts do — they need somewhere to send. */
+  var LOCAL_SEARCH_KEY = "pp_saved_searches";
+  var savedSearches = [];
+  var activeSearchName = null;
+
+  function currentFilters(){
+    return {
+      q: state.query,
+      elig: Object.assign({}, state.elig),
+      disciplines: Array.from(state.disciplines),
+      levels: Array.from(state.levels),
+      payOnly: state.payOnly,
+      sort: state.sort
+    };
+  }
+
+  function filtersAreDefault(){
+    var f = currentFilters();
+    return !f.q && !f.disciplines.length && !f.levels.length && !f.payOnly &&
+      Object.keys(f.elig).every(function(k){ return f.elig[k] === defaultEligState()[k]; });
+  }
+
+  // A name people can recognise in a list a month later, built from what they
+  // actually chose rather than "Search 3".
+  function suggestSearchName(){
+    var f = currentFilters();
+    var bits = [];
+    if (f.levels.length) bits.push(f.levels.join("/"));
+    if (f.disciplines.length) bits.push(f.disciplines.slice(0, 2).join(" + "));
+    if (f.q) bits.push('"' + f.q + '"');
+    if (f.payOnly) bits.push("pay published");
+    if (!bits.length) bits.push(isPersonal() ? "Open to me" : "All roles");
+    return bits.join(", ").slice(0, 60);
+  }
+
+  function localSearches(){
+    try { return JSON.parse(localStorage.getItem(LOCAL_SEARCH_KEY) || "[]"); } catch (e) { return []; }
+  }
+  function setLocalSearches(list){
+    try { localStorage.setItem(LOCAL_SEARCH_KEY, JSON.stringify(list)); } catch (e) {}
+  }
+
+  async function loadSavedSearches(){
+    var token = designerToken();
+    if (!token) { savedSearches = localSearches(); renderSavedSearches(); return; }
+    try {
+      var res = await fetch("/api/designers/me/searches", { headers: { "Authorization": "Bearer " + token } });
+      if (!res.ok) throw new Error("bad status");
+      var data = await res.json();
+      savedSearches = data.searches || [];
+    } catch (e) {
+      savedSearches = localSearches();   // offline or signed out mid-session
+    }
+    renderSavedSearches();
+  }
+
+  async function saveCurrentSearch(){
+    var suggested = suggestSearchName();
+    var name = window.prompt("Name this search", suggested);
+    if (name === null) return;
+    name = (name || "").trim() || suggested;
+    var token = designerToken();
+    var payload = { name: name, filters: currentFilters(), alerts: false };
+
+    if (!token) {
+      var list = localSearches().filter(function(s){ return s.name !== name; });
+      list.unshift(Object.assign({ id: "local-" + Date.now() }, payload));
+      setLocalSearches(list.slice(0, 10));
+      savedSearches = localSearches();
+      activeSearchName = name;
+      renderSavedSearches();
+      showToast("Saved. It's on this device — sign in to get these by email.");
+      return;
+    }
+    try {
+      var res = await fetch("/api/designers/me/searches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        var err = await res.json().catch(function(){ return {}; });
+        showToast(err.detail || "That didn't save. Try again.");
+        return;
+      }
+      activeSearchName = name;
+      await loadSavedSearches();
+      showToast("Saved. Turn on the bell to get new matches by email.");
+    } catch (e) {
+      showToast("That didn't save. Try again.");
+    }
+  }
+
+  function applySearch(s){
+    var f = s.filters || {};
+    state.query = f.q || "";
+    document.getElementById("searchInput").value = state.query;
+    state.elig = Object.assign(defaultEligState(), f.elig || {});
+    state.disciplines = new Set(f.disciplines || []);
+    state.levels = new Set(f.levels || []);
+    state.payOnly = !!f.payOnly;
+    if (f.sort) state.sort = f.sort;
+    var payBox = document.getElementById("payOnly");
+    if (payBox) payBox.checked = state.payOnly;
+    activeSearchName = s.name;
+    state.page = 1;
+    renderFilterRail();
+    renderSortMenu();
+    renderSavedSearches();   // moves the highlight onto the one just applied
+    renderResults();
+  }
+
+  async function deleteSearch(s){
+    if (String(s.id).indexOf("local-") === 0 || !designerToken()) {
+      setLocalSearches(localSearches().filter(function(x){ return x.name !== s.name; }));
+      savedSearches = localSearches();
+      renderSavedSearches();
+      return;
+    }
+    try {
+      await fetch("/api/designers/me/searches/" + s.id, {
+        method: "DELETE", headers: { "Authorization": "Bearer " + designerToken() }
+      });
+    } catch (e) {}
+    await loadSavedSearches();
+  }
+
+  async function toggleAlerts(s){
+    if (!designerToken()) return;
+    var next = !s.alerts;
+    try {
+      await fetch("/api/designers/me/searches/" + s.id + "/alerts", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": "Bearer " + designerToken() },
+        body: JSON.stringify({ alerts: next })
+      });
+      showToast(next ? "We'll email you when new roles match this." : "Email alerts off for this search.");
+    } catch (e) {}
+    await loadSavedSearches();
+  }
+
+  function renderSavedSearches(){
+    var group = document.getElementById("savedSearchGroup");
+    var list = document.getElementById("savedSearchList");
+    if (!group || !list) return;
+    if (!savedSearches.length) { group.hidden = true; return; }
+    group.hidden = false;
+    var signedIn = !!designerToken();
+    list.innerHTML = savedSearches.map(function(s, i){
+      return '<div class="ss-row">' +
+        '<button type="button" class="ss-apply' + (s.name === activeSearchName ? " -active" : "") +
+          '" data-ss="' + i + '" title="' + escapeHtml(s.name) + '">' + escapeHtml(s.name) + '</button>' +
+        (signedIn
+          ? '<button type="button" class="ss-bell' + (s.alerts ? " -on" : "") + '" data-ss-bell="' + i +
+            '" aria-pressed="' + (s.alerts ? "true" : "false") +
+            '" aria-label="' + (s.alerts ? "Email alerts on" : "Email alerts off") + '">' + ICONS.bell + '</button>'
+          : "") +
+        '<button type="button" class="ss-del" data-ss-del="' + i + '" aria-label="Delete saved search">' + ICONS.x + '</button>' +
+      '</div>';
+    }).join("");
+    if (!signedIn) {
+      list.innerHTML += '<p class="ss-hint">Saved on this device. Sign in to get new matches by email.</p>';
+    }
+    list.querySelectorAll("[data-ss]").forEach(function(btn){
+      btn.addEventListener("click", function(){ applySearch(savedSearches[+btn.getAttribute("data-ss")]); });
+    });
+    list.querySelectorAll("[data-ss-bell]").forEach(function(btn){
+      btn.addEventListener("click", function(){ toggleAlerts(savedSearches[+btn.getAttribute("data-ss-bell")]); });
+    });
+    list.querySelectorAll("[data-ss-del]").forEach(function(btn){
+      btn.addEventListener("click", function(){ deleteSearch(savedSearches[+btn.getAttribute("data-ss-del")]); });
+    });
+    renderSaveSearchBtn();
+  }
+
+  function renderSaveSearchBtn(){
+    var btn = document.getElementById("saveSearchBtn");
+    if (!btn) return;
+    // Nothing to save when nothing is narrowed — an unfiltered board is just
+    // the board.
+    btn.hidden = filtersAreDefault();
+    var known = savedSearches.some(function(s){ return s.name === activeSearchName; });
+    btn.classList.toggle("-saved", !!activeSearchName && known);
   }
 
   // Shared by the notice picker; options come from the API so they can't drift
@@ -702,6 +922,8 @@
   }
 
   function resetFilters(){
+    activeSearchName = null;
+    renderSavedSearches();
     state.elig = defaultEligState();
     state.disciplines = new Set();
     state.levels = new Set();
@@ -815,6 +1037,8 @@
     document.getElementById("tabAll").addEventListener("click", function(){ setTab("all"); });
     document.getElementById("tabSaved").addEventListener("click", function(){ setTab("saved"); });
     document.getElementById("resetFilters").addEventListener("click", resetFilters);
+    document.getElementById("saveSearchBtn").addEventListener("click", saveCurrentSearch);
+    loadSavedSearches();
     document.getElementById("payOnly").addEventListener("change", function(e){
       state.payOnly = e.target.checked; state.page = 1; renderResults();
     });
