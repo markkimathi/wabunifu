@@ -452,7 +452,7 @@
       renderKeywordMatch(data.keyword_match);
       renderRequirementsMatch(data.requirements_match);
       results.style.display = "block";
-      results.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (window.PPScroll) PPScroll.intoView(results, "start"); else results.scrollIntoView({ block: "start" });
     } catch (e) {
       showResumeError("Couldn't analyze that file: " + e.message);
     }

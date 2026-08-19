@@ -315,7 +315,7 @@
     wireFlow();
   }
 
-  function goStep(n){ state.step = n; render(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+  function goStep(n){ state.step = n; render(); if (window.PPScroll) PPScroll.toTop(); else window.scrollTo(0, 0); }
 
   async function submitSignup(){
     submitError = "";
@@ -342,7 +342,7 @@
       submitting = false;
       view = "handoff";
       render();
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (window.PPScroll) PPScroll.toTop(); else window.scrollTo(0, 0);
     } catch (e) {
       submitError = "Couldn't reach the server. Try again.";
       submitting = false;

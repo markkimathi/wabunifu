@@ -43,6 +43,44 @@
 
   var DESIGNER_TOKEN_KEY = "kazi_designer_token";
 
+  /* Scrolling that actually happens.
+
+     Smooth scrolling is silently a no-op in WebKit-based embedded webviews —
+     both window.scrollTo({behavior:"smooth"}) and Element.scrollIntoView with
+     it. That is not an edge case for this product: a shared role link opened
+     inside the WhatsApp or Instagram browser is one of the main ways people
+     arrive, and there the page simply never moved. Pagination looked broken,
+     and a wizard step change left you halfway down the previous step.
+
+     So: ask for smooth, then check. If nothing moved by the next frames, do it
+     instantly. Reduced-motion users skip straight to instant. */
+  function scrollDone(before, apply, target){
+    var moved = function(){ return Math.abs(window.pageYOffset - before) > 1; };
+    setTimeout(function(){ if (!moved()) target(); }, 120);
+  }
+  function reduceMotion(){
+    return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  }
+  var PPScroll = {
+    toTop: function(){
+      if (reduceMotion()) { window.scrollTo(0, 0); return; }
+      var before = window.pageYOffset;
+      if (before === 0) return;
+      try { window.scrollTo({ top: 0, behavior: "smooth" }); } catch (e) { window.scrollTo(0, 0); }
+      scrollDone(before, null, function(){ window.scrollTo(0, 0); });
+    },
+    intoView: function(el, block){
+      if (!el) return;
+      var opts = { block: block || "start" };
+      if (reduceMotion()) { el.scrollIntoView(opts); return; }
+      var before = window.pageYOffset;
+      try { el.scrollIntoView({ block: opts.block, behavior: "smooth" }); }
+      catch (e) { el.scrollIntoView(opts); }
+      scrollDone(before, null, function(){ el.scrollIntoView(opts); });
+    }
+  };
+  window.PPScroll = PPScroll;
+
   var NAV_ITEMS = [
     { key: "home", label: "Home", href: ROUTES.home,
       icon: '<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1V9.5"/>' },

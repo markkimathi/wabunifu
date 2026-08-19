@@ -146,7 +146,7 @@
     buttons.forEach(function(btn){
       btn.addEventListener("click", function(){
         var target = document.getElementById(btn.getAttribute("data-target"));
-        if (target) target.scrollIntoView({ behavior: "smooth", block: "start" });
+        if (target) { if (window.PPScroll) PPScroll.intoView(target, "start"); else target.scrollIntoView({ block: "start" }); }
       });
     });
 

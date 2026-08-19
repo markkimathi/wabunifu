@@ -1112,7 +1112,7 @@
       pager.querySelectorAll("[data-page]").forEach(function(el){
         el.addEventListener("click", function(){
           var p = parseInt(el.getAttribute("data-page"), 10);
-          if (p >= 1 && p <= totalPages) { state.page = p; renderResults(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+          if (p >= 1 && p <= totalPages) { state.page = p; renderResults(); if (window.PPScroll) PPScroll.toTop(); else window.scrollTo(0, 0); }
         });
       });
     } else {
