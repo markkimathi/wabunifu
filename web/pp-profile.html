@@ -235,6 +235,11 @@
       if (!res.ok) throw new Error("not found");
       designer = await res.json();
     } catch (e) {
+      // Before telling anyone their profile doesn't exist, check whether it is
+      // their own, still in review. Saying "doesn't exist" to the person who
+      // just built it is both wrong and the most discouraging thing we could
+      // say at that moment.
+      if (await showedOwnPendingProfile(content)) return;
       content.innerHTML = notFoundHtml("This profile isn't public, or doesn't exist.");
       return;
     }
@@ -259,6 +264,28 @@
         }
       }
     } catch (e) { /* stay signed-out */ }
+  }
+
+  /* True when the signed-in designer is the owner of the profile that just
+     404'd, in which case we explain the review instead of denying it. */
+  async function showedOwnPendingProfile(content){
+    var token = designerToken();
+    if (!token) return false;
+    try {
+      var res = await fetch("/api/designers/me", { headers: { Authorization: "Bearer " + token } });
+      if (!res.ok) return false;
+      var mine = await res.json();
+      var isMine = String(mine.handle || "") === identifier || String(mine.id) === identifier;
+      if (!isMine) return false;
+      var pending = (mine.status || "") === "pending";
+      content.innerHTML = '<div class="state-panel">' +
+        '<h3>' + (pending ? "Your profile is in review" : "Your profile isn\'t public") + '</h3>' +
+        '<p>' + (pending
+          ? "Someone reads every profile before it joins the directory. This page goes live the moment yours is approved — the link won\'t change, so it\'s safe to keep."
+          : "It isn\'t visible in the directory right now. Your dashboard has the details.") + '</p>' +
+        '<a class="pp-btn pp-btn-primary" href="/dashboard">Go to your dashboard</a></div>';
+      return true;
+    } catch (e) { return false; }
   }
 
   function notFoundHtml(msg){

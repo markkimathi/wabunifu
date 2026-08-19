@@ -676,7 +676,11 @@
       btn.textContent = "Saving…";
       try {
         await api("/api/designers/me/complete-onboarding", { method: "POST" });
-        location.href = "/designers/" + encodeURIComponent(me.handle || me.id);
+        // Not the public profile: a new designer is still in review, so that
+        // URL answers "this profile doesn't exist" — the worst possible end to
+        // the longest flow in the product. The dashboard is theirs, loads now,
+        // and explains where the profile has got to.
+        location.href = "/dashboard";
       } catch (e) {
         errEl.textContent = e.message; revealError(errEl);
         btn.disabled = false; btn.textContent = original;

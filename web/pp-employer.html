@@ -74,6 +74,13 @@
   .section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
   .section-head h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-0.015em}
 
+  .review-banner{padding:18px 20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
+    background:var(--c-bg-sunken);margin-bottom:18px}
+  .review-banner h3{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
+  .review-banner p{margin:0;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle);max-width:70ch}
+  .review-banner.-bad{border-color:var(--c-bad-border);background:var(--c-bad-bg)}
+  .review-banner.-bad h3{color:var(--c-bad-text)}
+
   .listing-row{display:flex;align-items:center;gap:16px;padding:16px;border:1px solid var(--c-border);
     border-radius:var(--pp-radius-md);background:var(--c-surface);margin-bottom:10px;flex-wrap:wrap}
   .listing-row .main{flex:1;min-width:200px}
@@ -670,9 +677,28 @@
     }
   }
 
+  /* Same gap the designer side had: a company sits in review before its page
+     is public, and the only sign of that was a status pill inside the Company
+     tab. Roles still post and still publish — this says which part is waiting,
+     so "my company page 404s" doesn't read as a broken site. */
+  function companyReviewBannerHtml(){
+    var c = (me && me.company) || {};
+    var status = c.status || "";
+    if (!status || status === "approved") return "";
+    if (status === "rejected") {
+      return '<div class="review-banner -bad"><h3>' + escapeHtml(c.name || "Your company") + " wasn't approved</h3>" +
+        '<p>Your roles aren\'t publishing while that\'s the case. Write to ' +
+        '<a href="mailto:hello@odana.design">hello@odana.design</a> and we\'ll go through it with you.</p></div>';
+    }
+    return '<div class="review-banner"><h3>Your company page is in review</h3>' +
+      '<p>Someone reads every company before its page joins the directory. You can post roles now — ' +
+      'each one is reviewed on its own, and the company page goes live once this is done.</p></div>';
+  }
+
   function renderListings(state){
     var listings = state.listings || [];
-    var body =       '<div class="section-head"><h2>Listings</h2>' +
+    var body = companyReviewBannerHtml() +
+      '<div class="section-head"><h2>Listings</h2>' +
       (canWrite() && !showNewListing ? '<button type="button" class="pp-btn pp-btn-primary" id="addListingBtn">Post a role</button>' : "") +
       '</div>';
     var perf = (cache.perf || []).filter(function(r){ return r.views > 0; });

@@ -43,6 +43,13 @@
 
   /* Completion, framed as what it unlocks. Gold carries the progress; the rows
      are plain buttons so the whole line is the target, not just a link. */
+  .review-banner{padding:18px 20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
+    background:var(--c-bg-sunken);margin-bottom:16px}
+  .review-banner h3{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
+  .review-banner p{margin:0;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle);max-width:70ch}
+  .review-banner.-bad{border-color:var(--c-bad-border);background:var(--c-bad-bg)}
+  .review-banner.-bad h3{color:var(--c-bad-text)}
+
   .strength-panel{padding:20px;border:1px solid var(--pp-gold-400);border-radius:var(--pp-radius-lg);
     background:var(--pp-gold-200);margin-bottom:20px}
   .strength-panel.-done{border-color:var(--c-good-border);background:var(--c-good-bg)}
@@ -354,6 +361,37 @@
     '</div>';
   }
 
+  /* A designer sits in review before their profile is public, and until now
+     nothing anywhere said so. They finished setup, got sent to a page that
+     said their profile did not exist, and found no explanation here either.
+     This is the one place that always loads for them, so it says it plainly
+     and tells them what still works meanwhile. */
+  function reviewBannerHtml(){
+    var status = me.status || "";
+    if (status === "approved") return "";
+    if (status === "rejected") {
+      return '<div class="review-banner -bad">' +
+        '<h3>Your profile wasn\'t approved</h3>' +
+        '<p>That usually means there wasn\'t enough on it to show an employer yet. ' +
+        'Add your work and a line about what you do, and write to ' +
+        '<a href="mailto:hello@odana.design">hello@odana.design</a> to have it looked at again.</p>' +
+      '</div>';
+    }
+    if (status === "suspended") {
+      return '<div class="review-banner -bad">' +
+        '<h3>This account is suspended</h3>' +
+        '<p>Your profile isn\'t visible while that\'s the case. ' +
+        'Write to <a href="mailto:hello@odana.design">hello@odana.design</a> if you think that\'s wrong.</p>' +
+      '</div>';
+    }
+    return '<div class="review-banner">' +
+      '<h3>Your profile is in review</h3>' +
+      '<p>Someone reads every profile before it goes into the directory, so employers can trust what\'s there. ' +
+      'Until then it isn\'t public — but everything else already works: browse roles, save them, and keep ' +
+      'building your profile. Anything you add now goes live with it.</p>' +
+    '</div>';
+  }
+
   function renderOverview(){
     // The API matches on discipline alone. Recommending a role that would turn
     // you down is the same failure the board just stopped making, so anything
@@ -365,7 +403,7 @@
       ? all.filter(function(j){ return PPElig.openTo(j.elig, j.elig_scope || "", country) !== false; })
       : all;
 
-    var body = strengthPanelHtml() +
+    var body = reviewBannerHtml() + strengthPanelHtml() +
       '<div class="stat-row">' +
         '<div class="stat-card"><div class="n">' + (cache.stats ? cache.stats.profile_views : "—") + '</div><div class="l">Profile views, last 90 days</div></div>' +
         '<div class="stat-card"><div class="n">' + cache.saved.length + '</div><div class="l">Saved roles</div></div>' +
