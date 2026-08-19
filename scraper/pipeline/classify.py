@@ -12,6 +12,10 @@ import re
 
 # Ordered: first match wins, so put specific disciplines before generic ones.
 DISCIPLINE_RULES = [
+    ("Design Engineering", [r"\bdesign engineer", r"\bdesign technologist", r"\bui engineer\b",
+                           r"\bfront[- ]?end designer\b"]),
+    ("Creative Technology", [r"\bcreative technolog", r"\bcreative engineer", r"\bcreative developer"]),
+    ("Content Design",   [r"\bcontent design", r"\bux writ", r"\bcontent strateg", r"\bcopywriter\b.*\bproduct\b"]),
     ("UX Research",     [r"\buser research", r"\buxr\b", r"\bux research", r"\bresearcher\b.*design", r"\bdesign research"]),
     ("Design Systems",  [r"design system", r"\bdesign systems\b"]),
     ("Motion Design",   [r"\bmotion\b", r"\banimation\b", r"\bmotion design"]),
@@ -31,8 +35,12 @@ DISCIPLINE_RULES = [
 # not a design role at all (an engineering discipline that happens to use the
 # word "design") rather than a design role Kazi has simply chosen to exclude.
 EXCLUDE = [
-    r"\bdesign engineer\b", r"\bsolutions? design", r"\bcircuit\b", r"\bchip design",
+    r"\bsolutions? design", r"\bcircuit\b", r"\bchip design",
     r"\bmechanical\b", r"\belectrical\b", r"\bstructural\b", r"\bhardware\b",
+    # ...but the engineering senses of "design engineer" still go: these are
+    # the ones that made it an exclude in the first place.
+    r"\b(mechanical|electrical|hardware|firmware|rf|asic|verification|manufacturing|civil)\s+design engineer\b",
+    r"\bdesign engineer\b.*\b(mechanical|electrical|hardware|firmware|asic|plant|civil)\b",
     r"\bsystem designer\b", r"\bnetwork design",
     r"\bsales\b", r"\bmanager, design\b.*\bengineering\b",
 ]
@@ -54,7 +62,11 @@ def classify_discipline(title: str, department: str = "") -> str | None:
     if _any(EXCLUDE, text):
         return None
     # must contain some design signal at all
-    if not re.search(r"design|\bux\b|\bui\b|\bresearch", text):
+    if not re.search(
+        r"design|\bux\b|\bui\b|\bresearch|\bcreative director\b|\bart director\b"
+        r"|\bcreative technolog|\bmotion graphics\b|\billustrat",
+        text,
+    ):
         return None
     for discipline, patterns in DISCIPLINE_RULES:
         if _any(patterns, text):

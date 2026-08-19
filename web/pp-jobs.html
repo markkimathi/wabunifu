@@ -161,6 +161,7 @@
   .state-icon{width:44px;height:44px;border-radius:50%;background:var(--c-bad-bg);color:var(--c-bad-text);
     display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
   /* Green because it's a thing you did, not a claim about the role. */
+  .pp-chip.-etype{background:var(--pp-gold-200);color:var(--pp-gold-800);border:1px solid var(--pp-gold-400)}
   .pp-chip.-applied{background:var(--c-good-bg);color:var(--c-good-text);border:1px solid var(--c-good-border)}
 
   /* Measured escape routes from a dead end, biggest win first. */
@@ -242,6 +243,11 @@
       <div class="rail-group" id="savedSearchGroup" hidden>
         <span class="rail-label">Saved searches</span>
         <div id="savedSearchList"></div>
+      </div>
+
+      <div class="rail-group" id="etypeGroup" hidden>
+        <span class="rail-label">Employment type</span>
+        <div class="rail-chips" id="etypeFilters"></div>
       </div>
 
       <div class="rail-group">
@@ -330,7 +336,7 @@
   var state = {
     all: [], loaded: false, failed: false,
     query: "", elig: { africa: true, world: true, check: true }, eligFromUrl: null,
-    disciplines: new Set(), levels: new Set(), payOnly: false,
+    disciplines: new Set(), levels: new Set(), etypes: new Set(), payOnly: false,
     sort: "newest", tab: "all", page: 1
   };
 
@@ -482,6 +488,7 @@
     if (!state.elig[bucketOf(j)]) return false;
     if (state.disciplines.size && !state.disciplines.has(j.cat)) return false;
     if (state.levels.size && !state.levels.has(j.level)) return false;
+    if (state.etypes.size && !state.etypes.has(j.etype || "Full-time")) return false;
     if (state.payOnly && (!j.pay || j.pay === "Not disclosed")) return false;
     if (state.query) {
       var q = state.query.toLowerCase();
@@ -505,7 +512,39 @@
     return out;
   }
 
+  /* Built from what's actually on the board, and hidden entirely when every
+     role is the same type — a filter with one option is furniture. Counts come
+     from stated types only, so the group doesn't imply we know more than we do. */
+  function renderEtypeFilter(){
+    var group = document.getElementById("etypeGroup");
+    var box = document.getElementById("etypeFilters");
+    if (!group || !box) return;
+    var counts = {};
+    state.all.forEach(function(j){
+      if (!j.etype_stated) return;
+      var t = j.etype || "Full-time";
+      counts[t] = (counts[t] || 0) + 1;
+    });
+    var types = Object.keys(counts).sort(function(a, b){ return counts[b] - counts[a]; });
+    if (types.length < 2) { group.hidden = true; return; }
+    group.hidden = false;
+    box.innerHTML = types.map(function(t){
+      return '<button type="button" class="rail-chip' + (state.etypes.has(t) ? " -active" : "") +
+        '" data-etype="' + escapeHtml(t) + '">' + escapeHtml(t) + ' ' + counts[t] + '</button>';
+    }).join("");
+    box.querySelectorAll("[data-etype]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var t = btn.getAttribute("data-etype");
+        if (state.etypes.has(t)) state.etypes.delete(t); else state.etypes.add(t);
+        state.page = 1;
+        renderFilterRail();
+        renderResults();
+      });
+    });
+  }
+
   function renderFilterRail(){
+    renderEtypeFilter();
     var eligBox = document.getElementById("eligFilters");
     eligBox.innerHTML = eligBuckets()
       .map(function(pair){
@@ -861,6 +900,11 @@
 
   function renderJobRow(j){
     var tags = eligBadge(j) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>' +
+      // Only shown when the posting actually stated it. Most roles are
+      // full-time and saying so on every row is noise; saying so when it is
+      // our own guess would be worse.
+      (j.etype_stated && j.etype && j.etype !== "Full-time"
+        ? '<span class="pp-chip -etype">' + escapeHtml(j.etype) + '</span>' : "") +
       (appliedIds.has(j.id) ? '<span class="pp-chip -applied">Applied</span>' : "");
     var saved = isSaved(j.id);
     return '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
@@ -1062,6 +1106,7 @@
     state.elig = defaultEligState();
     state.disciplines = new Set();
     state.levels = new Set();
+    state.etypes = new Set();
     state.payOnly = false;
     state.query = "";
     document.getElementById("searchInput").value = "";

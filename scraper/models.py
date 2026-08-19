@@ -8,6 +8,10 @@ import hashlib
 DISCIPLINES = [
     "Product Design", "UX Design", "UI Design", "Brand Design",
     "Motion Design", "Design Systems", "UX Research", "Graphic Design",
+    # Digital-creative roles that sit next to design and were previously
+    # unreachable: "Design Engineer" was on the exclude list, and creative
+    # technology / content design had no rule at all.
+    "Design Engineering", "Content Design", "Creative Technology",
     "Game Design", "Sound Design", "Instructional Design",
     "Fashion Design", "Interior Design",
 ]
@@ -30,7 +34,12 @@ class Job:
     source: str              # "Greenhouse", "Lever", "BrighterMonday", ...
     location: str = ""       # human string, e.g. "Nairobi, Kenya" or "Remote"
     country: str = ""        # best-effort ISO-ish country name, "" if unknown
-    work_type: str = "On-site"   # Remote | Hybrid | On-site
+    work_type: str = "On-site"   # Remote | Hybrid | On-site — where the work happens
+    # How the work is engaged, which is a separate question. See
+    # pipeline/employment.py. `employment_stated` records whether anyone
+    # actually said, so the UI can stay quiet rather than assert a guess.
+    employment_type: str = "Full-time"
+    employment_stated: bool = False
     discipline: str = ""     # one of DISCIPLINES
     level: str = "Mid"       # Junior | Mid | Senior | Lead
     eligibility: str = "check"   # one of ELIGIBILITY
@@ -74,6 +83,8 @@ class Job:
             "city": self.location or "Remote",
             "country": self.country,
             "work": self.work_type,
+            "etype": self.employment_type,
+            "etype_stated": self.employment_stated,
             "cat": self.discipline,
             "level": self.level,
             "elig": self.eligibility,

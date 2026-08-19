@@ -84,4 +84,39 @@ COMPANIES = [
     #                 CMS behind it, state serialized as executable JS not JSON)
     # Paystack     -> was on Greenhouse ("paystack"), board now returns 404,
     #                 likely renamed/migrated post Stripe integration
+
+    # --- Added 2026-08-19, each verified live against its board API (counts are
+    #     total openings at time of check, not design roles — the discipline
+    #     classifier filters those down). Design-led product companies first,
+    #     then remote-first employers that hire across borders, then the
+    #     African operators whose boards are reachable without a headless
+    #     browser. Adding sources is the cheapest lever on a board that shows
+    #     five open roles to a designer in Nairobi.
+    {"name": "Stripe",             "ats": "greenhouse", "token": "stripe"},
+    {"name": "MongoDB",            "ats": "greenhouse", "token": "mongodb"},
+    {"name": "Elastic",            "ats": "greenhouse", "token": "elastic"},
+    {"name": "Pinterest",          "ats": "greenhouse", "token": "pinterest"},
+    {"name": "Scale AI",           "ats": "greenhouse", "token": "scaleai"},
+    {"name": "Affirm",             "ats": "greenhouse", "token": "affirm"},
+    {"name": "Instacart",          "ats": "greenhouse", "token": "instacart"},
+    {"name": "Gusto",              "ats": "greenhouse", "token": "gusto"},
+    {"name": "Duolingo",           "ats": "greenhouse", "token": "duolingo"},
+    {"name": "Twitch",             "ats": "greenhouse", "token": "twitch"},
+    {"name": "Discord",            "ats": "greenhouse", "token": "discord"},
+    {"name": "Squarespace",        "ats": "greenhouse", "token": "squarespace"},
+    {"name": "Wikimedia",          "ats": "greenhouse", "token": "wikimedia"},
+
+    # --- Remote-first: these hire across borders by default, so the
+    #     eligibility layer usually has something real to say about them.
+    {"name": "Remote",             "ats": "greenhouse", "token": "remotecom"},
+    {"name": "Oyster",             "ats": "ashby",      "token": "oyster"},
+    {"name": "1Password",          "ats": "ashby",      "token": "1password"},
+    {"name": "PostHog",            "ats": "ashby",      "token": "posthog"},
+    {"name": "Replit",             "ats": "ashby",      "token": "replit"},
+    {"name": "Vanta",              "ats": "ashby",      "token": "vanta"},
+    {"name": "Cursor",             "ats": "ashby",      "token": "cursor"},
+
+    # --- African operators reachable without headless rendering. Flutterwave
+    #     and Paystack still are not; see the header note.
+    {"name": "Carbon",             "ats": "greenhouse", "token": "carbon"},
 ]

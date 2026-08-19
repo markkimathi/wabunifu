@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from models import Job, MAX_AGE_DAYS
 from pipeline.classify import classify_discipline, classify_level
 from pipeline.eligibility import infer_eligibility_detail
+from pipeline.employment import infer_employment_type, employment_was_stated
 from pipeline.normalize import normalize_work_type, clean_location, guess_country, extract_salary
 from pipeline.dedupe import dedupe
 from desc_format import format_description
@@ -40,6 +41,9 @@ def build_job(common: dict) -> Job | None:
     body = common.get("body", "")
     work_type = normalize_work_type(location, remote_flag=common.get("remote_flag"), body=body)
     eligibility, eligibility_scope = infer_eligibility_detail(location, work_type, region_text=body)
+    ats_etype = common.get("employment_type", "") or common.get("commitment", "")
+    employment_type = infer_employment_type(title, body, ats_etype)
+    employment_stated = employment_was_stated(title, body, ats_etype)
     if work_type != "Remote" and eligibility not in ("kenya", "africa"):
         return None  # hybrid/on-site only allowed when the role itself is based in Africa
     salary = extract_salary(body, common.get("salary", ""))
@@ -63,6 +67,8 @@ def build_job(common: dict) -> Job | None:
         level=classify_level(title),
         eligibility=eligibility,
         eligibility_scope=eligibility_scope,
+        employment_type=employment_type,
+        employment_stated=employment_stated,
         salary=salary,
         desc=desc_html or None,
         desc_text=desc_text or None,
