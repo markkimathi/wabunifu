@@ -29,6 +29,10 @@
     display:inline-flex;align-items:center;gap:8px}
   .tabbar button.-active{font-weight:600;color:var(--c-text);border-bottom-color:var(--pp-gold)}
   .tabbar .pp-tab-count{padding:1px 8px;border-radius:999px;background:var(--c-surface-inset);font-size:12px;font-weight:700}
+  /* Explicit, because this file's own history says so: an author `display`
+     silently outranks the UA's [hidden] rule, which is how a "0" badge stayed
+     on screen once already (see pp-nav.js's .pp-bell-dot). */
+  .tabbar .pp-tab-count[hidden]{display:none}
 
   .layout{padding:32px 0 64px;display:grid;grid-template-columns:280px minmax(0,1fr);gap:32px;align-items:start}
   @media(max-width:1023px){.layout{grid-template-columns:1fr}}
@@ -227,8 +231,8 @@
   <div class="tabbar">
     <div class="wrap tabbar-inner">
       <button class="-active" id="tabAll" type="button">All roles</button>
-      <button id="tabSaved" type="button">Saved<span class="pp-tab-count" id="savedCount">0</span></button>
-      <button id="tabApplied" type="button" hidden>Applied<span class="pp-tab-count" id="appliedCount">0</span></button>
+      <button id="tabSaved" type="button">Saved<span class="pp-tab-count" id="savedCount" hidden>0</span></button>
+      <button id="tabApplied" type="button" hidden>Applied<span class="pp-tab-count" id="appliedCount" hidden>0</span></button>
     </div>
   </div>
 
@@ -362,7 +366,7 @@
     if (on && idx === -1) ids.push(id);
     if (!on && idx !== -1) ids.splice(idx, 1);
     localStorage.setItem("pp_saved_jobs", JSON.stringify(ids));
-    document.getElementById("savedCount").textContent = ids.length;
+    setTabCount("savedCount", ids.length);
     var token = designerToken();
     if (!token) return;
     if (on && job) {
@@ -463,7 +467,7 @@
       var data = await res.json();
       appliedIds = new Set((data.jobs || []).map(function(j){ return j.job_id; }));
     } catch (e) { return; }
-    document.getElementById("appliedCount").textContent = appliedIds.size;
+    setTabCount("appliedCount", appliedIds.size);
     tab.hidden = appliedIds.size === 0;
   }
 
@@ -471,7 +475,7 @@
     var token = designerToken();
     if (!token) return;
     if (on) appliedIds.add(job.id); else appliedIds.delete(job.id);
-    document.getElementById("appliedCount").textContent = appliedIds.size;
+    setTabCount("appliedCount", appliedIds.size);
     document.getElementById("tabApplied").hidden = appliedIds.size === 0;
     try {
       if (on) {
@@ -967,6 +971,16 @@
     if (days === 1) return "1 day ago";
     return days + " days ago";
   }
+  /* A count badge showing "0" reads as an error, not as information, and the
+     empty state under the tab already says the list is empty. Same rule the
+     notification bell and the employer shortlist already follow. */
+  function setTabCount(id, n){
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = n;
+    el.hidden = !n;
+  }
+
   function escapeHtml(s){
     return (s || "").replace(/[&<>"']/g, function(c){
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];

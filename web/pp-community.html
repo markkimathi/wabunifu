@@ -258,7 +258,7 @@
       var bucket = state[t.key];
       var count = bucket.loaded ? bucket.items.length : null;
       return '<button type="button" class="pp-tab' + (state.tab === t.key ? " -active" : "") + '" data-tab="' + t.key + '">' +
-        escapeHtml(t.label) + (count !== null ? '<span class="pp-tab-count">' + count + '</span>' : "") + '</button>';
+        escapeHtml(t.label) + (count ? '<span class="pp-tab-count">' + count + '</span>' : "") + '</button>';
     }).join("");
     document.querySelectorAll("#tabsRow .pp-tab").forEach(function(btn){
       btn.addEventListener("click", function(){

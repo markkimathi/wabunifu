@@ -359,7 +359,7 @@
           '<div class="pp-tabs tabs-bar" id="tabsBar">' +
             tabs.map(function(t){
               return '<button type="button" class="pp-tab' + (t.id === currentTab ? " -active" : "") + '" data-tab="' + t.id + '">' +
-                escapeHtml(t.label) + (t.count !== undefined ? '<span class="pp-tab-count">' + t.count + '</span>' : "") + '</button>';
+                escapeHtml(t.label) + (t.count ? '<span class="pp-tab-count">' + t.count + '</span>' : "") + '</button>';
             }).join("") +
           '</div>' +
           '<div id="tabPanel"></div>' +
