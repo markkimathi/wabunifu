@@ -3717,6 +3717,17 @@ def designer_profile_page(identifier: str, request: Request):
 # The company pages had no routes at all: pp-company.html was built, had a
 # working API behind it, and was reachable from nowhere. /companies is the
 # directory; /companies/{slug} is one company, resolved from the path.
+@app.get("/how-it-works", include_in_schema=False)
+def how_it_works_page(request: Request):
+    base = _site_base(request)
+    return _page_with_head(
+        "pp-how-it-works.html", title="How roles are checked · Path & Pixel",
+        description="Where the roles come from, how we decide which are design roles, and "
+                    "how we work out which countries each one can actually hire from.",
+        canonical=f"{base}/how-it-works", image=f"{base}/logo.png",
+    )
+
+
 @app.get("/companies", include_in_schema=False)
 def companies_page(request: Request):
     base = _site_base(request)
@@ -3931,7 +3942,8 @@ def sitemap_xml(request: Request):
     urls: list[tuple[str, str]] = [(f"{base}/", "daily"), (f"{base}/jobs", "daily"),
                                    (f"{base}/people", "weekly"), (f"{base}/companies", "daily"),
                                    (f"{base}/community", "weekly"),
-                                   (f"{base}/resources", "monthly"), (f"{base}/terms", "yearly"),
+                                   (f"{base}/resources", "monthly"), (f"{base}/how-it-works", "monthly"),
+                                   (f"{base}/terms", "yearly"),
                                    (f"{base}/privacy", "yearly")]
     combined, _ = _combined_jobs()
     urls += [(f"{base}/jobs/{j['id']}", "weekly") for j in combined]

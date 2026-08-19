@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How roles are checked · Path &amp; Pixel</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit}
+
+  article{padding:36px 0 64px;max-width:none}
+  article h1{margin:0 0 16px;font-size:var(--pp-display-size);line-height:1.02;letter-spacing:-0.04em;font-weight:800;max-width:24ch}
+  .dek{margin:0 0 40px;font-size:19px;line-height:1.6;color:var(--c-text-muted);max-width:62ch}
+
+  /* Numbered because this genuinely is a sequence: a role is fetched, then
+     classified, then read for eligibility, then published. The numbers carry
+     order that matters, they aren't decoration. */
+  .steps{display:flex;flex-direction:column;gap:36px;margin-bottom:52px}
+  .step{display:flex;gap:22px;align-items:flex-start}
+  .step .n{flex:none;width:40px;font-size:30px;line-height:1;font-weight:800;letter-spacing:-0.04em;
+    color:var(--c-text-faint);font-variant-numeric:tabular-nums;padding-top:2px}
+  .step .body{min-width:0;max-width:62ch}
+  .step h3{margin:0 0 8px;font-size:23px;line-height:1.18;letter-spacing:-0.022em;font-weight:700}
+  .step p{margin:0 0 8px;font-size:18px;line-height:1.7;color:var(--c-text)}
+  .step p:last-child{margin:0}
+  .step .aside{color:var(--c-text-subtle);font-size:16.5px;line-height:1.65}
+  @media(max-width:639px){
+    .step{gap:14px}
+    .step .n{width:28px;font-size:22px}
+    .step h3{font-size:20px}
+    .step p{font-size:16.5px}
+  }
+
+  /* The live numbers. These are read from the board rather than typed in,
+     because a page about being honest with numbers cannot carry stale ones. */
+  .counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 44px}
+  @media(max-width:639px){.counts{grid-template-columns:1fr}}
+  .count{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  .count b{display:block;font-size:30px;line-height:1;font-weight:800;letter-spacing:-0.03em;
+    font-variant-numeric:tabular-nums;margin-bottom:7px}
+  .count span{font-size:14.5px;line-height:1.5;color:var(--c-text-subtle)}
+
+  .badge-table{display:flex;flex-direction:column;gap:12px;margin:18px 0 0}
+  .badge-row{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}
+  .badge-row .what{font-size:16.5px;line-height:1.6;color:var(--c-text-subtle);flex:1;min-width:min(240px,100%)}
+
+  .callout{padding:24px 26px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
+    background:var(--c-bg-sunken);max-width:62ch}
+  .callout h3{margin:0 0 8px;font-size:19px;font-weight:700;letter-spacing:-0.018em}
+  .callout p{margin:0;font-size:16.5px;line-height:1.65;color:var(--c-text-subtle)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="jobs"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Jobs","href":"/jobs"},{"label":"How roles are checked"}]'></nav>
+
+<main>
+  <article class="wrap">
+    <h1>How a role gets onto this board</h1>
+    <p class="dek">Every listing here has been read before you see it — by a program, and for anything an employer posts directly, by a person. This is exactly what that means, including the parts we get wrong.</p>
+
+    <div class="counts" id="counts" aria-live="polite">
+      <div class="count"><b>&mdash;</b><span>roles listed right now</span></div>
+      <div class="count"><b>&mdash;</b><span>open to designers in Africa</span></div>
+      <div class="count"><b>&mdash;</b><span>companies hiring</span></div>
+    </div>
+
+    <div class="steps">
+      <div class="step"><span class="n">01</span><div class="body">
+        <h3>We read company job boards directly</h3>
+        <p>Roles come from companies' own hiring systems — Greenhouse, Lever, Ashby and a few others — read straight from the source several times a week. Employers can also post a role here themselves.</p>
+        <p class="aside">Nothing is reposted from another job board, and no agency listings are accepted. If a role is here, the company it names is the company hiring.</p>
+      </div></div>
+
+      <div class="step"><span class="n">02</span><div class="body">
+        <h3>Then we throw most of them away</h3>
+        <p>A company board carries every open role. We keep the design ones: product, brand, UX research, design systems, content design, motion, design engineering.</p>
+        <p class="aside">The hard cases are titles that borrow the word. "Solutions design" and "chip design" are not design roles, and a backend engineer whose description happens to mention a design system is not one either. Those are excluded by name, because letting them through is how a design board quietly turns into a general one.</p>
+      </div></div>
+
+      <div class="step"><span class="n">03</span><div class="body">
+        <h3>Then we work out where you'd have to be sitting</h3>
+        <p>This is the part other boards skip, and the reason this one exists. Every role gets read for one question: from which countries can someone actually take this job?</p>
+        <p>The answer comes from the location the employer set on their own listing, because that is the field they are accountable for. A job description's "we hire globally" paragraph is marketing copy, and it never overrides an explicit location. That distinction matters: without it, US-only roles get badged as open worldwide, which is exactly what we found when we checked.</p>
+        <div class="badge-table">
+          <div class="badge-row"><span class="pp-elig -positive"><span class="pp-elig-dot"></span>Open across Africa</span>
+            <span class="what">The listing itself says it can hire across the continent, or names African countries.</span></div>
+          <div class="badge-row"><span class="pp-elig -positive"><span class="pp-elig-dot"></span>Global remote</span>
+            <span class="what">The listing states no location restriction at all.</span></div>
+          <div class="badge-row"><span class="pp-elig -check">Only in the United States</span>
+            <span class="what">Scoped somewhere specific. We name where, so you can tell in one line whether that includes you.</span></div>
+          <div class="badge-row"><span class="pp-elig -check">Worth checking</span>
+            <span class="what">The posting genuinely doesn't say. We'd rather admit that than guess in either direction.</span></div>
+        </div>
+      </div></div>
+
+      <div class="step"><span class="n">04</span><div class="body">
+        <h3>Roles posted here are read by a person</h3>
+        <p>When an employer posts directly, nothing publishes automatically. Someone reads it and checks one thing above all: whether the eligibility they chose matches what their own description actually says.</p>
+        <p class="aside">If it's turned down they're told why, in the reviewer's words, so they can fix it rather than guess. If the description contradicts the eligibility, we correct the label and record that we did.</p>
+      </div></div>
+
+      <div class="step"><span class="n">05</span><div class="body">
+        <h3>Applying sends you to them, not to us</h3>
+        <p>Every Apply link goes to the employer's own site. We never host the application, never sit between you and a hiring manager, and never take a fee from either side.</p>
+        <p class="aside">Which also means we can't tell you what happened after you applied. Nobody who could is telling us either.</p>
+      </div></div>
+    </div>
+
+    <div class="callout">
+      <h3>When we get it wrong</h3>
+      <p>These are rules written by people, not a model that learned them, so they fail in ways you can see and describe. A role labelled open to Africa that turns you away at the first question is the failure that costs you most — tell us at <a href="mailto:hello@odana.design">hello@odana.design</a> and we'll fix the rule, not just the listing.</p>
+    </div>
+  </article>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="/pp-nav.js"></script>
+<script src="/pp-footer.js"></script>
+<script>
+(function(){
+  // Live, because a page arguing for honest numbers cannot print stale ones.
+  // If the board doesn't load, the em-dashes already in the markup stay — an
+  // empty slot is honest, a zero would not be.
+  Promise.all([
+    fetch("/api/jobs", { cache: "no-store" }).then(function(r){ return r.ok ? r.json() : null; }),
+    fetch("/api/companies", { cache: "no-store" }).then(function(r){ return r.ok ? r.json() : null; })
+  ]).then(function(res){
+    var jobs = (res[0] && res[0].jobs) || null;
+    var cos = res[1] && res[1].count;
+    if (!jobs) return;
+    var african = jobs.filter(function(j){ return j.elig === "africa" || j.elig === "kenya"; }).length;
+    var vals = [jobs.length, african, cos == null ? "—" : cos];
+    var nodes = document.querySelectorAll("#counts .count b");
+    for (var i = 0; i < nodes.length; i++) nodes[i].textContent = vals[i];
+  }).catch(function(){ /* markup already reads "—" */ });
+})();
+</script>
+</body>
+</html>

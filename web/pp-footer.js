@@ -25,6 +25,22 @@
   // Each platform ships two files: the "-2" glyph is white, for the dark
   // homepage footer; the plain glyph is dark, for the cream inner-page band.
   // Picking the wrong one makes the whole row invisible.
+  // Real profile URLs, keyed by the labels below. Every icon in the footer
+  // pointed at href="#" — six controls on every page of the site that looked
+  // clickable and did nothing. Rather than invent handles (a wrong guess sends
+  // people to somebody else's account), an icon renders only once its URL is
+  // filled in here. Add the URL and the icon appears; that is the whole change.
+  var SOCIAL_URLS = {
+    facebook: "", Instagram: "", LinkedIn: "", TikTok: "", X: "", YouTube: ""
+  };
+
+  function socialHtml(list){
+    return list.filter(function(s){ return SOCIAL_URLS[s.label]; }).map(function(s){
+      return '<a href="' + SOCIAL_URLS[s.label] + '" target="_blank" rel="noopener me" ' +
+        'aria-label="Path &amp; Pixel on ' + s.label + '"><img src="' + s.file + '" alt=""></a>';
+    }).join("");
+  }
+
   var SOCIALS_FULL = [
     { label: "facebook", file: "/social-icons/facebook-2.svg" },
     { label: "Instagram", file: "/social-icons/instagram-2.svg" },
@@ -91,9 +107,7 @@
 
   function fullHtml(){
     var year = new Date().getFullYear();
-    var social = SOCIALS_FULL.map(function(s){
-      return '<a href="#" aria-label="Path &amp; Pixel on ' + s.label + '"><img src="' + s.file + '" alt=""></a>';
-    }).join("");
+    var social = socialHtml(SOCIALS_FULL);
     return '<footer class="pp-foot-full">' +
       '<div class="pp-foot-full-cols">' +
         '<div class="pp-foot-brand"><img src="/brand/pp-logo.png" alt="Path &amp; Pixel">' +
@@ -109,8 +123,8 @@
           '<a href="' + ROUTES.resources + '">Résumé check</a>' +
           '<a href="/post-a-role">Post a role</a></div>' +
         '<div class="pp-foot-col"><span>About</span>' +
-          '<a href="#">Why we exist</a>' +
-          '<a href="#">How roles are checked</a>' +
+          '<a href="/#why">Why we exist</a>' +
+          '<a href="/how-it-works">How roles are checked</a>' +
           '<a href="/privacy">Privacy</a>' +
           '<a href="/terms">Terms</a></div>' +
       '</div>' +
@@ -123,9 +137,7 @@
 
   function shortHtml(){
     var year = new Date().getFullYear();
-    var social = SOCIALS_SHORT.map(function(s){
-      return '<a href="#" aria-label="Path &amp; Pixel on ' + s.label + '"><img src="' + s.file + '" alt=""></a>';
-    }).join("");
+    var social = socialHtml(SOCIALS_SHORT);
     return '<footer class="pp-foot-short"><div class="pp-foot-short-row">' +
       '<span>© ' + year + ' Path &amp; Pixel</span>' +
       '<div class="pp-foot-short-social">' + social + '</div>' +
