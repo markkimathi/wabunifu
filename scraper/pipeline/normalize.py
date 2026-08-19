@@ -75,5 +75,19 @@ def extract_salary(*texts: str) -> str | None:
         m = SALARY_RANGE_RE.search(t) or SALARY_K_RE.search(t)
         if m:
             salary = re.sub(r"\s+", " ", m.group(0)).strip()
-            return SEPARATOR_RE.sub(" — ", salary, count=1)
+            salary = SEPARATOR_RE.sub(" — ", salary, count=1)
+            return _tidy_currency(salary)
     return None
+
+
+# CCY allows whitespace before the digits, so a posting written "$ 140,400"
+# survived the whitespace collapse as "$ 140,400" and reached the board looking
+# like two separate numbers. Symbols close up against the figure; the letter
+# codes need their single space, so they are normalised rather than removed.
+_SYMBOL_GAP_RE = re.compile(r"([$€£])\s+(?=[\d])")
+_CODE_GAP_RE = re.compile(r"\b(KES|USD|NGN|ZAR|GHS)\s*(?=[\d])", re.IGNORECASE)
+
+
+def _tidy_currency(salary: str) -> str:
+    salary = _SYMBOL_GAP_RE.sub(r"\1", salary)
+    return _CODE_GAP_RE.sub(lambda m: m.group(1).upper() + " ", salary)
