@@ -121,3 +121,42 @@ def send_team_invite_email(email: str, company_name: str, inviter_name: str, tok
         <p>This link expires in 5 days. If you weren't expecting this, you can ignore this email.</p>
         """,
     )
+
+
+def send_saved_search_digest(email: str, name: str, search_name: str,
+                             jobs: list[dict], country: str) -> bool:
+    """New roles matching one saved search. Sent only when there is something to
+    report — an email that says "nothing this week" is the fastest way to teach
+    someone to ignore the next one."""
+    if not jobs:
+        return False
+    rows = []
+    for j in jobs:
+        where = j.get("city") or "Remote"
+        pay = j.get("pay") or "Not disclosed"
+        rows.append(
+            f'<tr><td style="padding:14px 0;border-bottom:1px solid #E3E3E6">'
+            f'<a href="{SITE_URL}/jobs/{j["id"]}" style="font-size:16px;font-weight:700;color:#0A0A0A;text-decoration:none">'
+            f'{j.get("t","")}</a><br>'
+            f'<span style="font-size:14px;color:#56565C">{j.get("co","")} &middot; {where} &middot; {pay}</span>'
+            f'</td></tr>'
+        )
+    plural = "role" if len(jobs) == 1 else "roles"
+    where_line = (
+        f"<p style='font-size:14px;color:#56565C'>Checked against {country}, so everything here is open to you.</p>"
+        if country else ""
+    )
+    return send_email(
+        email,
+        f"{len(jobs)} new {plural} for “{search_name}”",
+        f"""
+        <p>Hi {name},</p>
+        <p>{len(jobs)} new {plural} came in matching your saved search
+           <strong>{search_name}</strong>.</p>
+        {where_line}
+        <table style="width:100%;border-collapse:collapse;margin:18px 0">{''.join(rows)}</table>
+        <p><a href="{SITE_URL}/jobs">See the whole board</a></p>
+        <p style="font-size:13px;color:#6E6E75">You're getting this because you turned on alerts for this
+           search. Turn them off any time from the bell beside it on the jobs page.</p>
+        """,
+    )

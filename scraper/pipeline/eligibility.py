@@ -134,7 +134,9 @@ NON_AFRICA_ONLY = [
 # reader with a bare "worth checking". "Open in the United States" tells a
 # designer in Nairobi what they need to know in three words.
 NON_AFRICA_PLACES = {
-    "the United States": [r"\bunited states\b", r"\bu\.?s\.?a\b", r"\bus\b"],
+    # "U.S." with the dots is common in ATS location strings and \bus\b does not
+    # match it — the dots break the word boundary — so it needs its own pattern.
+    "the United States": [r"\bunited states\b", r"\bu\.?s\.?a\b", r"\bus\b", r"\bu\.s\.?"],
     "Canada": [r"\bcanada\b"],
     "Mexico": [r"\bmexico\b"],
     "the United Kingdom": [r"\bunited kingdom\b", r"\bu\.?k\.?\b", r"\bengland\b",

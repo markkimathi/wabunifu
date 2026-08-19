@@ -23,7 +23,7 @@ from uuid import uuid4
 from typing import Optional
 import sys
 from pathlib import Path
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 import bcrypt
 from fastapi import (
@@ -93,6 +93,14 @@ from . import ats_check  # noqa: E402
 from . import photo as photo_module  # noqa: E402
 from . import project_image as project_image_module  # noqa: E402
 from . import email as email_module  # noqa: E402
+from .email import send_saved_search_digest  # noqa: E402
+
+# The eligibility rules live with the classifier that produces them, and the
+# digest has to apply exactly the same ones the board does — a second copy here
+# is how five pages ended up disagreeing about what "Open across Africa" meant.
+# scraper/ ships in the image (see Dockerfile), so import it rather than fork it.
+sys.path.insert(0, str(ROOT / "scraper"))
+from pipeline.eligibility import open_to_country as eligibility_open_to  # noqa: E402
 
 WEB_DIR = ROOT / "web"
 JOBS_JSON = WEB_DIR / "jobs.json"
@@ -1474,6 +1482,75 @@ def designer_search_alerts(search_id: int, payload: SearchAlertsIn,
     if not set_search_alerts(designer["id"], search_id, payload.alerts):
         raise HTTPException(404, "no such saved search")
     return {"ok": True}
+
+
+def _search_matches(j: dict, filters: dict, country: str) -> bool:
+    """The board's own filter rules, server side. Kept deliberately narrow: only
+    the filters that survive a week (discipline, level, pay, text) plus the
+    eligibility rule, because an alert has to honour the same promise the board
+    does — never surface a role that would turn this person down."""
+    if country and eligibility_open_to(j.get("elig", ""), j.get("elig_scope", ""), country) is False:
+        return False
+    disciplines = filters.get("disciplines") or []
+    if disciplines and j.get("cat") not in disciplines:
+        return False
+    levels = filters.get("levels") or []
+    if levels and j.get("level") not in levels:
+        return False
+    if filters.get("payOnly") and (not j.get("pay") or j.get("pay") == "Not disclosed"):
+        return False
+    q = (filters.get("q") or "").strip().lower()
+    if q:
+        haystack = " ".join([j.get("t", ""), j.get("co", ""), j.get("cat", ""), j.get("city", "")]).lower()
+        if q not in haystack:
+            return False
+    return True
+
+
+@app.post("/api/admin/send-search-digests")
+def admin_send_search_digests(dry_run: bool = False, _: None = Depends(require_admin)):
+    """Weekly digest for alert-enabled saved searches. Triggered by a scheduled
+    workflow rather than a timer in-process, matching how the scraper runs.
+
+    Each search only reports roles posted since its own last_notified_at, so a
+    run that sends nothing costs nothing and a missed week is caught up rather
+    than skipped. Nobody is emailed an empty digest."""
+    combined, _gen = _combined_jobs()
+    now = datetime.now(timezone.utc)
+    sent, skipped, errors = 0, 0, 0
+    for s in searches_with_alerts():
+        try:
+            filters = json.loads(s.get("filters") or "{}")
+        except Exception:
+            filters = {}
+        since = s.get("last_notified_at") or ""
+        fresh = []
+        for j in combined:
+            posted = (j.get("posted_at") or "")[:10] if j.get("posted_at") else ""
+            if not posted:
+                # jobs.json exposes age in days, not a date; derive one so the
+                # high-water mark still works for scraped listings.
+                posted = (now - timedelta(days=int(j.get("days") or 0))).date().isoformat()
+            if since and posted <= since[:10]:
+                continue
+            if _search_matches(j, filters, s.get("country") or ""):
+                fresh.append(j)
+        if not fresh:
+            skipped += 1
+            continue
+        if dry_run:
+            sent += 1
+            continue
+        ok = send_saved_search_digest(
+            s["email"], s.get("display_name") or "there", s["name"],
+            fresh[:10], s.get("country") or "",
+        )
+        if ok:
+            mark_search_notified(s["id"], now.isoformat(timespec="seconds"))
+            sent += 1
+        else:
+            errors += 1
+    return {"sent": sent, "nothing_to_send": skipped, "failed": errors, "dry_run": dry_run}
 
 
 @app.get("/api/countries")

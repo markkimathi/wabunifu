@@ -1,0 +1,43 @@
+name: Send saved-search digests
+
+# Friday morning, after Friday's scrape has landed (that runs 05:00 UTC daily),
+# so the week's new roles are already in the feed being reported on.
+on:
+  schedule:
+    # 07:00 UTC Friday = 10:00 Nairobi
+    - cron: "0 7 * * 5"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Count what would send, without sending"
+        type: boolean
+        default: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    steps:
+      # No checkout or Python needed — this only asks the live app to do a
+      # thing it already knows how to do. Keeping the logic server-side means
+      # the schedule can move without touching the sending code.
+      - name: Trigger digests
+        env:
+          ADMIN_TOKEN: ${{ secrets.KAZI_ADMIN_TOKEN }}
+          DRY: ${{ inputs.dry_run && 'true' || 'false' }}
+        run: |
+          if [ -z "$ADMIN_TOKEN" ]; then
+            echo "KAZI_ADMIN_TOKEN secret is not set — add it in repo Settings > Secrets."
+            exit 1
+          fi
+          code=$(curl -sS -o response.json -w '%{http_code}' -X POST \
+            "https://wabunifu.fly.dev/api/admin/send-search-digests?dry_run=$DRY" \
+            -H "Authorization: Bearer $ADMIN_TOKEN")
+          echo "HTTP $code"
+          cat response.json
+          echo
+          # A run that sends nothing is a normal quiet week, not a failure. Only
+          # a non-2xx means the trigger itself didn't work.
+          case "$code" in
+            2*) exit 0 ;;
+            *)  echo "digest trigger failed"; exit 1 ;;
+          esac
