@@ -80,6 +80,9 @@
     // `hidden` attribute (clear buttons, the recent-searches row); an author
     // `display` declaration otherwise beats the UA [hidden] rule.
     + ".pp-search-clear[hidden],.pp-recent-row[hidden]{display:none!important}"
+    // Same trap, same fix: .pp-bell-dot carries its own display, so the
+    // hidden attribute alone left a "0" badge sitting on the bell.
+    + ".pp-bell-dot[hidden],.pp-notif-panel[hidden],.pp-sresults[hidden]{display:none!important}"
     // #pp-nav is a bare mount div with only the header inside it, so its
     // own box is auto-height == the header's height. A sticky element
     // can't stick past the bottom edge of its containing block, so

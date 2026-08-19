@@ -68,6 +68,19 @@
   .sp-note{margin:12px 0 0;font-size:13px;color:var(--pp-gold-800)}
   .strength-panel.-done .sp-note{margin-top:0;color:var(--c-good-text)}
 
+  /* Work / case studies */
+  .cs-list{display:flex;flex-direction:column;gap:8px}
+  .cs-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;
+    border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface)}
+  .cs-main{flex:1;min-width:200px;display:flex;flex-direction:column;gap:3px}
+  .cs-title{font-size:15px;font-weight:600;color:var(--c-text)}
+  .cs-state{font-size:12.5px;color:var(--c-text-faint)}
+  .cs-state.-written{color:var(--c-good-text);font-weight:600}
+  .cs-back{border:none;background:none;padding:0;cursor:pointer;font-family:var(--pp-font);
+    font-size:13.5px;font-weight:600;color:var(--c-accent-text)}
+  .cs-result{display:grid;grid-template-columns:140px minmax(0,1fr);gap:10px;margin-bottom:8px}
+  @media(max-width:600px){.cs-result{grid-template-columns:1fr}}
+
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
   .stat-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface)}
   .stat-card .n{font-size:26px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
@@ -183,6 +196,8 @@
 <script src="pp-nav.js"></script>
 <script src="pp-footer.js"></script>
 <script src="pp-elig.js"></script>
+<script src="featured-projects.js"></script>
+<script src="pp-confirm.js"></script>
 <script src="pp-confirm.js"></script>
 <script>
 (function(){
@@ -209,6 +224,7 @@
   var SECTIONS = [
     { key: "overview", label: "Overview" }, { key: "saved", label: "Saved roles" },
     { key: "messages", label: "Messages" }, { key: "analytics", label: "Analytics" },
+    { key: "work", label: "Work" },
     { key: "profile", label: "Profile" }, { key: "availability", label: "Availability" },
     { key: "account", label: "Account" }
   ];
@@ -300,7 +316,7 @@
         to: "profile" },
       { done: projects > 0, label: "Publish a project",
         why: "Your work shows on your profile, and recent work reaches the homepage.",
-        to: "profile" },
+        to: "work" },
       { done: !!(me.bio || "").trim(), label: "Add a short bio",
         why: "Two sentences is plenty. It's what makes a card worth clicking.",
         to: "profile" },
@@ -645,6 +661,129 @@
 
   // ---------------- Render + wire ----------------
 
+  /* ---------------- Work ----------------
+     Projects could only ever be added during onboarding: the shared
+     featured-projects component was loaded there and nowhere else, so once
+     setup finished a designer had no route back to their own portfolio.
+
+     A project and a case study are one record here, not two content types.
+     You add a project in a minute — cover, title, category — and expand it
+     into a case study later if there is something worth saying. The schema
+     already supported that (problem / results / credits, plus a gallery);
+     nothing in the product reached it. */
+  var storyProjectId = null;
+
+  function renderWork(){
+    var projects = (me.projects || []);
+    var body = '<div class="section-head"><h2>Work</h2></div>';
+
+    if (storyProjectId) {
+      var p = projects.filter(function(x){ return x.id === storyProjectId; })[0];
+      if (p) return body + renderStoryEditor(p);
+      storyProjectId = null;
+    }
+
+    body += '<p class="field-hint" style="margin:0 0 16px">Up to six projects. Add one in a minute, then expand the ones worth explaining into a full case study.</p>';
+    body += '<div id="workGrid"></div>';
+
+    if (projects.length) {
+      body += '<div class="section" style="margin-top:26px">' +
+        '<div class="section-head"><h2 style="font-size:17px">Case studies</h2></div>' +
+        '<p class="field-hint" style="margin:0 0 12px">A case study is the same project with the thinking written down. Employers read these.</p>' +
+        '<div class="cs-list">' + projects.map(function(p){
+          var written = !!(p.problem || (p.results || []).length || p.credits);
+          return '<div class="cs-row">' +
+            '<div class="cs-main"><span class="cs-title">' + escapeHtml(p.title || "Untitled") + '</span>' +
+              '<span class="cs-state ' + (written ? "-written" : "") + '">' +
+                (written ? "Case study written" : "Project only") + '</span></div>' +
+            '<button type="button" class="pp-btn pp-btn-secondary" data-story="' + p.id + '">' +
+              (written ? "Edit case study" : "Expand into a case study") + '</button>' +
+          '</div>';
+        }).join("") + '</div></div>';
+    }
+    return body;
+  }
+
+  function renderStoryEditor(p){
+    var results = (p.results || []);
+    while (results.length < 3) results.push({ value: "", label: "" });
+    return '<div class="form-panel">' +
+      '<button type="button" class="cs-back" id="storyBack">← Back to work</button>' +
+      '<h3 style="margin-top:12px">' + escapeHtml(p.title || "Untitled") + '</h3>' +
+      '<p class="field-hint" style="margin:0 0 18px">Everything here is optional. A project with just a cover is fine; this is for the ones worth explaining.</p>' +
+
+      '<div class="field-block"><label class="pp-field-label" for="csProblem">The problem</label>' +
+        '<textarea id="csProblem" class="pp-textarea" rows="4" placeholder="What was actually wrong, and who it was wrong for.">' + escapeHtml(p.problem || "") + '</textarea>' +
+        '<p class="field-hint">Two or three sentences. The situation before you touched it.</p></div>' +
+
+      '<div class="field-block"><label class="pp-field-label">What changed</label>' +
+        '<p class="field-hint" style="margin:0 0 8px">Numbers if you have them, plain outcomes if you don\'t. Leave blank to skip.</p>' +
+        results.slice(0, 3).map(function(r, i){
+          return '<div class="cs-result">' +
+            '<div class="pp-field-input"><input id="csResVal' + i + '" value="' + escapeHtml(r.value || "") + '" placeholder="e.g. 40%"></div>' +
+            '<div class="pp-field-input"><input id="csResLbl' + i + '" value="' + escapeHtml(r.label || "") + '" placeholder="e.g. fewer support tickets"></div>' +
+          '</div>';
+        }).join("") + '</div>' +
+
+      '<div class="field-block"><label class="pp-field-label" for="csCredits">Credits</label>' +
+        '<div class="pp-field-input"><input id="csCredits" value="' + escapeHtml(p.credits || "") + '" placeholder="Who else worked on this, and what they did"></div>' +
+        '<p class="field-hint">Naming your collaborators is not a formality — it is how people find each other here.</p></div>' +
+
+      '<div class="form-actions"><button type="button" class="pp-btn pp-btn-primary" id="csSave">Save case study</button>' +
+        '<span class="save-note" id="csNote" hidden>Saved.</span></div>' +
+    '</div>';
+  }
+
+  function mountWork(){
+    var grid = document.getElementById("workGrid");
+    if (grid && window.FeaturedProjects) {
+      window.FeaturedProjects.mount(grid, {
+        projects: me.projects || [], variant: "manage",
+        // The component owns the list; keep `me` in step so the case-study
+        // section below and the strength panel both see the change.
+        onChange: function(list){ me.projects = list; render(); }
+      });
+    }
+    document.querySelectorAll("[data-story]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        storyProjectId = Number(btn.getAttribute("data-story"));
+        render();
+      });
+    });
+    var back = document.getElementById("storyBack");
+    if (back) back.addEventListener("click", function(){ storyProjectId = null; render(); });
+
+    var save = document.getElementById("csSave");
+    if (save) save.addEventListener("click", async function(){
+      var id = storyProjectId;
+      var results = [];
+      for (var i = 0; i < 3; i++) {
+        var v = (document.getElementById("csResVal" + i).value || "").trim();
+        var l = (document.getElementById("csResLbl" + i).value || "").trim();
+        // A number with nothing to call it, or a label with no number, says
+        // nothing — take a row only when it is actually a pair.
+        if (v && l) results.push({ value: v, label: l });
+      }
+      save.disabled = true;
+      try {
+        var updated = await api("/api/designers/me/projects/" + id + "/story", {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            problem: (document.getElementById("csProblem").value || "").trim(),
+            results: results,
+            credits: (document.getElementById("csCredits").value || "").trim()
+          })
+        });
+        me.projects = (me.projects || []).map(function(p){ return p.id === id ? Object.assign({}, p, updated) : p; });
+        var note = document.getElementById("csNote");
+        if (note) { note.hidden = false; setTimeout(function(){ note.hidden = true; }, 2200); }
+      } catch (e) {
+        showErr && showErr("csErr", "That didn't save. Try again.");
+      }
+      save.disabled = false;
+    });
+  }
+
   function render(){
     var content = document.getElementById("content");
     var head = '<div class="dash-head"><h1>' + escapeHtml(me.display_name) + '</h1><p>Your designer dashboard</p></div>';
@@ -653,12 +792,14 @@
     else if (section === "saved") body = renderSaved();
     else if (section === "messages") body = renderMessages();
     else if (section === "analytics") body = renderAnalytics();
+    else if (section === "work") body = renderWork();
     else if (section === "profile") body = renderProfile();
     else if (section === "availability") body = renderAvailability();
     else body = renderAccount();
     content.innerHTML = head + body;
     document.getElementById("dashRail").innerHTML = railHtml();
     document.getElementById("dashChipsMobile").innerHTML = chipsMobileHtml();
+    if (section === "work") mountWork();
     if (section === "availability") { selectedOpenTo = (me.open_to || []).slice(); renderOpenToChips(); }
     if (section === "profile") { selectedDisciplines = (me.discipline || []).slice(); selectedSkills = (me.skills || []).slice(); renderDisciplineChips(); renderSkillChips(); fillCountrySelect(me.country || ""); }
     wire();
