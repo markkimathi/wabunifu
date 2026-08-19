@@ -189,6 +189,8 @@
   .c-card h4{margin:0 0 7px;font-size:19px;font-weight:700;letter-spacing:-0.015em}
   .c-card p{margin:0 0 18px;font-size:14px;line-height:1.55;color:var(--c-text-subtle)}
   .c-card a{font-size:14px;font-weight:600;color:var(--c-accent-text)}
+  /* Facts about the real session — host, length, seats — kept quieter than the blurb. */
+  .c-meta{margin:-8px 0 14px;font-size:13px;line-height:1.5;color:var(--c-text-faint)}
 
   /* ---- resume banner ---- */
   .sec-resume{padding:48px 0 0}
@@ -321,7 +323,10 @@
         </div>
       </div>
       <div class="community-grid">
-        <div class="c-card">
+        <!-- Replaced with the real next session once one loads. The static copy
+             below is the honest fallback: it describes what these sessions are,
+             without claiming a specific one is happening. -->
+        <div class="c-card" id="nextSessionCard">
           <span class="pp-status -new tag">Thursdays</span>
           <h4>Portfolio reviews</h4>
           <p>Forty minutes, six designers, and a reviewer who has been exactly where you are. Bring the case study you like least. You'll leave with three things to change.</p>
@@ -628,6 +633,41 @@
     }
   }
 
+  /* "There's usually room for you" is a claim the page can actually back, since
+     sessions carry a date, a host and a seat count. Showing the real next one
+     demonstrates it; the static card only asserts it.
+
+     Anything we can't verify stays out: no session, a past date or a full room
+     leaves the written fallback in place rather than inventing urgency. */
+  async function loadNextSession(){
+    var card = document.getElementById("nextSessionCard");
+    if (!card) return;
+    try {
+      var res = await fetch("/api/community/sessions", { cache: "no-store" });
+      if (!res.ok) return;
+      var sessions = (await res.json()).sessions || [];
+      var today = new Date().toISOString().slice(0, 10);
+      var next = sessions
+        .filter(function(s){ return s.status === "scheduled" && s.session_date && s.session_date >= today; })
+        .sort(function(a, b){ return a.session_date < b.session_date ? -1 : 1; })[0];
+      if (!next) return;
+
+      var left = Math.max(0, (next.seats || 0) - (next.seats_taken || 0));
+      if (!left) return;   // a full room is not an invitation
+
+      var when = new Date(next.session_date + "T00:00:00")
+        .toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "long" });
+      card.innerHTML =
+        '<span class="pp-status -new tag">' + escapeHtml(when) + (next.time ? ", " + escapeHtml(next.time) : "") + '</span>' +
+        '<h4>' + escapeHtml(next.title || next.kind || "Portfolio review") + '</h4>' +
+        '<p>' + escapeHtml(next.blurb || "") + '</p>' +
+        '<p class="c-meta">Hosted by ' + escapeHtml(next.host || "a reviewer") +
+          (next.length ? " · " + escapeHtml(next.length) : "") +
+          ' · ' + left + (left === 1 ? " seat left" : " seats left") + '</p>' +
+        '<a href="/community/' + encodeURIComponent(next.id) + '">Take a seat →</a>';
+    } catch (e) { /* keep the written fallback */ }
+  }
+
   function startHeroVideos(){
     var track = document.getElementById("heroVTrack");
     if (!track) return;
@@ -656,6 +696,7 @@
     input.addEventListener("keydown", function(e){ if (e.key === "Enter") runSearch(); });
 
     startHeroVideos();
+    loadNextSession();
     loadRoles();
     loadPeople();
   }
