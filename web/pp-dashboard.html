@@ -41,6 +41,33 @@
   .dash-head h1{margin:0 0 4px;font-size:30px;line-height:1.1;letter-spacing:-0.026em;font-weight:800}
   .dash-head p{margin:0 0 20px;font-size:14.5px;color:var(--c-text-subtle)}
 
+  /* Completion, framed as what it unlocks. Gold carries the progress; the rows
+     are plain buttons so the whole line is the target, not just a link. */
+  .strength-panel{padding:20px;border:1px solid var(--pp-gold-400);border-radius:var(--pp-radius-lg);
+    background:var(--pp-gold-200);margin-bottom:20px}
+  .strength-panel.-done{border-color:var(--c-good-border);background:var(--c-good-bg)}
+  .sp-head{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin-bottom:10px}
+  .sp-head h3{margin:0;font-size:17px;font-weight:700;letter-spacing:-0.015em;color:var(--pp-gold-800)}
+  .strength-panel.-done .sp-head h3{color:var(--c-good-text)}
+  .sp-pct{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;color:var(--pp-gold-800);flex:none}
+  .strength-panel.-done .sp-pct{color:var(--c-good-text)}
+  .sp-bar{height:6px;border-radius:999px;background:var(--pp-gold-400);overflow:hidden;margin-bottom:14px}
+  .sp-bar span{display:block;height:100%;background:var(--pp-gold-800);transition:width var(--pp-duration) var(--pp-ease)}
+  .strength-panel.-done .sp-bar{background:var(--c-good-border)}
+  .strength-panel.-done .sp-bar span{background:var(--c-good-text)}
+  .sp-list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+  .sp-item{display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;cursor:pointer;
+    padding:10px 12px;border-radius:var(--pp-radius-md);border:1px solid transparent;
+    background:var(--c-surface);font-family:var(--pp-font)}
+  .sp-item:hover{border-color:var(--pp-gold-400)}
+  .sp-mark{width:15px;height:15px;flex:none;margin-top:2px;border-radius:50%;border:2px solid var(--pp-gold-400)}
+  .sp-text{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+  .sp-label{font-size:14.5px;font-weight:600;color:var(--c-text)}
+  .sp-why{font-size:13px;line-height:1.45;color:var(--c-text-subtle)}
+  .sp-chev{flex:none;color:var(--c-text-faint);font-size:15px;margin-top:1px}
+  .sp-note{margin:12px 0 0;font-size:13px;color:var(--pp-gold-800)}
+  .strength-panel.-done .sp-note{margin-top:0;color:var(--c-good-text)}
+
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
   .stat-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface)}
   .stat-card .n{font-size:26px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
@@ -253,21 +280,96 @@
 
   // ---------------- Overview ----------------
 
+  /* What a complete profile actually buys you, in the order it pays off.
+     Onboarding has a percentage meter but it disappears the moment setup ends,
+     which is exactly backwards: the people most likely to have a thin profile
+     are the ones who skipped ahead. This one lives where they come back to,
+     and names the consequence rather than a score — "employers filter by
+     discipline" is a reason to act; "60%" is a number. */
+  function profileChecklist(){
+    var projects = (cache.projects || me.projects || []).length;
+    return [
+      { done: !!(me.discipline || []).length, label: "Add your discipline",
+        why: "Employers filter the directory by discipline. Without one you aren't in those results.",
+        to: "profile" },
+      { done: !!me.country, label: "Set the country you work from",
+        why: "Lets the board hide roles that would turn you down before you read them.",
+        to: "profile" },
+      { done: !!(me.headline || "").trim(), label: "Write a headline",
+        why: "It's the line under your name everywhere you appear.",
+        to: "profile" },
+      { done: projects > 0, label: "Publish a project",
+        why: "Your work shows on your profile, and recent work reaches the homepage.",
+        to: "profile" },
+      { done: !!(me.bio || "").trim(), label: "Add a short bio",
+        why: "Two sentences is plenty. It's what makes a card worth clicking.",
+        to: "profile" },
+      { done: !!(me.skills || []).length, label: "List a few skills",
+        why: "Employers search on these when they know what they need.",
+        to: "profile" }
+    ];
+  }
+
+  function strengthPanelHtml(){
+    var items = profileChecklist();
+    var done = items.filter(function(i){ return i.done; }).length;
+    var pct = Math.round((done / items.length) * 100);
+    if (done === items.length) {
+      return '<div class="strength-panel -done">' +
+        '<div class="sp-head"><h3>Your profile is complete</h3><span class="sp-pct">100%</span></div>' +
+        '<div class="sp-bar"><span style="width:100%"></span></div>' +
+        '<p class="sp-note">You show up everywhere employers look. Keep your work current and it stays that way.</p>' +
+      '</div>';
+    }
+    var next = items.filter(function(i){ return !i.done; });
+    return '<div class="strength-panel">' +
+      '<div class="sp-head"><h3>Finish your profile so employers can find you</h3><span class="sp-pct">' + pct + '%</span></div>' +
+      '<div class="sp-bar"><span style="width:' + pct + '%"></span></div>' +
+      '<ul class="sp-list">' + next.map(function(i){
+        return '<li><button type="button" class="sp-item" data-goto="' + i.to + '">' +
+          '<span class="sp-mark" aria-hidden="true"></span>' +
+          '<span class="sp-text"><span class="sp-label">' + i.label + '</span>' +
+          '<span class="sp-why">' + i.why + '</span></span>' +
+          '<span class="sp-chev" aria-hidden="true">→</span></button></li>';
+      }).join("") + '</ul>' +
+      (done ? '<p class="sp-note">' + done + ' of ' + items.length + ' done.</p>' : "") +
+    '</div>';
+  }
+
   function renderOverview(){
-    var body =
+    // The API matches on discipline alone. Recommending a role that would turn
+    // you down is the same failure the board just stopped making, so anything
+    // closed to your country is dropped here too — including from the count,
+    // which would otherwise promise more than the list below delivers.
+    var country = PPElig.getViewerCountry();
+    var all = cache.matches || [];
+    var open = country
+      ? all.filter(function(j){ return PPElig.openTo(j.elig, j.elig_scope || "", country) !== false; })
+      : all;
+
+    var body = strengthPanelHtml() +
       '<div class="stat-row">' +
         '<div class="stat-card"><div class="n">' + (cache.stats ? cache.stats.profile_views : "—") + '</div><div class="l">Profile views, last 90 days</div></div>' +
         '<div class="stat-card"><div class="n">' + cache.saved.length + '</div><div class="l">Saved roles</div></div>' +
-        '<div class="stat-card"><div class="n">' + cache.matches.length + '</div><div class="l">Roles matching your disciplines</div></div>' +
+        '<div class="stat-card"><div class="n">' + open.length + '</div><div class="l">' +
+          (country ? "Matching roles open to you" : "Roles matching your disciplines") + '</div></div>' +
       '</div>';
+    // Only for people who never reached the end of setup — anyone who did gets
+    // the checklist above instead, which says the same thing more usefully.
     if (!me.onboarding_completed) {
-      body += '<div class="form-panel"><h3>Finish setting up</h3><p style="margin:0 0 14px;font-size:14px;color:var(--c-text-subtle)">A complete profile is what shows up in the directory and on matched roles.</p><a href="/onboarding" class="pp-btn pp-btn-primary">Continue setup</a></div>';
+      body += '<div class="form-panel"><h3>Finish setting up</h3><p style="margin:0 0 14px;font-size:14px;color:var(--c-text-subtle)">You stopped partway through. Picking up where you left off takes a couple of minutes.</p><a href="/onboarding" class="pp-btn pp-btn-primary">Continue setup</a></div>';
     }
+
     body += '<div class="section"><div class="section-head"><h2>Roles that match you</h2><a href="/jobs" style="font-size:13.5px;font-weight:600;color:var(--c-accent-text);text-decoration:none">See all roles</a></div>';
-    if (!cache.matches.length) {
+    if (!all.length) {
       body += '<div class="pp-empty"><h3>No matches yet</h3><p>Add a discipline in Profile and roles that fit will show up here.</p></div>';
+    } else if (!open.length) {
+      body += '<div class="pp-empty"><h3>Nothing open to you this week</h3><p>' + all.length +
+        ' role' + (all.length === 1 ? "" : "s") + ' matched your disciplines, but none can hire from ' +
+        escapeHtml(country) + ' right now. We\'ll keep looking.</p>' +
+        '<a class="pp-btn pp-btn-secondary" href="/jobs">Browse the whole board</a></div>';
     } else {
-      cache.matches.slice(0, 5).forEach(function(j){
+      open.slice(0, 5).forEach(function(j){
         body += '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '" style="text-decoration:none;color:inherit">' +
           '<div class="main"><h3>' + escapeHtml(j.t) + '</h3><div class="meta">' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</div></div>' +
           eligBadge(j.elig, j.elig_scope) +
@@ -570,6 +672,9 @@
     document.querySelectorAll("[data-rail-signout]").forEach(function(btn){
       btn.addEventListener("click", function(){ window.PathPixelNav.signOut("designer"); });
     });
+    document.querySelectorAll("[data-goto]").forEach(function(btn){
+      btn.addEventListener("click", function(){ setSection(btn.getAttribute("data-goto")); });
+    });
 
     // Saved
     document.querySelectorAll("[data-unsave]").forEach(function(btn){
@@ -711,6 +816,9 @@
 
   async function init(){
     try { me = await api("/api/designers/me"); } catch (e) { return; }
+    // Same reading of eligibility as the board — a matched role shouldn't say
+    // "Open in Nigeria" here and "Open to you" two clicks away.
+    if (me && me.country) PPElig.setViewerCountry(me.country);
     await loadSection();
   }
 
