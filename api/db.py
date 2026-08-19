@@ -65,6 +65,10 @@ CREATE TABLE IF NOT EXISTS submissions (
   eligibility_source TEXT NOT NULL DEFAULT 'employer-claimed',
   eligibility_override_reason TEXT NOT NULL DEFAULT '',
   eligibility_overridden_at TEXT NOT NULL DEFAULT '',
+  -- ISO date the employer stops accepting applications. Employer-posted roles
+  -- only: no ATS we scrape exposes one, and inventing a date for a listing
+  -- nobody set is exactly the kind of guess this product doesn't make.
+  closes_at TEXT NOT NULL DEFAULT '',
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
 );
@@ -556,6 +560,7 @@ _MIGRATIONS = [
     "ALTER TABLE submissions ADD COLUMN eligibility_overridden_at TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN country TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN open_to TEXT NOT NULL DEFAULT '[]'",
+    "ALTER TABLE submissions ADD COLUMN closes_at TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -628,11 +633,11 @@ def insert_submission(data: dict, company_id: int | None = None, employer_id: in
         INSERT INTO submissions
           (title, company, url, contact_email, location, work_type,
            discipline, level, eligibility, salary, description, agreed_to_terms,
-           cross_border_note, company_id, employer_id, status, created_at)
+           cross_border_note, closes_at, company_id, employer_id, status, created_at)
         VALUES
           (:title, :company, :url, :contact_email, :location, :work_type,
            :discipline, :level, :eligibility, :salary, :description, :agreed_to_terms,
-           :cross_border_note, :company_id, :employer_id, 'pending', :created_at)
+           :cross_border_note, :closes_at, :company_id, :employer_id, 'pending', :created_at)
     """, row)
     c.commit()
     sub_id = cur.lastrowid

@@ -152,6 +152,9 @@
   .jr-tags{display:flex;flex-wrap:wrap;gap:6px;grid-area:tags}
   .jr-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;grid-area:meta}
   @media(max-width:900px){.jr-meta{align-items:flex-start}}
+  .job-row.-closed{opacity:.72}
+  .pp-chip.-closed{background:var(--c-surface-inset);color:var(--c-text-faint)}
+  .jr-closes{font-size:12px;font-weight:600;color:var(--pp-gold-800)}
   .jr-meta .pay{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
   .jr-meta .posted{font-size:12px;color:var(--c-text-faint);white-space:nowrap}
   .jr-save{grid-area:save}
@@ -384,8 +387,13 @@
       if (!res.ok) return;
       var data = await res.json();
       localStorage.setItem("pp_saved_jobs", JSON.stringify(data.jobs.map(function(j){ return j.job_id; })));
+      // The snapshot taken at save time is what lets a role that has since
+      // closed still appear here, labelled, instead of quietly vanishing from
+      // the one list the designer curated themselves.
+      savedSnapshots = data.jobs || [];
       var el = document.getElementById("savedCount");
       if (el) el.textContent = data.jobs.length;
+      if (state.tab === "saved") renderResults();
     } catch (e) {}
   }
 
@@ -446,6 +454,7 @@
      Signed-in only: unlike saved roles it isn't worth a local-only shadow copy,
      because the point is a record that survives changing device mid-search. */
   var appliedIds = new Set();
+  var savedSnapshots = [];
 
   async function loadApplied(){
     var token = designerToken();
@@ -903,7 +912,22 @@
     } catch (e) {}
   }
 
+  function renderClosedRow(j){
+    // Deliberately plain: no eligibility badge, no pay, no chevron into a page
+    // that no longer exists. The only useful facts left are what it was and
+    // that it has gone.
+    return '<div class="job-row -closed">' +
+      '<div class="jr-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
+        '<div><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + '</p></div></div>' +
+      '<div class="jr-tags"><span class="pp-chip -closed">No longer open</span></div>' +
+      '<div class="jr-meta"><span class="posted">Saved earlier</span></div>' +
+      '<button type="button" class="pp-btn-icon jr-save -saved" data-save="' + j.id + '" aria-label="Remove from saved">' +
+        ICONS.save.replace("{{fill}}", "currentColor") + '</button>' +
+    '</div>';
+  }
+
   function renderJobRow(j){
+    if (j.closed) return renderClosedRow(j);
     var tags = eligBadge(j) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>' +
       // Only shown when the posting actually stated it. Most roles are
       // full-time and saying so on every row is noise; saying so when it is
@@ -917,12 +941,28 @@
         '<div><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + '</p></div></div>' +
       '<p class="jr-place">' + escapeHtml(j.city || "Remote") + '</p>' +
       '<div class="jr-tags">' + tags + '</div>' +
-      '<div class="jr-meta"><span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span>' +
+      '<div class="jr-meta">' +
+        (closesLabel(j.closes) ? '<span class="jr-closes">' + closesLabel(j.closes) + '</span>' : "") +
+        '<span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span>' +
         '<span class="posted">' + postedLabel(j.days) + '</span></div>' +
       '<button type="button" class="pp-btn-icon jr-save' + (saved ? " -saved" : "") + '" data-save="' + j.id + '" aria-label="Save role">' +
         ICONS.save.replace("{{fill}}", saved ? "currentColor" : "none") + '</button>' +
       '<span class="jr-chevron">' + ICONS.chevron + '</span>' +
     '</a>';
+  }
+
+  /* Only employer-posted roles carry a closing date, so most rows show
+     nothing here. Shown only inside a fortnight — a deadline three months out
+     is not news, and dressing it as urgency would be the kind of manufactured
+     pressure this board avoids. */
+  function closesLabel(closes){
+    if (!closes) return "";
+    var days = Math.ceil((new Date(closes + "T23:59:59") - new Date()) / 86400000);
+    if (days < 0) return "Closed";
+    if (days === 0) return "Closes today";
+    if (days === 1) return "Closes tomorrow";
+    if (days <= 14) return "Closes in " + days + " days";
+    return "";
   }
 
   function postedLabel(days){
@@ -968,6 +1008,23 @@
     }
 
     var filtered = sortJobs(state.all.filter(matchesFilters));
+
+    // A saved role that has closed, or aged out, drops out of the live feed.
+    // Removing it from Saved as well would mean the one list a designer built
+    // by hand quietly loses entries. Rebuild those from the snapshot taken
+    // when they saved it, and say plainly that it is no longer open.
+    if (state.tab === "saved") {
+      var live = new Set(state.all.map(function(j){ return j.id; }));
+      savedSnapshots.forEach(function(snap){
+        if (live.has(snap.job_id)) return;
+        filtered.push({
+          id: snap.job_id, t: snap.title, co: snap.company, city: snap.location || "",
+          cat: "", elig: snap.eligibility || "", elig_scope: "", pay: "", days: 0,
+          url: snap.url || "", closed: true
+        });
+      });
+    }
+
     renderResultsHead(filtered.length);
 
     if (!filtered.length) {

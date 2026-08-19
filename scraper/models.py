@@ -53,6 +53,9 @@ class Job:
     desc_text: str | None = None # short plain-text teaser derived from desc, for card previews
     posted_at: str = ""      # ISO date "YYYY-MM-DD"
     cross_border_note: str = ""  # employer's own words on how they hire outside their home country
+    # ISO date applications close. Employer-posted roles only — no ATS we
+    # scrape publishes one, so a scraped listing stays open until it ages out.
+    closes_at: str = ""
     id: str = field(default="")
 
     def __post_init__(self):
@@ -96,6 +99,7 @@ class Job:
             "desc": self.desc,
             "desc_text": self.desc_text,
             "cross_border_note": self.cross_border_note,
+            "closes": self.closes_at,
         }
 
     def to_dict(self) -> dict:

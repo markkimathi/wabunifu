@@ -86,6 +86,7 @@
   .field-block{margin-bottom:14px}
   .field-block .pp-field-label{display:block;margin-bottom:6px;font-size:13px;font-weight:600}
   .field-block .pp-field-input select{cursor:pointer}
+  .wiz-hint{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--c-text-subtle)}
   .field-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:600px){.field-row2{grid-template-columns:1fr}}
   .form-actions{display:flex;gap:10px;margin-top:16px}
@@ -369,7 +370,7 @@
       discipline: "", level: "Mid",
       url: (me.company && me.company.website ? "https://" + me.company.website.replace(/^https?:\/\//, "") : ""),
       eligibility: (me.company && me.company.eligibility) || "africa",
-      cross_border_note: "", salary: "",
+      cross_border_note: "", salary: "", closes_at: "",
       contact_email: me.email || "", description: ""
     };
   }
@@ -378,6 +379,7 @@
       id: l.id, title: l.title || "", company: l.company || "", location: l.location || "", work_type: l.work_type || "Remote",
       discipline: l.discipline || "", level: l.level || "Mid", url: l.url || "",
       eligibility: l.eligibility || "africa", cross_border_note: l.cross_border_note || "", salary: l.salary || "",
+      closes_at: l.closes_at || "",
       contact_email: l.contact_email || "", description: l.description || ""
     };
   }
@@ -470,8 +472,9 @@
       '<div class="field-row2">' +
         '<div class="field-block"><label class="pp-field-label">Pay range, if you\'re sharing it</label>' +
           '<div class="pp-field-input"><input id="wSalary" value="' + escapeHtml(d.salary) + '" placeholder="$4,500 – $6,200 / mo"></div></div>' +
-        '<div class="field-block"><label class="pp-field-label">&nbsp;</label>' +
-          '<p style="margin:0;font-size:13.5px;line-height:1.5;color:var(--c-text-faint);padding-top:12px">Listings with real pay get about twice the qualified applicants. Yours is never shown to anyone but candidates.</p></div>' +
+        '<div class="field-block"><label class="pp-field-label" for="wCloses">Closes on, if there\'s a deadline</label>' +
+          '<div class="pp-field-input"><input id="wCloses" type="date" value="' + escapeHtml(d.closes_at) + '"></div>' +
+          '<p class="wiz-hint">Leave blank to keep it open. After this date the role stops showing on the board, and anyone who saved it sees that it closed.</p></div>' +
       '</div>' +
       '<div class="fielderr" id="wizStep2Err" hidden></div>';
   }
@@ -536,6 +539,7 @@
     } else if (wizardStep === 2) {
       if (get("wCrossBorder") !== null) wizardData.cross_border_note = get("wCrossBorder");
       if (get("wSalary") !== null) wizardData.salary = get("wSalary");
+      if (get("wCloses") !== null) wizardData.closes_at = get("wCloses");
     } else if (wizardStep === 3) {
       if (get("wDescription") !== null) wizardData.description = get("wDescription");
     }

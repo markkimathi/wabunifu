@@ -23,7 +23,7 @@ from uuid import uuid4
 from typing import Optional
 import sys
 from pathlib import Path
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone, timedelta, date
 
 import bcrypt
 from fastapi import (
@@ -304,6 +304,23 @@ class JobSubmission(BaseModel):
     salary: Optional[str] = None
     agreed_to_terms: bool = False
     cross_border_note: str = ""
+    # ISO date (YYYY-MM-DD). Optional: a role with no stated close is left
+    # open rather than given an invented deadline.
+    closes_at: str = ""
+
+    @field_validator("closes_at")
+    @classmethod
+    def _valid_closes_at(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            return ""
+        try:
+            when = date.fromisoformat(v)
+        except ValueError:
+            raise ValueError("closing date must be YYYY-MM-DD")
+        if when < date.today():
+            raise ValueError("closing date can't be in the past")
+        return v
 
     @field_validator("title", "company", "url", "contact_email", "discipline", "eligibility", "description")
     @classmethod
@@ -1149,13 +1166,18 @@ def _combined_jobs() -> tuple[list[dict], str | None]:
                 level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
                 desc=desc_html or None, desc_text=desc_text or None, posted_at=s["created_at"][:10],
                 cross_border_note=s.get("cross_border_note", ""),
+                closes_at=s.get("closes_at", "") or "",
             ).to_web()
         )
 
     # Enforced again here (not just at scrape time) so the cutoff holds live
     # even if a scrape run is skipped, and so it also applies to employer
     # submissions, which run.py never sees.
-    combined = [j for j in employer_jobs + scraped if j["days"] <= MAX_AGE_DAYS]
+    # A role past its stated closing date is not open, whatever its age. Only
+    # employer-posted listings carry one, so this never touches scraped roles.
+    today = date.today().isoformat()
+    combined = [j for j in employer_jobs + scraped
+                if j["days"] <= MAX_AGE_DAYS and not (j.get("closes") and j["closes"] < today)]
     combined.sort(key=lambda j: j["days"])
     return combined, generated_at
 
