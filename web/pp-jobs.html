@@ -140,6 +140,11 @@
   @media(max-width:900px){.job-row{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"main save" "tags tags" "meta meta";row-gap:10px}
     .job-row .jr-place{display:none}}
   .jr-main{display:flex;align-items:center;gap:12px;min-width:0;grid-area:main}
+  /* The title/company block is itself a flex item, and a flex item defaults to
+     min-width:auto — it refuses to shrink below its content. So the ellipsis on
+     the lines below never engaged and long titles ran straight out of the main
+     column and over the location beside it. min-width:0 is what lets it clip. */
+  .jr-main>div{flex:1;min-width:0}
   .jr-main h4{margin:0 0 2px;font-size:16px;font-weight:700;letter-spacing:-0.015em;line-height:1.28;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .jr-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

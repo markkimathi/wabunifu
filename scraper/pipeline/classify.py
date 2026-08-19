@@ -37,6 +37,17 @@ DISCIPLINE_RULES = [
 EXCLUDE = [
     r"\bsolutions? design", r"\bcircuit\b", r"\bchip design",
     r"\bmechanical\b", r"\belectrical\b", r"\bstructural\b", r"\bhardware\b",
+    # Engineering roles that merely mention UX or a design system in passing —
+    # "Senior Software Engineer, Mobile (Repayment UX)", "Senior Android
+    # Engineer, Design System". The parenthetical names the team they sit
+    # beside, not the job. Predates the Design Engineering rule below and was
+    # never caught, because none of these say "design engineer".
+    #
+    # Design Engineer and UX Engineer are deliberately NOT here: those are real
+    # design-led titles and the whole point of adding the discipline.
+    r"\b(software|android|ios|mobile|backend|back[- ]end|frontend|front[- ]end|fullstack|"
+    r"full[- ]stack|platform|data|infrastructure|devops|security|qa|test)\s+engineer",
+    r"\bengineering manager\b", r"\bmanager,\s*software engineering\b",
     # ...but the engineering senses of "design engineer" still go: these are
     # the ones that made it an exclude in the first place.
     r"\b(mechanical|electrical|hardware|firmware|rf|asic|verification|manufacturing|civil)\s+design engineer\b",
