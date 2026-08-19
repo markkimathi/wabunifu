@@ -17,6 +17,7 @@ Nothing an employer submits goes live until it's approved; see db.py's note.
 """
 from __future__ import annotations
 import json
+import html as html_mod
 import os
 import re
 from uuid import uuid4
@@ -29,7 +30,7 @@ import bcrypt
 from fastapi import (
     FastAPI, HTTPException, Header, Depends, Request, UploadFile, File, Form, BackgroundTasks,
 )
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse, PlainTextResponse, Response
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -3537,12 +3538,62 @@ PP_CLEAN_PAGES = {
     "cookies": "cookies.html",
     "admin": "admin.html",
 }
+# These three get a share card built from live data, so they are registered
+# explicitly below instead of by the generic loop.
+_RICH_META_PAGES = {"", "jobs", "people"}
+
 for _path, _file in PP_CLEAN_PAGES.items():
+    if _path in _RICH_META_PAGES:
+        continue
     def _make_page_route(file: str):
         def _serve():
             return FileResponse(WEB_DIR / file)
         return _serve
     app.get(f"/{_path}", include_in_schema=False)(_make_page_route(_file))
+
+def _board_summary() -> tuple[int, int]:
+    """(roles listed, roles open somewhere in Africa). Used in share cards, so
+    it has to be the real number — an inflated one is the fastest way to lose
+    the trust this board is built on."""
+    combined, _ = _combined_jobs()
+    african = sum(1 for j in combined if j.get("elig") in ("kenya", "africa"))
+    return len(combined), african
+
+
+@app.get("/", include_in_schema=False)
+def homepage(request: Request):
+    base = _site_base(request)
+    total, african = _board_summary()
+    return _page_with_head(
+        "pp-homepage.html",
+        title="Path & Pixel — design jobs you can actually apply to",
+        description=(f"{total} design roles, {african} of them open to designers across Africa. "
+                     "Every listing says who it can hire before you spend an evening applying."),
+        canonical=f"{base}/", image=f"{base}/logo.png",
+    )
+
+
+@app.get("/jobs", include_in_schema=False)
+def jobs_page(request: Request):
+    base = _site_base(request)
+    total, african = _board_summary()
+    return _page_with_head(
+        "pp-jobs.html", title="Design jobs · Path & Pixel",
+        description=(f"{total} design roles across product, brand, research and motion — "
+                     f"{african} open to designers in Africa. Filter by where you can work from."),
+        canonical=f"{base}/jobs", image=f"{base}/logo.png",
+    )
+
+
+@app.get("/people", include_in_schema=False)
+def people_page(request: Request):
+    base = _site_base(request)
+    return _page_with_head(
+        "pp-people.html", title="Designers · Path & Pixel",
+        description="Portfolios from designers working across Africa — the work, not just a CV.",
+        canonical=f"{base}/people", image=f"{base}/logo.png",
+    )
+
 
 # 301s for every old bookmark/link that no longer matches a same-named clean
 # path — either because the old page was retired (post, cv-check, account,
@@ -3569,15 +3620,176 @@ for _name, _target in _PP_REDIRECTS.items():
 # static file — pp-profile.html reads the identifier from location.pathname
 # client-side and fetches GET /api/designers/{identifier} itself.
 @app.get("/designers/{identifier}", include_in_schema=False)
-def designer_profile_page(identifier: str):
-    return FileResponse(WEB_DIR / "pp-profile.html")
+def designer_profile_page(identifier: str, request: Request):
+    base = _site_base(request)
+    # The pitch to designers is "a link to send instead of a PDF nobody opens".
+    # A link that unfurls into a blank card is not that link.
+    designer = None
+    try:
+        for d in list_approved_designers():
+            if str(d.get("handle") or "") == identifier or str(d.get("id")) == identifier:
+                designer = d
+                break
+    except Exception:
+        designer = None
+    if designer is None:
+        return FileResponse(WEB_DIR / "pp-profile.html")
+
+    name = (designer.get("display_name") or "").strip() or "A designer"
+    disciplines = parse_multi_field(designer.get("discipline"))
+    where = (designer.get("country") or designer.get("location") or "").strip()
+    subtitle = ", ".join(disciplines[:2]) or "Designer"
+    description = (designer.get("headline") or "").strip() or (designer.get("bio") or "").strip()
+    if not description:
+        description = f"{subtitle} on Path & Pixel" + (f", based in {where}." if where else ".")
+    photo = (designer.get("photo_path") or "").strip()
+    return _page_with_head(
+        "pp-profile.html",
+        title=f"{name} — {subtitle}" + (f", {where}" if where else ""),
+        description=description[:300],
+        canonical=f"{base}/designers/{designer.get('handle') or designer.get('id')}",
+        image=f"{base}{photo}" if photo.startswith("/") else f"{base}/logo.png",
+    )
 
 
 # Same pattern for a single job: /jobs/{id} always serves pp-job.html, which
 # reads the id from location.pathname and fetches GET /api/jobs/{id} itself.
+# --- What a crawler or a link preview actually sees -------------------------
+# Every page on this site renders client-side, so the HTML that reaches a
+# search crawler or a WhatsApp/LinkedIn link unfurler contains no job at all —
+# just an empty shell whose <title> is the same "Job · Path & Pixel" on all
+# fifty roles. Sharing a role produced a blank card, and nothing was indexable.
+#
+# Rendering these pages server-side would be a rewrite. Injecting the <head>
+# is not, and the head is the entire thing a preview or a search result reads.
+# The body stays exactly as it was and still fetches its own data.
+
+def _site_base(request: Request) -> str:
+    """Absolute origin for this request, so links work on fly.dev and on the
+    custom domain without either being hardcoded here.
+
+    TLS terminates at Fly's proxy, so the app sees plain http and base_url
+    reports it. An http canonical on an https page is a different URL to a
+    search engine, and an http og:image is blocked as mixed content by most
+    link unfurlers — so trust X-Forwarded-Proto, which the proxy sets."""
+    base = str(request.base_url).rstrip("/")
+    proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
+    if proto in ("http", "https"):
+        base = re.sub(r"^https?://", proto + "://", base)
+    return base
+
+
+def _page_with_head(filename: str, *, title: str, description: str,
+                    canonical: str, image: str, extra_head: str = "") -> HTMLResponse:
+    """Serve a static page with its <title> replaced and social/meta tags added.
+
+    Values are escaped for an HTML attribute context. extra_head is trusted
+    caller-built markup (JSON-LD), never anything a user typed."""
+    def esc(v: str) -> str:
+        return html_mod.escape((v or "").strip(), quote=True)
+
+    doc = (WEB_DIR / filename).read_text()
+    head = (
+        f'<meta name="description" content="{esc(description)}">\n'
+        f'<link rel="canonical" href="{esc(canonical)}">\n'
+        f'<meta property="og:type" content="website">\n'
+        f'<meta property="og:site_name" content="Path &amp; Pixel">\n'
+        f'<meta property="og:title" content="{esc(title)}">\n'
+        f'<meta property="og:description" content="{esc(description)}">\n'
+        f'<meta property="og:url" content="{esc(canonical)}">\n'
+        f'<meta property="og:image" content="{esc(image)}">\n'
+        f'<meta name="twitter:card" content="summary_large_image">\n'
+        f'<meta name="twitter:title" content="{esc(title)}">\n'
+        f'<meta name="twitter:description" content="{esc(description)}">\n'
+        f'<meta name="twitter:image" content="{esc(image)}">\n'
+        + extra_head
+    )
+    doc = re.sub(r"<title>.*?</title>", f"<title>{esc(title)}</title>", doc, count=1, flags=re.S)
+    doc = doc.replace("</head>", head + "</head>", 1)
+    return HTMLResponse(doc)
+
+
+def _job_share_text(job: dict) -> tuple[str, str]:
+    """(title, description) for one role, written the way a person scanning a
+    shared link reads it: who is hiring, for what, from where."""
+    # The title stays short enough to survive a search result and a link card:
+    # role and company only. Everything else earns its place in the description.
+    title = f"{job['t']} at {job['co']}"
+
+    where = job.get("city") or job.get("country") or ""
+    # "Remote, Nigeria" is already a whole answer — prefixing it with "Remote"
+    # again reads as a bug to anyone who sees the card.
+    if job.get("work") == "Remote" and where and "remote" not in where.lower():
+        where = f"Remote · {where}"
+    elif job.get("work") == "Remote" and not where:
+        where = "Remote"
+
+    bits = [b for b in (job.get("level"), job.get("cat"), job.get("etype")) if b]
+    lead = ", ".join(bits)
+    pay = job.get("pay") or ""
+    # "Not disclosed" is true but it is not worth one of the ~150 characters a
+    # link card gets. Say nothing about pay rather than saying nothing useful.
+    if pay.strip().lower() in ("not disclosed", "undisclosed", "n/a"):
+        pay = ""
+    # The eligibility line is the reason this board exists, so it leads the
+    # description rather than being buried after the pay.
+    elig = {"kenya": "Open to designers in Kenya",
+            "africa": "Open to designers across Africa",
+            "world": "Open worldwide"}.get(job.get("elig"), "")
+    if job.get("elig") == "africa" and job.get("elig_scope"):
+        elig = "Open to designers in " + job["elig_scope"]
+    if job.get("elig") == "check" and job.get("elig_scope"):
+        elig = "Open in " + job["elig_scope"]
+    desc = " · ".join(b for b in (elig, where, lead, pay) if b)
+    return title, (desc or job.get("desc_text") or "")[:300]
+
+
 @app.get("/jobs/{job_id}", include_in_schema=False)
-def job_details_page(job_id: str):
-    return FileResponse(WEB_DIR / "pp-job.html")
+def job_details_page(job_id: str, request: Request):
+    base = _site_base(request)
+    combined, _ = _combined_jobs()
+    job = next((j for j in combined if j["id"] == job_id), None)
+    if job is None:
+        # Still the same page — it renders its own "this role is gone" state —
+        # but nothing here should invite a crawler to index a dead listing.
+        return _page_with_head(
+            "pp-job.html", title="This role is no longer listed · Path & Pixel",
+            description="This listing has closed or expired. See what else is open.",
+            canonical=f"{base}/jobs", image=f"{base}/logo.png",
+            extra_head='<meta name="robots" content="noindex">\n',
+        )
+
+    title, description = _job_share_text(job)
+    posted = (date.today() - timedelta(days=int(job.get("days") or 0))).isoformat()
+    # JobPosting is what puts a role into Google Jobs, which for a board this
+    # size is a bigger door than the site's own search ranking.
+    ld = {
+        "@context": "https://schema.org",
+        "@type": "JobPosting",
+        "title": job["t"],
+        "description": job.get("desc") or job.get("desc_text") or description,
+        "datePosted": posted,
+        "employmentType": job.get("etype") or None,
+        "hiringOrganization": {"@type": "Organization", "name": job["co"]},
+        "directApply": False,
+    }
+    if job.get("work") == "Remote":
+        ld["jobLocationType"] = "TELECOMMUTE"
+    if job.get("city") or job.get("country"):
+        ld["jobLocation"] = {"@type": "Place", "address": {
+            "@type": "PostalAddress",
+            "addressLocality": job.get("city") or "",
+            "addressCountry": job.get("country") or "",
+        }}
+    if job.get("closes"):
+        ld["validThrough"] = job["closes"]
+    ld = {k: v for k, v in ld.items() if v is not None}
+    extra = ('<script type="application/ld+json">'
+             + json.dumps(ld).replace("</", "<\\/") + "</script>\n")
+    return _page_with_head(
+        "pp-job.html", title=f"{title} · Path & Pixel", description=description,
+        canonical=f"{base}/jobs/{job_id}", image=f"{base}/logo.png", extra_head=extra,
+    )
 
 
 # Community: /community lists sessions/questions/work, /community/{id}
@@ -3585,6 +3797,53 @@ def job_details_page(job_id: str):
 # session vs. question without a lookup round-trip. Still unwired into
 # pp-nav.js's placeholder ROUTES cutover like the rest of this migration —
 # reachable directly for now, same as every other pp-*.html page so far.
+# Nothing told a crawler these pages existed: no robots.txt, no sitemap, and
+# fifty role pages reachable only by clicking through a client-rendered board.
+@app.get("/robots.txt", include_in_schema=False)
+def robots_txt(request: Request):
+    base = _site_base(request)
+    # Signed-in surfaces and the staff console are not secrets, but they are
+    # useless in a search result and would only dilute what is worth indexing.
+    lines = [
+        "User-agent: *",
+        "Allow: /",
+        "Disallow: /admin",
+        "Disallow: /dashboard",
+        "Disallow: /employer",
+        "Disallow: /onboarding",
+        "Disallow: /api/",
+        f"Sitemap: {base}/sitemap.xml",
+    ]
+    return PlainTextResponse("\n".join(lines) + "\n")
+
+
+@app.get("/sitemap.xml", include_in_schema=False)
+def sitemap_xml(request: Request):
+    base = _site_base(request)
+    urls: list[tuple[str, str]] = [(f"{base}/", "daily"), (f"{base}/jobs", "daily"),
+                                   (f"{base}/people", "weekly"), (f"{base}/community", "weekly"),
+                                   (f"{base}/resources", "monthly"), (f"{base}/terms", "yearly"),
+                                   (f"{base}/privacy", "yearly")]
+    combined, _ = _combined_jobs()
+    urls += [(f"{base}/jobs/{j['id']}", "weekly") for j in combined]
+    # Only designers who are actually public — a sitemap pointing at a profile
+    # the directory itself won't show is a 404 waiting to be crawled.
+    try:
+        for d in list_approved_designers():
+            handle = d.get("handle") or d.get("id")
+            if handle:
+                urls.append((f"{base}/designers/{handle}", "weekly"))
+    except Exception:
+        pass
+    body = "".join(
+        f"<url><loc>{html_mod.escape(u, quote=True)}</loc><changefreq>{f}</changefreq></url>"
+        for u, f in urls
+    )
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' + body + "</urlset>")
+    return Response(content=xml, media_type="application/xml")
+
+
 @app.get("/community", include_in_schema=False)
 def community_page():
     return FileResponse(WEB_DIR / "pp-community.html")
