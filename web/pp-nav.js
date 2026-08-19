@@ -82,7 +82,7 @@
     + ".pp-search-clear[hidden],.pp-recent-row[hidden]{display:none!important}"
     // Same trap, same fix: .pp-bell-dot carries its own display, so the
     // hidden attribute alone left a "0" badge sitting on the bell.
-    + ".pp-bell-dot[hidden],.pp-notif-panel[hidden],.pp-sresults[hidden]{display:none!important}"
+    + ".pp-bell-dot[hidden],.pp-notif-panel[hidden],.pp-sresults[hidden],.pp-tab-dot[hidden]{display:none!important}"
     // #pp-nav is a bare mount div with only the header inside it, so its
     // own box is auto-height == the header's height. A sticky element
     // can't stick past the bottom edge of its containing block, so
@@ -192,6 +192,25 @@
     + ".pp-msearch-row{display:flex;align-items:center;gap:12px;padding:13px 8px;border:none;background:transparent;font-family:var(--pp-font);font-size:16px;color:var(--c-text);cursor:pointer;text-align:left;width:100%;text-decoration:none}"
     + ".pp-msearch-row svg{flex:none;color:var(--c-icon)}"
     // ---- full-screen mobile menu ----
+    // ---- bottom tab bar (signed-in designers, below 1024px) ----
+    // A hamburger costs a tap for the four things people do most, and on a
+    // job board read mostly on phones that is the whole session. The menu
+    // stays for everything else; this is only the frequent path.
+    + ".pp-tabbar{position:fixed;left:0;right:0;bottom:0;z-index:var(--pp-z-header,6);display:none;"
+    +   "background:var(--c-bg);border-top:1px solid var(--c-border);"
+    +   "padding-bottom:env(safe-area-inset-bottom,0px)}"
+    + "@media(max-width:1023px){.pp-tabbar{display:flex}}"
+    + ".pp-tabbar a{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;"
+    +   "gap:3px;height:56px;text-decoration:none;color:var(--c-text-faint);position:relative}"
+    + ".pp-tabbar a.-active{color:var(--c-accent-text)}"
+    + ".pp-tabbar .pp-tab-label{font-size:11px;font-weight:600;letter-spacing:-.01em}"
+    + ".pp-tabbar .pp-tab-dot{position:absolute;top:8px;left:50%;margin-left:6px;width:7px;height:7px;"
+    +   "border-radius:50%;background:var(--pp-gold)}"
+    // The bar floats over the page, so the last thing on every page would sit
+    // under it. Scoped to a class set only when the bar actually renders —
+    // reserving the space for signed-out visitors would leave a dead strip
+    // under every page they see.
+    + "@media(max-width:1023px){body.pp-has-tabbar{padding-bottom:56px}}"
     + ".pp-menu{position:fixed;inset:0;z-index:var(--pp-z-menu,21);background:var(--c-bg);display:none;flex-direction:column}"
     + ".pp-menu.-open{display:flex}"
     + ".pp-menu-head{height:56px;padding:0 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--c-border);flex:none}"
@@ -473,6 +492,9 @@
     var items = [];
 
     function paintCount(n){
+      // The tab bar's dot is the same fact at a glance — no number, because a
+      // count you can't read at 7px is just noise.
+      root.querySelectorAll("[data-tab-unread]").forEach(function(d){ d.hidden = !n; });
       bells.forEach(function(b){
         var dot = b.querySelector("[data-bell-count]");
         if (!dot) return;
@@ -537,6 +559,36 @@
     });
 
     load();
+  }
+
+  /* Four destinations, chosen because they are what a signed-in designer
+     actually returns for. Signed-out visitors keep the hamburger: on the
+     marketing pages the nav is a menu of places to look, not a set of tools,
+     and a tab bar would be four taps to nowhere they have a reason to go. */
+  var TAB_ITEMS = [
+    { key: "jobs", label: "Roles", href: ROUTES.jobs,
+      icon: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/>' },
+    { key: "saved", label: "Saved", href: ROUTES.jobs + "?tab=saved",
+      icon: '<path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>' },
+    { key: "messages", label: "Messages", href: "/dashboard",
+      icon: '<path d="M21 15a2 2 0 01-2 2H8l-4 4V5a2 2 0 012-2h13a2 2 0 012 2z"/>' },
+    { key: "profile", label: "Profile", href: "/dashboard",
+      icon: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0115 0"/>' }
+  ];
+
+  function tabBarHtml(user, active){
+    if (!user) return "";
+    var path = location.pathname;
+    return '<nav class="pp-tabbar" aria-label="Main">' + TAB_ITEMS.map(function(t){
+      // "active" here is the page's own declared section where it matches,
+      // otherwise fall back to the path so the bar is never blank.
+      var on = (t.key === "jobs" && (active === "jobs" || path === "/jobs")) ||
+               (t.key === "profile" && path.indexOf("/dashboard") === 0);
+      return '<a href="' + t.href + '"' + (on ? ' class="-active" aria-current="page"' : '') + '>' +
+        svg(21, t.icon) + '<span class="pp-tab-label">' + t.label + '</span>' +
+        (t.key === "messages" ? '<span class="pp-tab-dot" data-tab-unread hidden></span>' : "") +
+      '</a>';
+    }).join("") + '</nav>';
   }
 
   function authControlsHtml(user){
@@ -620,6 +672,7 @@
           '<button type="button" class="pp-tap-btn pp-menu-btn" data-open-menu aria-label="Menu">' + ICONS.hamburger(22) + '</button>' +
         '</div>' +
       '</header>' +
+      tabBarHtml(user, active) +
       '<div class="pp-msearch" data-msearch>' +
         '<div class="pp-msearch-head">' +
           '<div class="pp-msearch-field" data-msearch-field>' + ICONS.search(17) +
@@ -749,6 +802,7 @@
       });
     });
 
+    if (root.querySelector(".pp-tabbar")) document.body.classList.add("pp-has-tabbar");
     wireLiveSearch(root);
     wireBell(root);
 
