@@ -109,6 +109,11 @@ from pipeline.eligibility import open_to_country as eligibility_open_to  # noqa:
 
 WEB_DIR = ROOT / "web"
 JOBS_JSON = WEB_DIR / "jobs.json"
+
+# The one origin every canonical, og:url and sitemap entry points at. Override
+# per-deployment if the public domain ever changes; set it empty to fall back
+# to whatever host served the request.
+PUBLIC_ORIGIN = os.environ.get("KAZI_PUBLIC_ORIGIN", "https://kazi.odana.design").rstrip("/")
 WORK_TYPES = {"Remote", "Hybrid", "On-site"}
 LEVELS = {"Junior", "Mid", "Senior", "Lead"}
 APPLICANT_STAGES = ["Applied", "Reviewing", "Interviewing", "Offer"]
@@ -3676,6 +3681,16 @@ def _site_base(request: Request) -> str:
     proto = request.headers.get("x-forwarded-proto", "").split(",")[0].strip()
     if proto in ("http", "https"):
         base = re.sub(r"^https?://", proto + "://", base)
+
+    # The same site answers on both wabunifu.fly.dev and the custom domain, and
+    # a self-canonicalising page on each means a search engine indexes two
+    # complete copies and splits every ranking signal between them — with the
+    # infrastructure hostname free to outrank the brand one. Every public URL
+    # we emit points at one origin, whichever host actually served the request.
+    # Local development is left alone so its links stay clickable.
+    host = request.url.hostname or ""
+    if PUBLIC_ORIGIN and host not in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
+        return PUBLIC_ORIGIN
     return base
 
 
