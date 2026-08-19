@@ -3761,6 +3761,50 @@ def company_page(slug: str, request: Request):
     )
 
 
+# A case study is the thing a designer actually sends someone — "a link
+# instead of a PDF nobody opens" is the promise on the homepage. It lived at
+# /pp-case-study.html?designer=&project=, the only raw .html URL left in the
+# product, and unfurled into a blank card. Nested under the designer because
+# that is what it belongs to.
+@app.get("/designers/{identifier}/{project_id}", include_in_schema=False)
+def case_study_page(identifier: str, project_id: str, request: Request):
+    base = _site_base(request)
+    designer = None
+    try:
+        for d in list_approved_designers():
+            if str(d.get("handle") or "") == identifier or str(d.get("id")) == identifier:
+                designer = d
+                break
+    except Exception:
+        designer = None
+    if designer is None:
+        return FileResponse(WEB_DIR / "pp-case-study.html")
+
+    pub = _designer_public(designer)
+    project = next((p for p in (pub.get("projects") or [])
+                    if str(p.get("id")) == str(project_id)), None)
+    if project is None:
+        return _page_with_head(
+            "pp-case-study.html", title="This project isn't available · Path & Pixel",
+            description="The project you're looking for isn't published.",
+            canonical=f"{base}/designers/{identifier}", image=f"{base}/logo.png",
+            extra_head='<meta name="robots" content="noindex">\n',
+        )
+
+    name = (pub.get("display_name") or "").strip()
+    title = (project.get("title") or "Case study").strip()
+    desc = (project.get("description") or "").strip()
+    if not desc:
+        disciplines = parse_multi_field(designer.get("discipline"))
+        desc = f"A case study by {name}" + (f", {disciplines[0]}." if disciplines else ".")
+    image = (project.get("image_path") or "").strip() or (pub.get("photo_path") or "").strip()
+    return _page_with_head(
+        "pp-case-study.html", title=f"{title} — {name}", description=desc[:300],
+        canonical=f"{base}/designers/{identifier}/{project_id}",
+        image=f"{base}{image}" if image.startswith("/") else f"{base}/logo.png",
+    )
+
+
 # Same pattern for a single job: /jobs/{id} always serves pp-job.html, which
 # reads the id from location.pathname and fetches GET /api/jobs/{id} itself.
 # --- What a crawler or a link preview actually sees -------------------------
@@ -3954,8 +3998,11 @@ def sitemap_xml(request: Request):
     try:
         for d in list_approved_designers():
             handle = d.get("handle") or d.get("id")
-            if handle:
-                urls.append((f"{base}/designers/{handle}", "weekly"))
+            if not handle:
+                continue
+            urls.append((f"{base}/designers/{handle}", "weekly"))
+            for p in (_designer_public(d).get("projects") or []):
+                urls.append((f"{base}/designers/{handle}/{p['id']}", "monthly"))
     except Exception:
         pass
     body = "".join(

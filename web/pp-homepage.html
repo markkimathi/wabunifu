@@ -520,7 +520,7 @@
   }
 
   function workCardHtml(w){
-    return '<a class="w-card" href="/pp-case-study.html?designer=' + encodeURIComponent(w.designerId) + '&project=' + encodeURIComponent(w.id) + '">' +
+    return '<a class="w-card" href="/designers/' + encodeURIComponent(w.designerId) + '/' + encodeURIComponent(w.id) + '">' +
       '<div class="w-cover">' + (w.image_path ? '<img src="' + escapeHtml(w.image_path) + '" alt="">' : "") + '</div>' +
       '<h4>' + escapeHtml(w.title) + '</h4>' +
       '<p class="meta">' + escapeHtml(w.category || "Case study") + '</p>' +

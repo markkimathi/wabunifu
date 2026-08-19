@@ -190,8 +190,11 @@
   function designerToken(){ return localStorage.getItem("kazi_designer_token") || ""; }
 
   var params = new URLSearchParams(location.search);
-  var designerId = params.get("designer");
-  var projectId = params.get("project");
+  // /designers/{handle}/{projectId} is the real URL. The old
+  // ?designer=&project= form still resolves so existing links keep working.
+  var pathBits = location.pathname.match(/^\/designers\/([^\/?#]+)\/([^\/?#]+)/);
+  var designerId = pathBits ? decodeURIComponent(pathBits[1]) : params.get("designer");
+  var projectId = pathBits ? decodeURIComponent(pathBits[2]) : params.get("project");
   var designer, project, others;
   var currentUser = null, isOwn = false, following = false;
 
@@ -311,11 +314,11 @@
       '</div>' +
       (prev || next ? '<div class="prevnext">' +
         (prev
-          ? '<a class="pn-card" href="/pp-case-study.html?designer=' + encodeURIComponent(designerId) + '&project=' + encodeURIComponent(prev.id) + '">' +
+          ? '<a class="pn-card" href="/designers/' + encodeURIComponent(designerId) + '/' + encodeURIComponent(prev.id) + '">' +
               '<span class="dir">' + ICONS.chevronL + 'Previous project</span><span class="t">' + escapeHtml(prev.title) + '</span></a>'
           : '<span></span>') +
         (next
-          ? '<a class="pn-card -next" href="/pp-case-study.html?designer=' + encodeURIComponent(designerId) + '&project=' + encodeURIComponent(next.id) + '">' +
+          ? '<a class="pn-card -next" href="/designers/' + encodeURIComponent(designerId) + '/' + encodeURIComponent(next.id) + '">' +
               '<span class="dir">Next project' + ICONS.chevronR + '</span><span class="t">' + escapeHtml(next.title) + '</span></a>'
           : '<span></span>') +
       '</div>' : "");

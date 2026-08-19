@@ -512,7 +512,7 @@
           return '<img src="' + escapeHtml(g.image_path) + '" alt="' + escapeHtml(g.caption || "") + '">';
         }).join("") + '</div>' : '') +
         (activeProject.credits ? '<p class="lb-credits">' + escapeHtml(activeProject.credits) + '</p>' : '') +
-        '<div class="lb-cta"><a class="pp-btn pp-btn-secondary" href="/pp-case-study.html?designer=' + encodeURIComponent(identifier) + '&project=' + encodeURIComponent(activeProject.id) + '">View full case study</a></div>' +
+        '<div class="lb-cta"><a class="pp-btn pp-btn-secondary" href="/designers/' + encodeURIComponent(identifier) + '/' + encodeURIComponent(activeProject.id) + '">View full case study</a></div>' +
       '</div>' +
     '</div>';
     backdrop.querySelector("#lbClose").addEventListener("click", closeLightbox);

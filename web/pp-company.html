@@ -398,7 +398,7 @@
   }
 
   function renderShipCard(s){
-    return '<a class="ships-card" href="/pp-case-study.html?designer=' + encodeURIComponent(s.designer.handle || s.designer.id) + '&project=' + encodeURIComponent(s.project.id) + '">' +
+    return '<a class="ships-card" href="/designers/' + encodeURIComponent(s.designer.handle || s.designer.id) + '/' + encodeURIComponent(s.project.id) + '">' +
       '<div class="ships-cover">' + (s.project.image_path ? '<img src="' + escapeHtml(s.project.image_path) + '" alt="">' : "") + '</div>' +
       '<div class="ships-body"><span class="t">' + escapeHtml(s.project.title) + '</span>' +
         '<span class="note">' + escapeHtml(s.designer.display_name) + '</span></div>' +
