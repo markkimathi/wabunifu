@@ -719,15 +719,35 @@
 
     bells.forEach(function(bell, i){
       var panel = panels[i] || panels[0];
+      // A popover, not a modal: it doesn't cover the page or lock scrolling, so
+      // it shouldn't trap focus — but Escape should still close it, and the
+      // bell should say whether it's open. Neither was true.
+      bell.setAttribute("aria-expanded", "false");
+      if (!panel.id) panel.id = "pp-notif-panel-" + i;
+      bell.setAttribute("aria-controls", panel.id);
+      function setOpen(open){
+        panel.hidden = !open;
+        bells.forEach(function(b){ b.setAttribute("aria-expanded", "false"); });
+        if (open) bell.setAttribute("aria-expanded", "true");
+      }
       bell.addEventListener("click", async function(e){
         e.stopPropagation();
         var opening = panel.hidden;
         panels.forEach(function(p){ p.hidden = true; });
-        panel.hidden = !opening;
+        setOpen(opening);
         if (opening) { await load(); paintPanel(); }
       });
+      document.addEventListener("keydown", function(e){
+        if (e.key !== "Escape" || panel.hidden) return;
+        e.preventDefault();
+        setOpen(false);
+        bell.focus();
+      });
       document.addEventListener("click", function(e){
-        if (!panel.hidden && !panel.contains(e.target) && !bell.contains(e.target)) panel.hidden = true;
+        if (!panel.hidden && !panel.contains(e.target) && !bell.contains(e.target)) {
+          panel.hidden = true;
+          bell.setAttribute("aria-expanded", "false");
+        }
       });
     });
 

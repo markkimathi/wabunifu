@@ -1305,9 +1305,25 @@
 
     var sortBtn = document.getElementById("sortBtn");
     var sortMenu = document.getElementById("sortMenu");
-    sortBtn.addEventListener("click", function(){ sortMenu.classList.toggle("-open"); });
+    // Same treatment as the notification popover: closes on Escape and reports
+    // its state. It doesn't cover the page, so focus is left where it is.
+    if (!sortMenu.id) sortMenu.id = "sortMenu";
+    sortBtn.setAttribute("aria-haspopup", "true");
+    sortBtn.setAttribute("aria-controls", sortMenu.id);
+    sortBtn.setAttribute("aria-expanded", "false");
+    function setSortOpen(open){
+      sortMenu.classList.toggle("-open", open);
+      sortBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    sortBtn.addEventListener("click", function(){ setSortOpen(!sortMenu.classList.contains("-open")); });
     document.addEventListener("click", function(e){
-      if (!sortBtn.contains(e.target) && !sortMenu.contains(e.target)) sortMenu.classList.remove("-open");
+      if (!sortBtn.contains(e.target) && !sortMenu.contains(e.target)) setSortOpen(false);
+    });
+    document.addEventListener("keydown", function(e){
+      if (e.key !== "Escape" || !sortMenu.classList.contains("-open")) return;
+      e.preventDefault();
+      setSortOpen(false);
+      sortBtn.focus();
     });
     renderSortMenu();
 
