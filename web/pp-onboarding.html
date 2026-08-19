@@ -24,6 +24,8 @@
   .dot.-done{background:var(--pp-gold)}
   .dot.-active{background:var(--c-text)}
 
+  .fld-hint{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--c-text-subtle)}
+  .fld-hint.-good{color:var(--c-good-text);font-weight:600}
   .strength-meter{padding:14px 16px;border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken);
     border:1px solid var(--c-border);margin-bottom:28px}
   .strength-meter .row{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
@@ -101,6 +103,7 @@
 
 <script src="pp-nav.js"></script>
 <script src="pp-footer.js"></script>
+<script src="pp-elig.js"></script>
 <script src="featured-projects.js"></script>
 <script>
 (function(){
@@ -152,23 +155,126 @@
   // rather than the wizard's own step order — a photo doesn't move this,
   // since avatar-1 is a real default, not a placeholder that signals
   // incompleteness the way a blank name or bio does.
-  function strengthPct(){
+
+  /* Onboarding asks for seven steps of effort before showing anything in
+     return. The country is the one field that can pay for itself immediately:
+     the board already knows how many roles are open to each country, so say
+     so the moment they pick one. A real number beats any amount of
+     encouragement about completing your profile. */
+  var _countryCache = null;
+  var _jobsCache = null;
+
+  async function fillCountryField(){
+    var sel = document.getElementById("fCountry");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select a country</option>';
+    try {
+      if (!_countryCache) _countryCache = await (await fetch("/api/countries")).json();
+      [["Africa", _countryCache.african], ["Elsewhere", _countryCache.other]].forEach(function(pair){
+        var g = document.createElement("optgroup");
+        g.label = pair[0];
+        pair[1].forEach(function(c){
+          var o = document.createElement("option");
+          o.value = c; o.textContent = c;
+          if (c === (me.country || "")) o.selected = true;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    } catch (e) { return; }
+    sel.addEventListener("change", showCountryPayoff);
+    showCountryPayoff();
+  }
+
+  async function showCountryPayoff(){
+    var sel = document.getElementById("fCountry");
+    var out = document.getElementById("countryPayoff");
+    if (!sel || !out) return;
+    var country = sel.value;
+    if (!country) {
+      out.textContent = "This is what we check every listing against, so the board only shows you roles you could actually take.";
+      out.classList.remove("-good");
+      return;
+    }
+    try {
+      if (!_jobsCache) _jobsCache = (await (await fetch("/api/jobs", { cache: "no-store" })).json()).jobs || [];
+      var open = _jobsCache.filter(function(j){
+        return window.PPElig && PPElig.openTo(j.elig, j.elig_scope || "", country) === true;
+      }).length;
+      // Say nothing rather than "0 roles" — a true number that reads as a
+      // closed door is worse than the neutral line, and the board is young.
+      if (!open) {
+        out.textContent = "We'll check every listing against " + country + " so you only see roles you could actually take.";
+        out.classList.remove("-good");
+        return;
+      }
+      out.textContent = open + (open === 1 ? " role on the board is" : " roles on the board are") +
+        " open to someone in " + country + " right now.";
+      out.classList.add("-good");
+    } catch (e) {}
+  }
+
+  /* Weighted by what actually gets someone found, not evenly by field count.
+     Discipline is what employers filter the directory on and work is what
+     they judge, so those carry the most; a photo matters least because
+     everyone already has a default. The old version scored every field at
+     14%, which told a designer a headline was worth as much as their entire
+     portfolio.
+
+     No completion threshold is claimed, because the platform doesn't enforce
+     one — profiles are approved by review, not by percentage. Saying "60% to
+     be visible" would be a rule we invented. */
+  var STRENGTH_ITEMS = [
+    { key: "discipline", weight: 20, label: "a discipline",
+      why: "Employers filter the directory by discipline. Without one you aren't in those results." },
+    { key: "work",       weight: 20, label: "a project",
+      why: "Work is what employers actually judge, and recent work reaches the homepage." },
+    { key: "headline",   weight: 12, label: "a headline",
+      why: "It's the line under your name everywhere you appear." },
+    { key: "bio",        weight: 12, label: "a short bio",
+      why: "Two sentences is plenty. It's what makes a card worth clicking." },
+    { key: "skills",     weight: 12, label: "a few skills",
+      why: "Employers search on these when they know what they need." },
+    { key: "country",    weight: 12, label: "your country",
+      why: "Lets the board hide roles that would turn you down." },
+    { key: "links",      weight: 6,  label: "a link",
+      why: "Somewhere for people to see more than we hold." },
+    { key: "photo",      weight: 6,  label: "a photo",
+      why: "A face makes a profile read as a person." }
+  ];
+
+  function strengthState(){
     var field = function(id, fallback){ var el = document.getElementById(id); return el ? el.value : fallback; };
+    var countryEl = document.getElementById("fCountry");
+    return {
+      discipline: (step === 1 ? selectedDisciplines : (me.discipline || [])).length > 0,
+      work: (me.projects || []).length > 0,
+      headline: !!(field("fHeadline", me.headline) || "").trim(),
+      bio: !!(field("fBio", me.bio) || "").trim(),
+      skills: (step === 1 ? selectedSkills : (me.skills || [])).length > 0,
+      country: !!(countryEl ? countryEl.value : (me.country || "")),
+      links: (me.links || []).length > 0,
+      photo: !!(me.photo_path || "")
+    };
+  }
+
+  function strengthPct(){
+    var have = strengthState();
     var n = 0;
-    if ((field("fName", me.display_name) || "").trim()) n += 14;
-    if ((field("fHeadline", me.headline) || "").trim()) n += 14;
-    if ((field("fBio", me.bio) || "").trim()) n += 14;
-    if ((step === 1 ? selectedDisciplines : (me.discipline || [])).length) n += 14;
-    if ((step === 1 ? selectedSkills : (me.skills || [])).length) n += 14;
-    if ((me.links || []).length || (me.projects || []).length) n += 16;
-    if ((field("fLocation", me.location) || "").trim()) n += 14;
+    STRENGTH_ITEMS.forEach(function(i){ if (have[i.key]) n += i.weight; });
     return Math.min(100, n);
   }
+
   function strengthNote(pct){
-    if (pct < 40) return "A headline and one line of bio move this fastest.";
-    if (pct < 80) return "Add a project or a link and you're in good shape.";
-    return "Strong enough to share with a hiring manager.";
+    if (pct >= 100) return "Nothing missing. Employers can find you on every filter they use.";
+    var have = strengthState();
+    // Name the single biggest missing thing and why it costs them, rather
+    // than a generic nudge — the same reasoning as the dashboard panel.
+    var next = STRENGTH_ITEMS.filter(function(i){ return !have[i.key]; })
+      .sort(function(a, b){ return b.weight - a.weight; })[0];
+    return next ? "Add " + next.label + " next. " + next.why : "";
   }
+
   function strengthMeterHtml(){
     var pct = strengthPct();
     return '<div class="strength-meter"><div class="row"><span>Profile strength</span><span>' + pct + '%</span></div>' +
@@ -290,11 +396,15 @@
         '</select></span></div>' +
       '<div class="pp-field" style="margin-bottom:8px"><label class="pp-field-label">Location <span style="font-weight:400;color:var(--c-text-faint)">(city, or "Remote")</span></label>' +
         '<span class="pp-field-input"><input id="fLocation" type="text" placeholder="e.g. Nairobi, Kenya" value="' + escapeHtml(me.location || "") + '"></span></div>' +
+      '<div class="pp-field" style="margin-bottom:8px"><label class="pp-field-label" for="fCountry">Country you can work from</label>' +
+        '<span class="pp-field-input"><select id="fCountry"></select></span>' +
+        '<p class="fld-hint" id="countryPayoff">This is what we check every listing against, so the board only shows you roles you could actually take.</p></div>' +
       '<p class="err-text" id="aboutErr" hidden></p>' +
       navHtml(0, "aboutNextBtn", "Next");
 
     renderDisciplineChips();
     renderSkillChips();
+    fillCountryField();
     var skillInput = document.getElementById("skillInput");
     skillInput.addEventListener("keydown", function(e){
       if (e.key === "Enter") { e.preventDefault(); addSkill(skillInput.value); skillInput.value = ""; }
@@ -375,6 +485,8 @@
     if (get("fYears") !== null) me.years_experience = get("fYears");
     if (document.getElementById("fAvail")) me.availability_status = document.getElementById("fAvail").value;
     if (get("fLocation") !== null) me.location = get("fLocation");
+    var cEl = document.getElementById("fCountry");
+    if (cEl) me.country = cEl.value;
     if (get("fPhone") !== null) me.phone = get("fPhone");
     if (get("fContactEmail") !== null) me.contact_email = get("fContactEmail");
     if (get("fBio") !== null) me.bio = get("fBio");
@@ -387,7 +499,7 @@
         display_name: me.display_name || "", headline: me.headline || "",
         discipline: me.discipline, skills: me.skills,
         years_experience: me.years_experience || "", availability_status: me.availability_status || "",
-        location: me.location || "", phone: me.phone || "",
+        location: me.location || "", country: me.country || "", phone: me.phone || "",
         contact_email: me.contact_email || "", bio: me.bio || ""
       })
     });
