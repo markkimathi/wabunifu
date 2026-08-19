@@ -86,7 +86,11 @@
     display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
   .elig-notice button,.elig-notice a{border:none;background:none;padding:0;cursor:pointer;
     font-family:var(--pp-font);font-size:13.5px;font-weight:600;color:var(--c-accent-text);text-decoration:underline}
-  .elig-notice a{margin-left:auto;color:var(--c-text-subtle);font-weight:500}
+  .elig-notice a,.elig-notice button.-quiet{margin-left:auto;color:var(--c-text-subtle);font-weight:500}
+  .elig-notice select{margin-left:auto;height:34px;padding:0 8px;border-radius:var(--pp-radius-sm);
+    border:1px solid var(--c-border-strong);background:var(--c-surface);color:var(--c-text);
+    font-family:var(--pp-font);font-size:13.5px;max-width:100%}
+  .elig-notice select:focus-visible{outline:var(--pp-focus-outline);outline-offset:var(--pp-focus-offset)}
 
   .results-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
   .results-count{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -494,26 +498,82 @@
     renderEligNotice();
   }
 
-  // Never hide roles silently. If the country on file is filtering the board,
-  // say so, say how many, and put the undo in the same sentence.
+  // Never hide roles silently. If a country is filtering the board, say so, say
+  // how many, and put the undo in the same sentence. With no country set, offer
+  // to take one — that is the whole promise of the page, and it shouldn't
+  // require an account.
   function renderEligNotice(){
     var host = document.getElementById("eligNotice");
-    if (!host) return;
+    if (!host || !state.loaded) return;
     var country = PPElig.getViewerCountry();
-    if (!country || !state.loaded || state.elig.closed) { host.hidden = true; return; }
+
+    if (!country) {
+      host.hidden = false;
+      host.innerHTML = '<span>Tell us where you work from and we\'ll hide the roles that would turn you down.</span>' +
+        '<select id="pickCountry" aria-label="Country you can work from"><option value="">Choose your country</option></select>';
+      fillCountryPicker(document.getElementById("pickCountry"), "");
+      document.getElementById("pickCountry").addEventListener("change", function(e){
+        if (!e.target.value) return;
+        setLocalCountry(e.target.value);
+        PPElig.setViewerCountry(e.target.value);
+        state.elig = defaultEligState();
+        state.page = 1;
+        renderFilterRail();
+        renderResults();
+      });
+      return;
+    }
+
+    if (state.elig.closed) { host.hidden = true; return; }
     var hidden = state.all.filter(function(j){ return bucketOf(j) === "closed"; }).length;
     if (!hidden) { host.hidden = true; return; }
     host.hidden = false;
-    host.innerHTML = 'Hiding ' + hidden + (hidden === 1 ? " role that isn't" : " roles that aren't") +
-      ' open from ' + escapeHtml(country) + '. ' +
+    host.innerHTML = '<span>Hiding ' + hidden + (hidden === 1 ? " role that isn't" : " roles that aren't") +
+      ' open from ' + escapeHtml(country) + '.</span>' +
       '<button type="button" id="showClosed">Show them anyway</button>' +
-      '<a href="/dashboard?tab=profile">Not where you live?</a>';
+      (accountHasCountry
+        ? '<a href="/dashboard">Not where you live?</a>'
+        : '<button type="button" id="clearCountry" class="-quiet">Not where you live?</button>');
     document.getElementById("showClosed").addEventListener("click", function(){
       state.elig.closed = true;
       state.page = 1;
       renderFilterRail();
       renderResults();
     });
+    var clear = document.getElementById("clearCountry");
+    if (clear) clear.addEventListener("click", function(){
+      setLocalCountry("");
+      PPElig.setViewerCountry("");
+      state.elig = defaultEligState();
+      state.page = 1;
+      renderFilterRail();
+      renderResults();
+    });
+  }
+
+  // Shared by the notice picker; options come from the API so they can't drift
+  // from what the profile endpoint accepts.
+  var countryCache = null;
+  async function fillCountryPicker(sel, current){
+    if (!sel) return;
+    try {
+      if (!countryCache) {
+        var res = await fetch("/api/countries");
+        if (!res.ok) return;
+        countryCache = await res.json();
+      }
+      [["Africa", countryCache.african], ["Elsewhere", countryCache.other]].forEach(function(pair){
+        var g = document.createElement("optgroup");
+        g.label = pair[0];
+        pair[1].forEach(function(c){
+          var o = document.createElement("option");
+          o.value = c; o.textContent = c;
+          if (c === current) o.selected = true;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    } catch (e) {}
   }
 
   function renderJobRow(j){
@@ -681,18 +741,39 @@
   }
 
   /* Resolve who's asking before the first paint, so the board never flashes an
-     impersonal list and then re-filters under the reader. A failure here is not
-     an error state — it just means we answer impersonally, as we do for anyone
-     signed out. */
+     impersonal list and then re-filters under the reader.
+
+     Most people reading a job board have not signed up yet, and the promise on
+     the page — roles checked for where you live — is worthless to them if it
+     needs an account first. So a signed-out visitor can name their country too
+     and it persists locally. A signed-in profile always wins: that's the value
+     they can edit, and two sources of truth would silently disagree. */
+  var LOCAL_COUNTRY_KEY = "pp_country";
+  var accountHasCountry = false;
+
+  function localCountry(){
+    try { return localStorage.getItem(LOCAL_COUNTRY_KEY) || ""; } catch (e) { return ""; }
+  }
+  function setLocalCountry(c){
+    try { c ? localStorage.setItem(LOCAL_COUNTRY_KEY, c) : localStorage.removeItem(LOCAL_COUNTRY_KEY); } catch (e) {}
+  }
+
   async function resolveViewerCountry(){
     var token = designerToken();
-    if (!token) return;
-    try {
-      var res = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + token } });
-      if (!res.ok) return;
-      var me = await res.json();
-      if (me && me.country) PPElig.setViewerCountry(me.country);
-    } catch (e) {}
+    if (token) {
+      try {
+        var res = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + token } });
+        if (res.ok) {
+          var me = await res.json();
+          if (me && me.country) {
+            accountHasCountry = true;
+            PPElig.setViewerCountry(me.country);
+            return;
+          }
+        }
+      } catch (e) {}
+    }
+    if (localCountry()) PPElig.setViewerCountry(localCountry());
   }
 
   async function loadJobs(){
