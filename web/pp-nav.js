@@ -113,7 +113,10 @@
     + ".pp-avatar-chip{display:inline-flex;align-items:center;gap:9px;flex:none;padding:4px 4px 4px 12px;border-radius:999px;border:1px solid var(--c-border);background:transparent;text-decoration:none;color:var(--c-text);font:inherit;cursor:pointer}"
     + ".pp-avatar-chip:hover{background:var(--c-bg-sunken)}"
     + ".pp-avatar-chip .pp-av-name{font-size:14px;font-weight:500}"
-    + ".pp-av-circle{width:32px;height:32px;border-radius:50%;background:var(--pp-gold-300);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--pp-gold-800)}"
+    + ".pp-av-circle{position:relative;overflow:hidden;flex:none;width:32px;height:32px;border-radius:50%;background:var(--pp-gold-300);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--pp-gold-800)}"
+    // Sits over the initials rather than replacing them, so onerror can drop
+    // the image and reveal the letters underneath.
+    + ".pp-av-circle img{position:absolute;inset:0;width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}"
     + ".pp-avatar-dropdown{position:absolute;top:calc(100% + 8px);right:0;min-width:180px;z-index:var(--pp-z-menu,21);"
     + "background:var(--c-surface);border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-lg);"
     + "box-shadow:var(--pp-shadow-lg);padding:6px;display:none;flex-direction:column;gap:2px}"
@@ -236,6 +239,20 @@
     return user.initials || (user.name || "").split(" ").map(function(w){return w[0];}).slice(0,2).join("").toUpperCase();
   }
 
+  // Everyone has a picture: either one they uploaded or the built-in avatar
+  // they picked, and avatar-1.png when they've set neither (the backend stores
+  // whatever was last set and leaves this fallback to the frontend — see
+  // DEFAULT_AVATAR_PATH in api/main.py). Initials are only the last resort for
+  // an image that fails to load.
+  // The initials stay in the markup underneath the image, so a picture that
+  // fails to load drops back to them instead of an empty gold disc.
+  var DEFAULT_AVATAR = "/avatars/avatar-1.png";
+  function avatarInnerHtml(user){
+    var initials = initialsOf(user);
+    if (!user.photo) return initials;
+    return initials + '<img src="' + user.photo + '" alt="" onerror="this.onerror=null;this.remove()">';
+  }
+
   // pp-nav.js is meant to be self-contained (one <script> tag, see the
   // header comment) — no page actually populates data-user, so this is the
   // only source of signed-in state: read the same token pp-dashboard.html
@@ -253,7 +270,9 @@
         return res.json();
       })
       .then(function(me){
-        cb(me ? { name: me.display_name, initials: initialsOf({ name: me.display_name }), href: "/designers/" + encodeURIComponent(me.handle || me.id) } : null);
+        cb(me ? { name: me.display_name, initials: initialsOf({ name: me.display_name }),
+                  photo: me.photo_path || DEFAULT_AVATAR,
+                  href: "/designers/" + encodeURIComponent(me.handle || me.id) } : null);
       })
       .catch(function(){ cb(null); });
   }
@@ -304,7 +323,7 @@
       return '<div class="pp-avatar-menu" data-avatar-menu>' +
         '<button type="button" class="pp-avatar-chip" data-avatar-trigger aria-haspopup="true" aria-expanded="false">' +
           '<span class="pp-av-name">' + user.name + '</span>' +
-          '<span class="pp-av-circle">' + initialsOf(user) + '</span></button>' +
+          '<span class="pp-av-circle">' + avatarInnerHtml(user) + '</span></button>' +
         '<div class="pp-avatar-dropdown" data-avatar-dropdown>' +
           '<a href="' + (user.href || "#") + '">My profile</a>' +
           '<button type="button" data-sign-out>Sign out</button>' +
@@ -363,8 +382,8 @@
           '<a class="pp-mark" href="' + ROUTES.home + '"><img src="/brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
           '<div class="pp-spacer"></div>' +
           '<button type="button" class="pp-tap-btn" data-open-msearch aria-label="Search">' + ICONS.search(19) + '</button>' +
-          (user ? '<a class="pp-av-circle" href="' + user.href + '" style="width:30px;height:30px;font-size:11px;text-decoration:none">' +
-            (user.initials || "") + '</a>' : '') +
+          (user ? '<a class="pp-av-circle" href="' + user.href + '" aria-label="Your profile" style="width:30px;height:30px;font-size:11px;text-decoration:none">' +
+            avatarInnerHtml(user) + '</a>' : '') +
           '<button type="button" class="pp-tap-theme" data-theme-toggle aria-label="Toggle dark mode" title="Toggle dark mode">' + ICONS.theme(19) + '</button>' +
           '<button type="button" class="pp-tap-btn pp-menu-btn" data-open-menu aria-label="Menu">' + ICONS.hamburger(22) + '</button>' +
         '</div>' +
@@ -405,7 +424,7 @@
         (user
           ? '<div class="pp-menu-user-wrap">' +
               '<a class="pp-menu-user" href="' + user.href + '">' +
-                '<span class="pp-av-circle">' + initialsOf(user) + '</span>' +
+                '<span class="pp-av-circle">' + avatarInnerHtml(user) + '</span>' +
                 '<span style="flex:1;min-width:0"><span class="pp-menu-user-name" style="display:block">' + user.name + '</span>' +
                 '<span class="pp-menu-user-sub">View your profile</span></span>' + ICONS.chevronRight(18) +
               '</a>' +
