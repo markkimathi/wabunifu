@@ -17,6 +17,7 @@ Nothing an employer submits goes live until it's approved; see db.py's note.
 """
 from __future__ import annotations
 import json
+import hashlib
 import html as html_mod
 import os
 import re
@@ -3631,8 +3632,7 @@ def homepage(request: Request):
         title="Path & Pixel — design jobs you can actually apply to",
         description=(f"{total} design roles, {african} of them open to designers across Africa. "
                      "Every listing says who it can hire before you spend an evening applying."),
-        canonical=f"{base}/", image=f"{base}/logo.png",
-    )
+        canonical=f"{base}/", image=f"{base}/logo.png", request=request)
 
 
 @app.get("/jobs", include_in_schema=False)
@@ -3643,8 +3643,7 @@ def jobs_page(request: Request):
         "pp-jobs.html", title="Design jobs · Path & Pixel",
         description=(f"{total} design roles across product, brand, research and motion — "
                      f"{african} open to designers in Africa. Filter by where you can work from."),
-        canonical=f"{base}/jobs", image=f"{base}/logo.png",
-    )
+        canonical=f"{base}/jobs", image=f"{base}/logo.png", request=request)
 
 
 @app.get("/people", include_in_schema=False)
@@ -3653,8 +3652,7 @@ def people_page(request: Request):
     return _page_with_head(
         "pp-people.html", title="Designers · Path & Pixel",
         description="Portfolios from designers working across Africa — the work, not just a CV.",
-        canonical=f"{base}/people", image=f"{base}/logo.png",
-    )
+        canonical=f"{base}/people", image=f"{base}/logo.png", request=request)
 
 
 # 301s for every old bookmark/link that no longer matches a same-named clean
@@ -3710,8 +3708,7 @@ def designer_profile_page(identifier: str, request: Request):
         title=f"{name} — {subtitle}" + (f", {where}" if where else ""),
         description=_clip(description),
         canonical=f"{base}/designers/{designer.get('handle') or designer.get('id')}",
-        image=f"{base}{photo}" if photo.startswith("/") else f"{base}/logo.png",
-    )
+        image=f"{base}{photo}" if photo.startswith("/") else f"{base}/logo.png", request=request)
 
 
 # The company pages had no routes at all: pp-company.html was built, had a
@@ -3724,8 +3721,7 @@ def how_it_works_page(request: Request):
         "pp-how-it-works.html", title="How roles are checked · Path & Pixel",
         description="Where the roles come from, how we decide which are design roles, and "
                     "how we work out which countries each one can actually hire from.",
-        canonical=f"{base}/how-it-works", image=f"{base}/logo.png",
-    )
+        canonical=f"{base}/how-it-works", image=f"{base}/logo.png", request=request)
 
 
 @app.get("/companies", include_in_schema=False)
@@ -3735,8 +3731,7 @@ def companies_page(request: Request):
         "pp-companies.html", title="Companies hiring designers · Path & Pixel",
         description="Every company with a design role open on Path & Pixel, and how many "
                     "of those roles are open to designers in Africa.",
-        canonical=f"{base}/companies", image=f"{base}/logo.png",
-    )
+        canonical=f"{base}/companies", image=f"{base}/logo.png", request=request)
 
 
 @app.get("/companies/{slug}", include_in_schema=False)
@@ -3757,8 +3752,7 @@ def company_page(slug: str, request: Request):
     return _page_with_head(
         "pp-company.html", title=f"Design jobs at {name}", description=desc,
         canonical=f"{base}/companies/{slug}",
-        image=f"{base}{record['logo_path']}" if record and record.get("logo_path") else f"{base}/logo.png",
-    )
+        image=f"{base}{record['logo_path']}" if record and record.get("logo_path") else f"{base}/logo.png", request=request)
 
 
 # A case study is the thing a designer actually sends someone — "a link
@@ -3788,8 +3782,7 @@ def case_study_page(identifier: str, project_id: str, request: Request):
             "pp-case-study.html", title="This project isn't available · Path & Pixel",
             description="The project you're looking for isn't published.",
             canonical=f"{base}/designers/{identifier}", image=f"{base}/logo.png",
-            extra_head='<meta name="robots" content="noindex">\n',
-        )
+            extra_head='<meta name="robots" content="noindex">\n', request=request)
 
     name = (pub.get("display_name") or "").strip()
     title = (project.get("title") or "Case study").strip()
@@ -3801,8 +3794,7 @@ def case_study_page(identifier: str, project_id: str, request: Request):
     return _page_with_head(
         "pp-case-study.html", title=f"{title} — {name}", description=_clip(desc),
         canonical=f"{base}/designers/{identifier}/{project_id}",
-        image=f"{base}{image}" if image.startswith("/") else f"{base}/logo.png",
-    )
+        image=f"{base}{image}" if image.startswith("/") else f"{base}/logo.png", request=request)
 
 
 # Same pattern for a single job: /jobs/{id} always serves pp-job.html, which
@@ -3853,7 +3845,8 @@ def _clip(text: str, limit: int = 300) -> str:
 
 
 def _page_with_head(filename: str, *, title: str, description: str,
-                    canonical: str, image: str, extra_head: str = "") -> HTMLResponse:
+                    canonical: str, image: str, extra_head: str = "",
+                    request: Optional[Request] = None) -> Response:
     """Serve a static page with its <title> replaced and social/meta tags added.
 
     Values are escaped for an HTML attribute context. extra_head is trusted
@@ -3879,7 +3872,16 @@ def _page_with_head(filename: str, *, title: str, description: str,
     )
     doc = re.sub(r"<title>.*?</title>", f"<title>{esc(title)}</title>", doc, count=1, flags=re.S)
     doc = doc.replace("</head>", head + "</head>", 1)
-    return HTMLResponse(doc)
+
+    # StaticFiles gives every file it serves an ETag, so a repeat visit costs a
+    # 304 and no body. These pages are assembled here instead, so without this
+    # they were the only ones re-downloading their whole HTML on every visit —
+    # and they are the most visited ones. The tag covers the finished document,
+    # so it changes when the file changes or when the injected values do.
+    etag = '"' + hashlib.md5(doc.encode("utf-8")).hexdigest() + '"'
+    if request is not None and request.headers.get("if-none-match") == etag:
+        return Response(status_code=304, headers={"etag": etag})
+    return HTMLResponse(doc, headers={"etag": etag})
 
 
 def _job_share_text(job: dict) -> tuple[str, str]:
@@ -3929,8 +3931,7 @@ def job_details_page(job_id: str, request: Request):
             "pp-job.html", title="This role is no longer listed · Path & Pixel",
             description="This listing has closed or expired. See what else is open.",
             canonical=f"{base}/jobs", image=f"{base}/logo.png",
-            extra_head='<meta name="robots" content="noindex">\n',
-        )
+            extra_head='<meta name="robots" content="noindex">\n', request=request)
 
     title, description = _job_share_text(job)
     posted = (date.today() - timedelta(days=int(job.get("days") or 0))).isoformat()
@@ -3961,8 +3962,7 @@ def job_details_page(job_id: str, request: Request):
              + json.dumps(ld).replace("</", "<\\/") + "</script>\n")
     return _page_with_head(
         "pp-job.html", title=f"{title} · Path & Pixel", description=description,
-        canonical=f"{base}/jobs/{job_id}", image=f"{base}/logo.png", extra_head=extra,
-    )
+        canonical=f"{base}/jobs/{job_id}", image=f"{base}/logo.png", extra_head=extra, request=request)
 
 
 # Community: /community lists sessions/questions/work, /community/{id}
