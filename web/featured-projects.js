@@ -344,6 +344,8 @@
     fileInput = document.getElementById("fpfFileInput");
     titleInput = document.getElementById("fpfTitleInput");
     descInput = document.getElementById("fpfDescInput");
+    // Visible limit: this field silently swallowed the end of a description.
+    if (window.PPCount) { PPCount(descInput); PPCount(document.getElementById("fpfTitleInput")); }
     urlInput = document.getElementById("fpfUrlInput");
     categoryInput = document.getElementById("fpfCategoryInput");
     errEl = document.getElementById("fpfErr");

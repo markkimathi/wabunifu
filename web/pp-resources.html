@@ -253,7 +253,11 @@
 
   async function loadPayRanges(){
     var area = document.getElementById("payTableArea");
-    area.innerHTML = '<p style="font-size:14px;color:var(--c-text-faint)">Loading…</p>';
+    // Table-shaped, so the panel doesn't collapse and jump when rows land.
+    area.innerHTML = '<div aria-hidden="true">' +
+      new Array(5).join("|").split("|").map(function(){
+        return '<div class="skeleton-block" style="height:15px;width:100%;margin-bottom:12px"></div>';
+      }).join("") + '</div><p class="pp-sr-only" role="status">Loading pay ranges.</p>';
     try {
       var qs = new URLSearchParams();
       if (payFilters.discipline) qs.set("discipline", payFilters.discipline);

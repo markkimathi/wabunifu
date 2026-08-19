@@ -609,6 +609,14 @@
     '</div>';
   }
 
+  // Counters on the two wizard fields long enough to lose the end of a
+  // sentence to the cap.
+  function wireWizardCounters(){
+    if (!window.PPCount) return;
+    PPCount(document.getElementById("wDescription"));
+    PPCount(document.getElementById("wCrossBorder"));
+  }
+
   function readWizardStepFields(){
     if (!wizardData) return;
     var get = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : null; };
@@ -1089,6 +1097,7 @@
     document.getElementById("dashRail").innerHTML = railHtml();
     document.getElementById("dashChipsMobile").innerHTML = chipsMobileHtml();
     wire();
+    wireWizardCounters();
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
 

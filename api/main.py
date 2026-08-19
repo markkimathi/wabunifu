@@ -3708,7 +3708,7 @@ def designer_profile_page(identifier: str, request: Request):
     return _page_with_head(
         "pp-profile.html",
         title=f"{name} — {subtitle}" + (f", {where}" if where else ""),
-        description=description[:300],
+        description=_clip(description),
         canonical=f"{base}/designers/{designer.get('handle') or designer.get('id')}",
         image=f"{base}{photo}" if photo.startswith("/") else f"{base}/logo.png",
     )
@@ -3799,7 +3799,7 @@ def case_study_page(identifier: str, project_id: str, request: Request):
         desc = f"A case study by {name}" + (f", {disciplines[0]}." if disciplines else ".")
     image = (project.get("image_path") or "").strip() or (pub.get("photo_path") or "").strip()
     return _page_with_head(
-        "pp-case-study.html", title=f"{title} — {name}", description=desc[:300],
+        "pp-case-study.html", title=f"{title} — {name}", description=_clip(desc),
         canonical=f"{base}/designers/{identifier}/{project_id}",
         image=f"{base}{image}" if image.startswith("/") else f"{base}/logo.png",
     )
@@ -3840,6 +3840,16 @@ def _site_base(request: Request) -> str:
     if PUBLIC_ORIGIN and host not in ("localhost", "127.0.0.1", "0.0.0.0", "::1"):
         return PUBLIC_ORIGIN
     return base
+
+
+def _clip(text: str, limit: int = 300) -> str:
+    """Trim to a word boundary. A link card truncates anyway, but cutting
+    mid-word is visible and looks like a bug rather than an ellipsis."""
+    text = " ".join((text or "").split())
+    if len(text) <= limit:
+        return text
+    cut = text[:limit].rsplit(" ", 1)[0].rstrip(" ,;:.—-")
+    return (cut or text[:limit]) + "…"
 
 
 def _page_with_head(filename: str, *, title: str, description: str,
@@ -3904,7 +3914,7 @@ def _job_share_text(job: dict) -> tuple[str, str]:
     if job.get("elig") == "check" and job.get("elig_scope"):
         elig = "Open in " + job["elig_scope"]
     desc = " · ".join(b for b in (elig, where, lead, pay) if b)
-    return title, (desc or job.get("desc_text") or "")[:300]
+    return title, _clip(desc or job.get("desc_text") or "")
 
 
 @app.get("/jobs/{job_id}", include_in_schema=False)

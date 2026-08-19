@@ -163,6 +163,37 @@
   }
   window.PPSheet = PPSheet;
 
+  /* A maxlength with no counter is a field that silently stops accepting what
+     you type. That is how a project description got saved ending "…design
+     system thinking to cre": the writer kept typing, the input stopped taking
+     it, and nothing on screen said so. Attach this to any long-form field and
+     the limit becomes visible before it bites. */
+  function PPCount(el, opts){
+    if (!el || el.dataset.ppCount) return;
+    var max = (opts && opts.max) || parseInt(el.getAttribute("maxlength"), 10);
+    if (!max) return;
+    el.dataset.ppCount = "1";
+
+    var out = document.createElement("span");
+    out.className = "pp-count";
+    // Announced only when it starts to matter — a counter that speaks on every
+    // keystroke is worse than one that never speaks at all.
+    out.setAttribute("aria-live", "polite");
+    (el.parentNode.classList.contains("pp-field-input") ? el.parentNode.parentNode : el.parentNode)
+      .insertBefore(out, null);
+
+    function tick(){
+      var n = el.value.length, left = max - n;
+      out.textContent = n + "/" + max;
+      out.classList.toggle("-near", left <= Math.max(20, Math.round(max * 0.1)));
+      out.classList.toggle("-at", left <= 0);
+      out.setAttribute("aria-hidden", left > Math.max(20, Math.round(max * 0.1)) ? "true" : "false");
+    }
+    el.addEventListener("input", tick);
+    tick();
+  }
+  window.PPCount = PPCount;
+
   var NAV_ITEMS = [
     { key: "home", label: "Home", href: ROUTES.home,
       icon: '<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1V9.5"/>' },

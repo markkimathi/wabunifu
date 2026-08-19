@@ -253,6 +253,17 @@
     { key: "work", label: "Work worth reading" }
   ];
 
+  // The question composer is fixed markup, so the counters attach once.
+  (function wireComposerCounters(){
+    function go(){
+      if (!window.PPCount) return;
+      PPCount(document.getElementById("qTitle"));
+      PPCount(document.getElementById("qBody"));
+    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", go);
+    else go();
+  })();
+
   function renderTabs(){
     document.getElementById("tabsRow").innerHTML = TABS.map(function(t){
       var bucket = state[t.key];

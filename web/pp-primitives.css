@@ -190,6 +190,14 @@ a.pp-card:hover,.pp-card.-clickable:hover{border-color:var(--c-border-hover);box
 .pp-card-row{display:flex;align-items:flex-start;gap:14px}
 .pp-card-tags{display:flex;flex-wrap:wrap;gap:7px}
 /* Square company/job "mark" tile — initial or logo placeholder. */
+/* Character counter for capped fields. Quiet until the limit is close, then
+   it earns attention — the point is to warn before text is lost, not to sit
+   there counting at you. */
+.pp-count{display:block;margin-top:6px;text-align:right;font-size:12.5px;
+  font-variant-numeric:tabular-nums;color:var(--c-text-faint)}
+.pp-count.-near{color:var(--c-text-subtle)}
+.pp-count.-at{color:var(--c-bad-text);font-weight:600}
+
 /* Loading skeletons. This was defined identically in six page files; one
    product should have one loading language, and changing its rhythm should not
    mean finding six copies. Pages still size their own blocks — only the look

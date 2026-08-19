@@ -432,6 +432,7 @@
     ["fName", "fHeadline", "fLocation"].forEach(function(id){
       document.getElementById(id).addEventListener("input", updateStrengthMeter);
     });
+    wireAboutCounters();
     document.getElementById("backBtn").addEventListener("click", function(){ goTo(0); });
     document.getElementById("aboutNextBtn").addEventListener("click", async function(){
       if (skillInput.value.trim()) { addSkill(skillInput.value); skillInput.value = ""; }
@@ -451,6 +452,11 @@
       finally { btn.disabled = false; }
     });
   }
+  function wireAboutCounters(){
+    if (!window.PPCount) return;
+    PPCount(document.getElementById("fHeadline"));
+  }
+
   function renderDisciplineChips(){
     var box = document.getElementById("disciplineChips");
     var atCap = selectedDisciplines.length >= MAX_DISCIPLINES;
