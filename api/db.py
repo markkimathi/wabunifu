@@ -69,6 +69,14 @@ CREATE TABLE IF NOT EXISTS submissions (
   -- only: no ATS we scrape exposes one, and inventing a date for a listing
   -- nobody set is exactly the kind of guess this product doesn't make.
   closes_at TEXT NOT NULL DEFAULT '',
+  -- Structured so the board can match on more than discipline. Same vocabulary
+  -- designers use for their own skills, or the two sides never line up.
+  skills TEXT NOT NULL DEFAULT '[]',
+  -- Up to three short questions an applicant should be ready to answer. We
+  -- never collect the answers — applications go to the employer's own site —
+  -- so these are shown on the listing as what to prepare, not a form.
+  screening TEXT NOT NULL DEFAULT '[]',
+  portfolio_required INTEGER NOT NULL DEFAULT 0,
   status TEXT NOT NULL DEFAULT 'pending',
   created_at TEXT NOT NULL
 );
@@ -561,6 +569,9 @@ _MIGRATIONS = [
     "ALTER TABLE designers ADD COLUMN country TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN open_to TEXT NOT NULL DEFAULT '[]'",
     "ALTER TABLE submissions ADD COLUMN closes_at TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE submissions ADD COLUMN skills TEXT NOT NULL DEFAULT '[]'",
+    "ALTER TABLE submissions ADD COLUMN screening TEXT NOT NULL DEFAULT '[]'",
+    "ALTER TABLE submissions ADD COLUMN portfolio_required INTEGER NOT NULL DEFAULT 0",
 ]
 
 
@@ -633,11 +644,13 @@ def insert_submission(data: dict, company_id: int | None = None, employer_id: in
         INSERT INTO submissions
           (title, company, url, contact_email, location, work_type,
            discipline, level, eligibility, salary, description, agreed_to_terms,
-           cross_border_note, closes_at, company_id, employer_id, status, created_at)
+           cross_border_note, closes_at, skills, screening, portfolio_required,
+           company_id, employer_id, status, created_at)
         VALUES
           (:title, :company, :url, :contact_email, :location, :work_type,
            :discipline, :level, :eligibility, :salary, :description, :agreed_to_terms,
-           :cross_border_note, :closes_at, :company_id, :employer_id, 'pending', :created_at)
+           :cross_border_note, :closes_at, :skills, :screening, :portfolio_required,
+           :company_id, :employer_id, 'pending', :created_at)
     """, row)
     c.commit()
     sub_id = cur.lastrowid

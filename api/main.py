@@ -119,6 +119,8 @@ AVAILABILITY_STATUSES = ["Available", "Open to offers", "Not available"]
 OPEN_TO_OPTIONS = ["Full-time", "Contract", "Freelance", "Internship"]
 MAX_DESIGNER_DISCIPLINES = 5
 MAX_DESIGNER_SKILLS = 7
+# Enough to be useful, few enough that a recruiter picks the ones that matter.
+MAX_LISTING_SKILLS = 8
 
 # Where a designer can work from, as a structured value the board matches
 # against a listing's eligibility scope. Spelling has to line up exactly with
@@ -307,6 +309,23 @@ class JobSubmission(BaseModel):
     # ISO date (YYYY-MM-DD). Optional: a role with no stated close is left
     # open rather than given an invented deadline.
     closes_at: str = ""
+    # Structured, so matching can be sharper than discipline alone.
+    skills: list[str] = []
+    # What an applicant should be ready to answer. Shown on the listing as
+    # preparation — we never collect the answers, since the application itself
+    # happens on the employer's own site.
+    screening: list[str] = []
+    portfolio_required: bool = False
+
+    @field_validator("skills", "screening")
+    @classmethod
+    def _clean_list(cls, v: list[str]) -> list[str]:
+        out = []
+        for item in v or []:
+            item = (item or "").strip()[:120]
+            if item and item not in out:
+                out.append(item)
+        return out[:MAX_LISTING_SKILLS]
 
     @field_validator("closes_at")
     @classmethod
@@ -1167,6 +1186,9 @@ def _combined_jobs() -> tuple[list[dict], str | None]:
                 desc=desc_html or None, desc_text=desc_text or None, posted_at=s["created_at"][:10],
                 cross_border_note=s.get("cross_border_note", ""),
                 closes_at=s.get("closes_at", "") or "",
+                skills=parse_multi_field(s.get("skills")),
+                screening=parse_multi_field(s.get("screening")),
+                portfolio_required=bool(s.get("portfolio_required")),
             ).to_web()
         )
 
@@ -2098,14 +2120,28 @@ def designer_unsave_job(job_id: str, designer: dict = Depends(require_designer))
 
 @app.get("/api/designers/me/matches")
 def designer_matches(designer: dict = Depends(require_designer)):
-    """A real, plain overlap filter against the designer's own listed
-    disciplines — no scoring model, no fabricated "why you matched" copy
-    beyond the discipline that actually overlaps."""
+    """A real, plain overlap filter — no scoring model, no fabricated "why you
+    matched" copy beyond what actually overlaps.
+
+    Discipline is the gate, as before. Shared skills only reorder what already
+    matched: a role wanting three skills you list should sit above one wanting
+    none, but a skill in common is not on its own a reason to show someone a
+    role in a different discipline. Each match carries the overlap so the UI
+    can say why, rather than asserting a match and leaving the reader to
+    guess."""
     disciplines = set(parse_multi_field(designer.get("discipline")))
-    combined, _ = _combined_jobs()
     if not disciplines:
         return {"jobs": []}
-    matches = [j for j in combined if j["cat"] in disciplines]
+    my_skills = {s.lower() for s in parse_multi_field(designer.get("skills"))}
+    combined, _ = _combined_jobs()
+
+    matches = []
+    for j in combined:
+        if j["cat"] not in disciplines:
+            continue
+        shared = [s for s in (j.get("skills") or []) if s.lower() in my_skills]
+        matches.append({**j, "matched_skills": shared})
+    matches.sort(key=lambda j: (-len(j["matched_skills"]), j["days"]))
     return {"jobs": matches[:20]}
 
 
@@ -2437,8 +2473,17 @@ def employer_list_listings(employer: dict = Depends(require_employer)):
 
 @app.post("/api/employers/me/listings")
 def employer_create_listing(payload: JobSubmission, employer: dict = Depends(require_employer_role("owner", "can_post"))):
-    sub_id = insert_submission(payload.model_dump(), company_id=employer["company_id"], employer_id=employer["id"])
+    sub_id = insert_submission(_listing_row(payload), company_id=employer["company_id"], employer_id=employer["id"])
     return {"ok": True, "id": sub_id, "status": "pending"}
+
+
+def _listing_row(payload: JobSubmission) -> dict:
+    """Pydantic gives lists and a bool; sqlite wants JSON text and an int."""
+    row = payload.model_dump()
+    row["skills"] = json.dumps(row.get("skills") or [])
+    row["screening"] = json.dumps(row.get("screening") or [])
+    row["portfolio_required"] = 1 if row.get("portfolio_required") else 0
+    return row
 
 
 @app.get("/api/employers/me/listings/{sub_id}")
@@ -2449,7 +2494,7 @@ def employer_get_listing(sub_id: int, employer: dict = Depends(require_employer)
 @app.put("/api/employers/me/listings/{sub_id}")
 def employer_update_listing(sub_id: int, payload: JobSubmission, employer: dict = Depends(require_employer_role("owner", "can_post"))):
     _owned_submission(sub_id, employer["company_id"])
-    update_submission(sub_id, **payload.model_dump())
+    update_submission(sub_id, **_listing_row(payload))
     return {"ok": True}
 
 

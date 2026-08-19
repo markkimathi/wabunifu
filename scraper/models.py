@@ -56,6 +56,11 @@ class Job:
     # ISO date applications close. Employer-posted roles only — no ATS we
     # scrape publishes one, so a scraped listing stays open until it ages out.
     closes_at: str = ""
+    # Employer-posted extras. Scraped listings have none of these: an ATS
+    # feed carries no structured skill list and no screening questions.
+    skills: list[str] = field(default_factory=list)
+    screening: list[str] = field(default_factory=list)
+    portfolio_required: bool = False
     id: str = field(default="")
 
     def __post_init__(self):
@@ -100,6 +105,9 @@ class Job:
             "desc_text": self.desc_text,
             "cross_border_note": self.cross_border_note,
             "closes": self.closes_at,
+            "skills": self.skills,
+            "screening": self.screening,
+            "portfolio_required": self.portfolio_required,
         }
 
     def to_dict(self) -> dict:

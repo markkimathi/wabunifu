@@ -86,6 +86,11 @@
   .field-block{margin-bottom:14px}
   .field-block .pp-field-label{display:block;margin-bottom:6px;font-size:13px;font-weight:600}
   .field-block .pp-field-input select{cursor:pointer}
+  .chip-select{display:flex;flex-wrap:wrap;gap:7px}
+  .pick-chip{padding:7px 13px;border-radius:999px;font-family:var(--pp-font);font-size:13.5px;font-weight:500;
+    cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
+  .pick-chip.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
+  .pick-chip:disabled{opacity:.5;cursor:not-allowed}
   .wiz-hint{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--c-text-subtle)}
   .field-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:600px){.field-row2{grid-template-columns:1fr}}
@@ -371,6 +376,7 @@
       url: (me.company && me.company.website ? "https://" + me.company.website.replace(/^https?:\/\//, "") : ""),
       eligibility: (me.company && me.company.eligibility) || "africa",
       cross_border_note: "", salary: "", closes_at: "",
+      skills: [], screening: [], portfolio_required: false,
       contact_email: me.email || "", description: ""
     };
   }
@@ -380,6 +386,7 @@
       discipline: l.discipline || "", level: l.level || "Mid", url: l.url || "",
       eligibility: l.eligibility || "africa", cross_border_note: l.cross_border_note || "", salary: l.salary || "",
       closes_at: l.closes_at || "",
+      skills: l.skills || [], screening: l.screening || [], portfolio_required: !!l.portfolio_required,
       contact_email: l.contact_email || "", description: l.description || ""
     };
   }
@@ -476,6 +483,23 @@
           '<div class="pp-field-input"><input id="wCloses" type="date" value="' + escapeHtml(d.closes_at) + '"></div>' +
           '<p class="wiz-hint">Leave blank to keep it open. After this date the role stops showing on the board, and anyone who saved it sees that it closed.</p></div>' +
       '</div>' +
+
+      '<div class="field-block"><label class="pp-field-label">Skills that actually matter</label>' +
+        '<p class="wiz-hint" style="margin:0 0 8px">Up to eight, from the same list designers pick from — that is what lets us put your role in front of the right people rather than everyone in the discipline.</p>' +
+        '<div class="chip-select" id="wSkills"></div></div>' +
+
+      '<div class="field-block"><label class="pp-field-label">What should an applicant be ready to answer?</label>' +
+        '<p class="wiz-hint" style="margin:0 0 8px">Up to three. These appear on the listing so candidates can prepare — we never collect the answers, because the application happens on your own site.</p>' +
+        [0,1,2].map(function(i){
+          return '<div class="pp-field-input" style="margin-bottom:8px"><input id="wScreen' + i + '" value="' +
+            escapeHtml(d.screening[i] || "") + '" placeholder="' +
+            ["e.g. Which project here is closest to our problem?","e.g. How do you work with engineers?","e.g. What would you want to change first?"][i] + '"></div>';
+        }).join("") +
+        '<label class="pp-check-row" style="margin-top:6px"><input type="checkbox" id="wPortfolio"' +
+          (d.portfolio_required ? " checked" : "") + '><span>A portfolio or case study is required for this role</span></label></div>' +
+
+      '<div style="display:none">' +
+      '</div>' +
       '<div class="fielderr" id="wizStep2Err" hidden></div>';
   }
 
@@ -497,6 +521,37 @@
       '</div>' +
       '<p style="margin:0;font-size:13.5px;line-height:1.6;color:var(--c-text-faint);max-width:60ch">A person reads every listing before it publishes, usually within a working day. If the eligibility answer does not match the job description we come back to you rather than quietly changing it.</p>' +
       '<div class="fielderr" id="wizStep3Err" hidden></div>';
+  }
+
+  /* The same vocabulary designers pick their own skills from. Two lists that
+     nearly match are worse than one: "Figma" and "figma" would never join up,
+     and matching would quietly under-report. */
+  var LISTING_SKILLS = ["Figma", "Prototyping", "Design Systems", "User Research", "Wireframing",
+    "Interaction Design", "Visual Design", "Branding", "Illustration", "Motion", "Webflow",
+    "Accessibility", "Usability Testing", "Information Architecture", "Copywriting", "HTML/CSS"];
+  var MAX_LISTING_SKILLS = 8;
+
+  function renderListingSkills(){
+    var box = document.getElementById("wSkills");
+    if (!box || !wizardData) return;
+    var picked = wizardData.skills || [];
+    var atCap = picked.length >= MAX_LISTING_SKILLS;
+    box.innerHTML = LISTING_SKILLS.map(function(sk){
+      var on = picked.indexOf(sk) !== -1;
+      return '<button type="button" class="pick-chip' + (on ? " -active" : "") + '"' +
+        (!on && atCap ? " disabled" : "") + ' data-skill="' + escapeHtml(sk) + '">' + escapeHtml(sk) + '</button>';
+    }).join("");
+    box.querySelectorAll("[data-skill]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var sk = btn.getAttribute("data-skill");
+        var list = wizardData.skills || [];
+        var i = list.indexOf(sk);
+        if (i !== -1) list.splice(i, 1);
+        else if (list.length < MAX_LISTING_SKILLS) list.push(sk);
+        wizardData.skills = list;
+        renderListingSkills();
+      });
+    });
   }
 
   function listingFormHtml(listing){
@@ -540,6 +595,14 @@
       if (get("wCrossBorder") !== null) wizardData.cross_border_note = get("wCrossBorder");
       if (get("wSalary") !== null) wizardData.salary = get("wSalary");
       if (get("wCloses") !== null) wizardData.closes_at = get("wCloses");
+      var screen = [];
+      [0,1,2].forEach(function(i){
+        var el = document.getElementById("wScreen" + i);
+        if (el && el.value.trim()) screen.push(el.value.trim());
+      });
+      if (document.getElementById("wScreen0")) wizardData.screening = screen;
+      var pf = document.getElementById("wPortfolio");
+      if (pf) wizardData.portfolio_required = pf.checked;
     } else if (wizardStep === 3) {
       if (get("wDescription") !== null) wizardData.description = get("wDescription");
     }
@@ -1034,6 +1097,7 @@
       btn.addEventListener("click", function(){ setSection(btn.getAttribute("data-section")); });
     });
     wireTalent();
+    renderListingSkills();
     document.querySelectorAll("[data-rail-signout]").forEach(function(btn){
       btn.addEventListener("click", function(){ window.PathPixelNav.signOut("employer"); });
     });

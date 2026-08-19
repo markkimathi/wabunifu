@@ -31,6 +31,14 @@
   .desc.-clamped{max-height:340px;overflow:hidden;position:relative;mask-image:linear-gradient(to bottom, black 70%, transparent 100%)}
   .expand-btn{align-self:flex-start;margin-top:16px}
 
+  .prep-panel{margin-top:32px;max-width:720px;padding:22px 24px;border-radius:var(--pp-radius-lg);
+    background:var(--c-surface);border:1px solid var(--c-border)}
+  .prep-panel h4{margin:0 0 12px;font-size:18px;font-weight:700;letter-spacing:-0.018em}
+  .prep-lead{margin:0 0 8px;font-size:14.5px;color:var(--c-text-subtle)}
+  .prep-chips{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:14px}
+  .prep-note{margin:0 0 14px;font-size:14.5px;font-weight:600;color:var(--pp-gold-800)}
+  .prep-list{margin:0;padding-left:20px;font-size:15.5px;line-height:1.6;color:var(--c-text-muted)}
+  .prep-list li{margin-bottom:6px}
   .elig-panel{margin-top:32px;max-width:720px;padding:24px 26px;border-radius:var(--pp-radius-lg);
     background:var(--c-good-bg);border:1px solid var(--c-good-border)}
   .elig-panel h4{margin:0 0 10px;font-size:19px;font-weight:700;letter-spacing:-0.018em;color:var(--c-good-text)}
@@ -304,6 +312,29 @@
       '<a class="pp-btn pp-btn-primary" href="/jobs">Browse open roles</a></div>';
   }
 
+  /* Employer-posted roles can say what to bring. Shown as preparation, not a
+     form: the application happens on the company's own site and we never
+     collect answers, so presenting these as fields would imply otherwise.
+     Scraped roles carry none of this and the block simply doesn't render. */
+  function prepPanelHtml(job){
+    var qs = job.screening || [];
+    var skills = job.skills || [];
+    if (!qs.length && !skills.length && !job.portfolio_required) return "";
+    return '<div class="prep-panel">' +
+      '<h4>Before you apply</h4>' +
+      (skills.length
+        ? '<p class="prep-lead">They named these as what matters:</p><div class="prep-chips">' +
+          skills.map(function(sk){ return '<span class="pp-chip">' + escapeHtml(sk) + '</span>'; }).join("") + '</div>'
+        : "") +
+      (job.portfolio_required
+        ? '<p class="prep-note">A portfolio or case study is required for this role.</p>' : "") +
+      (qs.length
+        ? '<p class="prep-lead">Be ready to answer:</p><ul class="prep-list">' +
+          qs.map(function(q){ return '<li>' + escapeHtml(q) + '</li>'; }).join("") + '</ul>'
+        : "") +
+    '</div>';
+  }
+
   function renderJob(){
     document.title = job.t + " at " + job.co + " · Path & Pixel";
 
@@ -331,6 +362,7 @@
             (job.level ? '<span class="pp-chip">' + escapeHtml(job.level) + '</span>' : "") + '</div>' +
           '<div class="desc' + (long ? " -clamped" : "") + '" id="descBox">' + descHtml + '</div>' +
           (long ? '<button type="button" class="pp-btn pp-btn-secondary expand-btn" id="expandBtn">Read the full description' + ICONS.chevron + '</button>' : "") +
+          prepPanelHtml(job) +
           '<div class="elig-panel' + elClass + '">' +
             '<h4>How we checked this role</h4>' +
             '<p>' + eligNote(job) + '</p>' +
