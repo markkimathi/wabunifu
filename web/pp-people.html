@@ -460,11 +460,14 @@
 
     var rail = document.getElementById("filterRail");
     var backdrop = document.getElementById("railBackdrop");
-    function openFilters(){ rail.classList.add("-open"); backdrop.classList.add("-open"); document.body.style.overflow = "hidden"; }
-    function closeFilters(){ rail.classList.remove("-open"); backdrop.classList.remove("-open"); document.body.style.overflow = ""; }
-    document.getElementById("openFilters").addEventListener("click", openFilters);
-    document.getElementById("closeFilters").addEventListener("click", closeFilters);
-    backdrop.addEventListener("click", closeFilters);
+    // Escape, focus trap, focus restore and aria all live in PPSheet — this
+    // panel is a modal dialog below 1024px and a plain sidebar above it.
+    var filterSheet = window.PPSheet && PPSheet({
+      panel: rail, backdrop: backdrop,
+      toggle: document.getElementById("openFilters"),
+      closeBtn: document.getElementById("closeFilters")
+    });
+    function closeFilters(){ if (filterSheet) filterSheet.close(); }
 
     await loadFollows();
     loadPeople();

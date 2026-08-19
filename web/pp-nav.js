@@ -81,6 +81,84 @@
   };
   window.PPScroll = PPScroll;
 
+  /* The filter panel that becomes an overlay below 1024px — a bottom sheet on
+     mobile, a right-hand drawer at tablet portrait. It covers the page and
+     locks scrolling behind it, so it is a modal dialog and has to behave like
+     one. It did not: Escape didn't close it, focus never moved into it, and
+     nothing stopped Tab walking off into the page hidden behind the backdrop.
+
+     Wired here rather than in each page because /jobs and /people had the same
+     four lines copied, and would have grown the same four bugs twice. */
+  function PPSheet(opts){
+    var panel = opts.panel, toggle = opts.toggle, backdrop = opts.backdrop, closeBtn = opts.closeBtn;
+    if (!panel || !toggle) return null;
+    var lastFocus = null;
+
+    function overlayMode(){
+      // Above the breakpoint the panel is a plain sidebar, not a dialog, and
+      // must not claim any of the modal semantics.
+      return window.matchMedia("(max-width: 1023px)").matches;
+    }
+    function focusables(){
+      return [].slice.call(panel.querySelectorAll(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]),' +
+        ' textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      )).filter(function(el){ return el.offsetParent !== null; });
+    }
+    function open(){
+      lastFocus = document.activeElement;
+      panel.classList.add("-open");
+      if (backdrop) backdrop.classList.add("-open");
+      document.body.style.overflow = "hidden";
+      toggle.setAttribute("aria-expanded", "true");
+      if (overlayMode()) {
+        panel.setAttribute("role", "dialog");
+        panel.setAttribute("aria-modal", "true");
+      }
+      var first = closeBtn || focusables()[0];
+      if (first && first.focus) first.focus();
+    }
+    function close(){
+      panel.classList.remove("-open");
+      if (backdrop) backdrop.classList.remove("-open");
+      document.body.style.overflow = "";
+      toggle.setAttribute("aria-expanded", "false");
+      panel.removeAttribute("role");
+      panel.removeAttribute("aria-modal");
+      if (lastFocus && lastFocus.focus) lastFocus.focus();
+    }
+    function isOpen(){ return panel.classList.contains("-open"); }
+
+    if (!panel.id) panel.id = "pp-sheet-" + Math.random().toString(36).slice(2, 8);
+    toggle.setAttribute("aria-controls", panel.id);
+    toggle.setAttribute("aria-expanded", "false");
+
+    toggle.addEventListener("click", function(){ isOpen() ? close() : open(); });
+    if (closeBtn) closeBtn.addEventListener("click", close);
+    if (backdrop) backdrop.addEventListener("click", close);
+
+    document.addEventListener("keydown", function(e){
+      if (!isOpen()) return;
+      if (e.key === "Escape") { e.preventDefault(); close(); return; }
+      if (e.key !== "Tab" || !overlayMode()) return;
+      var items = focusables();
+      if (!items.length) return;
+      var first = items[0], last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      else if (!panel.contains(document.activeElement)) { e.preventDefault(); first.focus(); }
+    });
+
+    // Dragged back up to desktop with the sheet open: it is a sidebar again, so
+    // drop the lock and the dialog semantics rather than trapping the page.
+    window.addEventListener("resize", function(){
+      if (isOpen() && !overlayMode()) close();
+    });
+
+    return { open: open, close: close, isOpen: isOpen };
+  }
+  window.PPSheet = PPSheet;
+
   var NAV_ITEMS = [
     { key: "home", label: "Home", href: ROUTES.home,
       icon: '<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1V9.5"/>' },
