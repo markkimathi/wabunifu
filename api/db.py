@@ -2989,6 +2989,31 @@ def cleanup_stale_analytics(days: int = ANALYTICS_RETENTION_DAYS) -> None:
     c.close()
 
 
+def count_role_performance(job_ids: list) -> dict:
+    """Views and apply-clicks per role, from the analytics already collected.
+
+    Views come from the /jobs/{id} path; applies from the apply_clicks row
+    written when someone leaves for the employer's own site. Neither knows who
+    the visitor was, so this is a count, never an audience.
+
+    Rows age out with the rest of the analytics, so these are rolling figures
+    over the retention window rather than lifetime totals."""
+    if not job_ids:
+        return {}
+    c = _conn()
+    out = {}
+    for jid in job_ids:
+        views = c.execute(
+            "SELECT COUNT(*) FROM pageviews WHERE path = ?", (f"/jobs/{jid}",)
+        ).fetchone()[0]
+        applies = c.execute(
+            "SELECT COUNT(*) FROM apply_clicks WHERE job_id = ?", (jid,)
+        ).fetchone()[0]
+        out[jid] = {"views": views, "applies": applies}
+    c.close()
+    return out
+
+
 def count_profile_views(handle: str, designer_id: int) -> int:
     """Total pageviews of a designer's public profile, matched against both
     the numeric-id path and the handle path (older views may be logged under

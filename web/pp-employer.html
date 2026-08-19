@@ -91,6 +91,18 @@
     cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
   .pick-chip.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
   .pick-chip:disabled{opacity:.5;cursor:not-allowed}
+  .perf-panel{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
+    background:var(--c-surface);margin-bottom:20px}
+  .perf-panel h3{margin:0 0 6px;font-size:16px;font-weight:700}
+  .perf-lead{margin:0 0 14px;font-size:13.5px;line-height:1.5;color:var(--c-text-subtle);max-width:64ch}
+  .perf-rows{display:flex;flex-direction:column;gap:8px}
+  .perf-row{display:grid;grid-template-columns:minmax(0,1fr) 76px 76px 52px;gap:12px;align-items:center;
+    padding:11px 13px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken)}
+  @media(max-width:600px){.perf-row{grid-template-columns:minmax(0,1fr) auto auto auto;gap:8px}}
+  .perf-title{font-size:14.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .perf-n{font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;display:flex;flex-direction:column}
+  .perf-n em{font-style:normal;font-size:11px;font-weight:500;color:var(--c-text-faint)}
+  .perf-rate{font-size:15px;font-weight:700;color:var(--pp-gold-800);font-variant-numeric:tabular-nums;text-align:right}
   .wiz-hint{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--c-text-subtle)}
   .field-row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   @media(max-width:600px){.field-row2{grid-template-columns:1fr}}
@@ -659,6 +671,20 @@
     var body =       '<div class="section-head"><h2>Listings</h2>' +
       (canWrite() && !showNewListing ? '<button type="button" class="pp-btn pp-btn-primary" id="addListingBtn">Post a role</button>' : "") +
       '</div>';
+    var perf = (cache.perf || []).filter(function(r){ return r.views > 0; });
+    if (!showNewListing && perf.length) {
+      body += '<div class="perf-panel"><h3>How your roles are doing</h3>' +
+        '<p class="perf-lead">Opened, and how many of those went through to your site. A role people open and don\'t apply to is usually telling you something about the description or the pay.</p>' +
+        '<div class="perf-rows">' + perf.map(function(r){
+          var rate = r.views ? Math.round(100 * r.applies / r.views) : 0;
+          return '<div class="perf-row">' +
+            '<span class="perf-title">' + escapeHtml(r.title) + '</span>' +
+            '<span class="perf-n">' + r.views + '<em>opened</em></span>' +
+            '<span class="perf-n">' + r.applies + '<em>applied</em></span>' +
+            '<span class="perf-rate">' + rate + '%</span>' +
+          '</div>';
+        }).join("") + '</div></div>';
+    }
     if (showNewListing) body += listingFormHtml(state.editingListing || {});
     if (!listings.length && !showNewListing) {
       body += '<div class="pp-empty"><h3>No listings yet</h3><p>Post your first role and it goes through the same review queue as everything else on Kazi.</p></div>';
@@ -902,6 +928,10 @@
     }
     if (section === "team") {
       cache.team = await api("/api/employers/me/team");
+    }
+    if (section === "listings") {
+      try { cache.perf = (await api("/api/employers/me/role-performance")).roles; }
+      catch (e) { cache.perf = []; }
     }
     if (section === "talent") {
       // Both lists every time: the shortlist count sits on the tab, and search

@@ -49,7 +49,7 @@ from .db import (  # noqa: E402
     designers_missing_country, set_designer_country,
     shortlist_add, shortlist_remove, shortlist_ids, shortlist_entries,
     notify, list_notifications, count_unread_notifications, mark_notifications_read,
-    list_employers_for_company,
+    list_employers_for_company, count_role_performance,
     mark_applied, list_applied_jobs, unmark_applied,
     save_search, list_saved_searches, delete_saved_search, set_search_alerts,
     searches_with_alerts, mark_search_notified,
@@ -2993,6 +2993,25 @@ def employer_notifications_read(notification_id: Optional[int] = None,
 class ShortlistIn(BaseModel):
     designer_id: int
     note: str = ""
+
+
+@app.get("/api/employers/me/role-performance")
+def employer_role_performance(employer: dict = Depends(require_employer)):
+    """Views and applies per live role. The only metric here that answers a
+    question a recruiter can act on: a role people open and don't apply to is
+    telling you something about the description or the pay. Deliberately not a
+    dashboard — three numbers per role, no charts, nothing that needs
+    interpreting."""
+    combined, _gen = _combined_jobs()
+    mine = [j for j in combined if j.get("src") == "Direct"
+            and j.get("co") == (get_company(employer["company_id"]) or {}).get("name")]
+    perf = count_role_performance([j["id"] for j in mine])
+    out = []
+    for j in mine:
+        p = perf.get(j["id"], {"views": 0, "applies": 0})
+        out.append({"id": j["id"], "title": j["t"], "views": p["views"], "applies": p["applies"]})
+    out.sort(key=lambda r: -r["views"])
+    return {"roles": out}
 
 
 @app.get("/api/employers/me/talent")

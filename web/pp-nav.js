@@ -475,6 +475,28 @@
      nothing. Failures are silent: a nav that breaks because a nicety failed
      would be a worse trade than a missing badge. */
 
+  /* Pageview tracking moved to the legacy nav when the Path & Pixel rebuild
+     replaced it, and never came back: no page loads nav.js any more, so
+     nothing had been logging a view since the cutover. The designer
+     dashboard's "Profile views" was reading a table that had stopped
+     growing — a permanently frozen number, which reads as nobody looking.
+
+     Same shape as before and the same privacy line: the path only. No
+     identifier, no cookie, nothing that ties two visits together. Query
+     strings are stripped rather than trimmed, since those are where search
+     terms and tokens end up. */
+  function trackPageview(){
+    try {
+      var path = (location.pathname || "/").slice(0, 200);
+      fetch("/api/track/pageview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: path }),
+        keepalive: true
+      }).catch(function(){});
+    } catch (e) {}
+  }
+
   function wireBell(root){
     // Two headers render at different widths (desktop row and compact row), so
     // there are two bells. Both are wired against one shared item list — a
@@ -803,6 +825,7 @@
     });
 
     if (root.querySelector(".pp-tabbar")) document.body.classList.add("pp-has-tabbar");
+    trackPageview();
     wireLiveSearch(root);
     wireBell(root);
 
