@@ -73,6 +73,19 @@ COMPANIES = [
     {"name": "Jumia",              "ats": "greenhouse", "token": "jumia"},
     {"name": "LemFi",              "ats": "ashby",      "token": "lemfi"},
 
+    # --- Added 2026-08-19 (second pass). Verified live, and verified AFRICAN:
+    #     ~250 candidate tokens were probed and most famous-name slugs turn out
+    #     to be a same-named US company. Five were rejected on exactly that:
+    #     ashby/decagon is a San Francisco AI firm, not Nigeria's Decagon;
+    #     lever/copia is New York, not Copia Kenya; lever/greenlight is an
+    #     Atlanta fintech, not Greenlight Planet (Sun King); ashby/ampersand is
+    #     San Francisco, not Rwanda's Ampersand; greenhouse/zola is the US
+    #     wedding site, not Zola Electric. Check the board's own locations
+    #     before trusting a name match. ---
+    {"name": "ALX Africa",         "ats": "greenhouse", "token": "alxafrica"},
+    {"name": "Luno",               "ats": "greenhouse", "token": "luno"},
+    {"name": "Ozow",               "ats": "greenhouse", "token": "ozow"},
+
     # --- Known to hire designers, ATS/token NOT YET VERIFIED ---
     # Their public careers pages render job listings client-side (a Nuxt SPA
     # embedding state in the page via a non-JSON serialized blob), so the
