@@ -95,8 +95,10 @@
     var lastFocus = null;
 
     function overlayMode(){
-      // Above the breakpoint the panel is a plain sidebar, not a dialog, and
-      // must not claim any of the modal semantics.
+      // Some panels (the share sheet) are modal at every width. The filter
+      // panel is only modal below the breakpoint — above it the same element
+      // is a plain sidebar and must not claim any of the modal semantics.
+      if (opts.alwaysModal) return true;
       return window.matchMedia("(max-width: 1023px)").matches;
     }
     function focusables(){
@@ -151,9 +153,11 @@
 
     // Dragged back up to desktop with the sheet open: it is a sidebar again, so
     // drop the lock and the dialog semantics rather than trapping the page.
-    window.addEventListener("resize", function(){
-      if (isOpen() && !overlayMode()) close();
-    });
+    if (!opts.alwaysModal) {
+      window.addEventListener("resize", function(){
+        if (isOpen() && !overlayMode()) close();
+      });
+    }
 
     return { open: open, close: close, isOpen: isOpen };
   }

@@ -470,10 +470,19 @@
     var shareBackdrop = document.getElementById("shareBackdrop");
     var shareUrl = location.origin + "/jobs/" + encodeURIComponent(job.id);
     document.getElementById("shareUrlText").textContent = shareUrl.replace(/^https?:\/\//, "");
-    document.getElementById("shareBtn").addEventListener("click", function(){ shareBackdrop.classList.add("-open"); });
-    document.getElementById("shareCloseBtn").addEventListener("click", function(){ shareBackdrop.classList.remove("-open"); });
-    shareBackdrop.addEventListener("mousedown", function(e){ if (e.target === shareBackdrop) shareBackdrop.classList.remove("-open"); });
-    document.addEventListener("keydown", function(e){ if (e.key === "Escape") shareBackdrop.classList.remove("-open"); });
+    // Modal at every width, unlike the filter panel — hence alwaysModal.
+    // Escape was already handled; focus was not, so opening Share left you
+    // tabbing through the page behind it.
+    var shareSheet = window.PPSheet && PPSheet({
+      panel: shareBackdrop, alwaysModal: true,
+      toggle: document.getElementById("shareBtn"),
+      closeBtn: document.getElementById("shareCloseBtn")
+    });
+    // Backdrop click closes, but only when the click started on the backdrop
+    // itself — dragging a selection out of the panel must not dismiss it.
+    shareBackdrop.addEventListener("mousedown", function(e){
+      if (e.target === shareBackdrop && shareSheet) shareSheet.close();
+    });
 
     var copyBtn = document.getElementById("copyLinkBtn");
     copyBtn.addEventListener("click", function(){
