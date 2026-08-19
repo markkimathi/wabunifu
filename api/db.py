@@ -577,6 +577,10 @@ _MIGRATIONS = [
     "ALTER TABLE submissions ADD COLUMN screening TEXT NOT NULL DEFAULT '[]'",
     "ALTER TABLE submissions ADD COLUMN portfolio_required INTEGER NOT NULL DEFAULT 0",
     "ALTER TABLE designer_projects ADD COLUMN status TEXT NOT NULL DEFAULT 'published'",
+    # Why a listing was turned down, in the reviewer's own words. Shown to the
+    # employer verbatim: a rejection they can't see the reason for is one they
+    # can't fix, and they'll just post the same thing again.
+    "ALTER TABLE submissions ADD COLUMN review_note TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -710,9 +714,20 @@ def get_submission(sub_id: int) -> dict | None:
     return dict(row) if row else None
 
 
-def set_status(sub_id: int, status: str) -> None:
+def set_status(sub_id: int, status: str, review_note: str = "") -> None:
+    """Set a submission's review status, optionally recording why.
+
+    The note is only meaningful on a rejection, but it is written whenever one
+    is passed rather than being special-cased here — an approval with a note
+    ("live, but we corrected the eligibility") is a reasonable thing to want.
+    Passing no note leaves any previous one alone, so re-approving something
+    doesn't silently erase the history of why it was once turned down."""
     c = _conn()
-    c.execute("UPDATE submissions SET status = ? WHERE id = ?", (status, sub_id))
+    if review_note:
+        c.execute("UPDATE submissions SET status = ?, review_note = ? WHERE id = ?",
+                  (status, review_note[:400], sub_id))
+    else:
+        c.execute("UPDATE submissions SET status = ? WHERE id = ?", (status, sub_id))
     c.commit()
     c.close()
 

@@ -1243,19 +1243,51 @@ def admin_list(status: str = "pending", _: None = Depends(require_admin)):
     return list_submissions(status=status if status != "all" else None)
 
 
+class SubmissionReview(BaseModel):
+    """Optional note from the reviewer. On a rejection this is the only thing
+    that tells the employer what to change, so it is passed straight through."""
+    note: str = ""
+
+
+def _tell_employer(sub: dict, kind: str, title: str, body: str) -> None:
+    """Notify whoever posted a listing about a review decision.
+
+    Scraped listings have no employer behind them, and the older employer-posted
+    rows predate submissions.employer_id, so a missing id is normal rather than
+    an error — there is simply nobody to tell."""
+    employer_id = sub.get("employer_id")
+    if employer_id:
+        notify("employer", int(employer_id), kind, title, body, "/employer")
+
+
 @app.post("/api/admin/submissions/{sub_id}/approve")
-def admin_approve(sub_id: int, _: None = Depends(require_admin)):
-    if not get_submission(sub_id):
+def admin_approve(sub_id: int, payload: SubmissionReview = SubmissionReview(),
+                  _: None = Depends(require_admin)):
+    sub = get_submission(sub_id)
+    if not sub:
         raise HTTPException(404, "no such submission")
-    set_status(sub_id, "approved")
+    set_status(sub_id, "approved", payload.note.strip())
+    _tell_employer(
+        sub, "listing_approved",
+        f"{sub['title']} is live on the board",
+        payload.note.strip() or "Designers can see and apply to it now.",
+    )
     return {"ok": True}
 
 
 @app.post("/api/admin/submissions/{sub_id}/reject")
-def admin_reject(sub_id: int, _: None = Depends(require_admin)):
-    if not get_submission(sub_id):
+def admin_reject(sub_id: int, payload: SubmissionReview = SubmissionReview(),
+                 _: None = Depends(require_admin)):
+    sub = get_submission(sub_id)
+    if not sub:
         raise HTTPException(404, "no such submission")
-    set_status(sub_id, "rejected")
+    note = payload.note.strip()
+    set_status(sub_id, "rejected", note)
+    _tell_employer(
+        sub, "listing_rejected",
+        f"{sub['title']} wasn't approved",
+        note or "Open the listing in your dashboard to edit and resubmit it.",
+    )
     return {"ok": True}
 
 
@@ -2978,7 +3010,7 @@ def _notify_other_party(conversation_id: int, sender_type: str, sender_designer_
         return
     for emp in list_employers_for_company(conv["company_id"]):
         notify("employer", emp["id"], "message",
-               sender_name + " replied", body, "/pp-employer.html")
+               sender_name + " replied", body, "/employer")
 
 
 def _notif_out(n: dict) -> dict:
@@ -3495,6 +3527,10 @@ PP_CLEAN_PAGES = {
     "signin": "pp-auth.html",
     "onboarding": "pp-onboarding.html",
     "dashboard": "pp-dashboard.html",
+    # The employer dashboard was the one signed-in surface with no clean path,
+    # so links to it had to name the .html file directly. /employer matches
+    # /dashboard on the designer side.
+    "employer": "pp-employer.html",
     "post-a-role": "pp-employer-onboarding.html",
     "terms": "terms.html",
     "privacy": "privacy.html",

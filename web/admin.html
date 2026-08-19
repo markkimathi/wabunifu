@@ -633,6 +633,15 @@
         </div>
       </div>
     </div>
+      <div style="margin-top:16px">
+        <label for="reviewRejectReason" style="display:block;font-size:13.5px;font-weight:600;margin-bottom:7px">
+          Reason <span style="font-weight:400;color:var(--c-text-subtle)">— the employer reads this word for word</span>
+        </label>
+        <textarea id="reviewRejectReason" rows="2" placeholder="What would they need to change to get this approved?"
+          style="width:100%;padding:10px 12px;border:1px solid var(--c-border);border-radius:var(--pp-radius-sm);
+                 background:var(--c-surface);color:var(--c-text);font:inherit;font-size:13.5px;resize:vertical"></textarea>
+      </div>
+    </div>
     <div class="modal-foot">
       <button class="reject" id="reviewReject" type="button" style="padding:10px 16px">Reject</button>
       <span class="modal-note" id="reviewNote"></span>
@@ -1228,6 +1237,10 @@ function openReviewModal(id) {
   }
   document.getElementById("reviewClaimed").textContent = eligLabel(sub.eligibility);
   document.getElementById("reviewReason").value = "";
+  // Cleared per listing: a reason left over from the last review would other-
+  // wise be sent to a different employer about a different role.
+  document.getElementById("reviewRejectReason").value = "";
+  document.getElementById("reviewReject").disabled = false;
   document.querySelectorAll("#reviewChecks input[type=checkbox]").forEach(c => { c.checked = false; });
   renderReviewEligOptions();
   reviewModalBackdrop.classList.add("-open");
@@ -1287,10 +1300,21 @@ document.getElementById("reviewPublish").addEventListener("click", async () => {
 });
 document.getElementById("reviewReject").addEventListener("click", async () => {
   const btn = document.getElementById("reviewReject");
+  // Required, not optional. A rejection with no reason gives the employer
+  // nothing to act on, and they just resubmit the same listing.
+  const reason = document.getElementById("reviewRejectReason").value.trim();
+  if (!reason) {
+    showToast("Say why — the employer sees this and needs it to fix the listing.");
+    document.getElementById("reviewRejectReason").focus();
+    return;
+  }
   btn.disabled = true;
   try {
     await applyReviewEligibilityIfChanged();
-    await api(`/api/admin/submissions/${reviewSub.id}/reject`, { method: "POST" });
+    await api(`/api/admin/submissions/${reviewSub.id}/reject`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ note: reason }),
+    });
     closeReviewModal();
     loadTab(document.querySelector("#queueView .tabs button.active").dataset.status);
     refreshBadges();

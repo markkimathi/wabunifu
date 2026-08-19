@@ -80,6 +80,10 @@
   .listing-row h3{margin:0 0 4px;font-size:16px;font-weight:700;letter-spacing:-0.012em}
   .listing-row .meta{font-size:13.5px;color:var(--c-text-subtle)}
   .listing-row .actions{display:flex;gap:8px;flex:none}
+  /* The reviewer's reason. Indented off a rule so it reads as a reply to the
+     listing above it rather than as more of the listing's own metadata. */
+  .listing-row .review-note{margin:8px 0 0;padding-left:10px;font-size:13.5px;line-height:1.5;
+    color:var(--c-text-subtle);border-left:2px solid var(--c-border)}
 
   .form-panel{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);margin-bottom:20px}
   .form-panel h3{margin:0 0 16px;font-size:17px;font-weight:700}
@@ -692,7 +696,11 @@
       listings.forEach(function(l){
         body += '<div class="listing-row">' +
           '<div class="main"><h3>' + escapeHtml(l.title) + '</h3>' +
-            '<div class="meta">' + escapeHtml(l.location || "Remote") + ' · ' + escapeHtml(l.work_type) + ' · ' + (l.applicant_count || 0) + ' applicant' + (l.applicant_count === 1 ? "" : "s") + '</div></div>' +
+            '<div class="meta">' + escapeHtml(l.location || "Remote") + ' · ' + escapeHtml(l.work_type) + ' · ' + (l.applicant_count || 0) + ' applicant' + (l.applicant_count === 1 ? "" : "s") + '</div>' +
+            // A rejection the employer can't see the reason for is one they
+            // can't fix. Shown in the reviewer's own words, not paraphrased.
+            (l.review_note ? '<p class="review-note">' + escapeHtml(l.review_note) + '</p>' : "") +
+          '</div>' +
           statusPill(l.status) +
           '<div class="actions">' +
             (canWrite() && l.status !== "closed" ? '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" data-edit-listing="' + l.id + '">Edit</button>' : "") +
