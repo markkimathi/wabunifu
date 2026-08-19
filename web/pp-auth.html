@@ -196,6 +196,13 @@
             '<button type="button" class="toggle-eye" id="toggleEye" aria-label="Show password">' + ICONS.eyeOpen + '</button></div>' +
           '<div class="fielderr" id="pwErr" hidden></div></div>' +
         '<div class="pw-strength" id="pwStrength" hidden><div class="pw-pips" id="pwPips"></div><span class="pw-note" id="pwNoteEl"></span></div>' +
+        // Password reset already asked people to repeat it; signup did not, so
+        // a typo here meant an account you could never sign in to — and if the
+        // email was mistyped too, no way to reset it either.
+        '<div class="field-block"><label class="pp-field-label" for="fPw2">Again, to be sure</label>' +
+          '<div class="pp-field-input"><input id="fPw2" type="password" placeholder="Repeat it" autocomplete="new-password">' +
+            '<span id="pw2Match" hidden>' + ICONS.match + '</span></div>' +
+          '<div class="fielderr" id="pw2Err" hidden></div></div>' +
         '<button type="submit" class="pp-btn pp-btn-primary pp-btn-lg pp-btn-block" id="submitBtn">Create account</button>' +
       '</form>' +
       '<p class="legal">By creating an account you agree to our <a href="/terms">terms</a> and <a href="/privacy">privacy notice</a>. We never sell your data and never contact your current employer.</p>' +
@@ -407,10 +414,16 @@
     var name = document.getElementById("fName").value.trim();
     var email = document.getElementById("fEmail").value.trim();
     var pw = document.getElementById("fPw").value;
-    showFieldError("emailErr", ""); showFieldError("pwErr", "");
+    var pw2 = document.getElementById("fPw2").value;
+    showFieldError("emailErr", ""); showFieldError("pwErr", ""); showFieldError("pw2Err", "");
     if (!name) { document.getElementById("fName").focus(); return; }
     if (!EMAIL_RE.test(email)) { showFieldError("emailErr", "That doesn't look like an email address yet."); return; }
     if (pwScore(pw) < 2) { showFieldError("pwErr", "Eight characters or more, please."); return; }
+    if (pw2 !== pw) {
+      showFieldError("pw2Err", "These two don\u2019t match yet.");
+      document.getElementById("fPw2").focus();
+      return;
+    }
     var btn = document.getElementById("submitBtn");
     setBusy(btn, true, "Creating your account…", "Create account");
     try {
