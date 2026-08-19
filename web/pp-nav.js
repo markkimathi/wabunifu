@@ -151,6 +151,17 @@
     + ".pp-search-clear{width:28px;height:28px;flex:none;border:none;border-radius:50%;background:var(--c-surface-inset);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--c-text-muted);padding:0}"
     + ".pp-search-esc{height:36px;padding:0 12px;border:none;border-radius:8px;background:var(--c-surface-inset);font-family:var(--pp-font);font-size:14px;font-weight:600;color:var(--c-text-muted);cursor:pointer;flex:none}"
     + ".pp-search-esc:hover{background:var(--c-border)}"
+    + ".pp-sresults{margin-top:14px;display:flex;flex-direction:column;gap:14px}"
+    + ".pp-sgroup-label{display:block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-faint);margin-bottom:6px}"
+    + ".pp-sitem{display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:var(--pp-radius-md);text-decoration:none;color:inherit}"
+    + ".pp-sitem:hover{background:var(--c-bg-sunken)}"
+    + ".pp-sitem .pp-sthumb{width:32px;height:32px;flex:none;border-radius:var(--pp-radius-sm);object-fit:cover;background:var(--c-surface-inset);display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--c-text-subtle)}"
+    + ".pp-sitem .pp-sthumb.-round{border-radius:50%}"
+    + ".pp-sitem .pp-stext{flex:1;min-width:0}"
+    + ".pp-sitem .pp-st{display:block;font-size:14px;font-weight:600;color:var(--c-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+    + ".pp-sitem .pp-ss{display:block;font-size:12.5px;color:var(--c-text-subtle);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}"
+    + ".pp-sempty{padding:18px 10px;font-size:13.5px;color:var(--c-text-subtle)}"
+    + ".pp-sall{display:inline-block;margin-top:2px;font-size:13px;font-weight:600;color:var(--c-accent-text);text-decoration:none;padding:6px 10px}"
     + ".pp-recent-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}"
     + ".pp-recent-row>span{font-size:13px;color:var(--c-text-subtle);margin-right:2px}"
     + ".pp-recent-chip{padding:7px 13px;border-radius:999px;border:1px solid var(--c-border);background:var(--c-surface);font-family:var(--pp-font);font-size:13.5px;font-weight:500;color:var(--c-text-muted);cursor:pointer}"
@@ -334,10 +345,114 @@
   }
 
 
+  /* Live results for the header search, which until now saved your term to a
+     "recent" list and did nothing else — a control that looked functional on
+     every page and wasn't.
+
+     Grouped by type because roles, people and companies are different intents;
+     a blended ranked list makes the reader do the sorting. Debounced so typing
+     doesn't fire a request per keystroke, and every render is guarded by the
+     term it was for, so a slow response can't overwrite a newer one. */
+  function wireLiveSearch(root){
+    var boxes = Array.prototype.slice.call(root.querySelectorAll("[data-search-results]"));
+    if (!boxes.length) return;
+    var timer = null;
+    var lastRendered = "";
+
+    function esc(t){
+      return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function initials(name){
+      return String(name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
+    }
+    function thumb(src, name, round){
+      if (src) return '<img class="pp-sthumb' + (round ? " -round" : "") + '" src="' + esc(src) + '" alt="">';
+      return '<span class="pp-sthumb' + (round ? " -round" : "") + '">' + esc(initials(name)) + '</span>';
+    }
+    function group(label, items, render){
+      if (!items.length) return "";
+      return '<div><span class="pp-sgroup-label">' + label + '</span>' + items.map(render).join("") + '</div>';
+    }
+
+    function paint(html){
+      boxes.forEach(function(b){ b.innerHTML = html; b.hidden = !html; });
+    }
+
+    function clear(){
+      lastRendered = "";
+      paint("");
+      root.querySelectorAll("[data-recent-row],[data-msearch-recent-wrap]").forEach(function(el){
+        if (el.getAttribute("data-had-recent") === "1") el.hidden = false;
+      });
+    }
+
+    async function run(term){
+      if (term.length < 2) { clear(); return; }
+      try {
+        var res = await fetch("/api/search?q=" + encodeURIComponent(term));
+        if (!res.ok) return;
+        var d = await res.json();
+        // A response for a term the user has already moved past must not win.
+        if ((d.query || "").trim().toLowerCase() !== term.toLowerCase()) return;
+        lastRendered = term;
+
+        // Recent is for an empty box; once there are results it is in the way.
+        root.querySelectorAll("[data-recent-row],[data-msearch-recent-wrap]").forEach(function(el){
+          if (!el.hasAttribute("data-had-recent")) el.setAttribute("data-had-recent", el.hidden ? "0" : "1");
+          el.hidden = true;
+        });
+
+        if (!d.total) {
+          paint('<p class="pp-sempty">Nothing matches “' + esc(term) + '” yet. ' +
+                '<a class="pp-sall" href="/jobs?q=' + encodeURIComponent(term) + '">Search the whole board →</a></p>');
+          return;
+        }
+        paint(
+          group("Roles", d.roles, function(r){
+            return '<a class="pp-sitem" href="' + esc(r.href) + '">' + thumb("", r.company) +
+              '<span class="pp-stext"><span class="pp-st">' + esc(r.title) + '</span>' +
+              '<span class="pp-ss">' + esc(r.company) + ' · ' + esc(r.place) + '</span></span></a>';
+          }) +
+          group("People", d.people, function(p){
+            return '<a class="pp-sitem" href="' + esc(p.href) + '">' + thumb(p.photo, p.name, true) +
+              '<span class="pp-stext"><span class="pp-st">' + esc(p.name) + '</span>' +
+              '<span class="pp-ss">' + esc(p.sub) + '</span></span></a>';
+          }) +
+          group("Companies", d.companies, function(c){
+            return '<a class="pp-sitem" href="' + esc(c.href) + '">' + thumb(c.logo, c.name) +
+              '<span class="pp-stext"><span class="pp-st">' + esc(c.name) + '</span>' +
+              (c.sub ? '<span class="pp-ss">' + esc(c.sub) + '</span>' : "") + '</span></a>';
+          }) +
+          '<a class="pp-sall" href="/jobs?q=' + encodeURIComponent(term) + '">See all roles for “' + esc(term) + '” →</a>'
+        );
+      } catch (e) {}
+    }
+
+    root.querySelectorAll("[data-search-input],[data-msearch-input]").forEach(function(input){
+      input.addEventListener("input", function(){
+        var term = input.value.trim();
+        clearTimeout(timer);
+        timer = setTimeout(function(){ run(term); }, 220);
+      });
+      // Enter now goes somewhere. The board is the honest destination: it is
+      // the only surface that can hold a full result set.
+      input.addEventListener("keydown", function(e){
+        if (e.key !== "Enter") return;
+        var term = input.value.trim();
+        if (!term) return;
+        saveRecentSearch(term);
+        location.href = "/jobs?q=" + encodeURIComponent(term);
+      });
+    });
+  }
+
   /* Notifications. The bell only appears once we know there is an account to
      load them for, so a signed-out visitor never sees a control that does
      nothing. Failures are silent: a nav that breaks because a nicety failed
      would be a worse trade than a missing badge. */
+
   function wireBell(root){
     // Two headers render at different widths (desktop row and compact row), so
     // there are two bells. Both are wired against one shared item list — a
@@ -484,6 +599,7 @@
               '<button type="button" class="pp-search-esc" data-close-search>Esc</button>' +
             '</div>' +
             '<div class="pp-recent-row" data-recent-row' + (recent.length ? '' : ' hidden') + '><span>Recent</span>' + recentChips + '</div>' +
+            '<div class="pp-sresults" data-search-results hidden></div>' +
           '</div>' +
         '</div>' +
         '<div class="pp-header-compact">' +
@@ -510,6 +626,7 @@
           '<button type="button" class="pp-msearch-cancel" data-close-msearch>Cancel</button>' +
         '</div>' +
         '<div class="pp-msearch-body">' +
+          '<div class="pp-sresults" data-search-results hidden></div>' +
           '<div data-msearch-recent-wrap' + (recent.length ? '' : ' hidden') + '>' +
             '<span class="pp-msearch-label">Recent</span>' +
             '<div class="pp-msearch-recent" data-msearch-recent>' + recentRows + '</div>' +
@@ -629,6 +746,7 @@
       });
     });
 
+    wireLiveSearch(root);
     wireBell(root);
 
     var avatarMenu = root.querySelector("[data-avatar-menu]");

@@ -1610,6 +1610,61 @@ def admin_send_search_digests(dry_run: bool = False, _: None = Depends(require_a
     return {"sent": sent, "nothing_to_send": skipped, "failed": errors, "dry_run": dry_run}
 
 
+@app.get("/api/search")
+def unified_search(q: str = "", limit: int = 5):
+    """One search across the things the site actually holds.
+
+    The header search box existed on every page and went nowhere — pressing
+    Enter saved the term to recent searches and nothing else. This gives it
+    somewhere to go.
+
+    Grouped by type rather than blended into one ranked list: "roles",
+    "people" and "companies" are different intents, and a mixed list makes the
+    reader do the sorting. Public data only, so it works signed out — which is
+    most of the traffic on a job board."""
+    needle = (q or "").strip().lower()
+    if len(needle) < 2:
+        return {"query": q, "roles": [], "people": [], "companies": [], "total": 0}
+
+    combined, _gen = _combined_jobs()
+    roles = []
+    for j in combined:
+        hay = " ".join([j.get("t", ""), j.get("co", ""), j.get("cat", ""), j.get("city", "")]).lower()
+        if needle in hay:
+            roles.append({"id": j["id"], "title": j.get("t", ""), "company": j.get("co", ""),
+                          "place": j.get("city", "Remote"),
+                          "elig": j.get("elig", ""), "elig_scope": j.get("elig_scope", ""),
+                          "href": "/jobs/" + j["id"]})
+        if len(roles) >= limit:
+            break
+
+    people = []
+    for d in list_approved_designers():
+        pub = _designer_public(d)
+        hay = " ".join([pub.get("display_name", ""), pub.get("headline", ""), pub.get("location", ""),
+                        " ".join(pub.get("skills") or []), " ".join(pub.get("discipline") or [])]).lower()
+        if needle in hay:
+            people.append({"name": pub["display_name"],
+                           "sub": pub.get("headline") or (pub.get("discipline") or ["Designer"])[0],
+                           "photo": pub.get("photo_path", ""),
+                           "href": "/designers/" + (pub.get("handle") or str(pub["id"]))})
+        if len(people) >= limit:
+            break
+
+    companies = []
+    for co in list_companies(status="approved"):
+        hay = " ".join([co.get("name", ""), co.get("blurb", "")]).lower()
+        if needle in hay:
+            companies.append({"name": co["name"], "sub": (co.get("blurb") or "")[:80],
+                              "logo": co.get("logo_path", ""),
+                              "href": "/companies/" + (co.get("slug") or str(co["id"]))})
+        if len(companies) >= limit:
+            break
+
+    return {"query": q, "roles": roles, "people": people, "companies": companies,
+            "total": len(roles) + len(people) + len(companies)}
+
+
 @app.get("/api/countries")
 def get_countries():
     """The country picker's options. Served rather than duplicated into the
