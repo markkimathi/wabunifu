@@ -110,6 +110,10 @@ LEVELS = {"Junior", "Mid", "Senior", "Lead"}
 APPLICANT_STAGES = ["Applied", "Reviewing", "Interviewing", "Offer"]
 MAX_LINKS = 8
 AVAILABILITY_STATUSES = ["Available", "Open to offers", "Not available"]
+# What kind of work, which is a separate question from whether they're looking.
+# An employer scanning the directory needs to tell a staff hire from a
+# freelancer, and availability_status alone never said which.
+OPEN_TO_OPTIONS = ["Full-time", "Contract", "Freelance", "Internship"]
 MAX_DESIGNER_DISCIPLINES = 5
 MAX_DESIGNER_SKILLS = 7
 
@@ -414,6 +418,7 @@ class ProfileUpdate(BaseModel):
     bio: str = ""
     discipline: list[str] = []
     skills: list[str] = []
+    open_to: list[str] = []
     location: str = ""
     country: str = ""
     phone: str = ""
@@ -1285,6 +1290,7 @@ def _designer_public(d: dict) -> dict:
         "handle": d.get("handle", ""),
         "headline": d.get("headline", ""), "years_experience": d.get("years_experience", ""),
         "availability_status": d.get("availability_status", ""),
+        "open_to": parse_multi_field(d.get("open_to")),
         "skills": parse_multi_field(d.get("skills")),
         "links": list_designer_links(d["id"]),
         "projects": list_designer_projects(d["id"]),
@@ -1613,6 +1619,9 @@ def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_
     # eligibility scope; "" stays allowed so the field is never a blocker.
     if payload.country and payload.country not in COUNTRIES:
         raise HTTPException(400, "country must be one we recognise")
+    bad_open = [o for o in payload.open_to if o not in OPEN_TO_OPTIONS]
+    if bad_open:
+        raise HTTPException(400, f"open_to must be from {OPEN_TO_OPTIONS}")
     update_designer_profile(
         designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
         discipline=payload.discipline, location=payload.location.strip()[:200],
@@ -1620,6 +1629,7 @@ def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_
         phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
         headline=payload.headline, years_experience=payload.years_experience,
         availability_status=payload.availability_status, skills=payload.skills,
+        open_to=payload.open_to,
     )
     return {"ok": True}
 

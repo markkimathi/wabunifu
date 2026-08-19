@@ -117,6 +117,10 @@ CREATE TABLE IF NOT EXISTS designers (
   headline TEXT NOT NULL DEFAULT '',
   years_experience TEXT NOT NULL DEFAULT '',
   availability_status TEXT NOT NULL DEFAULT '',
+  -- What kind of work, as opposed to whether they're looking at all. An
+  -- employer scanning the directory needs to tell a staff hire from a
+  -- freelancer, and availability_status alone never said.
+  open_to TEXT NOT NULL DEFAULT '[]',
   skills TEXT NOT NULL DEFAULT '[]',
   resume_path TEXT NOT NULL DEFAULT '',
   resume_filename TEXT NOT NULL DEFAULT '',
@@ -513,6 +517,7 @@ _MIGRATIONS = [
     "ALTER TABLE submissions ADD COLUMN eligibility_override_reason TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE submissions ADD COLUMN eligibility_overridden_at TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE designers ADD COLUMN country TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN open_to TEXT NOT NULL DEFAULT '[]'",
 ]
 
 
@@ -833,7 +838,7 @@ def update_designer_profile(
     country: str = "",
     phone: str = "", contact_email: str = "",
     headline: str = "", years_experience: str = "", availability_status: str = "",
-    skills: list[str] | None = None,
+    skills: list[str] | None = None, open_to: list[str] | None = None,
 ) -> None:
     c = _conn()
     # Editing an approved profile sends it back for re-review, same as a job
@@ -844,10 +849,10 @@ def update_designer_profile(
     c.execute(
         "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, "
         "country = ?, phone = ?, contact_email = ?, headline = ?, years_experience = ?, "
-        "availability_status = ?, skills = ?, status = ? WHERE id = ?",
+        "availability_status = ?, skills = ?, open_to = ?, status = ? WHERE id = ?",
         (display_name, bio, json.dumps(discipline), location, country, phone, contact_email,
          headline, years_experience, availability_status, json.dumps(skills or []),
-         new_status, designer_id),
+         json.dumps(open_to or []), new_status, designer_id),
     )
     c.commit()
     c.close()

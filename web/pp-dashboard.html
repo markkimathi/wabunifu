@@ -591,14 +591,40 @@
 
   function renderAvailability(){
     var current = me.availability_status || "";
+    var openTo = me.open_to || [];
     var body = '<div class="section-head"><h2>Availability</h2></div>';
     body += '<div class="form-panel"><form id="availForm">' +
+      '<h3>Are you looking?</h3>' +
       AVAILABILITY.map(function(a){
         return '<label class="avail-opt' + (current === a ? " -active" : "") + '"><span class="dot"></span><input type="radio" name="avail" value="' + a + '"' + (current === a ? " checked" : "") + '><span>' + a + '</span></label>';
       }).join("") +
-      '<div class="form-actions" style="margin-top:12px"><button type="submit" class="pp-btn pp-btn-primary" id="availSubmitBtn">Save</button><span class="save-note" id="availSaveNote" hidden>Saved.</span></div>' +
+      // Separate question: an employer needs to tell a staff hire from a
+      // freelancer, and "Available" alone never said which.
+      '<h3 style="margin-top:22px">What kind of work?</h3>' +
+      '<p class="field-hint" style="margin:0 0 10px">Shown on your profile and used when employers filter the directory. Pick as many as fit.</p>' +
+      '<div class="chip-select" id="openToChips"></div>' +
+      '<div class="form-actions" style="margin-top:16px"><button type="submit" class="pp-btn pp-btn-primary" id="availSubmitBtn">Save</button><span class="save-note" id="availSaveNote" hidden>Saved.</span></div>' +
     '</form></div>';
     return body;
+  }
+
+  var OPEN_TO = ["Full-time", "Contract", "Freelance", "Internship"];
+  var selectedOpenTo = [];
+  function renderOpenToChips(){
+    var box = document.getElementById("openToChips");
+    if (!box) return;
+    box.innerHTML = OPEN_TO.map(function(o){
+      var on = selectedOpenTo.indexOf(o) !== -1;
+      return '<button type="button" class="pick-chip' + (on ? " -active" : "") + '" data-open="' + escapeHtml(o) + '">' + escapeHtml(o) + '</button>';
+    }).join("");
+    box.querySelectorAll("[data-open]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var o = btn.getAttribute("data-open");
+        var i = selectedOpenTo.indexOf(o);
+        if (i !== -1) selectedOpenTo.splice(i, 1); else selectedOpenTo.push(o);
+        renderOpenToChips();
+      });
+    });
   }
 
   // ---------------- Account ----------------
@@ -633,6 +659,7 @@
     content.innerHTML = head + body;
     document.getElementById("dashRail").innerHTML = railHtml();
     document.getElementById("dashChipsMobile").innerHTML = chipsMobileHtml();
+    if (section === "availability") { selectedOpenTo = (me.open_to || []).slice(); renderOpenToChips(); }
     if (section === "profile") { selectedDisciplines = (me.discipline || []).slice(); selectedSkills = (me.skills || []).slice(); renderDisciplineChips(); renderSkillChips(); fillCountrySelect(me.country || ""); }
     wire();
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
@@ -746,6 +773,7 @@
         headline: document.getElementById("pHeadline").value.trim(),
         location: document.getElementById("pLocation").value.trim(),
         country: document.getElementById("pCountry").value,
+        open_to: me.open_to || [],
         years_experience: document.getElementById("pYears").value.trim(),
         bio: document.getElementById("pBio").value.trim(),
         discipline: selectedDisciplines, skills: selectedSkills,
@@ -776,8 +804,10 @@
       var picked = availForm.querySelector('input[name="avail"]:checked');
       var payload = {
         display_name: me.display_name, bio: me.bio || "", discipline: me.discipline || [], skills: me.skills || [],
-        location: me.location || "", phone: me.phone || "", contact_email: me.contact_email || "",
+        location: me.location || "", country: me.country || "",
+        phone: me.phone || "", contact_email: me.contact_email || "",
         headline: me.headline || "", years_experience: me.years_experience || "",
+        open_to: selectedOpenTo.slice(),
         availability_status: picked ? picked.value : ""
       };
       await api("/api/designers/me", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
