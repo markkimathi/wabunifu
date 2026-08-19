@@ -190,6 +190,19 @@ a.pp-card:hover,.pp-card.-clickable:hover{border-color:var(--c-border-hover);box
 .pp-card-row{display:flex;align-items:flex-start;gap:14px}
 .pp-card-tags{display:flex;flex-wrap:wrap;gap:7px}
 /* Square company/job "mark" tile — initial or logo placeholder. */
+/* Loading skeletons. This was defined identically in six page files; one
+   product should have one loading language, and changing its rhythm should not
+   mean finding six copies. Pages still size their own blocks — only the look
+   and the motion live here. */
+.skeleton-block{background:var(--c-surface-inset);border-radius:5px;animation:pp-pulse 1.4s ease-in-out infinite}
+@keyframes pp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+@media(prefers-reduced-motion:reduce){.skeleton-block{animation:none}}
+
+/* Announced, not drawn. Loading skeletons are aria-hidden shapes, so without
+   a text status alongside them a screen reader is told nothing is happening. */
+.pp-sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap;border:0}
+
 .pp-card-mark{width:44px;height:44px;border-radius:var(--pp-radius-md);background:var(--pp-ink-raised);color:var(--pp-gold);
   flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:17px;font-weight:800}
 .pp-card-mark.-logo{background:var(--c-surface-inset);color:var(--c-text-subtle);border:1px solid var(--c-border);

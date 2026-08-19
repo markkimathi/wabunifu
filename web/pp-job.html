@@ -19,6 +19,12 @@
 
   /* The company name is the one link out of a role that isn't the apply
      button, so it reads as a link on hover without shouting in the meta line. */
+  /* Same skeleton primitives as the list pages. A role page showed the words
+     "Loading role…" while every other list on the site showed the shape of
+     what was coming — one product, one loading language. */
+  .sk-head{display:flex;align-items:flex-start;gap:18px;margin-bottom:22px}
+  .sk-lines{flex:1;min-width:0}
+
   .role-head .co-link{color:inherit;text-decoration:none;border-bottom:1px solid transparent}
   .role-head .co-link:hover{border-bottom-color:currentColor}
   .role-head{display:flex;align-items:flex-start;gap:18px;margin-bottom:22px}
@@ -147,7 +153,18 @@
 
 <main>
   <div class="wrap" id="content">
-    <div class="state-panel"><p>Loading role…</p></div>
+    <div class="sk-head" aria-hidden="true">
+      <div class="skeleton-block" style="width:64px;height:64px;border-radius:var(--pp-radius-lg);flex:none"></div>
+      <div class="sk-lines">
+        <div class="skeleton-block" style="height:30px;width:min(460px,78%)"></div>
+        <div class="skeleton-block" style="height:15px;width:min(300px,55%);margin-top:12px"></div>
+      </div>
+    </div>
+    <div class="skeleton-block" style="height:26px;width:min(420px,70%);border-radius:999px;margin-bottom:22px" aria-hidden="true"></div>
+    <div class="skeleton-block" style="height:13px;width:96%;margin-bottom:9px" aria-hidden="true"></div>
+    <div class="skeleton-block" style="height:13px;width:90%;margin-bottom:9px" aria-hidden="true"></div>
+    <div class="skeleton-block" style="height:13px;width:64%" aria-hidden="true"></div>
+    <p class="pp-sr-only" role="status">Loading this role.</p>
   </div>
 </main>
 
@@ -407,7 +424,13 @@
 
           cvCardHtml() +
 
-          '<div class="similar-card" id="similarCard"><h4>Similar and still open</h4><p style="font-size:13.5px;color:var(--c-text-subtle);margin:0">Loading…</p></div>' +
+          '<div class="similar-card" id="similarCard"><h4>Similar and still open</h4>' +
+            '<div aria-hidden="true">' +
+              '<div class="skeleton-block" style="height:14px;width:88%;margin-bottom:7px"></div>' +
+              '<div class="skeleton-block" style="height:12px;width:60%;margin-bottom:16px"></div>' +
+              '<div class="skeleton-block" style="height:14px;width:80%;margin-bottom:7px"></div>' +
+              '<div class="skeleton-block" style="height:12px;width:54%"></div>' +
+            '</div><p class="pp-sr-only" role="status">Loading similar roles.</p></div>' +
         '</aside>' +
       '</div>' +
 

@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="/tokens.css">
 <link rel="stylesheet" href="/pp-primitives.css">
 <style>
+  .sk-head{display:flex;align-items:flex-start;gap:18px;margin-bottom:22px}
+
   body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
     font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
   main{flex:1}
@@ -116,7 +118,17 @@
 <nav id="pp-breadcrumbs"></nav>
 
 <main>
-  <div class="wrap" id="content"><div class="state-panel"><p>Loading company…</p></div></div>
+  <div class="wrap" id="content"><div class="sk-head" aria-hidden="true">
+      <div class="skeleton-block" style="width:64px;height:64px;border-radius:var(--pp-radius-lg);flex:none"></div>
+      <div style="flex:1;min-width:0">
+        <div class="skeleton-block" style="height:28px;width:min(420px,74%)"></div>
+        <div class="skeleton-block" style="height:15px;width:min(280px,52%);margin-top:12px"></div>
+      </div>
+    </div>
+    <div class="skeleton-block" style="height:13px;width:94%;margin-bottom:9px" aria-hidden="true"></div>
+    <div class="skeleton-block" style="height:13px;width:88%;margin-bottom:9px" aria-hidden="true"></div>
+    <div class="skeleton-block" style="height:13px;width:62%" aria-hidden="true"></div>
+    <p class="pp-sr-only" role="status">Loading this company.</p></div>
 </main>
 
 <div id="pp-footer" data-variant="short"></div>
