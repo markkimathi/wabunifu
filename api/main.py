@@ -194,6 +194,33 @@ app = FastAPI(title="Kazi API")
 init_db()
 
 
+# Nothing here is content-hashed — pages ask for "pp-nav.js", not
+# "pp-nav.a1b2c3.js" — and StaticFiles only sends etag/last-modified, no
+# Cache-Control. Browsers fall back to *heuristic* freshness for that, which
+# means a plain refresh can serve a stale copy for hours without ever asking
+# us, so a deploy quietly fails to reach people who already had the page open.
+# "no-cache" is not "don't cache": it stores the file but revalidates first,
+# and the existing etag turns that into a cheap 304. Media keeps a real
+# max-age since those bytes are big and change only by being replaced.
+_REVALIDATE_SUFFIXES = (".html", ".js", ".css", ".json", ".map")
+_MEDIA_PREFIXES = ("/avatars/", "/photos/", "/project-images/", "/logos/", "/video/", "/brand/", "/fonts/")
+
+
+@app.middleware("http")
+async def cache_headers(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith("/api/"):
+        return response
+    path = request.url.path
+    if path.startswith(_MEDIA_PREFIXES):
+        response.headers.setdefault("Cache-Control", "public, max-age=86400")
+    elif path.endswith(_REVALIDATE_SUFFIXES) or "." not in path.rsplit("/", 1)[-1]:
+        # Extensionless paths are the clean-URL page routes (/jobs, /people, ...),
+        # which serve HTML and must revalidate for the same reason.
+        response.headers["Cache-Control"] = "no-cache"
+    return response
+
+
 class JobSubmission(BaseModel):
     title: str
     company: str
