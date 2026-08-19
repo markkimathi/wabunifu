@@ -414,18 +414,28 @@ class VerifyCodeIn(BaseModel):
 
 
 class ProfileUpdate(BaseModel):
+    """Every field except the name defaults to None meaning "not sent", and the
+    endpoint keeps whatever is already stored for those.
+
+    This used to default to "" instead, which made a partial form indistinguishable
+    from a deliberate clear — so the availability form, which posts a whole profile
+    payload with only its own fields filled, silently wiped the country the job
+    board filters on the moment that field was added. Three forms post this model
+    and each would have to be updated by hand for every new field; making absence
+    mean "leave it alone" removes the trap instead of re-setting it each time.
+    """
     display_name: str
-    bio: str = ""
-    discipline: list[str] = []
-    skills: list[str] = []
-    open_to: list[str] = []
-    location: str = ""
-    country: str = ""
-    phone: str = ""
-    contact_email: str = ""
-    headline: str = ""
-    years_experience: str = ""
-    availability_status: str = ""
+    bio: Optional[str] = None
+    discipline: Optional[list] = None
+    skills: Optional[list] = None
+    open_to: Optional[list] = None
+    location: Optional[str] = None
+    country: Optional[str] = None
+    phone: Optional[str] = None
+    contact_email: Optional[str] = None
+    headline: Optional[str] = None
+    years_experience: Optional[str] = None
+    availability_status: Optional[str] = None
 
     @field_validator("display_name")
     @classmethod
@@ -436,7 +446,9 @@ class ProfileUpdate(BaseModel):
 
     @field_validator("discipline")
     @classmethod
-    def _valid_discipline_list(cls, v: list[str]) -> list[str]:
+    def _valid_discipline_list(cls, v):
+        if v is None:
+            return None          # not sent — the endpoint keeps what's stored
         cleaned = []
         for item in v:
             item = item.strip()
@@ -448,7 +460,9 @@ class ProfileUpdate(BaseModel):
 
     @field_validator("skills")
     @classmethod
-    def _valid_skills_list(cls, v: list[str]) -> list[str]:
+    def _valid_skills_list(cls, v):
+        if v is None:
+            return None          # not sent — the endpoint keeps what's stored
         cleaned = []
         seen = set()
         for item in v:
@@ -1610,26 +1624,43 @@ def designer_stats(designer: dict = Depends(require_designer)):
 
 @app.put("/api/designers/me")
 def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_designer)):
-    bad = [d for d in payload.discipline if d not in DISCIPLINES]
+    # A field the form didn't send keeps whatever is stored. Sending "" is still
+    # a deliberate clear — absence and emptiness are different answers.
+    def kept(sent, column, parse_list=False):
+        if sent is not None:
+            return sent
+        return parse_multi_field(designer.get(column)) if parse_list else designer.get(column, "")
+
+    discipline = kept(payload.discipline, "discipline", parse_list=True)
+    skills = kept(payload.skills, "skills", parse_list=True)
+    open_to = kept(payload.open_to, "open_to", parse_list=True)
+    country = kept(payload.country, "country")
+    availability = kept(payload.availability_status, "availability_status")
+
+    bad = [d for d in discipline if d not in DISCIPLINES]
     if bad:
         raise HTTPException(400, f"discipline must be one of {DISCIPLINES}")
-    if payload.availability_status and payload.availability_status not in AVAILABILITY_STATUSES:
+    if availability and availability not in AVAILABILITY_STATUSES:
         raise HTTPException(400, f"availability_status must be one of {AVAILABILITY_STATUSES}")
     # Must be an exact match or the board can't line it up with a listing's
     # eligibility scope; "" stays allowed so the field is never a blocker.
-    if payload.country and payload.country not in COUNTRIES:
+    if country and country not in COUNTRIES:
         raise HTTPException(400, "country must be one we recognise")
-    bad_open = [o for o in payload.open_to if o not in OPEN_TO_OPTIONS]
+    bad_open = [o for o in open_to if o not in OPEN_TO_OPTIONS]
     if bad_open:
         raise HTTPException(400, f"open_to must be from {OPEN_TO_OPTIONS}")
+
     update_designer_profile(
-        designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
-        discipline=payload.discipline, location=payload.location.strip()[:200],
-        country=payload.country,
-        phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
-        headline=payload.headline, years_experience=payload.years_experience,
-        availability_status=payload.availability_status, skills=payload.skills,
-        open_to=payload.open_to,
+        designer["id"], display_name=payload.display_name,
+        bio=kept(payload.bio, "bio").strip()[:2000],
+        discipline=discipline,
+        location=kept(payload.location, "location").strip()[:200],
+        country=country,
+        phone=kept(payload.phone, "phone").strip()[:40],
+        contact_email=kept(payload.contact_email, "contact_email").strip()[:200],
+        headline=kept(payload.headline, "headline"),
+        years_experience=kept(payload.years_experience, "years_experience"),
+        availability_status=availability, skills=skills, open_to=open_to,
     )
     return {"ok": True}
 
