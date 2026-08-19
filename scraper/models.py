@@ -34,6 +34,11 @@ class Job:
     discipline: str = ""     # one of DISCIPLINES
     level: str = "Mid"       # Junior | Mid | Senior | Lead
     eligibility: str = "check"   # one of ELIGIBILITY
+    # Who an "africa"/"kenya" badge is actually limited to. "" means genuinely
+    # continent-wide; otherwise a country or sub-region ("Nigeria", "West
+    # Africa"), comma-joined when a posting names several. Without this the
+    # badge claimed a Nigeria-only role was open across Africa.
+    eligibility_scope: str = ""
     salary: str | None = None    # raw string if disclosed, else None
     desc: str | None = None      # role description as safe structured HTML — see desc_format.py
     desc_text: str | None = None # short plain-text teaser derived from desc, for card previews
@@ -72,6 +77,7 @@ class Job:
             "cat": self.discipline,
             "level": self.level,
             "elig": self.eligibility,
+            "elig_scope": self.eligibility_scope,
             "pay": self.salary or "Not disclosed",
             "src": self.source,
             "days": self.days_ago(),

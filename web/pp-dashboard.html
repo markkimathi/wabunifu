@@ -154,6 +154,7 @@
 
 <script src="pp-nav.js"></script>
 <script src="pp-footer.js"></script>
+<script src="pp-elig.js"></script>
 <script src="pp-confirm.js"></script>
 <script>
 (function(){
@@ -246,11 +247,8 @@
     '</div>';
   }
 
-  function eligBadge(elig){
-    var map = { africa:["Open across Africa",true], kenya:["Open across Africa",true], world:["Global remote",true], check:["Worth checking",false] };
-    var m = map[elig] || map.check;
-    return m[1] ? '<span class="pp-elig -positive"><span class="pp-elig-dot"></span>' + m[0] + '</span>' : '<span class="pp-elig -check">' + m[0] + '</span>';
-  }
+  // Wording lives in pp-elig.js, shared with the board and job pages.
+  function eligBadge(elig, scope){ return PPElig.badge(elig, scope || "", PPElig.getViewerCountry()); }
 
   // ---------------- Overview ----------------
 
@@ -271,7 +269,7 @@
       cache.matches.slice(0, 5).forEach(function(j){
         body += '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '" style="text-decoration:none;color:inherit">' +
           '<div class="main"><h3>' + escapeHtml(j.t) + '</h3><div class="meta">' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</div></div>' +
-          eligBadge(j.elig) +
+          eligBadge(j.elig, j.elig_scope) +
         '</a>';
       });
     }
@@ -290,7 +288,7 @@
     cache.saved.forEach(function(j){
       body += '<div class="job-row">' +
         '<div class="main"><h3>' + escapeHtml(j.title) + '</h3><div class="meta">' + escapeHtml(j.company) + ' · ' + escapeHtml(j.location || "Remote") + '</div></div>' +
-        (j.eligibility ? eligBadge(j.eligibility) : "") +
+        (j.eligibility ? eligBadge(j.eligibility, j.eligibility_scope) : "") +
         '<div class="actions" style="display:flex;gap:8px">' +
           (j.url ? '<a class="pp-btn pp-btn-tertiary pp-btn-sm" href="/jobs/' + encodeURIComponent(j.job_id) + '">View</a>' : "") +
           '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" data-unsave="' + escapeHtml(j.job_id) + '">Remove</button>' +

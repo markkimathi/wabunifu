@@ -252,6 +252,7 @@
 
 <script src="pp-nav.js"></script>
 <script src="pp-footer.js"></script>
+<script src="pp-elig.js"></script>
 <script>
 (function(){
   "use strict";
@@ -319,23 +320,10 @@
     } catch (e) {}
   }
 
-  // Kazi's own eligibility model has 4 values (kenya/africa/world/check);
-  // Path & Pixel's spec is a simplified 3-tier one (Open across Africa /
-  // Global remote / Worth checking), with green carrying the signal for
-  // both positive tiers and nothing else. kenya and africa collapse into
-  // the same "Open across Africa" tier here — P&P is Africa-first, not
-  // Kenya-first, per house rules.
-  var ELIG_META = {
-    africa: { label: "Open across Africa", positive: true },
-    kenya: { label: "Open across Africa", positive: true },
-    world: { label: "Global remote", positive: true },
-    check: { label: "Worth checking", positive: false }
-  };
-  function eligBadge(elig){
-    var m = ELIG_META[elig] || ELIG_META.check;
-    if (m.positive) return '<span class="pp-elig -positive"><span class="pp-elig-dot"></span>' + m.label + '</span>';
-    return '<span class="pp-elig -check">' + m.label + '</span>';
-  }
+  // Badge wording lives in pp-elig.js, shared with every other page that shows
+  // one. A verdict is (elig, scope): the scope is what stops a role posted as
+  // "Remote, Nigeria" from claiming it is open across Africa.
+  function eligBadge(j){ return PPElig.badge(j.elig, j.elig_scope || "", PPElig.getViewerCountry()); }
   function eligGroup(elig){ return (elig === "kenya" || elig === "africa") ? "africa" : elig; }
 
   var toastTimer = null;
@@ -469,7 +457,7 @@
   }
 
   function renderJobRow(j){
-    var tags = eligBadge(j.elig) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>';
+    var tags = eligBadge(j) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>';
     var saved = isSaved(j.id);
     return '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
       '<div class="jr-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
@@ -681,7 +669,7 @@
     // Homepage "Try" chips: narrow to one eligibility tier or level instead
     // of just linking to the board with no filter applied.
     var eligParam = params.get("elig");
-    if (eligParam && ELIG_META[eligParam]) {
+    if (eligParam && ["africa", "kenya", "world", "check"].indexOf(eligParam) !== -1) {
       state.elig = { africa: false, world: false, check: false };
       state.elig[eligGroup(eligParam)] = true;
     }

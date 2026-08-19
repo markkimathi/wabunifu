@@ -131,6 +131,7 @@
 
 <script src="/pp-nav.js"></script>
 <script src="/pp-footer.js"></script>
+<script src="/pp-elig.js"></script>
 <script>
 (function(){
   "use strict";
@@ -145,23 +146,11 @@
     email: '<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3.5 6.5L12 13l8.5-6.5"></path></svg>'
   };
 
-  var ELIG_META = {
-    africa: { label: "Open across Africa", positive: true,
-      note: "This company's listing states where it can hire, and this role is included on that list." },
-    kenya: { label: "Open across Africa", positive: true,
-      note: "This company's listing names Kenya among the countries it can hire in." },
-    world: { label: "Global remote", positive: true,
-      note: "This role is open to remote candidates without a location restriction." },
-    check: { label: "Worth checking", positive: false,
-      note: "The posting doesn't say where you can work from. We've flagged it as worth checking, ask before you invest time applying." }
-  };
-  function eligMeta(elig){ return ELIG_META[elig] || ELIG_META.check; }
+  // Wording lives in pp-elig.js — a verdict is (elig, scope), so a role posted
+  // as "Remote, Nigeria" reads as scoped to Nigeria rather than open Africa-wide.
   function eligGroup(elig){ return (elig === "kenya" || elig === "africa") ? "africa" : elig; }
-  function eligBadge(elig){
-    var m = eligMeta(elig);
-    if (m.positive) return '<span class="pp-elig -positive"><span class="pp-elig-dot"></span>' + m.label + '</span>';
-    return '<span class="pp-elig -check">' + m.label + '</span>';
-  }
+  function eligBadge(j){ return PPElig.badge(j.elig, j.elig_scope || "", PPElig.getViewerCountry()); }
+  function eligNote(j){ return PPElig.note(j.elig, j.elig_scope || "", PPElig.getViewerCountry()); }
 
   function savedIds(){
     try { return JSON.parse(localStorage.getItem("pp_saved_jobs") || "[]"); } catch (e) { return []; }
@@ -246,8 +235,8 @@
     crumbs.setAttribute("data-crumbs", JSON.stringify([{ label: "Jobs", href: "/jobs" }, { label: job.t }]));
     PathPixelNav.renderBreadcrumbs(crumbs);
 
-    var meta = eligMeta(job.elig);
-    var elClass = meta.positive ? "" : " -check";
+    var meta = PPElig.label(job.elig, job.elig_scope || "", PPElig.getViewerCountry());
+    var elClass = meta.tone === "open" ? "" : " -check";
     var descHtml = job.desc || ("<p>" + escapeHtml(job.desc_text || "No description was provided with this listing.") + "</p>");
     var long = plainTextLength(descHtml) > 900;
 
@@ -261,14 +250,14 @@
                 (job.work ? " · " + escapeHtml(job.work) : "") + '</p></div>' +
             '<button type="button" class="pp-btn pp-btn-secondary" id="shareBtn" style="flex:none">' + ICONS.share + 'Share</button>' +
           '</div>' +
-          '<div class="role-tags">' + eligBadge(job.elig) +
+          '<div class="role-tags">' + eligBadge(job) +
             (job.cat ? '<span class="pp-chip">' + escapeHtml(job.cat) + '</span>' : "") +
             (job.level ? '<span class="pp-chip">' + escapeHtml(job.level) + '</span>' : "") + '</div>' +
           '<div class="desc' + (long ? " -clamped" : "") + '" id="descBox">' + descHtml + '</div>' +
           (long ? '<button type="button" class="pp-btn pp-btn-secondary expand-btn" id="expandBtn">Read the full description' + ICONS.chevron + '</button>' : "") +
           '<div class="elig-panel' + elClass + '">' +
             '<h4>How we checked this role</h4>' +
-            '<p>' + meta.note + '</p>' +
+            '<p>' + eligNote(job) + '</p>' +
             '<p>Something here look wrong? Tell us and we\'ll read it again.</p>' +
           '</div>' +
         '</article>' +
@@ -533,7 +522,7 @@
         return (i ? '<div class="similar-divider"></div>' : "") +
           '<a class="similar-item" href="/jobs/' + encodeURIComponent(j.id) + '">' +
             '<div class="t">' + escapeHtml(j.t) + '</div>' +
-            '<div class="s">' + escapeHtml(j.co) + ' · ' + eligMeta(j.elig).label + '</div></a>';
+            '<div class="s">' + escapeHtml(j.co) + ' · ' + PPElig.label(j.elig, j.elig_scope || '', PPElig.getViewerCountry()).text + '</div></a>';
       }).join("");
   }
 

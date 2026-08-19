@@ -379,6 +379,7 @@
 
 <script src="pp-nav.js"></script>
 <script src="pp-footer.js"></script>
+<script src="pp-elig.js"></script>
 <script>
 (function(){
   "use strict";
@@ -403,19 +404,8 @@
     '</div>';
   }
 
-  // Same 3-tier collapse as pp-jobs.html's eligBadge — kazi/kenya and
-  // africa share one "Open across Africa" tier, P&P is Africa-first.
-  var ELIG_META = {
-    africa: { label: "Open across Africa", positive: true },
-    kenya: { label: "Open across Africa", positive: true },
-    world: { label: "Global remote", positive: true },
-    check: { label: "Worth checking", positive: false }
-  };
-  function eligBadge(elig){
-    var m = ELIG_META[elig] || ELIG_META.check;
-    if (m.positive) return '<span class="pp-elig -positive"><span class="pp-elig-dot"></span>' + m.label + '</span>';
-    return '<span class="pp-elig -check">' + m.label + '</span>';
-  }
+  // Wording lives in pp-elig.js, shared with the board and job pages.
+  function eligBadge(j){ return PPElig.badge(j.elig, j.elig_scope || "", PPElig.getViewerCountry()); }
   function eligGroup(elig){ return (elig === "kenya" || elig === "africa") ? "africa" : elig; }
 
   function escapeHtml(s){
@@ -445,7 +435,7 @@
         '<div style="flex:1;min-width:0"><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div>' +
         '<button type="button" class="pp-btn-icon role-save' + (saved ? " -saved" : "") + '" data-save="' + escapeHtml(j.id) + '"' +
           ' aria-pressed="' + (saved ? "true" : "false") + '" aria-label="' + (saved ? "Saved" : "Save role") + '">' + ICONS.save + '</button></div>' +
-      '<div class="role-tags">' + eligBadge(j.elig) + chips + '</div>' +
+      '<div class="role-tags">' + eligBadge(j) + chips + '</div>' +
       '<div class="role-meta"><span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span>' +
         '<span class="posted">' + postedLabel(j.days) + '</span></div>' +
     '</div>';
