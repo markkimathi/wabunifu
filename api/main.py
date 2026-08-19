@@ -47,6 +47,7 @@ from .db import (  # noqa: E402
     LOGIN_LOCKOUT_THRESHOLD, LOGIN_LOCKOUT_MINUTES,
     update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
     designers_missing_country, set_designer_country,
+    shortlist_add, shortlist_remove, shortlist_ids, shortlist_entries,
     mark_applied, list_applied_jobs, unmark_applied,
     save_search, list_saved_searches, delete_saved_search, set_search_alerts,
     searches_with_alerts, mark_search_notified,
@@ -2789,6 +2790,84 @@ def resources_submit_pay(payload: PaySubmissionIn, designer: dict = Depends(requ
         outlier_check = f"Within range of the current median (${median:,.0f}/mo)."
     create_pay_submission(designer["id"], payload.discipline, payload.level, payload.market,
                            payload.currency, payload.amount, usd, outlier_check)
+    return {"ok": True}
+
+
+class ShortlistIn(BaseModel):
+    designer_id: int
+    note: str = ""
+
+
+@app.get("/api/employers/me/talent")
+def employer_talent_search(
+    q: str = "", discipline: str = "", country: str = "",
+    open_to: str = "", availability: str = "",
+    employer: dict = Depends(require_employer),
+):
+    """Let a company find designers. The directory was public all along; what
+    was missing was any way for the other half of the marketplace to reach it,
+    so an employer could post a role but never look for anyone to fill it.
+
+    Deliberately the same corpus and the same _designer_public() shape the
+    public directory serves — this exposes nothing a visitor couldn't already
+    see, it just makes it searchable by the people doing the hiring."""
+    rows = list_approved_designers(discipline=discipline or None)
+    saved = set(shortlist_ids(employer["company_id"]))
+
+    needle = q.strip().lower()
+    out = []
+    for d in rows:
+        pub = _designer_public(d)
+        if country and (pub.get("country") or "") != country:
+            continue
+        if availability and (pub.get("availability_status") or "") != availability:
+            continue
+        if open_to and open_to not in (pub.get("open_to") or []):
+            continue
+        if needle:
+            hay = " ".join([
+                pub.get("display_name", ""), pub.get("headline", ""), pub.get("bio", ""),
+                pub.get("location", ""), " ".join(pub.get("skills") or []),
+                " ".join(pub.get("discipline") or []),
+            ]).lower()
+            if needle not in hay:
+                continue
+        pub["shortlisted"] = d["id"] in saved
+        out.append(pub)
+    return {"count": len(out), "designers": out}
+
+
+@app.get("/api/employers/me/shortlist")
+def employer_shortlist(employer: dict = Depends(require_employer)):
+    entries = {e["designer_id"]: e for e in shortlist_entries(employer["company_id"])}
+    out = []
+    for did, entry in entries.items():
+        d = get_designer(did)
+        # A designer who has since been suspended or removed drops out rather
+        # than lingering as a broken row on someone's shortlist.
+        if not d or d["status"] != "approved":
+            continue
+        pub = _designer_public(d)
+        pub["shortlisted"] = True
+        pub["note"] = entry["note"]
+        pub["saved_at"] = entry["saved_at"]
+        out.append(pub)
+    return {"count": len(out), "designers": out}
+
+
+@app.post("/api/employers/me/shortlist")
+def employer_shortlist_add(payload: ShortlistIn, employer: dict = Depends(require_employer)):
+    d = get_designer(payload.designer_id)
+    if not d or d["status"] != "approved":
+        raise HTTPException(404, "no such designer")
+    shortlist_add(employer["company_id"], payload.designer_id, payload.note.strip()[:500], employer["id"])
+    return {"ok": True}
+
+
+@app.delete("/api/employers/me/shortlist/{designer_id}")
+def employer_shortlist_remove(designer_id: int, employer: dict = Depends(require_employer)):
+    if not shortlist_remove(employer["company_id"], designer_id):
+        raise HTTPException(404, "not on the shortlist")
     return {"ok": True}
 
 

@@ -314,6 +314,22 @@ CREATE TABLE IF NOT EXISTS designer_saved_searches (
 );
 CREATE INDEX IF NOT EXISTS idx_saved_searches_designer ON designer_saved_searches(designer_id);
 
+-- A company's shortlist of designers. Scoped to the company rather than the
+-- individual recruiter: hiring is a team activity here (see team_invites), and
+-- a shortlist that disappeared when one person left would be worse than none.
+-- `note` is why they were saved — the thing everyone otherwise keeps in a
+-- separate document.
+CREATE TABLE IF NOT EXISTS company_shortlist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  company_id INTEGER NOT NULL,
+  designer_id INTEGER NOT NULL,
+  note TEXT NOT NULL DEFAULT '',
+  saved_by_employer_id INTEGER NOT NULL,
+  saved_at TEXT NOT NULL,
+  UNIQUE(company_id, designer_id)
+);
+CREATE INDEX IF NOT EXISTS idx_shortlist_company ON company_shortlist(company_id);
+
 -- Self-reported: we hand applications to the company's own page and never see
 -- what happens next, so this records only that the designer says they applied.
 -- The snapshot columns exist because a listing ages out of the feed long before
@@ -1932,6 +1948,50 @@ def unsave_job(designer_id: int, job_id: str) -> bool:
     c.commit()
     c.close()
     return deleted
+
+
+# ---------------- Company shortlist ----------------
+
+def shortlist_add(company_id: int, designer_id: int, note: str, employer_id: int) -> None:
+    c = _conn()
+    c.execute(
+        "INSERT INTO company_shortlist (company_id, designer_id, note, saved_by_employer_id, saved_at) "
+        "VALUES (?, ?, ?, ?, ?) "
+        "ON CONFLICT(company_id, designer_id) DO UPDATE SET note = excluded.note",
+        (company_id, designer_id, note, employer_id,
+         datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+
+
+def shortlist_remove(company_id: int, designer_id: int) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "DELETE FROM company_shortlist WHERE company_id = ? AND designer_id = ?", (company_id, designer_id)
+    )
+    removed = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return removed
+
+
+def shortlist_ids(company_id: int) -> list[int]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT designer_id FROM company_shortlist WHERE company_id = ?", (company_id,)
+    ).fetchall()
+    c.close()
+    return [r["designer_id"] for r in rows]
+
+
+def shortlist_entries(company_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM company_shortlist WHERE company_id = ? ORDER BY saved_at DESC", (company_id,)
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
 
 
 # ---------------- Applied roles (self-reported) ----------------

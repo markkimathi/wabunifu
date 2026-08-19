@@ -38,6 +38,33 @@
   @media(min-width:1024px){.dash-chips-mobile{display:none}}
 
   .dash-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:22px}
+
+  /* ---- Talent ---- */
+  .talent-tabs{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+  .talent-search{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+  .talent-search .pp-field-input{flex:1;min-width:220px}
+  .talent-search select{height:44px;padding:0 10px;border-radius:var(--pp-radius-md);
+    border:1px solid var(--c-border-strong);background:var(--c-surface);color:var(--c-text);
+    font-family:var(--pp-font);font-size:14.5px}
+  .talent-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+  .talent-card{padding:18px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
+    background:var(--c-surface);display:flex;flex-direction:column;gap:12px}
+  .talent-card:hover{border-color:var(--c-border-hover)}
+  .tc-head{display:flex;align-items:center;gap:12px}
+  .tc-photo{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}
+  .tc-id{flex:1;min-width:0}
+  .tc-id h3{margin:0 0 2px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em}
+  .tc-id p{margin:0;font-size:13.5px;color:var(--c-text-subtle);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tc-bio{margin:0;font-size:14px;line-height:1.5;color:var(--c-text-muted);
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .tc-tags{display:flex;flex-wrap:wrap;gap:6px}
+  /* The saved note, in the team's own words — kept visually distinct from the
+     designer's own copy so nobody mistakes one for the other. */
+  .tc-note{margin:0;padding:9px 11px;border-radius:var(--pp-radius-sm);background:var(--pp-gold-200);
+    color:var(--pp-gold-800);font-size:13px;line-height:1.5}
+  .tc-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:auto;padding-top:4px}
+  .tc-actions .pp-btn{flex:1;min-width:110px;height:38px;font-size:14px}
+
   .dash-head h1{margin:0 0 4px;font-size:30px;line-height:1.1;letter-spacing:-0.026em;font-weight:800}
   .dash-head p{margin:0;font-size:14.5px;color:var(--c-text-subtle)}
   .pending-banner{padding:16px 18px;border-radius:var(--pp-radius-md);background:var(--pp-gold-200);
@@ -228,7 +255,11 @@
   ];
   var WORK_TYPES = ["Remote", "Hybrid", "On-site"];
   var LEVELS = ["Junior", "Mid", "Senior", "Lead"];
-  var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
+  // Mirrors DISCIPLINES in scraper/models.py — keep in step when that changes.
+  var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Design Engineering","Content Design","Creative Technology","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
+  function initialsOf(name){
+    return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
+  }
   var STAGES = ["Applied", "Reviewing", "Interviewing", "Offer"];
   var RAIL_ICONS = {
     listings: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M8 4V3a1 1 0 011-1h6a1 1 0 011 1v1"/><path d="M3 10h18"/>',
@@ -240,6 +271,9 @@
   };
   var SECTIONS = [
     { key: "listings", label: "Listings" }, { key: "applicants", label: "Applicants" },
+    // Talent sits next to Applicants because they are the same job from two
+    // directions: people who came to you, and people you go and find.
+    { key: "talent", label: "Talent" },
     { key: "messages", label: "Messages" },
     { key: "team", label: "Team" }, { key: "company", label: "Company" }, { key: "billing", label: "Billing" }
   ];
@@ -802,11 +836,104 @@
     if (section === "team") {
       cache.team = await api("/api/employers/me/team");
     }
+    if (section === "talent") {
+      // Both lists every time: the shortlist count sits on the tab, and search
+      // results need to know who is already on it.
+      var qs = new URLSearchParams();
+      if (talentQuery) qs.set("q", talentQuery);
+      if (talentFilters.discipline) qs.set("discipline", talentFilters.discipline);
+      if (talentFilters.open_to) qs.set("open_to", talentFilters.open_to);
+      var t = await api("/api/employers/me/talent" + (qs.toString() ? "?" + qs : ""));
+      cache.talent = t.designers;
+      var sl = await api("/api/employers/me/shortlist");
+      cache.shortlist = sl.designers;
+    }
     if (section === "messages") {
       var convData = await api("/api/employers/me/conversations");
       cache.conversations = convData.conversations;
     }
     render();
+  }
+
+  /* ---------------- Talent ----------------
+     The directory was always public; what was missing was any route to it from
+     the hiring side, so a company could post a role and never go looking for
+     anyone to fill it. Two tabs because they are genuinely different jobs:
+     searching, and returning to people you already flagged. */
+  var talentTab = "search";
+  var talentQuery = "";
+  var talentFilters = { discipline: "", country: "", open_to: "" };
+
+  function talentCardHtml(d){
+    var openTo = (d.open_to || []).map(function(o){
+      return '<span class="pp-chip">' + escapeHtml(o) + '</span>';
+    }).join("");
+    var disc = (d.discipline || []).slice(0, 3).map(function(x){
+      return '<span class="pp-chip">' + escapeHtml(x) + '</span>';
+    }).join("");
+    var avail = d.availability_status || "";
+    var availClass = /available|open/i.test(avail) ? "-good" : "-neutral";
+    return '<div class="talent-card">' +
+      '<div class="tc-head">' +
+        (d.photo_path
+          ? '<img class="tc-photo" src="' + escapeHtml(d.photo_path) + '" alt="">'
+          : '<span class="pp-avatar -md">' + escapeHtml(initialsOf(d.display_name)) + '</span>') +
+        '<div class="tc-id">' +
+          '<h3>' + escapeHtml(d.display_name) + '</h3>' +
+          '<p>' + escapeHtml([d.headline, d.location].filter(Boolean).join(" · ") || "Designer") + '</p>' +
+        '</div>' +
+        (avail ? '<span class="pp-status ' + availClass + '">' + escapeHtml(avail) + '</span>' : "") +
+      '</div>' +
+      (d.bio ? '<p class="tc-bio">' + escapeHtml(d.bio) + '</p>' : "") +
+      ((disc || openTo) ? '<div class="tc-tags">' + disc + openTo + '</div>' : "") +
+      (d.note ? '<p class="tc-note">' + escapeHtml(d.note) + '</p>' : "") +
+      '<div class="tc-actions">' +
+        '<a class="pp-btn pp-btn-secondary" href="/designers/' + encodeURIComponent(d.handle || d.id) + '" target="_blank" rel="noopener">View profile</a>' +
+        '<button type="button" class="pp-btn ' + (d.shortlisted ? "pp-btn-secondary" : "pp-btn-secondary") +
+          '" data-shortlist="' + d.id + '" data-on="' + (d.shortlisted ? "1" : "0") + '">' +
+          (d.shortlisted ? "Shortlisted ✓" : "Shortlist") + '</button>' +
+        '<button type="button" class="pp-btn pp-btn-primary" data-msg-designer="' + d.id +
+          '" data-msg-name="' + escapeHtml(d.display_name) + '">Message</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderTalent(){
+    var list = talentTab === "search" ? (cache.talent || []) : (cache.shortlist || []);
+    var body = '<div class="section-head"><h2>Talent</h2></div>';
+
+    body += '<div class="talent-tabs">' +
+      '<button type="button" class="pp-tab-chip' + (talentTab === "search" ? " -active" : "") + '" data-talent-tab="search">Search</button>' +
+      '<button type="button" class="pp-tab-chip' + (talentTab === "shortlist" ? " -active" : "") + '" data-talent-tab="shortlist">Shortlist' +
+        (cache.shortlist && cache.shortlist.length ? ' <span class="pp-tab-count">' + cache.shortlist.length + '</span>' : "") +
+      '</button></div>';
+
+    if (talentTab === "search") {
+      body += '<div class="talent-search">' +
+        '<div class="pp-field-input"><input id="talentQ" placeholder="Name, skill, headline…" value="' + escapeHtml(talentQuery) + '"></div>' +
+        '<select id="talentDiscipline"><option value="">Any discipline</option>' +
+          DISCIPLINES.map(function(x){
+            return '<option value="' + escapeHtml(x) + '"' + (talentFilters.discipline === x ? " selected" : "") + '>' + escapeHtml(x) + '</option>';
+          }).join("") + '</select>' +
+        '<select id="talentOpenTo"><option value="">Any work type</option>' +
+          ["Full-time", "Contract", "Freelance", "Internship"].map(function(x){
+            return '<option value="' + escapeHtml(x) + '"' + (talentFilters.open_to === x ? " selected" : "") + '>' + escapeHtml(x) + '</option>';
+          }).join("") + '</select>' +
+        '<button type="button" class="pp-btn pp-btn-primary" id="talentGo">Search</button>' +
+      '</div>';
+    }
+
+    if (!list.length) {
+      body += '<div class="pp-empty">' +
+        '<h3>' + (talentTab === "search" ? "No designers match that" : "Nobody shortlisted yet") + '</h3>' +
+        '<p>' + (talentTab === "search"
+          ? "Try a broader search — the directory is still growing, so fewer filters usually finds more."
+          : "Shortlist someone from Search and they'll wait here, with the note you left about why.") + '</p>' +
+      '</div>';
+    } else {
+      body += '<div class="talent-grid">' + list.map(talentCardHtml).join("") + '</div>';
+    }
+    return body;
   }
 
   function render(){
@@ -818,6 +945,7 @@
     var body = "";
     if (section === "listings") body = renderListings(cache);
     else if (section === "applicants") body = renderApplicants(cache);
+    else if (section === "talent") body = renderTalent();
     else if (section === "messages") body = renderMessages();
     else if (section === "team") body = renderTeam(cache);
     else if (section === "company") body = renderCompany(cache);
@@ -838,10 +966,70 @@
     el.textContent = msg || "";
   }
 
+  function wireTalent(){
+    document.querySelectorAll("[data-talent-tab]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        talentTab = btn.getAttribute("data-talent-tab");
+        render();
+      });
+    });
+    var go = document.getElementById("talentGo");
+    if (go) {
+      var run = function(){
+        talentQuery = document.getElementById("talentQ").value.trim();
+        talentFilters.discipline = document.getElementById("talentDiscipline").value;
+        talentFilters.open_to = document.getElementById("talentOpenTo").value;
+        loadSection();
+      };
+      go.addEventListener("click", run);
+      document.getElementById("talentQ").addEventListener("keydown", function(e){
+        if (e.key === "Enter") run();
+      });
+    }
+    document.querySelectorAll("[data-shortlist]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.getAttribute("data-shortlist");
+        var on = btn.getAttribute("data-on") === "1";
+        btn.disabled = true;
+        try {
+          if (on) {
+            await api("/api/employers/me/shortlist/" + id, { method: "DELETE" });
+          } else {
+            // The note is the reason they were saved — the thing that otherwise
+            // ends up in someone's private doc and is lost to the rest of the team.
+            var note = window.prompt("Why this designer? (optional, your team will see it)", "") || "";
+            await api("/api/employers/me/shortlist", {
+              method: "POST", headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ designer_id: Number(id), note: note })
+            });
+          }
+          await loadSection();
+        } catch (e) { btn.disabled = false; }
+      });
+    });
+    document.querySelectorAll("[data-msg-designer]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.getAttribute("data-msg-designer");
+        var name = btn.getAttribute("data-msg-name");
+        var body = window.prompt("Message to " + name + " — say which role and why them.", "");
+        if (!body || !body.trim()) return;
+        btn.disabled = true;
+        try {
+          await api("/api/employers/me/conversations", {
+            method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ designer_id: Number(id), body: body.trim() })
+          });
+          setSection("messages");
+        } catch (e) { btn.disabled = false; }
+      });
+    });
+  }
+
   function wire(){
     document.querySelectorAll("[data-section]").forEach(function(btn){
       btn.addEventListener("click", function(){ setSection(btn.getAttribute("data-section")); });
     });
+    wireTalent();
     document.querySelectorAll("[data-rail-signout]").forEach(function(btn){
       btn.addEventListener("click", function(){ window.PathPixelNav.signOut("employer"); });
     });
