@@ -88,24 +88,48 @@
   .role-list{border-top:1px solid var(--c-border)}
   /* Stretched-link row: the overlay anchor makes the whole row clickable
      without nesting the Save button inside an <a>, which would be invalid. */
-  .role-row{position:relative;padding:20px 4px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-  @media(min-width:768px){.role-row{padding:22px 4px;gap:24px}}
-  @media(min-width:1280px){.role-row{padding:26px 6px;gap:36px}}
+  /* Grid, not flex. As a flex row every column sized to its own content, so
+     the save button, the tags and the pay each landed at a different x on
+     every row — a 55px drift down the list that read as broken alignment.
+     Fixed tracks make the columns line up vertically, which is the whole
+     point of a list. Both breakpoints declare their own template-areas: a
+     grid-area naming an area that doesn't exist at the current width falls
+     back to auto-placement and scatters the row. */
+  .role-row{position:relative;padding:20px 4px;border-bottom:1px solid var(--c-border);
+    display:grid;grid-template-columns:minmax(0,1fr);
+    grid-template-areas:"main" "tags" "meta";row-gap:10px;align-items:center}
+  @media(min-width:768px){
+    .role-row{padding:22px 4px;column-gap:24px;row-gap:0;
+      grid-template-columns:minmax(0,1fr) 208px 152px;
+      grid-template-areas:"main tags meta"}
+  }
+  @media(min-width:1280px){
+    .role-row{padding:26px 6px;column-gap:32px;
+      grid-template-columns:minmax(0,1fr) 248px 168px}
+  }
   .role-row:hover{background:var(--c-bg-sunken)}
   .role-link{position:absolute;inset:0;z-index:1}
-  .role-main{display:flex;align-items:center;gap:14px;flex:1;min-width:220px}
+  /* Three tracks inside main too, so the save button sits hard against the
+     column edge on every row instead of trailing whatever the title happens
+     to be. */
+  .role-main{grid-area:main;display:grid;grid-template-columns:auto minmax(0,1fr) auto;
+    align-items:center;gap:14px;min-width:0}
   @media(min-width:1280px){.role-main{gap:16px}}
-  .role-main h4{margin:0 0 3px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em;line-height:1.25}
+  .role-main h4{margin:0 0 3px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em;line-height:1.25;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @media(min-width:768px){.role-main h4{font-size:17px}}
   @media(min-width:1280px){.role-main h4{font-size:18px}}
-  .role-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle)}
+  .role-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @media(min-width:1280px){.role-main p{font-size:14px}}
   @media(min-width:1280px){.role-main .pp-card-mark{width:48px;height:48px;font-size:18px}}
   /* Design sizes the in-row save control down from the default 44px icon button. */
   .role-save{position:relative;z-index:2;flex:none;width:36px;height:36px;border-radius:9px}
-  .role-tags{display:flex;flex-wrap:wrap;gap:7px}
-  .role-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;margin-left:auto}
-  .role-meta .pay{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  .role-tags{grid-area:tags;display:flex;flex-wrap:wrap;gap:7px}
+  .role-meta{grid-area:meta;display:flex;flex-direction:column;gap:3px}
+  @media(min-width:768px){.role-meta{align-items:flex-end}}
+  .role-meta .pay{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
   @media(min-width:768px){.role-meta .pay{font-size:15px}}
   .role-meta .posted{font-size:12px;color:var(--c-text-faint)}
   @media(min-width:768px){.role-meta .posted{font-size:12.5px}}
@@ -437,7 +461,7 @@
     return '<div class="role-row">' +
       '<a class="role-link" href="/jobs/' + encodeURIComponent(j.id) + '" aria-label="' + escapeHtml(j.t) + ' at ' + escapeHtml(j.co) + '"></a>' +
       '<div class="role-main"><span class="pp-card-mark">' + (j.co ? escapeHtml(j.co[0].toUpperCase()) : "?") + '</span>' +
-        '<div style="flex:1;min-width:0"><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div>' +
+        '<div style="min-width:0"><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div>' +
         '<button type="button" class="pp-btn-icon role-save' + (saved ? " -saved" : "") + '" data-save="' + escapeHtml(j.id) + '"' +
           ' aria-pressed="' + (saved ? "true" : "false") + '" aria-label="' + (saved ? "Saved" : "Save role") + '">' + ICONS.save + '</button></div>' +
       '<div class="role-tags">' + eligBadge(j) + chips + '</div>' +
