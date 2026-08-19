@@ -926,10 +926,16 @@
       msearchInput.focus();
     });
 
-    function openMenu(){ menu.classList.add("-open"); document.body.style.overflow = "hidden"; }
-    function closeMenu(){ menu.classList.remove("-open"); document.body.style.overflow = ""; }
-    root.querySelector("[data-open-menu]").addEventListener("click", openMenu);
-    root.querySelector("[data-close-menu]").addEventListener("click", closeMenu);
+    // The full-screen menu is the same kind of overlay as the filter sheet —
+    // it covers the page and locks scrolling — so it gets the same treatment
+    // rather than a second, thinner version of it. Without this, Escape did
+    // nothing, focus never left the hamburger, and a keyboard user was stuck
+    // behind a locked page on every screen of the site.
+    var menuSheet = PPSheet({
+      panel: menu,
+      toggle: root.querySelector("[data-open-menu]"),
+      closeBtn: root.querySelector("[data-close-menu]")
+    });
 
     root.querySelectorAll("[data-theme-toggle]").forEach(function(btn){
       btn.addEventListener("click", function(){
