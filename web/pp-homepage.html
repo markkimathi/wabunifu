@@ -14,117 +14,200 @@
   a{color:inherit;text-decoration:none}
   .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
 
-  /* ---- hero ---- */
-  .hero{padding:56px 0 64px}
-  @media(min-width:1024px){.hero{padding:80px 0 88px}}
-  .hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,0.85fr);gap:48px;align-items:center}
+  /* ---- hero ----
+     Section rhythm and type follow the three design frames directly
+     (mobile 390 / tablet 834 / desktop 1440). The homepage deliberately
+     runs larger than the shared type tokens — the design sets the hero at
+     76px where --pp-display-size is 52px — so these are one-off marketing
+     sizes on purpose, not a drift from the system. */
+  .hero{padding:56px 0 48px}
+  @media(min-width:768px){.hero{padding:80px 0 64px}}
+  @media(min-width:1280px){.hero{padding:112px 0 88px}}
+  .hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,0.85fr);gap:40px;align-items:center}
+  @media(min-width:1280px){.hero-grid{gap:64px}}
   @media(max-width:900px){.hero-grid{grid-template-columns:1fr}}
-  .hero h1{margin:0 0 20px;font-size:var(--pp-display-size);line-height:0.98;letter-spacing:-0.03em;font-weight:800;text-wrap:balance}
-  .hero p{margin:0 0 28px;font-size:17px;line-height:1.55;color:var(--c-text-muted);max-width:44ch}
-  @media(min-width:1024px){.hero p{font-size:19px}}
-  .hero-search{display:flex;align-items:center;gap:10px;padding:6px 6px 6px 16px;border-radius:var(--pp-radius-lg);
+  .hero h1{margin:0 0 18px;font-size:46px;line-height:0.97;letter-spacing:-0.042em;font-weight:800;text-wrap:balance}
+  @media(min-width:768px){.hero h1{margin-bottom:22px;font-size:68px;line-height:0.95;letter-spacing:-0.044em}}
+  @media(min-width:1280px){.hero h1{margin-bottom:28px;font-size:76px;letter-spacing:-0.046em}}
+  .hero p{margin:0 0 28px;font-size:17px;line-height:1.6;color:var(--c-text-muted);max-width:44ch;text-wrap:pretty}
+  @media(min-width:768px){.hero p{margin-bottom:34px;font-size:18px}}
+  @media(min-width:1280px){.hero p{margin-bottom:40px;font-size:20px}}
+  .hero-search{display:flex;align-items:center;gap:12px;padding:7px 7px 7px 18px;border-radius:var(--pp-radius-md);
     background:var(--c-surface);border:1px solid var(--c-border-strong);box-shadow:var(--pp-shadow-md);max-width:560px}
   .hero-search:focus-within{border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
   .hero-search svg{flex:none;color:var(--c-text-faint)}
-  .hero-search input{border:none;outline:none;font-family:var(--pp-font);font-size:16px;flex:1;min-width:0;background:transparent;color:var(--c-text);padding:9px 0}
-  .hero-try{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;align-items:center}
+  .hero-search input{border:none;outline:none;font-family:var(--pp-font);font-size:16px;flex:1;min-width:0;background:transparent;color:var(--c-text);padding:10px 0}
+  .hero-try{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;align-items:center}
   .hero-try>span{font-size:13.5px;color:var(--c-text-subtle);padding:6px 0}
   .hero-try a{padding:6px 12px;border-radius:999px;border:1px solid var(--c-border);background:var(--c-surface);
     font-size:13.5px;font-weight:500;color:var(--c-text-muted)}
   .hero-try a:hover{border-color:var(--c-border-hover);color:var(--c-text)}
-  .hero-side{display:flex;flex-direction:column;gap:16px}
+  .hero-side{display:flex;flex-direction:column;gap:18px}
   @media(max-width:900px){.hero-side{display:none}}
   .hero-videos{position:relative;aspect-ratio:1/1;border-radius:var(--pp-radius-xl);overflow:hidden;background:var(--c-surface-inset);border:1px solid var(--c-border)}
   .hero-vtrack{display:flex;height:100%;transition:transform .6s var(--pp-ease)}
   .hero-vslide{flex:0 0 100%;height:100%}
   .hero-vslide video{width:100%;height:100%;object-fit:cover;display:block}
   .hero-joined{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg)}
-  .hero-joined p{margin:0;font-size:13px;line-height:1.45;color:var(--c-text-muted)}
+  .hero-joined p{margin:0;font-size:13.5px;line-height:1.45;color:var(--c-text-muted)}
+  /* Design sizes these tighter than the shared -sm avatar (40px). */
+  .hero-joined .pp-avatar{width:34px;height:34px;font-size:12px}
+  .hero-joined .more{width:34px;height:34px;border-radius:50%;background:var(--pp-ink);color:var(--pp-gold);
+    border:2px solid var(--c-surface);margin-left:-10px;display:inline-flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:700;flex:none}
 
-  /* ---- shared section head ---- */
+  /* ---- shared section head ----
+     The design gives each section a distinct heading weight rather than one
+     flat size: Roles and People lead at 52px, Why sits at 44px, and the
+     supporting sections (Work, Community) drop to 34px. Keeping them all at
+     one size is what flattened the page, so the tiers are explicit here. */
   .sec{padding:56px 0}
-  @media(min-width:1024px){.sec{padding:80px 0}}
-  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:32px;margin-bottom:32px;flex-wrap:wrap}
-  .sec-head h2{margin:0 0 10px;font-size:30px;line-height:1.05;letter-spacing:-0.03em;font-weight:800;max-width:18ch}
-  @media(min-width:1024px){.sec-head h2{font-size:40px}}
+  @media(min-width:768px){.sec{padding:72px 0}}
+  @media(min-width:1280px){.sec{padding:96px 0}}
+  .sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;margin-bottom:28px;flex-wrap:wrap}
+  @media(min-width:768px){.sec-head{gap:32px;margin-bottom:36px}}
+  @media(min-width:1280px){.sec-head{gap:40px;margin-bottom:44px}}
+  .sec-head h2{margin:0 0 12px;font-size:28px;line-height:1.02;letter-spacing:-0.03em;font-weight:800;max-width:20ch}
+  @media(min-width:768px){.sec-head h2{margin-bottom:14px;font-size:40px;letter-spacing:-0.034em}}
+  @media(min-width:1280px){.sec-head h2{font-size:52px;letter-spacing:-0.036em}}
   .sec-head p{margin:0;font-size:15.5px;line-height:1.55;color:var(--c-text-muted);max-width:52ch}
+  @media(min-width:768px){.sec-head p{font-size:16px}}
   .sec-head .see-all{font-size:14.5px;font-weight:600;color:var(--c-accent-text);white-space:nowrap;flex:none}
+  @media(min-width:768px){.sec-head .see-all{font-size:15px}}
+  /* Supporting sections — one tier down, lighter weight, looser line. */
+  .sec-work .sec-head,.sec-community .sec-head{align-items:flex-start;margin-bottom:24px}
+  @media(min-width:1280px){.sec-work .sec-head,.sec-community .sec-head{margin-bottom:28px}}
+  .sec-work .sec-head h2,.sec-community .sec-head h2{font-size:24px;line-height:1.12;letter-spacing:-0.024em;font-weight:700;max-width:24ch}
+  @media(min-width:768px){.sec-work .sec-head h2,.sec-community .sec-head h2{font-size:28px}}
+  @media(min-width:1280px){.sec-work .sec-head h2,.sec-community .sec-head h2{font-size:34px;letter-spacing:-0.022em}}
 
   /* ---- roles ---- */
   .sec-roles{background:var(--c-surface);border-top:1px solid var(--c-border);border-bottom:1px solid var(--c-border)}
+  @media(min-width:768px){.sec-roles{padding:80px 0 72px}}
+  @media(min-width:1280px){.sec-roles{padding:112px 0 96px}}
   .role-list{border-top:1px solid var(--c-border)}
-  .role-row{padding:20px 4px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+  /* Stretched-link row: the overlay anchor makes the whole row clickable
+     without nesting the Save button inside an <a>, which would be invalid. */
+  .role-row{position:relative;padding:20px 4px;border-bottom:1px solid var(--c-border);display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  @media(min-width:768px){.role-row{padding:22px 4px;gap:24px}}
+  @media(min-width:1280px){.role-row{padding:26px 6px;gap:36px}}
   .role-row:hover{background:var(--c-bg-sunken)}
+  .role-link{position:absolute;inset:0;z-index:1}
   .role-main{display:flex;align-items:center;gap:14px;flex:1;min-width:220px}
-  .role-main h4{margin:0 0 2px;font-size:16.5px;font-weight:700;letter-spacing:-0.012em}
+  @media(min-width:1280px){.role-main{gap:16px}}
+  .role-main h4{margin:0 0 3px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em;line-height:1.25}
+  @media(min-width:768px){.role-main h4{font-size:17px}}
+  @media(min-width:1280px){.role-main h4{font-size:18px}}
   .role-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle)}
+  @media(min-width:1280px){.role-main p{font-size:14px}}
+  @media(min-width:1280px){.role-main .pp-card-mark{width:48px;height:48px;font-size:18px}}
+  /* Design sizes the in-row save control down from the default 44px icon button. */
+  .role-save{position:relative;z-index:2;flex:none;width:36px;height:36px;border-radius:9px}
   .role-tags{display:flex;flex-wrap:wrap;gap:7px}
-  .role-meta{display:flex;flex-direction:column;align-items:flex-end;gap:2px;flex:none;margin-left:auto}
+  .role-meta{display:flex;flex-direction:column;align-items:flex-end;gap:3px;flex:none;margin-left:auto}
   .role-meta .pay{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  @media(min-width:768px){.role-meta .pay{font-size:15px}}
   .role-meta .posted{font-size:12px;color:var(--c-text-faint)}
+  @media(min-width:768px){.role-meta .posted{font-size:12.5px}}
 
   /* ---- people ---- */
-  .people-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+  .sec-people{padding-top:24px}
+  @media(min-width:768px){.sec-people{padding:16px 0 80px}}
+  @media(min-width:1280px){.sec-people{padding:24px 0 112px}}
+  .sec-people .sec-head h2{max-width:18ch}
+  .people-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
   .p-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);
-    display:flex;flex-direction:column;gap:12px}
+    display:flex;flex-direction:column;gap:14px}
   .p-card:hover{border-color:var(--c-border-hover)}
-  .p-card h4{margin:0 0 2px;font-size:16.5px;font-weight:700;letter-spacing:-0.012em}
-  .p-card .role{margin:0;font-size:13.5px;color:var(--c-text-subtle)}
-  .p-card .line{margin:0;font-size:13.5px;line-height:1.5;color:var(--c-text-muted);
+  .p-card h4{margin:0 0 3px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
+  .p-card .role{margin:0;font-size:14px;color:var(--c-text-subtle)}
+  .p-card .line{margin:0;font-size:14px;line-height:1.55;color:var(--c-text-muted);text-wrap:pretty;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-  .p-thumbs{display:flex;gap:6px}
-  .p-thumbs .t{flex:1;aspect-ratio:4/3;border-radius:7px;background:var(--c-surface-inset);border:1px solid var(--c-border);overflow:hidden}
+  .p-photo{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none}
+  /* Fixed three-up so a designer with one project gets a 1/3-width thumb
+     rather than a single ballooned full-width one. */
+  .p-thumbs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .p-thumbs .t{aspect-ratio:4/3;border-radius:8px;background:var(--c-surface-inset);border:1px solid var(--c-border);overflow:hidden}
   .p-thumbs .t img{width:100%;height:100%;object-fit:cover;display:block}
-  .p-foot{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--c-surface-inset)}
+  .p-foot{display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--c-surface-inset)}
+  .p-foot .count{font-size:12.5px;color:var(--c-text-faint)}
 
   /* ---- work (dark) ---- */
-  .sec-work{background:var(--pp-ink);color:var(--pp-white)}
+  .sec-work{background:var(--pp-ink);color:var(--pp-white);padding:40px 0}
+  @media(min-width:768px){.sec-work{padding:48px 0}}
+  @media(min-width:1280px){.sec-work{padding:64px 0}}
   .sec-work .sec-head h2{color:var(--pp-white)}
   .sec-work .sec-head p{color:var(--pp-text-subtle-on-dark)}
   .sec-work .sec-head .see-all{color:var(--pp-gold)}
-  .work-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
-  .w-cover{aspect-ratio:4/3;border-radius:var(--pp-radius-lg);background:var(--pp-ink-raised);border:1px solid var(--pp-stone-700);margin-bottom:12px;overflow:hidden}
+  .work-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+  .w-cover{aspect-ratio:4/3;border-radius:var(--pp-radius-lg);background:var(--pp-ink-raised);border:1px solid var(--pp-stone-700);margin-bottom:14px;overflow:hidden}
   .w-cover img{width:100%;height:100%;object-fit:cover;display:block}
-  .w-card h4{margin:0 0 4px;font-size:17px;font-weight:700;letter-spacing:-0.012em;color:var(--pp-white)}
-  .w-card .meta{margin:0 0 10px;font-size:13px;color:var(--pp-text-subtle-on-dark)}
+  .w-card h4{margin:0 0 4px;font-size:18px;font-weight:700;letter-spacing:-0.015em;color:var(--pp-white)}
+  @media(min-width:1280px){.w-card h4{font-size:19px}}
+  .w-card .meta{margin:0 0 10px;font-size:14px;color:var(--pp-text-subtle-on-dark)}
   .w-author{display:flex;align-items:center;gap:9px}
-  .w-author span.name{font-size:13px;color:var(--pp-text-faint-on-dark)}
+  .w-author .pp-avatar{width:24px;height:24px;font-size:11px}
+  .w-author span.name{font-size:13.5px;color:var(--pp-text-faint-on-dark)}
 
   /* ---- why / eligibility explainer ---- */
-  .why-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:48px;align-items:start}
+  .sec-why{padding:48px 0}
+  @media(min-width:768px){.sec-why{padding:56px 0}}
+  @media(min-width:1280px){.sec-why{padding:80px 0}}
+  .why-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start}
+  @media(min-width:1280px){.why-grid{gap:64px}}
   @media(max-width:900px){.why-grid{grid-template-columns:1fr}}
-  .why-grid h2{margin:0;font-size:30px;line-height:1.08;letter-spacing:-0.025em;font-weight:700;text-wrap:balance}
-  @media(min-width:1024px){.why-grid h2{font-size:36px}}
-  .why-copy p{margin:0 0 16px;font-size:16px;line-height:1.65;color:var(--c-text-muted)}
-  .why-stats{display:flex;flex-wrap:wrap;gap:28px;padding-top:8px}
-  .why-stats .n{font-size:28px;font-weight:800;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
-  .why-stats .l{font-size:13px;color:var(--c-text-subtle)}
+  .why-grid h2{margin:0;font-size:28px;line-height:1.1;letter-spacing:-0.028em;font-weight:700;text-wrap:balance;max-width:20ch}
+  @media(min-width:768px){.why-grid h2{font-size:34px}}
+  @media(min-width:1280px){.why-grid h2{font-size:44px}}
+  .why-copy{display:flex;flex-direction:column;gap:16px}
+  @media(min-width:1280px){.why-copy{gap:18px}}
+  .why-copy p{margin:0;font-size:16px;line-height:1.65;color:var(--c-text-muted);text-wrap:pretty}
+  @media(min-width:1280px){.why-copy p{font-size:17px}}
+  .why-stats{display:flex;flex-wrap:wrap;gap:32px;padding-top:12px}
+  @media(min-width:768px){.why-stats{gap:40px}}
+  .why-stats .n{font-size:30px;font-weight:800;letter-spacing:-0.03em;font-variant-numeric:tabular-nums}
+  .why-stats .l{font-size:13.5px;color:var(--c-text-subtle)}
 
   /* ---- community teaser ---- */
-  .sec-community{background:var(--c-bg-sunken)}
-  .community-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-  .c-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
-  .c-card .tag{margin-bottom:12px}
-  .c-card h4{margin:0 0 7px;font-size:17px;font-weight:700;letter-spacing:-0.012em}
-  .c-card p{margin:0 0 14px;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)}
-  .c-card a{font-size:13.5px;font-weight:600;color:var(--c-accent-text)}
+  .sec-community{background:var(--c-bg-sunken);padding:40px 0}
+  @media(min-width:768px){.sec-community{padding:48px 0}}
+  @media(min-width:1280px){.sec-community{padding:64px 0}}
+  .community-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  .c-card{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
+  @media(min-width:1280px){.c-card{padding:24px}}
+  .c-card .tag{margin-bottom:14px}
+  .c-card h4{margin:0 0 7px;font-size:19px;font-weight:700;letter-spacing:-0.015em}
+  .c-card p{margin:0 0 18px;font-size:14px;line-height:1.55;color:var(--c-text-subtle)}
+  .c-card a{font-size:14px;font-weight:600;color:var(--c-accent-text)}
 
   /* ---- resume banner ---- */
-  .resume-banner{padding:30px 32px;border:1px solid var(--c-border);border-radius:var(--pp-radius-xl);background:var(--c-surface);
+  .sec-resume{padding:48px 0 0}
+  @media(min-width:1280px){.sec-resume{padding:64px 0 0}}
+  .resume-banner{padding:28px;border:1px solid var(--c-border);border-radius:var(--pp-radius-xl);background:var(--c-surface);
     display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:center}
+  @media(min-width:1280px){.resume-banner{padding:36px 40px;gap:40px}}
   @media(max-width:760px){.resume-banner{grid-template-columns:1fr}}
-  .resume-banner h3{margin:0 0 8px;font-size:23px;line-height:1.15;letter-spacing:-0.02em;font-weight:700}
-  .resume-banner p{margin:0;font-size:14.5px;line-height:1.55;color:var(--c-text-muted)}
-  .resume-banner .cta{display:flex;flex-direction:column;gap:8px;align-items:stretch}
-  .resume-banner .cta span{font-size:12.5px;color:var(--c-text-faint);text-align:center}
+  .resume-banner h3{margin:0 0 10px;font-size:22px;line-height:1.14;letter-spacing:-0.024em;font-weight:700}
+  @media(min-width:768px){.resume-banner h3{font-size:26px}}
+  @media(min-width:1280px){.resume-banner h3{font-size:30px;line-height:1.12}}
+  .resume-banner p{margin:0;font-size:15.5px;line-height:1.55;color:var(--c-text-muted)}
+  @media(min-width:768px){.resume-banner p{font-size:16px}}
+  .resume-banner .cta{display:flex;flex-direction:column;gap:10px;align-items:stretch}
+  .resume-banner .cta span{font-size:13px;color:var(--c-text-faint);text-align:center}
 
   /* ---- join banner ---- */
-  .join-banner{padding:44px 40px;border-radius:var(--pp-radius-xl);background:var(--pp-gold);
+  .sec-join{padding:48px 0}
+  @media(min-width:768px){.sec-join{padding:56px 0}}
+  @media(min-width:1280px){.sec-join{padding:88px 0}}
+  .join-banner{padding:40px 32px;border-radius:var(--pp-radius-xl);background:var(--pp-gold);
     display:grid;grid-template-columns:minmax(0,1fr) auto;gap:36px;align-items:center}
+  @media(min-width:1280px){.join-banner{padding:56px 48px;gap:48px}}
   @media(max-width:760px){.join-banner{grid-template-columns:1fr;padding:32px 24px}}
-  .join-banner h3{margin:0 0 10px;font-size:28px;line-height:1.1;letter-spacing:-0.025em;font-weight:800;color:var(--pp-ink);text-wrap:balance}
-  @media(min-width:1024px){.join-banner h3{font-size:34px}}
-  .join-banner p{margin:0;font-size:15.5px;line-height:1.55;color:var(--pp-stone-900);max-width:54ch}
+  .join-banner h3{margin:0 0 12px;font-size:28px;line-height:1.08;letter-spacing:-0.03em;font-weight:800;color:var(--pp-ink);text-wrap:balance}
+  @media(min-width:768px){.join-banner h3{font-size:34px}}
+  @media(min-width:1280px){.join-banner h3{font-size:40px}}
+  .join-banner p{margin:0;font-size:16px;line-height:1.55;color:var(--pp-stone-900);max-width:54ch}
+  @media(min-width:1280px){.join-banner p{font-size:17px}}
   .join-banner .ctas{display:flex;flex-direction:column;gap:10px;align-items:stretch}
 
   .skeleton-row{padding:20px 4px;border-bottom:1px solid var(--c-border);display:flex;gap:16px;align-items:center}
@@ -182,7 +265,7 @@
     </div>
   </section>
 
-  <section class="sec">
+  <section class="sec sec-people" id="peopleSection">
     <div class="wrap">
       <div class="sec-head">
         <div>
@@ -208,7 +291,7 @@
     </div>
   </section>
 
-  <section class="sec">
+  <section class="sec sec-why">
     <div class="wrap why-grid">
       <h2>Most job boards were never built with you in mind</h2>
       <div class="why-copy">
@@ -221,7 +304,7 @@
 
   <section class="sec sec-community">
     <div class="wrap">
-      <div class="sec-head" style="margin-bottom:24px">
+      <div class="sec-head">
         <div>
           <h2>Community, small on purpose</h2>
           <p>We'd rather six designers get a proper portfolio review than six hundred join another feed. Everything here is running right now, and there's usually room for you.</p>
@@ -250,7 +333,7 @@
     </div>
   </section>
 
-  <section class="sec" style="padding-bottom:0">
+  <section class="sec sec-resume">
     <div class="wrap">
       <div class="resume-banner">
         <div>
@@ -266,7 +349,7 @@
     </div>
   </section>
 
-  <section class="sec">
+  <section class="sec sec-join">
     <div class="wrap">
       <div class="join-banner">
         <div>
@@ -291,8 +374,13 @@
   "use strict";
 
   var ICONS = {
-    save: '<svg width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>'
+    save: '<svg width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>',
+    people: '<svg width="22" height="22" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 00-3-3.87"></path><path d="M16 3.13a4 4 0 010 7.75"></path></svg>'
   };
+
+  // The People grid is a full four-across row in the design; anything less
+  // gets the empty state instead of a part-filled row.
+  var MIN_PEOPLE = 4;
 
   // Same 3-tier collapse as pp-jobs.html's eligBadge — kazi/kenya and
   // africa share one "Open across Africa" tier, P&P is Africa-first.
@@ -326,20 +414,59 @@
   }
 
   function roleRowHtml(j){
-    return '<a class="role-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
-      '<div class="role-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
-        '<div><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div></div>' +
-      '<div class="role-tags">' + eligBadge(j.elig) + '<span class="pp-chip">' + escapeHtml(j.cat || "Design") + '</span></div>' +
+    var saved = isSaved(j.id);
+    var chips = [j.work, j.cat].filter(Boolean).map(function(c){
+      return '<span class="pp-chip">' + escapeHtml(c) + '</span>';
+    }).join("");
+    return '<div class="role-row">' +
+      '<a class="role-link" href="/jobs/' + encodeURIComponent(j.id) + '" aria-label="' + escapeHtml(j.t) + ' at ' + escapeHtml(j.co) + '"></a>' +
+      '<div class="role-main"><span class="pp-card-mark">' + (j.co ? escapeHtml(j.co[0].toUpperCase()) : "?") + '</span>' +
+        '<div style="flex:1;min-width:0"><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div>' +
+        '<button type="button" class="pp-btn-icon role-save' + (saved ? " -saved" : "") + '" data-save="' + escapeHtml(j.id) + '"' +
+          ' aria-pressed="' + (saved ? "true" : "false") + '" aria-label="' + (saved ? "Saved" : "Save role") + '">' + ICONS.save + '</button></div>' +
+      '<div class="role-tags">' + eligBadge(j.elig) + chips + '</div>' +
       '<div class="role-meta"><span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span>' +
         '<span class="posted">' + postedLabel(j.days) + '</span></div>' +
-    '</a>';
+    '</div>';
+  }
+
+  // Mirrors pp-jobs.html: localStorage is the fast local cache both signed-in
+  // and signed-out visitors paint from; the API call is fire-and-forget so a
+  // slow network never blocks the toggle.
+  function savedIds(){
+    try { return JSON.parse(localStorage.getItem("pp_saved_jobs") || "[]"); } catch (e) { return []; }
+  }
+  function isSaved(id){ return savedIds().indexOf(id) !== -1; }
+  function setSaved(id, on, job){
+    var ids = savedIds();
+    var idx = ids.indexOf(id);
+    if (on && idx === -1) ids.push(id);
+    if (!on && idx !== -1) ids.splice(idx, 1);
+    localStorage.setItem("pp_saved_jobs", JSON.stringify(ids));
+    var token = localStorage.getItem("kazi_designer_token");
+    if (!token) return;
+    if (on && job) {
+      fetch("/api/designers/me/saved-jobs", {
+        method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+        body: JSON.stringify({ job_id: job.id, title: job.t, company: job.co, location: job.city || "", eligibility: job.elig || "", url: job.url || "" })
+      }).catch(function(){});
+    } else if (!on) {
+      fetch("/api/designers/me/saved-jobs/" + encodeURIComponent(id), {
+        method: "DELETE", headers: { "Authorization": "Bearer " + token }
+      }).catch(function(){});
+    }
   }
 
   function personCardHtml(p){
     var thumbs = (p.projects || []).slice(0, 3);
+    var count = (p.projects || []).length;
+    // Green only when they're actually open to work — a neutral grey pill for
+    // "not set" would read as a claim the designer never made.
+    var avail = p.availability_status || "";
+    var availClass = /available|open/i.test(avail) ? "-good" : "-neutral";
     return '<a class="p-card" href="/designers/' + encodeURIComponent(p.handle || p.id) + '">' +
       (p.photo_path
-        ? '<img src="' + escapeHtml(p.photo_path) + '" alt="" style="width:52px;height:52px;border-radius:50%;object-fit:cover">'
+        ? '<img class="p-photo" src="' + escapeHtml(p.photo_path) + '" alt="">'
         : '<span class="pp-avatar -md ' + tintFor(p.id) + '">' + initialsOf(p.display_name) + '</span>') +
       '<div><h4>' + escapeHtml(p.display_name) + '</h4><p class="role">' + escapeHtml(p.headline || (p.discipline || [])[0] || "Designer") + (p.location ? " · " + escapeHtml(p.location) : "") + '</p></div>' +
       (p.bio ? '<p class="line">' + escapeHtml(p.bio) + '</p>' : '<div style="flex:1"></div>') +
@@ -349,8 +476,8 @@
           }).join("") + '</div>'
         : "") +
       '<div class="p-foot">' +
-        '<span class="pp-status -neutral">' + escapeHtml(p.availability_status || "Availability not set") + '</span>' +
-        '<span style="font-size:12px;color:var(--c-text-faint)">' + (p.projects || []).length + ' project' + ((p.projects || []).length === 1 ? "" : "s") + '</span>' +
+        '<span class="pp-status ' + availClass + '">' + escapeHtml(avail || "Availability not set") + '</span>' +
+        '<span class="count">' + count + ' project' + (count === 1 ? "" : "s") + '</span>' +
       '</div>' +
     '</a>';
   }
@@ -388,7 +515,18 @@
       if (!jobs.length) {
         list.innerHTML = '<p style="padding:24px 4px;color:var(--c-text-subtle);font-size:14.5px">No roles listed right now — check back soon.</p>';
       } else {
-        list.innerHTML = jobs.slice(0, 5).map(roleRowHtml).join("");
+        var shown = jobs.slice(0, 5);
+        list.innerHTML = shown.map(roleRowHtml).join("");
+        list.querySelectorAll("[data-save]").forEach(function(btn){
+          btn.addEventListener("click", function(){
+            var id = btn.getAttribute("data-save");
+            var next = !isSaved(id);
+            setSaved(id, next, shown.filter(function(j){ return j.id === id; })[0]);
+            btn.classList.toggle("-saved", next);
+            btn.setAttribute("aria-pressed", next ? "true" : "false");
+            btn.setAttribute("aria-label", next ? "Saved" : "Save role");
+          });
+        });
       }
       var africaCount = jobs.filter(function(j){ return eligGroup(j.elig) === "africa"; }).length;
       stats.innerHTML =
@@ -414,9 +552,21 @@
       var data = await res.json();
       var designers = data.designers || [];
 
-      if (!designers.length) {
-        grid.innerHTML = '<p style="color:var(--c-text-subtle);font-size:14.5px">Nobody\'s listed yet — <a href="/onboarding" style="color:var(--c-accent-text);font-weight:600">be the first →</a></p>';
+      // The grid is a four-across row by design. Showing one or two cards in it
+      // reads as a broken page rather than a young one, so below a full row we
+      // say plainly that we're still filling it instead of half-drawing it.
+      if (designers.length < MIN_PEOPLE) {
+        grid.className = "";
+        grid.innerHTML = '<div class="pp-empty">' +
+          '<span class="pp-empty-icon">' + ICONS.people + '</span>' +
+          '<h3>Still building this out</h3>' +
+          '<p>We\'re bringing designers onto the platform now, and their profiles will show up right here as they land. It won\'t be long.</p>' +
+          '<a class="pp-btn pp-btn-primary" href="/onboarding">Create your profile</a>' +
+        '</div>';
+        var seeAll = document.querySelector(".sec-people .see-all");
+        if (seeAll) seeAll.hidden = true;
       } else {
+        grid.className = "people-grid";
         grid.innerHTML = designers.slice(0, 4).map(personCardHtml).join("");
       }
 
@@ -424,10 +574,12 @@
       var recent = designers.filter(function(p){ return new Date(p.created_at).getTime() >= weekAgo; });
       if (recent.length) {
         var cities = Array.from(new Set(recent.map(function(p){ return p.location; }).filter(Boolean))).slice(0, 3);
-        var stack = recent.slice(0, 4).map(function(p, i){
-          return '<span class="pp-avatar -sm ' + tintFor(p.id) + '" style="margin-left:' + (i ? "-10px" : "0") + ';border:2px solid var(--c-surface)">' + initialsOf(p.display_name) + '</span>';
+        // Design shows three faces then a counted overflow chip, not four faces.
+        var stack = recent.slice(0, 3).map(function(p, i){
+          return '<span class="pp-avatar ' + tintFor(p.id) + '" style="margin-left:' + (i ? "-10px" : "0") + ';border:2px solid var(--c-surface)">' + initialsOf(p.display_name) + '</span>';
         }).join("");
-        joined.innerHTML = '<div style="display:flex">' + stack + '</div>' +
+        if (recent.length > 3) stack += '<span class="more">+' + (recent.length - 3) + '</span>';
+        joined.innerHTML = '<div style="display:flex;align-items:center;flex:none">' + stack + '</div>' +
           '<p>' + recent.length + (recent.length === 1 ? " designer joined" : " designers joined") + ' this week' +
           (cities.length ? ", from " + escapeHtml(cities.join(", ")) : "") + '.</p>';
       } else {
@@ -446,6 +598,7 @@
         document.getElementById("workGrid").innerHTML = work.slice(0, 3).map(workCardHtml).join("");
       }
     } catch (e) {
+      grid.className = "";
       grid.innerHTML = '<p style="color:var(--c-text-subtle);font-size:14.5px">The directory didn\'t load. <a href="/people" style="color:var(--c-accent-text);font-weight:600">Browse it directly →</a></p>';
       if (joined && joined.parentElement) joined.parentElement.removeChild(joined);
     }
