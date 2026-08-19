@@ -61,7 +61,7 @@ from .db import (  # noqa: E402
     create_email_token, consume_email_token,
     list_designer_projects, count_designer_projects, create_designer_project,
     update_designer_project, set_project_image, delete_designer_project, reorder_designer_projects,
-    update_project_story, list_project_images, add_project_image, delete_project_image, reorder_project_images,
+    update_project_story, set_project_status, list_project_images, add_project_image, delete_project_image, reorder_project_images,
     update_project_image_caption,
     list_role_history, create_role_history, update_role_history, delete_role_history, reorder_role_history,
     set_designer_company, list_designers_by_company,
@@ -1335,7 +1335,7 @@ async def ats_check_endpoint(file: UploadFile = File(...), job_description: str 
 # "me" is never mistaken for an id.
 # ---------------------------------------------------------------------------
 
-def _designer_public(d: dict) -> dict:
+def _designer_public(d: dict, include_drafts: bool = False) -> dict:
     """Strip private fields (login email, password_hash) before this ever
     reaches a public response — used for both the directory and
     single-profile endpoints so there's exactly one place that decides
@@ -1354,7 +1354,10 @@ def _designer_public(d: dict) -> dict:
         "open_to": parse_multi_field(d.get("open_to")),
         "skills": parse_multi_field(d.get("skills")),
         "links": list_designer_links(d["id"]),
-        "projects": list_designer_projects(d["id"]),
+        # Drafts are the owner's own view only. Every public caller leaves
+        # include_drafts off, so an unpublished project can't reach the
+        # directory, a profile page, or search.
+        "projects": list_designer_projects(d["id"], published_only=not include_drafts),
         "role_history": list_role_history(d["id"]),
         "followers_count": count_followers("designer", d["id"]),
     }
@@ -1479,7 +1482,7 @@ def designer_reset_password(payload: ResetPasswordIn):
 
 @app.get("/api/designers/me")
 def designer_me(designer: dict = Depends(require_designer)):
-    return {**_designer_public(designer), "email": designer["email"],
+    return {**_designer_public(designer, include_drafts=True), "email": designer["email"],
             "email_verified": bool(designer["email_verified"]), "status": designer["status"],
             "onboarding_completed": bool(designer["onboarding_completed"]),
             # Always present for the owner's own view, regardless of
@@ -1841,6 +1844,27 @@ async def designer_upload_project_image(project_id: int, file: UploadFile = File
     image_path = f"/project-images/{stored_name}"
     set_project_image(designer["id"], project_id, image_path)
     return {"ok": True, "image_path": image_path}
+
+
+class ProjectStatusIn(BaseModel):
+    status: str
+
+    @field_validator("status")
+    @classmethod
+    def _valid(cls, v: str) -> str:
+        if v not in ("draft", "published"):
+            raise ValueError("status must be draft or published")
+        return v
+
+
+@app.put("/api/designers/me/projects/{project_id}/status")
+def designer_set_project_status(project_id: int, payload: ProjectStatusIn,
+                                designer: dict = Depends(require_designer)):
+    """Publishing is the designer's own call, not a review step — this is their
+    work, and the admin queue is for profiles, not for each project."""
+    if not set_project_status(designer["id"], project_id, payload.status):
+        raise HTTPException(404, "No such project.")
+    return {"ok": True, "status": payload.status}
 
 
 @app.put("/api/designers/me/projects/{project_id}/story")

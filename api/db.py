@@ -168,6 +168,10 @@ CREATE TABLE IF NOT EXISTS designer_projects (
   category TEXT NOT NULL DEFAULT '',
   image_path TEXT NOT NULL DEFAULT '',
   sort_order INTEGER NOT NULL DEFAULT 0,
+  -- 'draft' | 'published'. New projects start as drafts so a half-filled one
+  -- isn't sitting on a public profile while it's being written; existing rows
+  -- migrate as published, since they already were.
+  status TEXT NOT NULL DEFAULT 'published',
   problem TEXT NOT NULL DEFAULT '',
   results TEXT NOT NULL DEFAULT '[]',
   credits TEXT NOT NULL DEFAULT ''
@@ -572,6 +576,7 @@ _MIGRATIONS = [
     "ALTER TABLE submissions ADD COLUMN skills TEXT NOT NULL DEFAULT '[]'",
     "ALTER TABLE submissions ADD COLUMN screening TEXT NOT NULL DEFAULT '[]'",
     "ALTER TABLE submissions ADD COLUMN portfolio_required INTEGER NOT NULL DEFAULT 0",
+    "ALTER TABLE designer_projects ADD COLUMN status TEXT NOT NULL DEFAULT 'published'",
 ]
 
 
@@ -1195,11 +1200,15 @@ def list_designer_links(designer_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def list_designer_projects(designer_id: int) -> list[dict]:
+def list_designer_projects(designer_id: int, published_only: bool = False) -> list[dict]:
+    """published_only is what every public read passes. The owner's own views
+    (dashboard, onboarding) leave it off so they can see their drafts — they
+    are the only person who should."""
     c = _conn()
+    where = "designer_id = ?" + (" AND status = 'published'" if published_only else "")
     rows = c.execute(
-        "SELECT id, title, description, url, category, image_path, problem, results, credits "
-        "FROM designer_projects WHERE designer_id = ? ORDER BY sort_order",
+        "SELECT id, title, description, url, category, image_path, problem, results, credits, status "
+        "FROM designer_projects WHERE " + where + " ORDER BY sort_order",
         (designer_id,),
     ).fetchall()
     c.close()
@@ -1224,14 +1233,26 @@ def count_designer_projects(designer_id: int) -> int:
     return n
 
 
+def set_project_status(designer_id: int, project_id: int, status: str) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "UPDATE designer_projects SET status = ? WHERE id = ? AND designer_id = ?",
+        (status, project_id, designer_id),
+    )
+    changed = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return changed
+
+
 def create_designer_project(designer_id: int, title: str, description: str, url: str, category: str) -> int:
     c = _conn()
     n = c.execute(
         "SELECT COUNT(*) FROM designer_projects WHERE designer_id = ?", (designer_id,)
     ).fetchone()[0]
     cur = c.execute(
-        "INSERT INTO designer_projects (designer_id, title, description, url, category, sort_order) "
-        "VALUES (?, ?, ?, ?, ?, ?)",
+        "INSERT INTO designer_projects (designer_id, title, description, url, category, sort_order, status) "
+        "VALUES (?, ?, ?, ?, ?, ?, 'draft')",
         (designer_id, title, description, url, category, n),
     )
     project_id = cur.lastrowid

@@ -73,7 +73,9 @@
   .cs-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;
     border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface)}
   .cs-main{flex:1;min-width:200px;display:flex;flex-direction:column;gap:3px}
-  .cs-title{font-size:15px;font-weight:600;color:var(--c-text)}
+  .cs-title{font-size:15px;font-weight:600;color:var(--c-text);display:flex;align-items:center;gap:8px}
+  .cs-draft{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+    padding:2px 7px;border-radius:999px;background:var(--pp-gold-200);color:var(--pp-gold-800)}
   .cs-state{font-size:12.5px;color:var(--c-text-faint)}
   .cs-state.-written{color:var(--c-good-text);font-weight:600}
   .cs-back{border:none;background:none;padding:0;cursor:pointer;font-family:var(--pp-font);
@@ -692,10 +694,15 @@
         '<p class="field-hint" style="margin:0 0 12px">A case study is the same project with the thinking written down. Employers read these.</p>' +
         '<div class="cs-list">' + projects.map(function(p){
           var written = !!(p.problem || (p.results || []).length || p.credits);
+          var draft = p.status === "draft";
           return '<div class="cs-row">' +
-            '<div class="cs-main"><span class="cs-title">' + escapeHtml(p.title || "Untitled") + '</span>' +
+            '<div class="cs-main"><span class="cs-title">' + escapeHtml(p.title || "Untitled") +
+              (draft ? '<span class="cs-draft">Draft</span>' : "") + '</span>' +
               '<span class="cs-state ' + (written ? "-written" : "") + '">' +
-                (written ? "Case study written" : "Project only") + '</span></div>' +
+                (draft ? "Only you can see this" : (written ? "Case study written" : "Project only")) + '</span></div>' +
+            '<button type="button" class="pp-btn ' + (draft ? "pp-btn-primary" : "pp-btn-secondary") +
+              '" data-publish="' + p.id + '" data-to="' + (draft ? "published" : "draft") + '">' +
+              (draft ? "Publish" : "Unpublish") + '</button>' +
             '<button type="button" class="pp-btn pp-btn-secondary" data-story="' + p.id + '">' +
               (written ? "Edit case study" : "Expand into a case study") + '</button>' +
           '</div>';
@@ -744,6 +751,20 @@
         onChange: function(list){ me.projects = list; render(); }
       });
     }
+    document.querySelectorAll("[data-publish]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var id = btn.getAttribute("data-publish");
+        btn.disabled = true;
+        try {
+          await api("/api/designers/me/projects/" + id + "/status", {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ status: btn.getAttribute("data-to") })
+          });
+          me = await api("/api/designers/me");
+          render();
+        } catch (e) { btn.disabled = false; }
+      });
+    });
     document.querySelectorAll("[data-story]").forEach(function(btn){
       btn.addEventListener("click", function(){
         storyProjectId = Number(btn.getAttribute("data-story"));
