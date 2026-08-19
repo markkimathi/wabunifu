@@ -330,6 +330,28 @@ CREATE TABLE IF NOT EXISTS company_shortlist (
 );
 CREATE INDEX IF NOT EXISTS idx_shortlist_company ON company_shortlist(company_id);
 
+-- One table for both sides: (recipient_type, recipient_id) rather than two
+-- near-identical tables, because every notification is the same shape and the
+-- only thing that differs is who reads it.
+--
+-- Deliberately narrow. A notification is created only for something a person
+-- would want to interrupt their day for — a message, a company saving their
+-- profile. Anything that is merely activity belongs on a page someone chooses
+-- to visit, not in a bell that trains them to ignore it.
+CREATE TABLE IF NOT EXISTS notifications (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  recipient_type TEXT NOT NULL,          -- 'designer' | 'employer'
+  recipient_id INTEGER NOT NULL,
+  kind TEXT NOT NULL,                    -- 'message' | 'shortlisted' | 'reply'
+  title TEXT NOT NULL,                   -- already rendered: the sender is the point
+  body TEXT NOT NULL DEFAULT '',
+  href TEXT NOT NULL DEFAULT '',         -- where acting on it goes
+  read_at TEXT NOT NULL DEFAULT '',
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_notif_recipient
+  ON notifications(recipient_type, recipient_id, read_at);
+
 -- Self-reported: we hand applications to the company's own page and never see
 -- what happens next, so this records only that the designer says they applied.
 -- The snapshot columns exist because a listing ages out of the feed long before
@@ -1948,6 +1970,64 @@ def unsave_job(designer_id: int, job_id: str) -> bool:
     c.commit()
     c.close()
     return deleted
+
+
+# ---------------- Notifications ----------------
+
+def notify(recipient_type: str, recipient_id: int, kind: str,
+           title: str, body: str = "", href: str = "") -> None:
+    """Fire-and-forget. A notification is a nicety; failing to write one must
+    never take down the action that caused it, so callers don't check."""
+    try:
+        c = _conn()
+        c.execute(
+            "INSERT INTO notifications (recipient_type, recipient_id, kind, title, body, href, created_at) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (recipient_type, recipient_id, kind, title[:200], body[:400], href[:300],
+             datetime.now(timezone.utc).isoformat(timespec="seconds")),
+        )
+        c.commit()
+        c.close()
+    except Exception:
+        pass
+
+
+def list_notifications(recipient_type: str, recipient_id: int, limit: int = 30) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM notifications WHERE recipient_type = ? AND recipient_id = ? "
+        "ORDER BY created_at DESC LIMIT ?",
+        (recipient_type, recipient_id, limit),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def count_unread_notifications(recipient_type: str, recipient_id: int) -> int:
+    c = _conn()
+    n = c.execute(
+        "SELECT COUNT(*) FROM notifications WHERE recipient_type = ? AND recipient_id = ? AND read_at = ''",
+        (recipient_type, recipient_id),
+    ).fetchone()[0]
+    c.close()
+    return n
+
+
+def mark_notifications_read(recipient_type: str, recipient_id: int, notif_id: int | None = None) -> None:
+    c = _conn()
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    if notif_id is None:
+        c.execute(
+            "UPDATE notifications SET read_at = ? WHERE recipient_type = ? AND recipient_id = ? AND read_at = ''",
+            (now, recipient_type, recipient_id),
+        )
+    else:
+        c.execute(
+            "UPDATE notifications SET read_at = ? WHERE id = ? AND recipient_type = ? AND recipient_id = ?",
+            (now, notif_id, recipient_type, recipient_id),
+        )
+    c.commit()
+    c.close()
 
 
 # ---------------- Company shortlist ----------------

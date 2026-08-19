@@ -48,6 +48,8 @@ from .db import (  # noqa: E402
     update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
     designers_missing_country, set_designer_country,
     shortlist_add, shortlist_remove, shortlist_ids, shortlist_entries,
+    notify, list_notifications, count_unread_notifications, mark_notifications_read,
+    list_employers_for_company,
     mark_applied, list_applied_jobs, unmark_applied,
     save_search, list_saved_searches, delete_saved_search, set_search_alerts,
     searches_with_alerts, mark_search_notified,
@@ -2063,6 +2065,8 @@ def designer_start_conversation(payload: DesignerConversationStart, designer: di
             raise HTTPException(404, "no such company")
         conversation_id = get_or_create_conversation(designer["id"], payload.company_id, "designer")
     create_message(conversation_id, "designer", designer["id"], None, payload.body)
+    _notify_other_party(conversation_id, "designer", designer["id"],
+                        designer["display_name"], payload.body)
     return {"ok": True, "conversation_id": conversation_id}
 
 
@@ -2084,6 +2088,8 @@ def designer_get_messages(conversation_id: int, designer: dict = Depends(require
 def designer_send_message(conversation_id: int, payload: MessageIn, designer: dict = Depends(require_designer)):
     _require_own_conversation(conversation_id, designer["id"])
     create_message(conversation_id, "designer", designer["id"], None, payload.body)
+    _notify_other_party(conversation_id, "designer", designer["id"],
+                        designer["display_name"], payload.body)
     return {"ok": True}
 
 
@@ -2560,6 +2566,9 @@ def employer_start_conversation(payload: EmployerConversationStart, employer: di
         raise HTTPException(404, "no such designer")
     conversation_id = get_or_create_conversation(payload.designer_id, employer["company_id"], "employer")
     create_message(conversation_id, "employer", None, employer["id"], payload.body)
+    _company = get_company(employer["company_id"])
+    _notify_other_party(conversation_id, "employer", None,
+                        (_company or {}).get("name", "A company"), payload.body)
     return {"ok": True, "conversation_id": conversation_id}
 
 
@@ -2581,6 +2590,9 @@ def employer_get_messages(conversation_id: int, employer: dict = Depends(require
 def employer_send_message(conversation_id: int, payload: MessageIn, employer: dict = Depends(require_employer)):
     _require_company_conversation(conversation_id, employer["company_id"])
     create_message(conversation_id, "employer", None, employer["id"], payload.body)
+    _company = get_company(employer["company_id"])
+    _notify_other_party(conversation_id, "employer", None,
+                        (_company or {}).get("name", "A company"), payload.body)
     return {"ok": True}
 
 
@@ -2793,6 +2805,69 @@ def resources_submit_pay(payload: PaySubmissionIn, designer: dict = Depends(requ
     return {"ok": True}
 
 
+def _notify_other_party(conversation_id: int, sender_type: str, sender_designer_id,
+                        sender_name: str, preview: str) -> None:
+    """Tell whoever didn't send. Called after the message is already stored, so
+    a failure here costs a notification and never the message itself.
+
+    An employer-side conversation notifies every teammate at that company: the
+    person who started the thread may not be the one who reads it, and a
+    message that only reached one inbox is how candidates get ignored."""
+    conv = get_conversation(conversation_id)
+    if not conv:
+        return
+    body = (preview or "").strip().replace("\n", " ")[:120]
+
+    if sender_type == "employer":
+        notify("designer", conv["designer_id"], "message",
+               sender_name + " sent you a message", body, "/dashboard")
+        return
+
+    # Designer sent. Peer conversations go to the other designer; company
+    # conversations go to the whole team.
+    peer = conv.get("peer_designer_id")
+    if peer is not None:
+        other = peer if conv["designer_id"] == sender_designer_id else conv["designer_id"]
+        notify("designer", other, "message", sender_name + " sent you a message", body, "/dashboard")
+        return
+    for emp in list_employers_for_company(conv["company_id"]):
+        notify("employer", emp["id"], "message",
+               sender_name + " replied", body, "/pp-employer.html")
+
+
+def _notif_out(n: dict) -> dict:
+    return {"id": n["id"], "kind": n["kind"], "title": n["title"], "body": n["body"],
+            "href": n["href"], "read": bool(n["read_at"]), "created_at": n["created_at"]}
+
+
+@app.get("/api/designers/me/notifications")
+def designer_notifications(designer: dict = Depends(require_designer)):
+    rows = list_notifications("designer", designer["id"])
+    return {"unread": count_unread_notifications("designer", designer["id"]),
+            "notifications": [_notif_out(n) for n in rows]}
+
+
+@app.post("/api/designers/me/notifications/read")
+def designer_notifications_read(notification_id: Optional[int] = None,
+                                designer: dict = Depends(require_designer)):
+    mark_notifications_read("designer", designer["id"], notification_id)
+    return {"ok": True}
+
+
+@app.get("/api/employers/me/notifications")
+def employer_notifications(employer: dict = Depends(require_employer)):
+    rows = list_notifications("employer", employer["id"])
+    return {"unread": count_unread_notifications("employer", employer["id"]),
+            "notifications": [_notif_out(n) for n in rows]}
+
+
+@app.post("/api/employers/me/notifications/read")
+def employer_notifications_read(notification_id: Optional[int] = None,
+                                employer: dict = Depends(require_employer)):
+    mark_notifications_read("employer", employer["id"], notification_id)
+    return {"ok": True}
+
+
 class ShortlistIn(BaseModel):
     designer_id: int
     note: str = ""
@@ -2860,7 +2935,15 @@ def employer_shortlist_add(payload: ShortlistIn, employer: dict = Depends(requir
     d = get_designer(payload.designer_id)
     if not d or d["status"] != "approved":
         raise HTTPException(404, "no such designer")
+    already = payload.designer_id in set(shortlist_ids(employer["company_id"]))
     shortlist_add(employer["company_id"], payload.designer_id, payload.note.strip()[:500], employer["id"])
+    if not already:
+        # Only on the first save — re-saving to edit a note is not news, and the
+        # private note itself is never shown to the designer.
+        company = get_company(employer["company_id"])
+        notify("designer", payload.designer_id, "shortlisted",
+               (company or {}).get("name", "A company") + " saved your profile",
+               "They're looking at designers for a role.", "/dashboard")
     return {"ok": True}
 
 

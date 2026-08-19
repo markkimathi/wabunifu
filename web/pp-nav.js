@@ -66,6 +66,7 @@
   var ICONS = {
     search: function(s){ return svg(s, '<circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path>'); },
     close: function(s){ return svg(s, '<path d="M6 6l12 12M18 6L6 18"></path>'); },
+    bell: function(s){ return svg(s, '<path d="M18 8a6 6 0 10-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M13.7 21a2 2 0 01-3.4 0"></path>'); },
     hamburger: function(s){ return svg(s, '<path d="M4 7h16M4 12h16M4 17h16"></path>'); },
     chevronRight: function(s){ return svg(s, '<path d="M9 6l6 6-6 6"></path>'); },
     back: function(s){ return svg(s, '<path d="M15 18l-6-6 6-6"></path>'); },
@@ -109,6 +110,20 @@
     + ".pp-btn-ghost:hover{background:var(--c-bg-sunken);border-color:var(--c-border-hover)}"
     + ".pp-btn-gold{font-size:var(--pp-button-size);font-weight:var(--pp-button-weight);padding:0 18px;height:40px;display:inline-flex;align-items:center;border-radius:9px;background:var(--c-accent);color:var(--c-on-accent);white-space:nowrap;text-decoration:none}"
     + ".pp-btn-gold:hover{background:var(--c-accent-hover)}"
+    + ".pp-bell{position:relative;flex:none;width:38px;height:38px;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--c-border);border-radius:999px;background:transparent;color:var(--c-text-muted);cursor:pointer}"
+    + ".pp-bell:hover{background:var(--c-bg-sunken);color:var(--c-text)}"
+    + ".pp-bell-dot{position:absolute;top:6px;right:6px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--pp-gold);color:var(--pp-ink);font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;line-height:1}"
+    + ".pp-notif-panel{position:absolute;top:calc(100% + 8px);right:0;width:min(360px,calc(100vw - 32px));max-height:60vh;overflow-y:auto;z-index:var(--pp-z-menu,21);"
+    +   "background:var(--c-surface);border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);box-shadow:var(--pp-shadow-lg);padding:6px}"
+    + ".pp-notif-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:8px 10px 6px}"
+    + ".pp-notif-head span{font-size:13px;font-weight:700}"
+    + ".pp-notif-head button{border:none;background:none;padding:0;cursor:pointer;font-family:inherit;font-size:12.5px;font-weight:600;color:var(--c-accent-text)}"
+    + ".pp-notif-item{display:block;width:100%;text-align:left;padding:10px;border:none;border-radius:var(--pp-radius-md);background:transparent;cursor:pointer;font-family:inherit;text-decoration:none;color:inherit}"
+    + ".pp-notif-item:hover{background:var(--c-bg-sunken)}"
+    + ".pp-notif-item.-unread{background:var(--pp-gold-200)}"
+    + ".pp-notif-item .t{display:block;font-size:13.5px;font-weight:600;color:var(--c-text);margin-bottom:2px}"
+    + ".pp-notif-item .b{display:block;font-size:12.5px;line-height:1.45;color:var(--c-text-subtle)}"
+    + ".pp-notif-empty{padding:26px 14px;text-align:center;font-size:13px;color:var(--c-text-subtle)}"
     + ".pp-avatar-menu{position:relative;flex:none}"
     + ".pp-avatar-chip{display:inline-flex;align-items:center;gap:9px;flex:none;padding:4px 4px 4px 12px;border-radius:999px;border:1px solid var(--c-border);background:transparent;text-decoration:none;color:var(--c-text);font:inherit;cursor:pointer}"
     + ".pp-avatar-chip:hover{background:var(--c-bg-sunken)}"
@@ -318,9 +333,102 @@
     });
   }
 
+
+  /* Notifications. The bell only appears once we know there is an account to
+     load them for, so a signed-out visitor never sees a control that does
+     nothing. Failures are silent: a nav that breaks because a nicety failed
+     would be a worse trade than a missing badge. */
+  function wireBell(root){
+    // Two headers render at different widths (desktop row and compact row), so
+    // there are two bells. Both are wired against one shared item list — a
+    // count that only updated on whichever header happened to be visible would
+    // go stale the moment the window resized.
+    var bells = Array.prototype.slice.call(root.querySelectorAll("[data-bell]"));
+    var panels = Array.prototype.slice.call(root.querySelectorAll("[data-notif-panel]"));
+    if (!bells.length || !panels.length) return;
+
+    var token = null;
+    try { token = localStorage.getItem(DESIGNER_TOKEN_KEY); } catch (e) {}
+    if (!token) return;
+    bells.forEach(function(b){ b.hidden = false; });
+
+    var items = [];
+
+    function paintCount(n){
+      bells.forEach(function(b){
+        var dot = b.querySelector("[data-bell-count]");
+        if (!dot) return;
+        dot.hidden = !n;
+        dot.textContent = n > 9 ? "9+" : String(n);
+      });
+    }
+
+    async function load(){
+      try {
+        var res = await fetch("/api/designers/me/notifications", {
+          headers: { "Authorization": "Bearer " + token }
+        });
+        if (!res.ok) return;
+        var data = await res.json();
+        items = data.notifications || [];
+        paintCount(data.unread || 0);
+      } catch (e) {}
+    }
+
+    function paintPanel(){
+      panels.forEach(function(panel){
+      if (!items.length) {
+        panel.innerHTML = '<p class="pp-notif-empty">Nothing yet. When a company messages you or saves your profile, it shows up here.</p>';
+        return;
+      }
+      panel.innerHTML =
+        '<div class="pp-notif-head"><span>Notifications</span>' +
+          '<button type="button" data-notif-readall>Mark all read</button></div>' +
+        items.map(function(n){
+          return '<a class="pp-notif-item' + (n.read ? "" : " -unread") + '" href="' + (n.href || "#") + '">' +
+            '<span class="t">' + n.title + '</span>' +
+            (n.body ? '<span class="b">' + n.body + '</span>' : "") +
+          '</a>';
+        }).join("");
+      var all = panel.querySelector("[data-notif-readall]");
+      if (all) all.addEventListener("click", async function(e){
+        e.stopPropagation();
+        try {
+          await fetch("/api/designers/me/notifications/read", {
+            method: "POST", headers: { "Authorization": "Bearer " + token }
+          });
+        } catch (err) {}
+        await load();
+        paintPanel();
+      });
+      });
+    }
+
+    bells.forEach(function(bell, i){
+      var panel = panels[i] || panels[0];
+      bell.addEventListener("click", async function(e){
+        e.stopPropagation();
+        var opening = panel.hidden;
+        panels.forEach(function(p){ p.hidden = true; });
+        panel.hidden = !opening;
+        if (opening) { await load(); paintPanel(); }
+      });
+      document.addEventListener("click", function(e){
+        if (!panel.hidden && !panel.contains(e.target) && !bell.contains(e.target)) panel.hidden = true;
+      });
+    });
+
+    load();
+  }
+
   function authControlsHtml(user){
     if (user) {
-      return '<div class="pp-avatar-menu" data-avatar-menu>' +
+      // The bell lives in the shared nav so it follows people around the site
+      // rather than only existing on the dashboard they were trying to leave.
+      return '<button type="button" class="pp-bell" data-bell aria-label="Notifications" hidden>' +
+          ICONS.bell(19) + '<span class="pp-bell-dot" data-bell-count hidden></span></button>' +
+        '<div class="pp-notif-panel" data-notif-panel hidden></div>' +
+        '<div class="pp-avatar-menu" data-avatar-menu>' +
         '<button type="button" class="pp-avatar-chip" data-avatar-trigger aria-haspopup="true" aria-expanded="false">' +
           '<span class="pp-av-name">' + user.name + '</span>' +
           '<span class="pp-av-circle">' + avatarInnerHtml(user) + '</span></button>' +
@@ -382,6 +490,11 @@
           '<a class="pp-mark" href="' + ROUTES.home + '"><img src="/brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
           '<div class="pp-spacer"></div>' +
           '<button type="button" class="pp-tap-btn" data-open-msearch aria-label="Search">' + ICONS.search(19) + '</button>' +
+          // Same bell on the compact header — a notification you can only see
+          // on a wide screen is one most people never see.
+          (user ? '<button type="button" class="pp-bell" data-bell aria-label="Notifications" hidden style="width:34px;height:34px">' +
+              ICONS.bell(18) + '<span class="pp-bell-dot" data-bell-count hidden></span></button>' +
+            '<div class="pp-notif-panel" data-notif-panel hidden></div>' : '') +
           (user ? '<a class="pp-av-circle" href="' + user.href + '" aria-label="Your profile" style="width:30px;height:30px;font-size:11px;text-decoration:none">' +
             avatarInnerHtml(user) + '</a>' : '') +
           '<button type="button" class="pp-tap-theme" data-theme-toggle aria-label="Toggle dark mode" title="Toggle dark mode">' + ICONS.theme(19) + '</button>' +
@@ -515,6 +628,8 @@
         try { localStorage.setItem("pp_theme", next); } catch (e) {}
       });
     });
+
+    wireBell(root);
 
     var avatarMenu = root.querySelector("[data-avatar-menu]");
     if (avatarMenu) {
