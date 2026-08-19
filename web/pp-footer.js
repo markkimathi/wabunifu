@@ -104,8 +104,8 @@
           '<a href="/companies">Companies</a>' +
           '<a href="' + ROUTES.community + '">Mentors</a></div>' +
         '<div class="pp-foot-col"><span>Build</span>' +
-          '<a href="/dashboard/profile">Your profile</a>' +
-          '<a href="/dashboard/profile">Portfolio</a>' +
+          '<a href="/dashboard">Your profile</a>' +
+          '<a href="/dashboard">Portfolio</a>' +
           '<a href="' + ROUTES.resources + '">Résumé check</a>' +
           '<a href="/post-a-role">Post a role</a></div>' +
         '<div class="pp-foot-col"><span>About</span>' +
@@ -138,7 +138,7 @@
       '<span>© ' + year + ' Path &amp; Pixel</span>' +
       '<a href="/privacy">Privacy</a>' +
       '<a href="/terms">Terms</a>' +
-      '<a href="/help">Help</a>' +
+      '<a href="/resources">Help</a>' +
     '</div>';
   }
 

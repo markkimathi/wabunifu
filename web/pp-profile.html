@@ -292,7 +292,7 @@
             (designer.photo_path
               ? '<img class="photo" src="' + escapeHtml(designer.photo_path) + '" alt="">'
               : '<span class="pp-avatar -lg" style="border-radius:var(--pp-radius-xl);width:132px;height:132px;font-size:40px">' + initialsOf(designer.display_name) + '</span>') +
-            '<div style="flex:1;min-width:280px">' +
+            '<div style="flex:1;min-width:min(280px,100%)">' +
               '<h1 class="name-row">' + escapeHtml(designer.display_name) + ' <span class="verified-badge" title="Reviewed and published by Path & Pixel">' + ICONS.verified + '</span></h1>' +
               '<p class="meta">' + [designer.headline, designer.location, designer.years_experience ? designer.years_experience + " years" : ""]
                 .filter(Boolean).map(escapeHtml).join(" · ") + '</p>' +

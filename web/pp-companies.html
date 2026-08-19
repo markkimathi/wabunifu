@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Companies · Path &amp; Pixel</title>
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:0 var(--pp-page-margin);box-sizing:border-box}
+  a{color:inherit;text-decoration:none}
+
+  .hero{padding:20px 0 0}
+  .hero h1{margin:0 0 14px;font-size:var(--pp-display-size);line-height:1.0;letter-spacing:-0.04em;font-weight:800;max-width:20ch}
+  .hero p{margin:0 0 24px;font-size:17px;line-height:1.55;color:var(--c-text-muted);max-width:62ch}
+  .hero-search{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px}
+  .hero-search .pp-field-input{flex:1;min-width:min(280px,100%);height:52px;border-radius:12px}
+  .hero-search .pp-field-input input{font-size:16px}
+
+  .results-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+  .results-count{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  .filter-chips{display:flex;flex-wrap:wrap;gap:7px}
+  .rail-chip{padding:6px 12px;border-radius:999px;font-family:var(--pp-font);font-size:13.5px;font-weight:500;
+    cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
+  .rail-chip.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
+
+  .co-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:20px;padding:0 0 64px}
+  @media(max-width:1023px){.co-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @media(max-width:639px){.co-grid{grid-template-columns:1fr}}
+
+  .co-card{padding:22px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);
+    display:flex;flex-direction:column;gap:14px;transition:border-color var(--pp-duration) var(--pp-ease)}
+  .co-card:hover{border-color:var(--c-border-hover)}
+  .co-head{display:flex;align-items:center;gap:12px;min-width:0}
+  /* The monogram is the shared .pp-card-mark used on job rows and job detail,
+     not a second one invented here — same company, same mark, everywhere. */
+  .co-card .pp-card-mark{overflow:hidden}
+  .co-card .pp-card-mark img{width:100%;height:100%;object-fit:cover;display:block}
+  .co-head .who{min-width:0;flex:1}
+  .co-head h3{margin:0;font-size:19px;font-weight:700;letter-spacing:-0.02em;line-height:1.2;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .co-head p{margin:2px 0 0;font-size:13.5px;color:var(--c-text-subtle);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .co-line{margin:0;font-size:14.5px;line-height:1.55;color:var(--c-text-subtle);flex:1;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .co-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding-top:12px;border-top:1px solid var(--c-surface-inset)}
+  .co-roles{font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  .co-go{font-size:13.5px;font-weight:600;color:var(--c-accent-text)}
+
+  .state-panel{padding:64px 32px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
+    background:var(--c-surface);text-align:center;margin-bottom:64px}
+  .state-panel h3{margin:0 0 7px;font-size:21px;font-weight:700;letter-spacing:-0.018em}
+  .state-panel p{margin:0 auto 20px;font-size:15px;line-height:1.55;color:var(--c-text-subtle);max-width:46ch}
+
+  .skeleton-card{padding:22px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border);
+    display:flex;flex-direction:column;gap:14px}
+  .skeleton-block{background:var(--c-surface-inset);border-radius:5px;animation:pp-pulse 1.4s ease-in-out infinite}
+  @keyframes pp-pulse{0%,100%{opacity:1}50%{opacity:.5}}
+  @media(prefers-reduced-motion:reduce){.skeleton-block{animation:none}}
+</style>
+</head>
+<body>
+
+<div id="pp-nav" data-active="jobs"></div>
+<nav id="pp-breadcrumbs" data-crumbs='[{"label":"Jobs","href":"/jobs"},{"label":"Companies"}]'></nav>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Who's hiring designers</h1>
+      <p id="heroLead">Every company with a design role open on Path &amp; Pixel right now, and how many of those roles are open to designers in Africa.</p>
+      <div class="hero-search">
+        <div class="pp-field-input">
+          <input type="search" id="coSearch" placeholder="Search companies" aria-label="Search companies" autocomplete="off">
+        </div>
+      </div>
+    </section>
+
+    <div class="results-head">
+      <span class="results-count" id="resultsCount"></span>
+      <div class="filter-chips">
+        <button type="button" class="rail-chip" id="africaOnly" aria-pressed="false">Open to Africa</button>
+      </div>
+    </div>
+
+    <div class="co-grid" id="coGrid"></div>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="pp-nav.js"></script>
+<script src="pp-footer.js"></script>
+<script>
+(function(){
+  var state = { all: [], q: "", africaOnly: false, loaded: false };
+
+  function escapeHtml(s){
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function(c){
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  function monogram(name){
+    return name ? String(name).trim().charAt(0).toUpperCase() : "?";
+  }
+
+  function skeleton(){
+    var one = '<div class="skeleton-card">' +
+      '<div style="display:flex;gap:12px;align-items:center">' +
+        '<div class="skeleton-block" style="width:44px;height:44px;border-radius:var(--pp-radius-md);flex:none"></div>' +
+        '<div style="flex:1"><div class="skeleton-block" style="height:17px;width:60%"></div>' +
+        '<div class="skeleton-block" style="height:12px;width:40%;margin-top:7px"></div></div>' +
+      '</div>' +
+      '<div class="skeleton-block" style="height:13px;width:90%"></div>' +
+      '<div class="skeleton-block" style="height:13px;width:70%"></div>' +
+    '</div>';
+    return new Array(6).join("|").split("|").map(function(){ return one; }).join("");
+  }
+
+  function visible(){
+    var q = state.q.trim().toLowerCase();
+    return state.all.filter(function(c){
+      if (state.africaOnly && !c.open_to_africa) return false;
+      if (!q) return true;
+      return c.name.toLowerCase().indexOf(q) !== -1 ||
+             (c.disciplines || []).join(" ").toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function cardHtml(c){
+    var roles = c.roles + (c.roles === 1 ? " open role" : " open roles");
+    // The Africa count is the number this audience is actually deciding on, so
+    // it sits on the card rather than a click away.
+    var sub = c.open_to_africa
+      ? c.open_to_africa + " open to designers in Africa"
+      : "None open to Africa right now";
+    var line = c.blurb || (c.disciplines || []).slice(0, 3).join(" · ") || "";
+    var mark = c.logo_path
+      ? '<span class="pp-card-mark -logo"><img src="' + escapeHtml(c.logo_path) + '" alt="" loading="lazy"></span>'
+      : '<span class="pp-card-mark" aria-hidden="true">' + escapeHtml(monogram(c.name)) + '</span>';
+
+    return '<a class="co-card" href="/companies/' + encodeURIComponent(c.slug) + '">' +
+      '<span class="co-head">' + mark +
+        '<span class="who"><h3>' + escapeHtml(c.name) + '</h3><p>' + escapeHtml(sub) + '</p></span>' +
+      '</span>' +
+      (line ? '<p class="co-line">' + escapeHtml(line) + '</p>' : '<p class="co-line"></p>') +
+      '<span class="co-foot"><span class="co-roles">' + roles + '</span>' +
+      '<span class="co-go">See roles &rarr;</span></span>' +
+    '</a>';
+  }
+
+  function render(){
+    var grid = document.getElementById("coGrid");
+    var count = document.getElementById("resultsCount");
+    if (!state.loaded) { grid.innerHTML = skeleton(); count.textContent = ""; return; }
+
+    var list = visible();
+    count.textContent = list.length + (list.length === 1 ? " company" : " companies");
+
+    if (!list.length) {
+      grid.innerHTML = '<div class="state-panel" style="grid-column:1/-1">' +
+        '<h3>Nothing matches that</h3>' +
+        '<p>' + (state.africaOnly
+          ? "No company here has a role open to designers in Africa right now. That changes as the board refreshes."
+          : "Try a different name, or clear the search.") + '</p>' +
+        '<button type="button" class="pp-btn pp-btn-secondary" id="clearAll">Clear filters</button></div>';
+      var clr = document.getElementById("clearAll");
+      if (clr) clr.addEventListener("click", function(){
+        state.q = ""; state.africaOnly = false;
+        document.getElementById("coSearch").value = "";
+        syncChip(); render();
+      });
+      return;
+    }
+    grid.innerHTML = list.map(cardHtml).join("");
+  }
+
+  function syncChip(){
+    var b = document.getElementById("africaOnly");
+    b.classList.toggle("-active", state.africaOnly);
+    b.setAttribute("aria-pressed", state.africaOnly ? "true" : "false");
+  }
+
+  document.getElementById("coSearch").addEventListener("input", function(e){
+    state.q = e.target.value; render();
+  });
+  document.getElementById("africaOnly").addEventListener("click", function(){
+    state.africaOnly = !state.africaOnly; syncChip(); render();
+  });
+
+  render();
+  fetch("/api/companies", { cache: "no-store" })
+    .then(function(r){ if (!r.ok) throw new Error("bad status"); return r.json(); })
+    .then(function(d){
+      state.all = d.companies || [];
+      state.loaded = true;
+      var african = state.all.filter(function(c){ return c.open_to_africa; }).length;
+      document.getElementById("heroLead").textContent =
+        state.all.length + " companies have a design role open on Path & Pixel right now. " +
+        african + " of them are hiring designers who can work from Africa.";
+      render();
+    })
+    .catch(function(){
+      state.loaded = true;
+      document.getElementById("coGrid").innerHTML =
+        '<div class="state-panel" style="grid-column:1/-1"><h3>The board didn\'t load</h3>' +
+        '<p>That\'s on us, not you. Give it a moment and try again.</p>' +
+        '<button type="button" class="pp-btn pp-btn-primary" onclick="location.reload()">Try again</button></div>';
+    });
+})();
+</script>
+</body>
+</html>

@@ -2474,6 +2474,63 @@ def _company_listings(company: dict) -> list[dict]:
     return out
 
 
+def _company_slug(name: str) -> str:
+    """Mirror of guessSlug() in pp-company.html, so a company that only exists
+    as a name on a scraped listing still gets one stable, shareable URL that
+    both sides derive the same way."""
+    base = re.sub(r"[^a-z0-9]", "", (name or "").lower())
+    if not base or not base[:1].isalpha():
+        base = "company" + base
+    base = base[:30]
+    while len(base) < 3:
+        base += "0"
+    return base
+
+
+@app.get("/api/companies")
+def companies_directory():
+    """Every company currently hiring on the board.
+
+    Built from the board rather than the companies table on purpose: the table
+    only holds employers who registered here (one, today), while the board
+    carries roles from dozens. A directory that showed only the former would be
+    accurate and useless. Registered companies are merged in on top, so they
+    bring their logo and blurb with them."""
+    combined, _ = _combined_jobs()
+    by_name: dict[str, dict] = {}
+    for j in combined:
+        name = (j.get("co") or "").strip()
+        if not name:
+            continue
+        entry = by_name.setdefault(name, {
+            "name": name, "slug": _company_slug(name), "roles": 0,
+            "disciplines": [], "open_to_africa": 0, "locations": [],
+            "logo_path": "", "blurb": "", "registered": False,
+        })
+        entry["roles"] += 1
+        if j.get("elig") in ("kenya", "africa"):
+            entry["open_to_africa"] += 1
+        for key, field in (("cat", "disciplines"), ("city", "locations")):
+            v = (j.get(key) or "").strip()
+            if v and v not in entry[field]:
+                entry[field].append(v)
+
+    for c in list_companies(status="approved"):
+        entry = by_name.get(c["name"])
+        if entry is None:
+            entry = by_name.setdefault(c["name"], {
+                "name": c["name"], "slug": c["slug"], "roles": 0, "disciplines": [],
+                "open_to_africa": 0, "locations": [], "logo_path": "", "blurb": "",
+                "registered": False,
+            })
+        entry.update({"slug": c["slug"], "registered": True,
+                      "logo_path": c.get("logo_path") or "",
+                      "blurb": c.get("blurb") or ""})
+
+    out = sorted(by_name.values(), key=lambda e: (-e["roles"], e["name"].lower()))
+    return {"count": len(out), "companies": out}
+
+
 @app.get("/api/companies/{identifier}")
 def company_public_page(identifier: str):
     company = get_company(int(identifier)) if identifier.isdigit() else None
@@ -3657,6 +3714,42 @@ def designer_profile_page(identifier: str, request: Request):
     )
 
 
+# The company pages had no routes at all: pp-company.html was built, had a
+# working API behind it, and was reachable from nowhere. /companies is the
+# directory; /companies/{slug} is one company, resolved from the path.
+@app.get("/companies", include_in_schema=False)
+def companies_page(request: Request):
+    base = _site_base(request)
+    return _page_with_head(
+        "pp-companies.html", title="Companies hiring designers · Path & Pixel",
+        description="Every company with a design role open on Path & Pixel, and how many "
+                    "of those roles are open to designers in Africa.",
+        canonical=f"{base}/companies", image=f"{base}/logo.png",
+    )
+
+
+@app.get("/companies/{slug}", include_in_schema=False)
+def company_page(slug: str, request: Request):
+    base = _site_base(request)
+    combined, _ = _combined_jobs()
+    name = next((j["co"] for j in combined if _company_slug(j.get("co") or "") == slug), "")
+    record = get_company_by_slug(slug)
+    if record and record.get("status") == "approved":
+        name = record["name"]
+    if not name:
+        return FileResponse(WEB_DIR / "pp-company.html")
+    roles = sum(1 for j in combined if (j.get("co") or "") == name)
+    african = sum(1 for j in combined
+                  if (j.get("co") or "") == name and j.get("elig") in ("kenya", "africa"))
+    desc = f"{roles} design role{'' if roles == 1 else 's'} open at {name}"
+    desc += f", {african} open to designers in Africa." if african else "."
+    return _page_with_head(
+        "pp-company.html", title=f"Design jobs at {name}", description=desc,
+        canonical=f"{base}/companies/{slug}",
+        image=f"{base}{record['logo_path']}" if record and record.get("logo_path") else f"{base}/logo.png",
+    )
+
+
 # Same pattern for a single job: /jobs/{id} always serves pp-job.html, which
 # reads the id from location.pathname and fetches GET /api/jobs/{id} itself.
 # --- What a crawler or a link preview actually sees -------------------------
@@ -3836,11 +3929,14 @@ def robots_txt(request: Request):
 def sitemap_xml(request: Request):
     base = _site_base(request)
     urls: list[tuple[str, str]] = [(f"{base}/", "daily"), (f"{base}/jobs", "daily"),
-                                   (f"{base}/people", "weekly"), (f"{base}/community", "weekly"),
+                                   (f"{base}/people", "weekly"), (f"{base}/companies", "daily"),
+                                   (f"{base}/community", "weekly"),
                                    (f"{base}/resources", "monthly"), (f"{base}/terms", "yearly"),
                                    (f"{base}/privacy", "yearly")]
     combined, _ = _combined_jobs()
     urls += [(f"{base}/jobs/{j['id']}", "weekly") for j in combined]
+    for name in sorted({(j.get("co") or "").strip() for j in combined} - {""}):
+        urls.append((f"{base}/companies/{_company_slug(name)}", "weekly"))
     # Only designers who are actually public — a sitemap pointing at a profile
     # the directory itself won't show is a 404 waiting to be crawled.
     try:

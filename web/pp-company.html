@@ -173,7 +173,10 @@
 
   var params = new URLSearchParams(location.search);
   var companyName = params.get("name");
-  var companySlug = params.get("slug");
+  // /companies/{slug} is the real URL; ?slug= and ?name= still work so older
+  // links keep resolving.
+  var pathSlug = (location.pathname.match(/^\/companies\/([^\/?#]+)/) || [])[1];
+  var companySlug = params.get("slug") || (pathSlug ? decodeURIComponent(pathSlug) : null);
   var following = false;
 
   function guessSlug(name){
@@ -187,6 +190,7 @@
   async function load(){
     var content = document.getElementById("content");
     if (!companyName && !companySlug) { content.innerHTML = notFound("No company specified."); return; }
+    document.body.dataset.coSlug = companySlug || "";
 
     var realCompany = null;
     try {
@@ -205,7 +209,14 @@
       var res = await fetch("/api/jobs", { cache: "no-store" });
       if (!res.ok) throw new Error("bad status");
       var data = await res.json();
-      jobs = (data.jobs || []).filter(function(j){ return j.co === companyName; });
+      var all = data.jobs || [];
+      // Arriving by slug alone (the normal case for a scraped company, which
+      // has no record of its own): find whose name derives to this slug.
+      if (!companyName && companySlug) {
+        var hit = all.filter(function(j){ return guessSlug(j.co) === companySlug; })[0];
+        if (hit) companyName = hit.co;
+      }
+      jobs = all.filter(function(j){ return j.co === companyName; });
     } catch (e) {
       content.innerHTML = notFound("The board didn't load. Try again in a moment."); return;
     }
@@ -282,7 +293,8 @@
   function render(name, jobs, company){
     document.title = name + " · Path & Pixel";
     var crumbs = document.getElementById("pp-breadcrumbs");
-    crumbs.setAttribute("data-crumbs", JSON.stringify([{ label: "Jobs", href: "/jobs" }, { label: name }]));
+    crumbs.setAttribute("data-crumbs", JSON.stringify([
+      { label: "Jobs", href: "/jobs" }, { label: "Companies", href: "/companies" }, { label: name }]));
     PathPixelNav.renderBreadcrumbs(crumbs);
 
     var city = mostCommon(jobs.map(function(j){ return j.city; }));
@@ -300,7 +312,7 @@
     document.getElementById("content").innerHTML =
       '<div class="head">' +
         mark +
-        '<div style="flex:1;min-width:280px">' +
+        '<div style="flex:1;min-width:min(280px,100%)">' +
           '<h1>' + escapeHtml(name) + '</h1>' +
           (company && company.blurb ? '<p class="blurb">' + escapeHtml(company.blurb) + '</p>' : "") +
           '<div class="head-meta">' +
