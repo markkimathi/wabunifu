@@ -140,7 +140,10 @@
   .sec-work .sec-head p{color:var(--pp-text-subtle-on-dark)}
   .sec-work .sec-head .see-all{color:var(--pp-gold)}
   .work-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
-  .w-cover{aspect-ratio:4/3;border-radius:var(--pp-radius-lg);background:var(--pp-ink-raised);border:1px solid var(--pp-stone-700);margin-bottom:14px;overflow:hidden}
+  /* stone-900 (#3D3D42) is the design's border on this dark band — stone-700
+     sits too light against the #1F1F1F card. Both are fixed ramp values, not
+     theme-reactive, which is what this permanently-dark section needs. */
+  .w-cover{aspect-ratio:4/3;border-radius:var(--pp-radius-lg);background:var(--pp-ink-raised);border:1px solid var(--pp-stone-900);margin-bottom:14px;overflow:hidden}
   .w-cover img{width:100%;height:100%;object-fit:cover;display:block}
   .w-card h4{margin:0 0 4px;font-size:18px;font-weight:700;letter-spacing:-0.015em;color:var(--pp-white)}
   @media(min-width:1280px){.w-card h4{font-size:19px}}
@@ -148,6 +151,13 @@
   .w-author{display:flex;align-items:center;gap:9px}
   .w-author .pp-avatar{width:24px;height:24px;font-size:11px}
   .w-author span.name{font-size:13.5px;color:var(--pp-text-faint-on-dark)}
+  /* This section's background is dark in both themes, so its empty state can't
+     use the theme-reactive surface tokens the shared primitive is built on —
+     in light mode those would paint a white card onto the black band. */
+  .sec-work .pp-empty{background:var(--pp-ink-raised);border-color:var(--pp-stone-900)}
+  .sec-work .pp-empty h3{color:var(--pp-white)}
+  .sec-work .pp-empty p{color:var(--pp-text-subtle-on-dark)}
+  .sec-work .pp-empty-icon{background:var(--pp-ink);border-color:var(--pp-stone-900);color:var(--pp-gold)}
 
   /* ---- why / eligibility explainer ---- */
   .sec-why{padding:48px 0}
@@ -375,12 +385,23 @@
 
   var ICONS = {
     save: '<svg width="15" height="15" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>',
-    people: '<svg width="22" height="22" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 00-3-3.87"></path><path d="M16 3.13a4 4 0 010 7.75"></path></svg>'
+    people: '<svg width="22" height="22" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 00-3-3.87"></path><path d="M16 3.13a4 4 0 010 7.75"></path></svg>',
+    work: '<svg width="22" height="22" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke="currentColor"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="8.5" cy="9.5" r="1.8"></circle><path d="M21 16l-5.5-5.5L6 20"></path></svg>'
   };
 
-  // The People grid is a full four-across row in the design; anything less
-  // gets the empty state instead of a part-filled row.
+  // Both grids are full rows in the design — four people, three case studies.
+  // Anything less gets the empty state rather than a part-filled row.
   var MIN_PEOPLE = 4;
+  var MIN_WORK = 3;
+
+  function emptyPanelHtml(icon, heading, body, ctaLabel, ctaHref){
+    return '<div class="pp-empty">' +
+      '<span class="pp-empty-icon">' + icon + '</span>' +
+      '<h3>' + heading + '</h3>' +
+      '<p>' + body + '</p>' +
+      '<a class="pp-btn pp-btn-primary" href="' + ctaHref + '">' + ctaLabel + '</a>' +
+    '</div>';
+  }
 
   // Same 3-tier collapse as pp-jobs.html's eligBadge — kazi/kenya and
   // africa share one "Open across Africa" tier, P&P is Africa-first.
@@ -557,12 +578,9 @@
       // say plainly that we're still filling it instead of half-drawing it.
       if (designers.length < MIN_PEOPLE) {
         grid.className = "";
-        grid.innerHTML = '<div class="pp-empty">' +
-          '<span class="pp-empty-icon">' + ICONS.people + '</span>' +
-          '<h3>Still building this out</h3>' +
-          '<p>We\'re bringing designers onto the platform now, and their profiles will show up right here as they land. It won\'t be long.</p>' +
-          '<a class="pp-btn pp-btn-primary" href="/onboarding">Create your profile</a>' +
-        '</div>';
+        grid.innerHTML = emptyPanelHtml(ICONS.people, "Still building this out",
+          "We're bringing designers onto the platform now, and their profiles will show up right here as they land. It won't be long.",
+          "Create your profile", "/onboarding");
         var seeAll = document.querySelector(".sec-people .see-all");
         if (seeAll) seeAll.hidden = true;
       } else {
@@ -586,16 +604,32 @@
         joined.parentElement.removeChild(joined);
       }
 
+      // Round-robin by project index so the row leads with one piece from each
+      // designer, then backfills from whoever has more. Taking only a single
+      // project each meant one prolific designer filled just one of three slots.
       var work = [];
-      designers.forEach(function(p){
-        (p.projects || []).slice(0, 1).forEach(function(pr){
-          work.push({ id: pr.id, title: pr.title, category: pr.category, image_path: pr.image_path,
+      var depth = Math.max.apply(null, [0].concat(designers.map(function(p){ return (p.projects || []).length; })));
+      for (var d = 0; d < depth; d++) {
+        designers.forEach(function(p){
+          var pr = (p.projects || [])[d];
+          if (pr) work.push({ id: pr.id, title: pr.title, category: pr.category, image_path: pr.image_path,
             designerId: p.handle || p.id, authorName: p.display_name });
         });
-      });
-      if (work.length) {
-        document.getElementById("workSection").hidden = false;
-        document.getElementById("workGrid").innerHTML = work.slice(0, 3).map(workCardHtml).join("");
+      }
+
+      var workSection = document.getElementById("workSection");
+      var workGrid = document.getElementById("workGrid");
+      workSection.hidden = false;
+      if (work.length < MIN_WORK) {
+        workGrid.className = "";
+        workGrid.innerHTML = emptyPanelHtml(ICONS.work, "No case studies yet",
+          "Designers here are writing up their projects now. The moment the first ones are published, you'll find them here.",
+          "Share your work", "/onboarding");
+        var seeWork = document.querySelector(".sec-work .see-all");
+        if (seeWork) seeWork.hidden = true;
+      } else {
+        workGrid.className = "work-grid";
+        workGrid.innerHTML = work.slice(0, 3).map(workCardHtml).join("");
       }
     } catch (e) {
       grid.className = "";
