@@ -106,6 +106,10 @@ CREATE TABLE IF NOT EXISTS designers (
   bio TEXT NOT NULL DEFAULT '',
   discipline TEXT NOT NULL DEFAULT '',
   location TEXT NOT NULL DEFAULT '',
+  -- Free-text `location` ("Nairobi, Kenya") is what a designer types and what
+  -- we display. `country` is the structured half the job board matches against
+  -- an eligibility scope, so it must stay a bare country name.
+  country TEXT NOT NULL DEFAULT '',
   photo_path TEXT NOT NULL DEFAULT '',
   phone TEXT NOT NULL DEFAULT '',
   contact_email TEXT NOT NULL DEFAULT '',
@@ -473,6 +477,7 @@ _MIGRATIONS = [
     "ALTER TABLE submissions ADD COLUMN eligibility_source TEXT NOT NULL DEFAULT 'employer-claimed'",
     "ALTER TABLE submissions ADD COLUMN eligibility_override_reason TEXT NOT NULL DEFAULT ''",
     "ALTER TABLE submissions ADD COLUMN eligibility_overridden_at TEXT NOT NULL DEFAULT ''",
+    "ALTER TABLE designers ADD COLUMN country TEXT NOT NULL DEFAULT ''",
 ]
 
 
@@ -790,6 +795,7 @@ class HandleTaken(Exception):
 
 def update_designer_profile(
     designer_id: int, *, display_name: str, bio: str, discipline: list[str], location: str,
+    country: str = "",
     phone: str = "", contact_email: str = "",
     headline: str = "", years_experience: str = "", availability_status: str = "",
     skills: list[str] | None = None,
@@ -802,12 +808,33 @@ def update_designer_profile(
     new_status = "pending" if row and row["status"] == "approved" else (row["status"] if row else "pending")
     c.execute(
         "UPDATE designers SET display_name = ?, bio = ?, discipline = ?, location = ?, "
-        "phone = ?, contact_email = ?, headline = ?, years_experience = ?, "
+        "country = ?, phone = ?, contact_email = ?, headline = ?, years_experience = ?, "
         "availability_status = ?, skills = ?, status = ? WHERE id = ?",
-        (display_name, bio, json.dumps(discipline), location, phone, contact_email,
+        (display_name, bio, json.dumps(discipline), location, country, phone, contact_email,
          headline, years_experience, availability_status, json.dumps(skills or []),
          new_status, designer_id),
     )
+    c.commit()
+    c.close()
+
+
+def designers_missing_country() -> list[dict]:
+    """Everyone who has typed a location but has no structured country yet."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT id, location FROM designers WHERE country = '' AND location != ''"
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def set_designer_country(designer_id: int, country: str) -> None:
+    """Country only — deliberately not update_designer_profile(), which sends an
+    approved profile back for re-review. Deriving a country from what someone
+    already typed is not an edit they made, so it must not cost them their
+    listing."""
+    c = _conn()
+    c.execute("UPDATE designers SET country = ? WHERE id = ?", (country, designer_id))
     c.commit()
     c.close()
 

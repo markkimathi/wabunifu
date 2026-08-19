@@ -64,6 +64,7 @@
   @media(max-width:600px){.field-row2{grid-template-columns:1fr}}
   .form-actions{display:flex;align-items:center;gap:12px;margin-top:16px}
   .fielderr{font-size:13px;color:var(--c-bad-text);margin-top:6px}
+  .field-hint{margin:6px 0 0;font-size:12.5px;line-height:1.45;color:var(--c-text-subtle)}
   .save-note{font-size:13px;color:var(--c-good-text)}
 
   .photo-block{display:flex;align-items:center;gap:16px;margin-bottom:20px}
@@ -406,9 +407,12 @@
       '<div class="field-block"><label class="pp-field-label">Name</label><div class="pp-field-input"><input id="pName" value="' + escapeHtml(me.display_name || "") + '"></div></div>' +
       '<div class="field-block"><label class="pp-field-label">Headline</label><div class="pp-field-input"><input id="pHeadline" value="' + escapeHtml(me.headline || "") + '" placeholder="e.g. Product Designer"></div></div>' +
       '<div class="field-row2">' +
-        '<div class="field-block"><label class="pp-field-label">Location</label><div class="pp-field-input"><input id="pLocation" value="' + escapeHtml(me.location || "") + '"></div></div>' +
-        '<div class="field-block"><label class="pp-field-label">Years of experience</label><div class="pp-field-input"><input id="pYears" value="' + escapeHtml(me.years_experience || "") + '"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label">Location</label><div class="pp-field-input"><input id="pLocation" value="' + escapeHtml(me.location || "") + '" placeholder="e.g. Nairobi"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label" for="pCountry">Country you can work from</label>' +
+          '<div class="pp-field-input"><select id="pCountry"></select></div>' +
+          '<p class="field-hint">What we check listings against, so the board can hide roles that would turn you down.</p></div>' +
       '</div>' +
+      '<div class="field-block"><label class="pp-field-label">Years of experience</label><div class="pp-field-input"><input id="pYears" value="' + escapeHtml(me.years_experience || "") + '"></div></div>' +
       '<div class="field-block"><label class="pp-field-label">Bio</label><textarea id="pBio" class="pp-textarea" rows="3">' + escapeHtml(me.bio || "") + '</textarea></div>' +
       '<div class="field-block"><label class="pp-field-label">Discipline (up to ' + MAX_DISCIPLINES + ')</label><div class="chip-select" id="disciplineChips"></div></div>' +
       '<div class="field-block"><label class="pp-field-label">Skills (up to ' + MAX_SKILLS + ')</label><div class="tag-box" id="skillBox"><input id="skillInput" placeholder="Type a skill and press Enter"></div></div>' +
@@ -416,6 +420,31 @@
       '<div class="form-actions"><button type="submit" class="pp-btn pp-btn-primary" id="profileSubmitBtn">Save changes</button><span class="save-note" id="profileSaveNote" hidden>Saved.</span></div>' +
     '</form></div>';
     return body;
+  }
+
+  // Options come from /api/countries rather than being duplicated here, so the
+  // list can't drift from what the profile endpoint will accept. Africa is
+  // grouped first because that's who the board is for.
+  async function fillCountrySelect(current){
+    var sel = document.getElementById("pCountry");
+    if (!sel) return;
+    sel.innerHTML = '<option value="">Select a country</option>';
+    try {
+      var res = await fetch("/api/countries");
+      if (!res.ok) return;
+      var data = await res.json();
+      [["Africa", data.african], ["Elsewhere", data.other]].forEach(function(pair){
+        var g = document.createElement("optgroup");
+        g.label = pair[0];
+        pair[1].forEach(function(c){
+          var o = document.createElement("option");
+          o.value = c; o.textContent = c;
+          if (c === current) o.selected = true;
+          g.appendChild(o);
+        });
+        sel.appendChild(g);
+      });
+    } catch (e) {}
   }
 
   function renderDisciplineChips(){
@@ -502,7 +531,7 @@
     content.innerHTML = head + body;
     document.getElementById("dashRail").innerHTML = railHtml();
     document.getElementById("dashChipsMobile").innerHTML = chipsMobileHtml();
-    if (section === "profile") { selectedDisciplines = (me.discipline || []).slice(); selectedSkills = (me.skills || []).slice(); renderDisciplineChips(); renderSkillChips(); }
+    if (section === "profile") { selectedDisciplines = (me.discipline || []).slice(); selectedSkills = (me.skills || []).slice(); renderDisciplineChips(); renderSkillChips(); fillCountrySelect(me.country || ""); }
     wire();
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
@@ -611,6 +640,7 @@
         display_name: document.getElementById("pName").value.trim(),
         headline: document.getElementById("pHeadline").value.trim(),
         location: document.getElementById("pLocation").value.trim(),
+        country: document.getElementById("pCountry").value,
         years_experience: document.getElementById("pYears").value.trim(),
         bio: document.getElementById("pBio").value.trim(),
         discipline: selectedDisciplines, skills: selectedSkills,

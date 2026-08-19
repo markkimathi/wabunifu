@@ -78,6 +78,16 @@
   .rail-cta p{margin:0 0 12px;font-size:13px;line-height:1.5;color:var(--c-good-text)}
   .rail-cta a{font-size:13.5px;font-weight:600;color:var(--c-good-text);border-bottom:1px solid currentColor;padding-bottom:1px;text-decoration:none}
 
+  /* Says what the country on file is hiding, and undoes it in the same line.
+     Deliberately quiet — it is a statement of fact, not a warning. */
+  .elig-notice{margin:0 0 14px;padding:11px 14px;border-radius:var(--pp-radius-md);
+    background:var(--c-bg-sunken);border:1px solid var(--c-border);
+    font-size:13.5px;line-height:1.5;color:var(--c-text-muted);
+    display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+  .elig-notice button,.elig-notice a{border:none;background:none;padding:0;cursor:pointer;
+    font-family:var(--pp-font);font-size:13.5px;font-weight:600;color:var(--c-accent-text);text-decoration:underline}
+  .elig-notice a{margin-left:auto;color:var(--c-text-subtle);font-weight:500}
+
   .results-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
   .results-count{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
   .results-count>span{font-size:14.5px;font-weight:600;font-variant-numeric:tabular-nums}
@@ -224,6 +234,7 @@
     </aside>
 
     <div>
+      <p class="elig-notice" id="eligNotice" hidden></p>
       <div class="results-head">
         <div class="results-count" id="resultsCount"></div>
         <div style="display:flex;align-items:center;gap:12px">
@@ -271,7 +282,7 @@
 
   var state = {
     all: [], loaded: false, failed: false,
-    query: "", elig: { africa: true, world: true, check: true },
+    query: "", elig: { africa: true, world: true, check: true }, eligFromUrl: null,
     disciplines: new Set(), levels: new Set(), payOnly: false,
     sort: "newest", tab: "all", page: 1
   };
@@ -326,6 +337,32 @@
   function eligBadge(j){ return PPElig.badge(j.elig, j.elig_scope || "", PPElig.getViewerCountry()); }
   function eligGroup(elig){ return (elig === "kenya" || elig === "africa") ? "africa" : elig; }
 
+  // Signed in with a country on file, the board answers the only question that
+  // matters — can you take this? — instead of making you translate a continent
+  // badge yourself. Signed out we can't know, so it falls back to describing
+  // the roles rather than pretending to judge them for you.
+  function isPersonal(){ return !!PPElig.getViewerCountry(); }
+
+  function bucketOf(j){
+    if (!isPersonal()) return eligGroup(j.elig);
+    var v = PPElig.openTo(j.elig, j.elig_scope || "", PPElig.getViewerCountry());
+    return v === true ? "open" : (v === null ? "check" : "closed");
+  }
+
+  function eligBuckets(){
+    return isPersonal()
+      ? [["open", "Open to you"], ["check", "Worth checking"], ["closed", "Not open to you"]]
+      : [["africa", "Open across Africa"], ["world", "Global remote"], ["check", "Worth checking"]];
+  }
+
+  function defaultEligState(){
+    // The one opinionated default: roles that would reject you start hidden.
+    // Everything else is on, and the line above the results says so.
+    return isPersonal()
+      ? { open: true, check: true, closed: false }
+      : { africa: true, world: true, check: true };
+  }
+
   var toastTimer = null;
   function showToast(msg, action){
     var host = document.getElementById("pp-toast");
@@ -348,7 +385,7 @@
 
   function matchesFilters(j){
     if (state.tab === "saved" && !isSaved(j.id)) return false;
-    if (!state.elig[eligGroup(j.elig)]) return false;
+    if (!state.elig[bucketOf(j)]) return false;
     if (state.disciplines.size && !state.disciplines.has(j.cat)) return false;
     if (state.levels.size && !state.levels.has(j.level)) return false;
     if (state.payOnly && (!j.pay || j.pay === "Not disclosed")) return false;
@@ -376,10 +413,10 @@
 
   function renderFilterRail(){
     var eligBox = document.getElementById("eligFilters");
-    eligBox.innerHTML = [["africa", "Open across Africa"], ["world", "Global remote"], ["check", "Worth checking"]]
+    eligBox.innerHTML = eligBuckets()
       .map(function(pair){
         var key = pair[0], label = pair[1];
-        var count = state.all.filter(function(j){ return eligGroup(j.elig) === key; }).length;
+        var count = state.all.filter(function(j){ return bucketOf(j) === key; }).length;
         return '<label class="pp-check-row"><input type="checkbox" data-elig="' + key + '"' +
           (state.elig[key] ? " checked" : "") + '>' + label +
           '<span class="pp-check-count">' + count + '</span></label>';
@@ -427,7 +464,7 @@
 
   function activeChipsHtml(){
     var chips = [];
-    [["africa", "Open across Africa"], ["world", "Global remote"], ["check", "Worth checking"]].forEach(function(pair){
+    eligBuckets().forEach(function(pair){
       if (!state.elig[pair[0]]) chips.push({ label: pair[1] + " ✕ off", key: "elig", val: pair[0] });
     });
     state.disciplines.forEach(function(d){ chips.push({ label: d, key: "disc", val: d }); });
@@ -441,7 +478,7 @@
 
   function activeFilterCount(){
     var n = 0;
-    ["africa", "world", "check"].forEach(function(k){ if (!state.elig[k]) n++; });
+    eligBuckets().forEach(function(pair){ if (!state.elig[pair[0]]) n++; });
     n += state.disciplines.size + state.levels.size + (state.payOnly ? 1 : 0);
     return n;
   }
@@ -454,6 +491,29 @@
     var n = activeFilterCount();
     badge.textContent = n;
     badge.hidden = !n;
+    renderEligNotice();
+  }
+
+  // Never hide roles silently. If the country on file is filtering the board,
+  // say so, say how many, and put the undo in the same sentence.
+  function renderEligNotice(){
+    var host = document.getElementById("eligNotice");
+    if (!host) return;
+    var country = PPElig.getViewerCountry();
+    if (!country || !state.loaded || state.elig.closed) { host.hidden = true; return; }
+    var hidden = state.all.filter(function(j){ return bucketOf(j) === "closed"; }).length;
+    if (!hidden) { host.hidden = true; return; }
+    host.hidden = false;
+    host.innerHTML = 'Hiding ' + hidden + (hidden === 1 ? " role that isn't" : " roles that aren't") +
+      ' open from ' + escapeHtml(country) + '. ' +
+      '<button type="button" id="showClosed">Show them anyway</button>' +
+      '<a href="/dashboard?tab=profile">Not where you live?</a>';
+    document.getElementById("showClosed").addEventListener("click", function(){
+      state.elig.closed = true;
+      state.page = 1;
+      renderFilterRail();
+      renderResults();
+    });
   }
 
   function renderJobRow(j){
@@ -582,7 +642,7 @@
   }
 
   function resetFilters(){
-    state.elig = { africa: true, world: true, check: true };
+    state.elig = defaultEligState();
     state.disciplines = new Set();
     state.levels = new Set();
     state.payOnly = false;
@@ -620,10 +680,37 @@
     });
   }
 
+  /* Resolve who's asking before the first paint, so the board never flashes an
+     impersonal list and then re-filters under the reader. A failure here is not
+     an error state — it just means we answer impersonally, as we do for anyone
+     signed out. */
+  async function resolveViewerCountry(){
+    var token = designerToken();
+    if (!token) return;
+    try {
+      var res = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + token } });
+      if (!res.ok) return;
+      var me = await res.json();
+      if (me && me.country) PPElig.setViewerCountry(me.country);
+    } catch (e) {}
+  }
+
   async function loadJobs(){
     state.loaded = false;
     state.failed = false;
     renderResults();
+    await resolveViewerCountry();
+    state.elig = defaultEligState();
+    if (state.eligFromUrl) {
+      // The homepage chips speak the impersonal tiers. Once we know the reader,
+      // "Open across Africa" and "Global remote" both mean the same thing to
+      // them — show me what I can take.
+      var p = state.eligFromUrl;
+      state.elig = isPersonal()
+        ? { open: p !== "check", check: p === "check", closed: false }
+        : { africa: false, world: false, check: false };
+      if (!isPersonal()) state.elig[eligGroup(p)] = true;
+    }
     try {
       var res = await fetch("/api/jobs", { cache: "no-store" });
       if (!res.ok) throw new Error("bad status");
@@ -668,10 +755,11 @@
     if (qParam) { searchInput.value = qParam; state.query = qParam; }
     // Homepage "Try" chips: narrow to one eligibility tier or level instead
     // of just linking to the board with no filter applied.
+    // Stored, not applied: the buckets differ once we know the reader's
+    // country, and that isn't resolved until loadJobs().
     var eligParam = params.get("elig");
     if (eligParam && ["africa", "kenya", "world", "check"].indexOf(eligParam) !== -1) {
-      state.elig = { africa: false, world: false, check: false };
-      state.elig[eligGroup(eligParam)] = true;
+      state.eligFromUrl = eligParam;
     }
     var levelParam = params.get("level");
     if (levelParam && LEVELS.indexOf(levelParam) !== -1) state.levels.add(levelParam);

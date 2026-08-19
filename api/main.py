@@ -46,6 +46,7 @@ from .db import (  # noqa: E402
     record_employer_login_failure, reset_employer_login_failures,
     LOGIN_LOCKOUT_THRESHOLD, LOGIN_LOCKOUT_MINUTES,
     update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
+    designers_missing_country, set_designer_country,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
     mark_onboarding_completed,
     set_designer_resume, clear_designer_resume, set_resume_visibility,
@@ -100,6 +101,35 @@ MAX_LINKS = 8
 AVAILABILITY_STATUSES = ["Available", "Open to offers", "Not available"]
 MAX_DESIGNER_DISCIPLINES = 5
 MAX_DESIGNER_SKILLS = 7
+
+# Where a designer can work from, as a structured value the board matches
+# against a listing's eligibility scope. Spelling has to line up exactly with
+# scraper/pipeline/eligibility.py's country tables and web/pp-elig.js, or a
+# role scoped to "Nigeria" won't match a designer who picked "Nigeria".
+AFRICAN_COUNTRIES = [
+    "Algeria", "Angola", "Benin", "Botswana", "Burkina Faso", "Burundi", "Cabo Verde",
+    "Cameroon", "Central African Republic", "Chad", "Comoros", "Congo", "DR Congo",
+    "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea", "Eswatini", "Ethiopia",
+    "Gabon", "Gambia", "Ghana", "Guinea", "Guinea-Bissau", "Ivory Coast", "Kenya",
+    "Lesotho", "Liberia", "Libya", "Madagascar", "Malawi", "Mali", "Mauritania",
+    "Mauritius", "Morocco", "Mozambique", "Namibia", "Niger", "Nigeria", "Rwanda",
+    "Sao Tome and Principe", "Senegal", "Seychelles", "Sierra Leone", "Somalia",
+    "South Africa", "South Sudan", "Sudan", "Tanzania", "Togo", "Tunisia", "Uganda",
+    "Zambia", "Zimbabwe",
+]
+# Africa-first, but the directory is open to anyone, so the rest of the world
+# needs somewhere to sit. Matches the non-African scope names the classifier
+# produces, so "Open in the United States" resolves for someone who is there.
+OTHER_COUNTRIES = [
+    "the United States", "Canada", "Mexico", "the United Kingdom", "Ireland",
+    "Germany", "France", "Spain", "Portugal", "Italy", "the Netherlands", "Belgium",
+    "Poland", "Sweden", "Norway", "Denmark", "Finland", "Switzerland", "Austria",
+    "Czechia", "Romania", "Greece", "Turkey", "Israel", "the UAE", "Saudi Arabia",
+    "India", "Pakistan", "Bangladesh", "China", "Japan", "Singapore", "Malaysia",
+    "Indonesia", "the Philippines", "Vietnam", "Thailand", "Australia",
+    "New Zealand", "Brazil", "Argentina", "Colombia", "Chile", "Peru",
+]
+COUNTRIES = AFRICAN_COUNTRIES + OTHER_COUNTRIES
 
 # Pay resources: a separate, deliberately simpler 2-value market split from
 # job ELIGIBILITY's 3-tier vocabulary (kenya/africa/world/check) — pay data
@@ -192,6 +222,27 @@ def client_ip(request: Request) -> str:
 
 app = FastAPI(title="Kazi API")
 init_db()
+
+
+def _backfill_designer_countries() -> None:
+    """Derive the structured country from the free text people already typed, so
+    the board can filter for existing designers without making them re-enter
+    anything. Runs once — after this every row either has a country or has a
+    location we couldn't place, and both are skipped on the next boot."""
+    for d in designers_missing_country():
+        loc = (d["location"] or "").lower()
+        # Longest name first so "South Sudan" is never matched as "Sudan", and
+        # "South Africa" never as the bare continent.
+        for country in sorted(COUNTRIES, key=len, reverse=True):
+            needle = country.lower()
+            if needle.startswith("the "):
+                needle = needle[4:]
+            if re.search(r"\b" + re.escape(needle) + r"\b", loc):
+                set_designer_country(d["id"], country)
+                break
+
+
+_backfill_designer_countries()
 
 
 # Nothing here is content-hashed — pages ask for "pp-nav.js", not
@@ -353,6 +404,7 @@ class ProfileUpdate(BaseModel):
     discipline: list[str] = []
     skills: list[str] = []
     location: str = ""
+    country: str = ""
     phone: str = ""
     contact_email: str = ""
     headline: str = ""
@@ -1216,6 +1268,7 @@ def _designer_public(d: dict) -> dict:
     out = {
         "id": d["id"], "display_name": d["display_name"], "bio": d["bio"],
         "discipline": parse_multi_field(d["discipline"]), "location": d["location"],
+        "country": d.get("country", ""),
         "photo_path": d["photo_path"], "created_at": d["created_at"],
         "phone": d.get("phone", ""), "contact_email": d.get("contact_email", ""),
         "handle": d.get("handle", ""),
@@ -1360,6 +1413,13 @@ def designer_me(designer: dict = Depends(require_designer)):
             "resume_public": bool(designer.get("resume_public"))}
 
 
+@app.get("/api/countries")
+def get_countries():
+    """The country picker's options. Served rather than duplicated into the
+    page so the list can never drift from what the profile endpoint validates."""
+    return {"african": AFRICAN_COUNTRIES, "other": OTHER_COUNTRIES}
+
+
 @app.get("/api/designers/me/stats")
 def designer_stats(designer: dict = Depends(require_designer)):
     """Lightweight dashboard-stats sibling of /api/designers/me, same idea as
@@ -1375,9 +1435,14 @@ def designer_update_me(payload: ProfileUpdate, designer: dict = Depends(require_
         raise HTTPException(400, f"discipline must be one of {DISCIPLINES}")
     if payload.availability_status and payload.availability_status not in AVAILABILITY_STATUSES:
         raise HTTPException(400, f"availability_status must be one of {AVAILABILITY_STATUSES}")
+    # Must be an exact match or the board can't line it up with a listing's
+    # eligibility scope; "" stays allowed so the field is never a blocker.
+    if payload.country and payload.country not in COUNTRIES:
+        raise HTTPException(400, "country must be one we recognise")
     update_designer_profile(
         designer["id"], display_name=payload.display_name, bio=payload.bio.strip()[:2000],
         discipline=payload.discipline, location=payload.location.strip()[:200],
+        country=payload.country,
         phone=payload.phone.strip()[:40], contact_email=payload.contact_email.strip()[:200],
         headline=payload.headline, years_experience=payload.years_experience,
         availability_status=payload.availability_status, skills=payload.skills,
