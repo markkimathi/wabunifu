@@ -310,6 +310,23 @@ CREATE TABLE IF NOT EXISTS designer_saved_searches (
 );
 CREATE INDEX IF NOT EXISTS idx_saved_searches_designer ON designer_saved_searches(designer_id);
 
+-- Self-reported: we hand applications to the company's own page and never see
+-- what happens next, so this records only that the designer says they applied.
+-- The snapshot columns exist because a listing ages out of the feed long before
+-- it stops mattering to the person who applied to it.
+CREATE TABLE IF NOT EXISTS designer_applied_jobs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  designer_id INTEGER NOT NULL,
+  job_id TEXT NOT NULL,
+  title TEXT NOT NULL DEFAULT '',
+  company TEXT NOT NULL DEFAULT '',
+  location TEXT NOT NULL DEFAULT '',
+  url TEXT NOT NULL DEFAULT '',
+  applied_at TEXT NOT NULL,
+  UNIQUE(designer_id, job_id)
+);
+CREATE INDEX IF NOT EXISTS idx_applied_designer ON designer_applied_jobs(designer_id);
+
 -- Original shape (company_id NOT NULL, no peer_designer_id). Every run —
 -- fresh database or not — goes through _migrate_conversations_peer_support()
 -- right after this script, which is the single source of truth for the
@@ -1905,6 +1922,42 @@ def unsave_job(designer_id: int, job_id: str) -> bool:
     c = _conn()
     cur = c.execute(
         "DELETE FROM designer_saved_jobs WHERE designer_id = ? AND job_id = ?", (designer_id, job_id)
+    )
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
+
+
+# ---------------- Applied roles (self-reported) ----------------
+
+def mark_applied(designer_id: int, job_id: str, title: str, company: str,
+                 location: str, url: str) -> None:
+    c = _conn()
+    c.execute(
+        "INSERT OR IGNORE INTO designer_applied_jobs "
+        "(designer_id, job_id, title, company, location, url, applied_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        (designer_id, job_id, title, company, location, url,
+         datetime.now(timezone.utc).isoformat(timespec="seconds")),
+    )
+    c.commit()
+    c.close()
+
+
+def list_applied_jobs(designer_id: int) -> list[dict]:
+    c = _conn()
+    rows = c.execute(
+        "SELECT * FROM designer_applied_jobs WHERE designer_id = ? ORDER BY applied_at DESC",
+        (designer_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def unmark_applied(designer_id: int, job_id: str) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "DELETE FROM designer_applied_jobs WHERE designer_id = ? AND job_id = ?", (designer_id, job_id)
     )
     deleted = cur.rowcount > 0
     c.commit()

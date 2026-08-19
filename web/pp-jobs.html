@@ -160,6 +160,18 @@
   .state-panel p{margin:0 0 20px;font-size:15px;line-height:1.6;max-width:44ch;color:var(--c-text-subtle)}
   .state-icon{width:44px;height:44px;border-radius:50%;background:var(--c-bad-bg);color:var(--c-bad-text);
     display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
+  /* Green because it's a thing you did, not a claim about the role. */
+  .pp-chip.-applied{background:var(--c-good-bg);color:var(--c-good-text);border:1px solid var(--c-good-border)}
+
+  /* Measured escape routes from a dead end, biggest win first. */
+  .relax-list{display:flex;flex-direction:column;gap:8px;margin:0 auto 20px;max-width:420px;width:100%}
+  .relax-btn{display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;
+    padding:11px 14px;border-radius:var(--pp-radius-md);border:1px solid var(--c-border-strong);
+    background:var(--c-surface);font-family:var(--pp-font);font-size:14.5px;font-weight:500;
+    color:var(--c-text);cursor:pointer;text-align:left}
+  .relax-btn:hover{border-color:var(--pp-gold);background:var(--c-bg-sunken)}
+  .relax-n{flex:none;font-size:13px;font-weight:700;color:var(--pp-gold-800);font-variant-numeric:tabular-nums}
+
   .empty-icon{width:52px;height:52px;border-radius:var(--pp-radius-lg);background:var(--pp-gold-200);border:1px solid var(--pp-gold-400);
     color:var(--pp-gold-800);margin:0 auto 16px;display:flex;align-items:center;justify-content:center}
 
@@ -210,6 +222,7 @@
     <div class="wrap tabbar-inner">
       <button class="-active" id="tabAll" type="button">All roles</button>
       <button id="tabSaved" type="button">Saved<span class="pp-tab-count" id="savedCount">0</span></button>
+      <button id="tabApplied" type="button" hidden>Applied<span class="pp-tab-count" id="appliedCount">0</span></button>
     </div>
   </div>
 
@@ -417,8 +430,55 @@
     toastTimer = setTimeout(function(){ host.innerHTML = ""; }, 2600);
   }
 
+  /* Applied is self-reported — we hand you to the company's own page and never
+     learn the outcome, so this is a place to keep track, not a status feed.
+     Signed-in only: unlike saved roles it isn't worth a local-only shadow copy,
+     because the point is a record that survives changing device mid-search. */
+  var appliedIds = new Set();
+
+  async function loadApplied(){
+    var token = designerToken();
+    var tab = document.getElementById("tabApplied");
+    if (!token) { appliedIds = new Set(); tab.hidden = true; return; }
+    try {
+      var res = await fetch("/api/designers/me/applied", { headers: { "Authorization": "Bearer " + token } });
+      if (!res.ok) return;
+      var data = await res.json();
+      appliedIds = new Set((data.jobs || []).map(function(j){ return j.job_id; }));
+    } catch (e) { return; }
+    document.getElementById("appliedCount").textContent = appliedIds.size;
+    tab.hidden = appliedIds.size === 0;
+  }
+
+  async function setApplied(job, on){
+    var token = designerToken();
+    if (!token) return;
+    if (on) appliedIds.add(job.id); else appliedIds.delete(job.id);
+    document.getElementById("appliedCount").textContent = appliedIds.size;
+    document.getElementById("tabApplied").hidden = appliedIds.size === 0;
+    try {
+      if (on) {
+        await fetch("/api/designers/me/applied", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ job_id: job.id, title: job.t, company: job.co,
+                                 location: job.city || "", url: job.url || "" })
+        });
+      } else {
+        await fetch("/api/designers/me/applied/" + encodeURIComponent(job.id), {
+          method: "DELETE", headers: { "Authorization": "Bearer " + token }
+        });
+      }
+    } catch (e) {}
+  }
+
   function matchesFilters(j){
-    if (state.tab === "saved" && !isSaved(j.id)) return false;
+    // Saved and Applied are records of what you did, not searches. Running the
+    // board's filters over them hides your own history — a role you applied to
+    // from Nigeria stops appearing the day you set your country to Kenya —
+    // so those tabs answer only "is it on the list?".
+    if (state.tab === "saved") return isSaved(j.id);
+    if (state.tab === "applied") return appliedIds.has(j.id);
     if (!state.elig[bucketOf(j)]) return false;
     if (state.disciplines.size && !state.disciplines.has(j.cat)) return false;
     if (state.levels.size && !state.levels.has(j.level)) return false;
@@ -536,6 +596,9 @@
   function renderEligNotice(){
     var host = document.getElementById("eligNotice");
     if (!host || !state.loaded) return;
+    // Saved and Applied ignore the filters, so a line about what the filters
+    // are hiding would be describing something that isn't happening.
+    if (state.tab !== "all") { host.hidden = true; return; }
     var country = PPElig.getViewerCountry();
 
     if (!country) {
@@ -765,8 +828,8 @@
     var btn = document.getElementById("saveSearchBtn");
     if (!btn) return;
     // Nothing to save when nothing is narrowed — an unfiltered board is just
-    // the board.
-    btn.hidden = filtersAreDefault();
+    // the board — and nothing to save on the tabs that ignore filters entirely.
+    btn.hidden = state.tab !== "all" || filtersAreDefault();
     var known = savedSearches.some(function(s){ return s.name === activeSearchName; });
     btn.classList.toggle("-saved", !!activeSearchName && known);
   }
@@ -797,7 +860,8 @@
   }
 
   function renderJobRow(j){
-    var tags = eligBadge(j) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>';
+    var tags = eligBadge(j) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>' +
+      (appliedIds.has(j.id) ? '<span class="pp-chip -applied">Applied</span>' : "");
     var saved = isSaved(j.id);
     return '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
       '<div class="jr-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
@@ -858,21 +922,50 @@
     renderResultsHead(filtered.length);
 
     if (!filtered.length) {
-      var emptyBody = state.tab === "saved"
-        ? "Save a role and it waits here, with the closing date, so you don't miss it."
-        : "Nothing matches those filters right now. Try clearing a few.";
+      // A cold start and a dead end are different problems. "We're still
+      // building" is beside the point when the roles exist and your own
+      // filters excluded them, so name the filter that did it and offer the
+      // specific loosening rather than a blanket reset.
+      if (state.tab === "saved" || state.tab === "applied") {
+        var isSavedTab = state.tab === "saved";
+        area.innerHTML = '<div class="state-panel">' +
+          '<span class="empty-icon">' + ICONS.save + '</span>' +
+          '<h3>' + (isSavedTab ? "Nothing saved yet" : "Nothing marked applied") + '</h3>' +
+          '<p>' + (isSavedTab
+            ? "Save a role and it waits here, with the closing date, so you don't miss it."
+            : "When you apply on a company's site, mark it here and you'll have the record we can't keep for you.") +
+          '</p>' +
+          '<button type="button" class="pp-btn pp-btn-primary" id="browseBtn">Browse open roles</button>' +
+        '</div>';
+        document.getElementById("browseBtn").addEventListener("click", function(){ setTab("all"); });
+        pager.hidden = true;
+        return;
+      }
+
+      var ways = relaxations();
       area.innerHTML = '<div class="state-panel">' +
         '<span class="empty-icon">' + ICONS.search + '</span>' +
-        '<h3>' + (state.tab === "saved" ? "Nothing saved yet" : "No roles match") + '</h3>' +
-        '<p>' + emptyBody + '</p>' +
-        (state.tab === "saved"
-          ? '<button type="button" class="pp-btn pp-btn-primary" id="browseBtn">Browse open roles</button>'
-          : '<button type="button" class="pp-btn pp-btn-primary" id="clearBtn">Clear all filters</button>') +
-        '</div>';
-      var b = document.getElementById("browseBtn") || document.getElementById("clearBtn");
-      b.addEventListener("click", function(){
-        if (state.tab === "saved") { state.tab = "all"; setTab("all"); }
-        resetFilters();
+        '<h3>No roles match</h3>' +
+        '<p>' + (ways.length
+          ? "The roles exist — these filters are what's hiding them. Widening any one brings some back."
+          : "Nothing on the board matches right now. New roles land most weekdays.") + '</p>' +
+        (ways.length
+          ? '<div class="relax-list">' + ways.map(function(w, i){
+              return '<button type="button" class="relax-btn" data-relax="' + i + '">' +
+                '<span>' + escapeHtml(w.label) + '</span>' +
+                '<span class="relax-n">+' + w.recovers + '</span></button>';
+            }).join("") + '</div>'
+          : "") +
+        '<button type="button" class="pp-btn pp-btn-secondary" id="clearBtn">Clear all filters</button>' +
+      '</div>';
+      document.getElementById("clearBtn").addEventListener("click", resetFilters);
+      area.querySelectorAll("[data-relax]").forEach(function(btn){
+        btn.addEventListener("click", function(){
+          ways[+btn.getAttribute("data-relax")].apply();
+          state.page = 1;
+          renderFilterRail();
+          renderResults();
+        });
       });
       pager.hidden = true;
       return;
@@ -921,6 +1014,48 @@
     }
   }
 
+  /* Which single filter is doing the damage? Re-runs the match with exactly one
+     filter relaxed and counts what comes back, so the offer is measured rather
+     than guessed — "+7 roles" is a reason to click; "try widening your search"
+     is not. Only relaxations that actually recover something are offered. */
+  function relaxations(){
+    var out = [];
+    function countWith(patch){
+      var saved = {};
+      Object.keys(patch).forEach(function(k){ saved[k] = state[k]; state[k] = patch[k]; });
+      var n = state.all.filter(matchesFilters).length;
+      Object.keys(saved).forEach(function(k){ state[k] = saved[k]; });
+      return n;
+    }
+    function offer(label, patch){
+      var n = countWith(patch);
+      if (n > 0) out.push({ label: label, recovers: n, apply: function(){
+        Object.keys(patch).forEach(function(k){
+          state[k] = patch[k];
+          if (k === "query") document.getElementById("searchInput").value = patch[k];
+          if (k === "payOnly") document.getElementById("payOnly").checked = patch[k];
+        });
+      }});
+    }
+
+    var country = PPElig.getViewerCountry();
+    if (isPersonal() && !state.elig.closed) {
+      var withClosed = Object.assign({}, state.elig, { closed: true });
+      offer("Include roles not open from " + country, { elig: withClosed });
+    }
+    if (state.disciplines.size) {
+      offer(state.disciplines.size === 1 ? "Any discipline" : "Any of the disciplines",
+        { disciplines: new Set() });
+    }
+    if (state.levels.size) offer("Any experience level", { levels: new Set() });
+    if (state.payOnly) offer("Include roles without published pay", { payOnly: false });
+    if (state.query) offer('Drop the search for "' + state.query + '"', { query: "" });
+
+    // Most recovered first: the biggest single win is the most useful offer.
+    out.sort(function(a, b){ return b.recovers - a.recovers; });
+    return out.slice(0, 4);
+  }
+
   function resetFilters(){
     activeSearchName = null;
     renderSavedSearches();
@@ -941,6 +1076,7 @@
     state.page = 1;
     document.getElementById("tabAll").classList.toggle("-active", tab === "all");
     document.getElementById("tabSaved").classList.toggle("-active", tab === "saved");
+    document.getElementById("tabApplied").classList.toggle("-active", tab === "applied");
     renderResults();
   }
 
@@ -1036,6 +1172,8 @@
     syncSavedFromServer();
     document.getElementById("tabAll").addEventListener("click", function(){ setTab("all"); });
     document.getElementById("tabSaved").addEventListener("click", function(){ setTab("saved"); });
+    document.getElementById("tabApplied").addEventListener("click", function(){ setTab("applied"); });
+    loadApplied();
     document.getElementById("resetFilters").addEventListener("click", resetFilters);
     document.getElementById("saveSearchBtn").addEventListener("click", saveCurrentSearch);
     loadSavedSearches();

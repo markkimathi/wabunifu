@@ -47,6 +47,7 @@ from .db import (  # noqa: E402
     LOGIN_LOCKOUT_THRESHOLD, LOGIN_LOCKOUT_MINUTES,
     update_designer_profile, update_designer_handle, HandleTaken, parse_multi_field,
     designers_missing_country, set_designer_country,
+    mark_applied, list_applied_jobs, unmark_applied,
     save_search, list_saved_searches, delete_saved_search, set_search_alerts,
     searches_with_alerts, mark_search_notified,
     set_designer_photo, set_designer_email_verified, set_designer_password, set_designer_status,
@@ -1421,6 +1422,39 @@ def designer_me(designer: dict = Depends(require_designer)):
             "resume_uploaded_at": designer.get("resume_uploaded_at", ""),
             "resume_url": "/api/designers/me/resume/download" if designer.get("resume_path") else "",
             "resume_public": bool(designer.get("resume_public"))}
+
+
+class AppliedIn(BaseModel):
+    job_id: str
+    title: str = ""
+    company: str = ""
+    location: str = ""
+    url: str = ""
+
+
+@app.get("/api/designers/me/applied")
+def designer_list_applied(designer: dict = Depends(require_designer)):
+    return {"jobs": list_applied_jobs(designer["id"])}
+
+
+@app.post("/api/designers/me/applied")
+def designer_mark_applied(payload: AppliedIn, designer: dict = Depends(require_designer)):
+    """Self-reported. Path & Pixel deliberately never touches the application —
+    it hands you to the company's own page — so this records that you said you
+    applied and nothing more. We don't claim to know the outcome, because we
+    genuinely don't."""
+    if not payload.job_id.strip():
+        raise HTTPException(400, "job_id is required")
+    mark_applied(designer["id"], payload.job_id.strip(), payload.title[:200],
+                 payload.company[:200], payload.location[:200], payload.url[:500])
+    return {"ok": True}
+
+
+@app.delete("/api/designers/me/applied/{job_id}")
+def designer_unmark_applied(job_id: str, designer: dict = Depends(require_designer)):
+    if not unmark_applied(designer["id"], job_id):
+        raise HTTPException(404, "not marked as applied")
+    return {"ok": True}
 
 
 class SavedSearchIn(BaseModel):

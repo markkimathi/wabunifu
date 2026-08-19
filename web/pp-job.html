@@ -45,6 +45,18 @@
   .pay-amount{font-size:26px;font-weight:800;letter-spacing:-0.028em;font-variant-numeric:tabular-nums;margin-bottom:2px}
   .pay-note{font-size:14px;color:var(--c-text-subtle);margin-bottom:20px}
   .rail-card .pp-btn{width:100%;margin-bottom:10px}
+  /* Asked only after they've been sent to the company's site — before that
+     there's nothing to confirm. */
+  .applied-ask{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:4px;
+    padding:11px 12px;border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);border:1px solid var(--c-border)}
+  .applied-ask .applied-q{font-size:13.5px;font-weight:600;flex:1;min-width:100%}
+  .applied-ask button{border:none;background:none;padding:0;cursor:pointer;font-family:var(--pp-font);
+    font-size:13.5px;font-weight:600;color:var(--c-text-subtle);text-decoration:underline}
+  .applied-ask .applied-yes-btn{color:var(--c-accent-text)}
+  .applied-ask .applied-yes{display:inline-flex;align-items:center;gap:7px;flex:1;
+    font-size:13.5px;font-weight:600;color:var(--c-good-text)}
+  .applied-ask .applied-yes svg{width:15px;height:15px}
+
   .rail-meta{margin-top:20px;padding-top:18px;border-top:1px solid var(--c-surface-inset);display:flex;flex-direction:column;gap:11px}
   .rail-meta-row{display:flex;justify-content:space-between;gap:12px;font-size:14px}
   .rail-meta-row span:first-child{color:var(--c-text-subtle)}
@@ -139,6 +151,7 @@
   var ICONS = {
     save: '<svg width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="{{fill}}" stroke="currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"></path></svg>',
     share: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4"></path></svg>',
+    check: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>',
     external: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7M9 7h8v8"></path></svg>',
     chevron: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg>',
     close: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg>',
@@ -151,6 +164,68 @@
   function eligGroup(elig){ return (elig === "kenya" || elig === "africa") ? "africa" : elig; }
   function eligBadge(j){ return PPElig.badge(j.elig, j.elig_scope || "", PPElig.getViewerCountry()); }
   function eligNote(j){ return PPElig.note(j.elig, j.elig_scope || "", PPElig.getViewerCountry()); }
+
+  /* Applied is self-reported and signed-in only — it's a record you keep, and
+     one that should survive changing device mid-search. */
+  var askedApplied = false;
+  var isApplied = false;
+
+  function designerTokenOrNull(){ return localStorage.getItem("kazi_designer_token"); }
+
+  async function loadAppliedState(jobId){
+    var token = designerTokenOrNull();
+    if (!token) return;
+    try {
+      var res = await fetch("/api/designers/me/applied", { headers: { "Authorization": "Bearer " + token } });
+      if (!res.ok) return;
+      var data = await res.json();
+      isApplied = (data.jobs || []).some(function(j){ return j.job_id === jobId; });
+    } catch (e) {}
+    paintAppliedAsk();
+  }
+
+  function paintAppliedAsk(){
+    var host = document.getElementById("appliedAsk");
+    if (!host || !job) return;
+    if (!designerTokenOrNull()) { host.hidden = true; return; }
+    if (isApplied) {
+      host.hidden = false;
+      host.innerHTML = '<span class="applied-yes">' + ICONS.check + 'Marked as applied</span>' +
+        '<button type="button" id="undoApplied">Undo</button>';
+      document.getElementById("undoApplied").addEventListener("click", function(){ toggleApplied(false); });
+      return;
+    }
+    if (!askedApplied) { host.hidden = true; return; }
+    host.hidden = false;
+    host.innerHTML = '<span class="applied-q">Did you apply?</span>' +
+      '<button type="button" class="applied-yes-btn" id="yesApplied">Yes, mark it</button>' +
+      '<button type="button" id="notYet">Not yet</button>';
+    document.getElementById("yesApplied").addEventListener("click", function(){ toggleApplied(true); });
+    document.getElementById("notYet").addEventListener("click", function(){
+      askedApplied = false; paintAppliedAsk();
+    });
+  }
+
+  async function toggleApplied(on){
+    var token = designerTokenOrNull();
+    if (!token || !job) return;
+    isApplied = on;
+    paintAppliedAsk();
+    try {
+      if (on) {
+        await fetch("/api/designers/me/applied", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+          body: JSON.stringify({ job_id: job.id, title: job.t, company: job.co,
+                                 location: job.city || "", url: job.url || "" })
+        });
+      } else {
+        await fetch("/api/designers/me/applied/" + encodeURIComponent(job.id), {
+          method: "DELETE", headers: { "Authorization": "Bearer " + token }
+        });
+      }
+    } catch (e) {}
+  }
 
   function savedIds(){
     try { return JSON.parse(localStorage.getItem("pp_saved_jobs") || "[]"); } catch (e) { return []; }
@@ -221,6 +296,7 @@
     }
     renderJob();
     loadSimilarAndCompany();
+    loadAppliedState(job.id);
   }
 
   function notFoundHtml(msg){
@@ -268,6 +344,7 @@
             '<div class="pay-note">' + (job.pay && job.pay !== "Not disclosed" ? "published by the company" : "the company hasn't shared a figure") + '</div>' +
             '<a class="pp-btn pp-btn-primary pp-btn-lg" href="' + escapeHtml(job.url) + '" target="_blank" rel="noopener" id="applyBtn">Apply on ' + escapeHtml(job.co) + ICONS.external + '</a>' +
             '<button type="button" class="pp-btn pp-btn-secondary" id="saveBtn"></button>' +
+            '<div class="applied-ask" id="appliedAsk" hidden></div>' +
             '<div class="rail-meta">' +
               '<div class="rail-meta-row"><span>Posted</span><span>' + postedLabel(job.days) + '</span></div>' +
               (job.src ? '<div class="rail-meta-row"><span>Listed via</span><span>' + escapeHtml(job.src) + '</span></div>' : "") +
@@ -324,7 +401,13 @@
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ job_id: job.id, job_title: job.t, company: job.co })
       }).catch(function(){});
+      // The application happens on their site, in another tab, and we never
+      // learn how it went. Asking on return is the only honest way to keep a
+      // record — so ask once they're actually back, not before they've gone.
+      askedApplied = true;
+      setTimeout(paintAppliedAsk, 400);
     });
+    paintAppliedAsk();
 
     if (hasLongDesc) {
       var expandBtn = document.getElementById("expandBtn");
