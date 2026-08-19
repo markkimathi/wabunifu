@@ -1221,6 +1221,41 @@ let reviewSub = null;
 let reviewPicked = "";
 const reviewModalBackdrop = document.getElementById("reviewModalBackdrop");
 
+/* The three modals here cover the page and are dismissed by a close button or
+   a backdrop click, but nothing listened for Escape and focus stayed behind
+   the overlay. This console deliberately doesn't load pp-nav.js (its chrome is
+   a documented exception), so it gets a small local equivalent rather than
+   pulling the public nav in for one helper. */
+var openModalStack = [];
+function registerModal(backdrop, onClose){
+  if (!backdrop) return;
+  var lastFocus = null;
+  var obs = new MutationObserver(function(){
+    var open = backdrop.classList.contains("-open");
+    if (open && openModalStack.indexOf(backdrop) === -1) {
+      lastFocus = document.activeElement;
+      openModalStack.push(backdrop);
+      var first = backdrop.querySelector(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]');
+      if (first) first.focus();
+    } else if (!open) {
+      var i = openModalStack.indexOf(backdrop);
+      if (i !== -1) {
+        openModalStack.splice(i, 1);
+        if (lastFocus && lastFocus.focus) lastFocus.focus();
+      }
+    }
+  });
+  obs.observe(backdrop, { attributes: true, attributeFilter: ["class"] });
+  backdrop.__ppClose = onClose;
+}
+document.addEventListener("keydown", function(e){
+  if (e.key !== "Escape" || !openModalStack.length) return;
+  var top = openModalStack[openModalStack.length - 1];
+  e.preventDefault();
+  if (top.__ppClose) top.__ppClose(); else top.classList.remove("-open");
+});
+
 function openReviewModal(id) {
   const sub = queueRowsCache.find(r => String(r.id) === String(id));
   if (!sub) return;
@@ -1492,6 +1527,8 @@ function openSuspendModal(d) {
   suspendModalBackdrop.classList.add("-open");
 }
 function closeSuspendModal() { suspendModalBackdrop.classList.remove("-open"); suspendTarget = null; }
+registerModal(reviewModalBackdrop, closeReviewModal);
+registerModal(suspendModalBackdrop, closeSuspendModal);
 document.getElementById("suspendClose").addEventListener("click", closeSuspendModal);
 document.getElementById("suspendCancel").addEventListener("click", closeSuspendModal);
 suspendModalBackdrop.addEventListener("mousedown", (e) => { if (e.target === suspendModalBackdrop) closeSuspendModal(); });
@@ -1646,6 +1683,7 @@ function renderReports(rows) {
 }
 
 const reportModalBackdrop = document.getElementById("reportModalBackdrop");
+registerModal(reportModalBackdrop, function(){ reportModalBackdrop.classList.remove("-open"); });
 let reportModalId = null;
 function openReportModal(id) {
   reportModalId = id;
