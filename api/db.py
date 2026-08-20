@@ -870,6 +870,22 @@ def get_submission(sub_id: int) -> dict | None:
     return dict(row) if row else None
 
 
+def delete_submission(submission_id: int) -> bool:
+    """Rejecting a listing keeps it, so the employer can edit and resubmit and
+    the decision stays on record. That is the right default and it was the only
+    option — there was no way to remove a submission at all, so anything posted
+    by mistake, or left behind by a test, stayed in the queue for good. Takes
+    its applicants with it, since an application to a listing that no longer
+    exists is not something anyone can act on."""
+    c = _conn()
+    c.execute("DELETE FROM job_applicants WHERE submission_id = ?", (submission_id,))
+    cur = c.execute("DELETE FROM submissions WHERE id = ?", (submission_id,))
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
+
+
 def set_status(sub_id: int, status: str, review_note: str = "") -> None:
     """Set a submission's review status, optionally recording why.
 

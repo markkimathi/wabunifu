@@ -1196,6 +1196,7 @@ function render(rows, status) {
           <button class="approve" data-review="${r.id}">Review</button>
           <button class="quiet" data-action="approve">Approve as is</button>
         ` : `<span class="status ${r.status}">${r.status}</span>`}
+        <button class="quiet" data-sub-delete="${r.id}">Delete</button>
       </div>
     </div>
   `).join("");
@@ -1213,6 +1214,34 @@ function render(rows, status) {
         showToast(action === "approve" ? "Published." : "Rejected.");
       } catch (e) {
         showToast(`Couldn't ${action}: ${e.message}`);
+        btn.disabled = false;
+      }
+    });
+  });
+  // Reject keeps the listing so the employer can fix and resubmit, and the
+  // decision stays on record. Delete is for one that should never have been on
+  // record — a mistake, or a leftover from a deploy check. There was no way to
+  // remove a submission at all before this.
+  list.querySelectorAll("[data-sub-delete]").forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const item = btn.closest(".item");
+      const title = item.querySelector("h3").textContent.trim();
+      const company = item.querySelector(".meta b").textContent.trim();
+      const ok = await window.showPPConfirm({
+        title: "Delete this submission?",
+        description: `"${title}" at ${company} comes off the record for good, along with any applicants on it. If it was a real listing that simply didn't pass, reject it instead so the employer can fix and resubmit.`,
+        confirmLabel: "Delete", safeLabel: "Keep it", danger: true
+      });
+      if (!ok) return;
+      btn.disabled = true;
+      try {
+        await api(`/api/admin/submissions/${btn.dataset.subDelete}`, { method: "DELETE" });
+        const activeTab = document.querySelector("#queueView .tabs button.active").dataset.status;
+        loadTab(activeTab);
+        refreshBadges();
+        showToast("Deleted.");
+      } catch (e) {
+        showToast(`Couldn't delete: ${e.message}`);
         btn.disabled = false;
       }
     });

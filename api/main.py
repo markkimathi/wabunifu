@@ -90,7 +90,7 @@ from .db import (  # noqa: E402
     update_community_session, set_session_status, count_session_seats, get_booking,
     book_session, cancel_booking, list_session_bookings, list_bookings_for_designer,
     PLACEHOLDER_HOSTS, PLACEHOLDER_SUFFIXES,
-    delete_community_session,
+    delete_community_session, delete_submission,
     create_question, list_questions, get_question, set_accepted_reply, set_question_status,
     list_questions_by_designer, list_replies_by_designer,
     create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
@@ -1460,6 +1460,20 @@ def admin_reject(sub_id: int, payload: SubmissionReview = SubmissionReview(),
         f"{sub['title']} wasn't approved",
         note or "Open the listing in your dashboard to edit and resubmit it.",
     )
+    return {"ok": True}
+
+
+@app.delete("/api/admin/submissions/{sub_id}")
+def admin_delete_submission(sub_id: int, _: None = Depends(require_admin)):
+    """Reject is for a listing that was really submitted and didn't pass — it
+    stays so the employer can fix and resubmit. This is for one that should not
+    be on record at all: a mistake, or a leftover from a deploy check. Nothing
+    could remove a submission before, so those stayed in the queue for good.
+    """
+    if not get_submission(sub_id):
+        raise HTTPException(404, "no such submission")
+    if not delete_submission(sub_id):
+        raise HTTPException(404, "no such submission")
     return {"ok": True}
 
 
