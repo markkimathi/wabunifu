@@ -156,6 +156,55 @@ const p = document.querySelector('.pp-empty,.state-panel');
 
 No icon is a polish gap; no action next to copy that names one is a bug.
 
+## Sixth shape: content that was never true
+
+The largest single category found, and the one no amount of code reading
+surfaces — it lives in production rows and in static copy, not in logic.
+
+What was on the live site:
+
+- **Three community sessions with invented hosts** ("Amina Kiptoo"), invented
+  credentials ("has reviewed 500+ resumes") and Google Meet links that were not
+  valid meeting codes. Bookable. The dead link was revealed only *after*
+  booking a seat for a review that did not exist.
+- **A "Mentors" card on the homepage** describing designers who keep slots open
+  each month, with a link to see who's available. The word appeared nowhere
+  else in the codebase — no endpoint, no table, no page.
+- **An invented testimonial** in quotation marks on the sign-in page,
+  attributed to "a designer using Path & Pixel", when two designers had
+  profiles and nobody had applied to anything.
+- **Claims the schema cannot support**: "designers who published something this
+  month" and "case studies published here this month" — `designer_projects` has
+  no `created_at` column at all. "The projects worth stopping on this month" —
+  that query has no time window.
+- **Claims that expired**: "Applications always go straight to the company's
+  own page" stopped being true the day employers could take applications here.
+  It was in three places.
+- **Deploy-check debris**: accounts and companies on RFC-reserved domains, and
+  a listing titled `__CUTOVER_VERIFY_DELETE_ME__` sitting in the live review
+  queue.
+
+Three questions that find this class:
+
+1. **Does a name in the data belong to a real person?** Invented hosts and
+   testimonials are the worst kind, because they're the ones a user will act on.
+2. **Can the schema support this sentence?** "This month" needs a timestamp
+   column. Grep the query behind the claim before trusting the copy.
+3. **Does this feature exist?** Grep the noun. If "mentor" appears only in the
+   page advertising it, it is not a feature.
+
+**How it's prevented now:** validators refuse unreachable content at the door
+(reserved domains on listing URLs, company websites and joining links; Meet
+links must carry a real `abc-defg-hij` code), and `purge_placeholder_content()`
+sweeps at startup for anything unreachable by construction. Both share one list
+of reserved domains, in `db.py`, because two copies is how they drift.
+
+**And the reason it accumulated:** rejecting a listing keeps it, and cancelling
+a session keeps it, and neither had a delete. There was no way to remove a
+submission or a session at all, so every mistake stayed for good. Both now
+have one. **A moderation queue with no exit fills up with things nobody meant
+to keep.**
+
 ## Scope discipline — what was deliberately not built
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
