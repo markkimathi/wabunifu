@@ -93,6 +93,22 @@ the console on each page and at each width —
 — plus `document.documentElement.scrollWidth > innerWidth` for horizontal
 overflow. Both are true/false answers, not judgement calls.
 
+## Fifth shape: correct only by virtue of where it happens to be routed
+
+Sixteen pages linked `tokens.css` relatively. For a page served at a top-level
+route that is identical to absolute, so fifteen of them worked. `pp-invite.html`
+is served at `/invite/{token}`, so its links resolved to `/invite/tokens.css` —
+which the catch-all answers with **HTML, status 200**, not a 404. The browser
+refuses a stylesheet served as `text/html`, silently, so every colleague ever
+invited to a team saw an unstyled page in Times New Roman.
+
+Two things worth carrying:
+
+- A catch-all route turns "missing asset" from a 404 into a 200 of the wrong
+  type. Check `content_type`, not just status, when an asset seems absent.
+- **Fifteen of those pages were not correct, they were lucky.** When a fix
+  applies to one instance of a pattern, apply it to the pattern.
+
 ## Environment caveat: the preview pane is a hidden tab
 
 `document.hidden` is `true` in the Browser pane, so **CSS transitions do not
@@ -163,3 +179,10 @@ Resend. Actual delivery has never been checked from here.
 
 **Never audited:** real devices, any browser other than the WebKit preview
 pane, actual email delivery, screen readers, performance under load.
+
+## One more environment caveat: buffered stdout
+
+Run the local server with `python3 -u`. Without it, `print()` from `api/email.py`
+is block-buffered while uvicorn's own logging is not, so the email lines appear
+out of order or not at all. This looked exactly like "forgot-password returns ok
+and sends nothing" — a critical bug that wasn't there. The reset flow was fine.
