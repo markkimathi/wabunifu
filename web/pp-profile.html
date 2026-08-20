@@ -32,7 +32,7 @@
   aside.side{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(var(--pp-header-height) + 24px)}
   @media(max-width:1023px){aside.side{position:static;padding-top:8px}}
   .side .pp-btn{flex:1}
-  .side-row{display:flex;gap:10px}
+  .side-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
   .follow-btn.-following{background:var(--c-surface);border-color:var(--c-accent);color:var(--c-accent-text)}
   .icon-btn{width:44px;height:44px;flex:none;border-radius:var(--pp-radius-lg);border:1px solid var(--c-border-strong);
     background:var(--c-surface);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;color:var(--c-text)}
@@ -139,6 +139,8 @@
   .pp-toast.-open{opacity:1}
   .pp-toast-inner{display:flex;align-items:center;gap:10px;padding:14px 16px;border-radius:var(--pp-radius-lg);
     background:var(--c-text);color:var(--c-bg);box-shadow:0 12px 32px rgba(10,10,10,.24);font-size:14px}
+  .follower-count{flex-basis:100%;margin:2px 0 0;font-size:13.5px;color:var(--c-text-subtle);
+    font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -235,6 +237,7 @@
   var currentUser = null;
   var isOwn = false;
   var following = false;
+  var followerCount = 0;
   var activeProject = null;
 
   function designerToken(){ return localStorage.getItem("kazi_designer_token") || ""; }
@@ -246,6 +249,7 @@
       var res = await fetch("/api/designers/" + encodeURIComponent(identifier), { cache: "no-store" });
       if (!res.ok) throw new Error("not found");
       designer = await res.json();
+      followerCount = designer.followers_count || 0;
     } catch (e) {
       // Before telling anyone their profile doesn't exist, check whether it is
       // their own, still in review. Saying "doesn't exist" to the person who
@@ -386,6 +390,14 @@
         '</button>' +
         '<button type="button" class="pp-btn pp-btn-secondary" id="messageBtn">Message</button>' +
         '<button type="button" class="icon-btn" id="shareBtn" aria-label="Share profile">' + ICONS.share + '</button>';
+    }
+    // The count the API has always returned and no page has ever shown. Only
+    // above zero: at this size "0 followers" under every profile reads as an
+    // empty room, and a number nobody can act on is worse than no number.
+    if (followerCount > 0) {
+      el.insertAdjacentHTML("beforeend",
+        '<p class="follower-count">' + followerCount +
+        (followerCount === 1 ? " follower" : " followers") + '</p>');
     }
     var shareBtn = document.getElementById("shareBtn");
     if (shareBtn) shareBtn.addEventListener("click", onShare);
@@ -540,15 +552,25 @@
     var token = designerToken();
     if (!token) { location.href = "/signin?next=" + encodeURIComponent(location.pathname); return; }
     var wasFollowing = following;
+    var wasCount = followerCount;
     following = !following;
+    followerCount = Math.max(0, followerCount + (following ? 1 : -1));
     renderSideActions();
     try {
       var res = await fetch("/api/designers/me/follows/designer/" + designer.id, {
         method: "POST", headers: { Authorization: "Bearer " + token }
       });
       if (!res.ok) throw new Error("failed");
+      // The server counts; the optimistic bump above is only there so the
+      // number doesn't sit still while the request is in flight.
+      var data = await res.json();
+      if (typeof data.followers === "number" && data.followers !== followerCount) {
+        followerCount = data.followers;
+        renderSideActions();
+      }
     } catch (e) {
       following = wasFollowing;
+      followerCount = wasCount;
       renderSideActions();
     }
   }

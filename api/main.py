@@ -2449,6 +2449,16 @@ def designer_toggle_follow(target_type: str, target_id: int, designer: dict = De
         if not get_company(target_id):
             raise HTTPException(404, "no such company")
     following = toggle_follow_target(designer["id"], target_type, target_id)
+    # Being followed was completely silent: the follower got a pressed button,
+    # the person followed got nothing at all. Only on the follow, never the
+    # unfollow — nobody needs to be told they lost a follower.
+    if following and target_type == "designer":
+        pub = _designer_public(designer)
+        who = pub.get("display_name") or "Someone"
+        notify("designer", target_id, "new_follower",
+               f"{who} is following your work",
+               "They'll see it when you publish something new.",
+               f"/designers/{pub.get('handle') or designer['id']}")
     return {"ok": True, "following": following, "followers": count_followers(target_type, target_id)}
 
 
