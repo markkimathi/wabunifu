@@ -288,7 +288,18 @@
   ];
 
   var me = null;
-  var section = "overview";
+  /* Deep-linkable. Notifications say "someone sent you a message" and used to
+     land on Overview, leaving you to find Messages yourself; now they can point
+     at the tab they are about. Also means a tab survives a refresh. */
+  var SECTION_KEYS = ["overview","saved","applications","messages","analytics","work","experience","profile","availability","account"];
+  function sectionFromUrl(){
+    try {
+      var t = new URLSearchParams(location.search).get("tab");
+      if (t && SECTION_KEYS.indexOf(t) !== -1) return t;
+    } catch (e) {}
+    return "overview";
+  }
+  var section = sectionFromUrl();
   var selectedDisciplines = [], selectedSkills = [];
   var activeThreadId = null;
   var cache = { saved: [], matches: [], stats: null, conversations: [], messages: [], roleHistory: null, applications: [] };
@@ -1273,7 +1284,15 @@
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
 
-  function setSection(s){ section = s; loadSection(); }
+  function rememberSection(s){
+    try {
+      var url = new URL(location.href);
+      if (s === "overview") url.searchParams.delete("tab"); else url.searchParams.set("tab", s);
+      history.replaceState(null, "", url);
+    } catch (e) {}
+  }
+
+  function setSection(s){ section = s; rememberSection(s); loadSection(); }
 
   async function loadSection(){
     if (section === "overview" || section === "saved") {

@@ -94,6 +94,12 @@
   .apply-opt strong{display:block;font-size:15px;font-weight:700;letter-spacing:-0.012em}
   .apply-opt em{display:block;margin-top:4px;font-style:normal;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)}
 
+  .thread-head{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid var(--c-border)}
+  .thread-head .th-av{width:34px;height:34px;font-size:14px;flex:none}
+  .thread-head strong{display:block;font-size:15px;font-weight:700;letter-spacing:-0.012em}
+  .thread-head a{font-size:12.5px;color:var(--c-accent-text);text-decoration:none}
+  .thread-head a:hover{text-decoration:underline}
+
   .review-banner{padding:18px 20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
     background:var(--c-bg-sunken);margin-bottom:18px}
   .review-banner h3{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
@@ -335,7 +341,17 @@
   ];
 
   var me = null;
-  var section = "listings";
+  // Same as the designer dashboard: a notification about an application or a
+  // message should open the tab it is about, not the default one.
+  var SECTION_KEYS = ["listings","applicants","talent","messages","team","company","billing","account"];
+  function sectionFromUrl(){
+    try {
+      var t = new URLSearchParams(location.search).get("tab");
+      if (t && SECTION_KEYS.indexOf(t) !== -1) return t;
+    } catch (e) {}
+    return "listings";
+  }
+  var section = sectionFromUrl();
   var showNewListing = false;
   var wizardStep = 1;
   var wizardMax = 1;
@@ -946,11 +962,26 @@
         '</button>';
       }).join("") + '</div>' +
       '<div class="thread-body">' +
+        employerThreadHeaderHtml(active) +
         '<div class="thread-messages" id="threadMessages"><p style="color:var(--c-text-faint);font-size:13.5px">Loading…</p></div>' +
         '<form class="thread-composer" id="composerForm"><input id="composerInput" placeholder="Write a reply…" autocomplete="off"><button type="submit" class="pp-btn pp-btn-primary">Send</button></form>' +
       '</div>' +
     '</div>';
     return body;
+  }
+
+  /* An open thread should say who it is with, and let you reach their profile.
+     The API has returned designer_handle all along and nothing used it, so a
+     conversation with a designer had no route to the work you are talking to
+     them about. */
+  function employerThreadHeaderHtml(c){
+    if (!c || !c.designer_name) return "";
+    var handle = c.designer_handle || "";
+    return '<div class="thread-head">' +
+      '<span class="pp-card-mark th-av">' + escapeHtml(c.designer_name.trim().charAt(0).toUpperCase()) + '</span>' +
+      '<div><strong>' + escapeHtml(c.designer_name) + '</strong>' +
+      (handle ? '<a href="/designers/' + encodeURIComponent(handle) + '">See their profile</a>' : "") +
+      '</div></div>';
   }
 
   function renderThreadMessages(){
@@ -1285,7 +1316,16 @@
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
 
-  function setSection(s){ section = s; showNewListing = false; wizardData = null; showNewApplicant = false; loadSection(); }
+  function setSection(s){
+    section = s;
+    try {
+      var url = new URL(location.href);
+      if (s === "listings") url.searchParams.delete("tab"); else url.searchParams.set("tab", s);
+      history.replaceState(null, "", url);
+    } catch (e) {}
+    showNewListing = false; wizardData = null; showNewApplicant = false;
+    loadSection();
+  }
 
   function showErr(id, msg){
     var el = document.getElementById(id);

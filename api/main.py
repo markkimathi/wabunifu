@@ -2252,7 +2252,7 @@ def designer_apply(submission_id: int, payload: ApplicationIn,
     if sub.get("employer_id"):
         notify("employer", int(sub["employer_id"]), "application",
                f"{pub.get('display_name') or 'A designer'} applied to {sub['title']}",
-               (payload.note or "")[:200], "/employer")
+               (payload.note or "")[:200], "/employer?tab=applicants")
     return {"ok": True, "id": applicant_id}
 
 
@@ -3212,7 +3212,7 @@ def _notify_other_party(conversation_id: int, sender_type: str, sender_designer_
 
     if sender_type == "employer":
         notify("designer", conv["designer_id"], "message",
-               sender_name + " sent you a message", body, "/dashboard")
+               sender_name + " sent you a message", body, "/dashboard?tab=messages")
         return
 
     # Designer sent. Peer conversations go to the other designer; company
@@ -3220,11 +3220,11 @@ def _notify_other_party(conversation_id: int, sender_type: str, sender_designer_
     peer = conv.get("peer_designer_id")
     if peer is not None:
         other = peer if conv["designer_id"] == sender_designer_id else conv["designer_id"]
-        notify("designer", other, "message", sender_name + " sent you a message", body, "/dashboard")
+        notify("designer", other, "message", sender_name + " sent you a message", body, "/dashboard?tab=messages")
         return
     for emp in list_employers_for_company(conv["company_id"]):
         notify("employer", emp["id"], "message",
-               sender_name + " replied", body, "/employer")
+               sender_name + " replied", body, "/employer?tab=messages")
 
 
 def _notif_out(n: dict) -> dict:
