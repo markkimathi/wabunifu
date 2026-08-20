@@ -190,6 +190,7 @@
   var pathSlug = (location.pathname.match(/^\/companies\/([^\/?#]+)/) || [])[1];
   var companySlug = params.get("slug") || (pathSlug ? decodeURIComponent(pathSlug) : null);
   var following = false;
+  var loadedTeam = null;
 
   function guessSlug(name){
     var base = (name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -234,6 +235,21 @@
     }
     if (!jobs.length) { content.innerHTML = notFound("No open roles found for " + companyName + " right now."); return; }
     render(companyName, jobs, null);
+    loadTeam(companySlug || guessSlug(companyName), companyName, jobs, null);
+  }
+
+  /* Re-renders once, and only if it found anyone — a company with no
+     designers on Kazi should not flash an empty grid on its way to nothing. */
+  async function loadTeam(slug, name, jobs, company){
+    if (!slug) return;
+    try {
+      var res = await fetch("/api/companies/" + encodeURIComponent(slug) + "/team", { cache: "no-store" });
+      if (!res.ok) return;
+      var data = await res.json();
+      if (!(data.team || []).length) return;
+      loadedTeam = data.team;
+      render(name, jobs, company);
+    } catch (e) { /* the page is already rendered without a team */ }
   }
 
   function notFound(msg){
@@ -243,6 +259,9 @@
 
   async function renderReal(company){
     render(company.name, company.listings || [], company);
+    if (!(company.design_team || []).length) {
+      loadTeam(company.slug, company.name, company.listings || [], company);
+    }
     var token = designerToken();
     if (!token) return;
     try {
@@ -314,7 +333,10 @@
       ? '<img src="' + escapeHtml(company.logo_path) + '" alt="" style="width:96px;height:96px;flex:none;border-radius:var(--pp-radius-xl);object-fit:cover">'
       : '<span class="mark">' + name[0].toUpperCase() + '</span>';
 
-    var team = (company && company.design_team) || [];
+    // Fetched separately by slug rather than read off the company record: only
+    // registered companies have a record, and the board is almost entirely
+    // companies that never registered.
+    var team = (company && company.design_team) || loadedTeam || [];
     var shipped = [];
     team.forEach(function(d){
       (d.projects || []).slice(0, 1).forEach(function(p){ shipped.push({ designer: d, project: p }); });

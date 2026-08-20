@@ -78,6 +78,7 @@ from .db import (  # noqa: E402
     update_submission, list_submissions_for_company,
     create_team_invite, get_team_invite_by_token, list_pending_team_invites, set_invite_status,
     create_applicant, list_applicants_for_submission, count_applicants_by_submission,
+    list_designers_at_company_name,
     create_self_application, get_self_application, list_self_applications,
     withdraw_self_application,
     update_applicant, set_applicant_stage, delete_applicant,
@@ -2649,6 +2650,31 @@ def companies_directory():
     return {"count": len(out), "companies": out}
 
 
+@app.get("/api/companies/{slug}/team")
+def company_team(slug: str):
+    """The designers who say they work here, for any company on the board.
+
+    Separate from /api/companies/{identifier} because that one only knows
+    companies registered on Kazi and 404s for the rest — which is almost all
+    of them. A company page for Moniepoint has to be able to ask this too."""
+    company = get_company_by_slug(slug)
+    name = company["name"] if company and company["status"] == "approved" else ""
+    if not name:
+        combined, _ = _combined_jobs()
+        name = next((j["co"] for j in combined
+                     if _company_slug(j.get("co") or "") == slug), "")
+    if not name:
+        return {"count": 0, "team": []}
+
+    members = {}
+    if company and company["status"] == "approved":
+        members = {d["id"]: d for d in list_designers_by_company(company["id"])}
+    for d in list_designers_at_company_name(name):
+        members.setdefault(d["id"], d)
+    team = [_designer_public(d) for d in members.values()]
+    return {"count": len(team), "team": team}
+
+
 @app.get("/api/companies/{identifier}")
 def company_public_page(identifier: str):
     company = get_company(int(identifier)) if identifier.isdigit() else None
@@ -2656,7 +2682,13 @@ def company_public_page(identifier: str):
         company = get_company_by_slug(identifier)
     if not company or company["status"] != "approved":
         raise HTTPException(404, "no such company")
-    team = [_designer_public(d) for d in list_designers_by_company(company["id"])]
+    # Two sources, because company_id only exists for companies registered on
+    # Kazi and almost none are: designers explicitly attached to this company,
+    # plus anyone whose current Experience entry names it. Deduped on id.
+    members = {d["id"]: d for d in list_designers_by_company(company["id"])}
+    for d in list_designers_at_company_name(company["name"]):
+        members.setdefault(d["id"], d)
+    team = [_designer_public(d) for d in members.values()]
     return {**company, "listings": _company_listings(company), "design_team": team,
             "followers_count": count_followers("company", company["id"])}
 

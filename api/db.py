@@ -1057,6 +1057,43 @@ def list_designers_by_company(company_id: int) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def list_designers_at_company_name(name: str) -> list[dict]:
+    """Approved designers whose current role says they work here.
+
+    The obvious source for a company's design team is designers.company_id,
+    but that can only ever point at a company registered on Kazi — and the
+    board carries roles from twenty-two companies with none of them
+    registered, so that grid could never appear for any company a designer
+    actually recognises.
+
+    Experience entries name the employer as free text, which every designer
+    can already fill in, so this matches on a normalised name instead. Same
+    normalisation as the company slug, so "Moniepoint" and "moniepoint " land
+    together."""
+    key = _slugify_company(name)
+    if not key:
+        return []
+    c = _conn()
+    rows = c.execute(
+        "SELECT DISTINCT d.* FROM designers d "
+        "JOIN role_history r ON r.designer_id = d.id "
+        "WHERE d.status = 'approved' AND r.is_current = 1 "
+        "ORDER BY d.display_name"
+    ).fetchall()
+    c.close()
+    out = []
+    for row in rows:
+        d = dict(row)
+        current = [h for h in list_role_history(d["id"]) if h.get("is_current")]
+        if any(_slugify_company(h.get("company")) == key for h in current):
+            out.append(d)
+    return out
+
+
+def _slugify_company(name: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", (name or "").lower())
+
+
 def list_role_history(designer_id: int) -> list[dict]:
     c = _conn()
     rows = c.execute(
