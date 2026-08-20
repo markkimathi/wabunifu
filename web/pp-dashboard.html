@@ -53,6 +53,9 @@
   .exp-item .note{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--c-text-subtle);max-width:66ch}
   .exp-item .actions{display:flex;gap:8px;flex:none}
 
+  .linklike{border:0;background:none;padding:0;margin-left:6px;font:inherit;font-size:13.5px;
+    color:var(--c-accent-text);cursor:pointer;text-decoration:underline}
+
   .handle-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
   .handle-prefix{font-size:13.5px;color:var(--c-text-faint)}
   .handle-row .pp-field-input{height:38px}
@@ -744,7 +747,16 @@
     '</div>';
     body += '<div class="form-panel"><h3>Password</h3><a class="pp-btn pp-btn-secondary" href="/signin?view=reset">Reset your password</a></div>';
     body += '<div class="form-panel"><h3>Résumé</h3>' +
-      (me.resume_filename ? '<p style="margin:0 0 10px;font-size:14.5px">' + escapeHtml(me.resume_filename) + '</p>' : '<p style="margin:0 0 10px;font-size:14.5px;color:var(--c-text-subtle)">No résumé uploaded.</p>') +
+      // The API has always returned a resume_url for the owner and nothing used
+      // it, so the filename sat there as plain text with no way to open the
+      // file and check it was the right one.
+      (me.resume_filename
+        ? '<p style="margin:0 0 10px;font-size:14.5px">' + escapeHtml(me.resume_filename) +
+          // Not a plain href: the endpoint authenticates on the Authorization
+          // header, which a link opened in a new tab does not send, so an <a>
+          // straight to it would 401.
+          (me.resume_url ? ' <button type="button" id="resumeOpenBtn" class="linklike">Open</button>' : "") + '</p>'
+        : '<p style="margin:0 0 10px;font-size:14.5px;color:var(--c-text-subtle)">No résumé uploaded.</p>') +
       '<button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="resumeUploadBtn">Upload résumé</button>' +
       '<input type="file" id="resumeInput" accept=".pdf,.doc,.docx" style="display:none">' +
       // Private by default, and there was no way to change that — so the
@@ -1287,6 +1299,21 @@
     });
 
     // Account
+    var resumeOpen = document.getElementById("resumeOpenBtn");
+    if (resumeOpen) resumeOpen.addEventListener("click", async function(){
+      resumeOpen.disabled = true;
+      try {
+        var res = await fetch(me.resume_url, { headers: { Authorization: "Bearer " + token } });
+        if (!res.ok) throw new Error("Couldn't open that file.");
+        var url = URL.createObjectURL(await res.blob());
+        window.open(url, "_blank", "noopener");
+        // Revoked on a delay: revoking immediately can beat the new tab to it.
+        setTimeout(function(){ URL.revokeObjectURL(url); }, 60000);
+      } catch (e) {
+        toast(e.message || "Couldn't open that file.");
+      } finally { resumeOpen.disabled = false; }
+    });
+
     var resumePublic = document.getElementById("resumePublic");
     if (resumePublic) resumePublic.addEventListener("change", async function(){
       try {
