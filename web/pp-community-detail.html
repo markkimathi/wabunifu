@@ -360,6 +360,22 @@
     var joiningBox = document.getElementById("joiningBox");
     var note = document.getElementById("notBookedNote");
     var status = session.your_status;
+
+    // A session keeps status "scheduled" after its date passes — nothing
+    // sweeps it — so this page went on offering a seat at a meeting that had
+    // already happened. Reachable by URL even though the upcoming list has
+    // always filtered on the date.
+    var over = (session.session_date || "") < new Date().toISOString().slice(0, 10);
+    if (over) {
+      btn.hidden = true;
+      joiningBox.innerHTML = "";
+      note.textContent = status === "booked"
+        ? "This one has been and gone. You were there."
+        : "This session has already happened. Newer ones are on the community page.";
+      return;
+    }
+    btn.hidden = false;
+
     if (status === "booked") {
       btn.textContent = "Cancel your seat";
       btn.className = "pp-btn pp-btn-secondary pp-btn-block";

@@ -3081,6 +3081,12 @@ def community_book_session(session_id: int, designer: dict = Depends(require_des
     session = get_community_session(session_id)
     if not session or session["status"] != "scheduled":
         raise HTTPException(404, "no such session")
+    # A scheduled session whose date has passed is still "scheduled" — nothing
+    # sweeps the status — so this checked the flag and happily took a booking
+    # for a meeting that already happened, handing over its joining link. The
+    # list endpoints have always filtered on the date; this did not.
+    if (session.get("session_date") or "") < date.today().isoformat():
+        raise HTTPException(400, "That session has already happened.")
     status = book_session(session_id, designer["id"], session["seats"])
     return {"ok": True, "status": status}
 
