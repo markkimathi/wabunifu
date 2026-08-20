@@ -65,6 +65,54 @@ A related self-inflicted version: I concluded employer suspension was
 unreachable after grepping `suspend_employer`. The function is
 `set_employer_suspended`. Grep for the column name, not the verb you expect.
 
+## Fourth shape: the fix that was applied one selector at a time
+
+`el.hidden = true` does nothing to an element whose class sets `display` — any
+author rule outranks the UA stylesheet's `[hidden]`. This codebase hit that
+four times and patched it per-selector each time, twice leaving a comment
+warning whoever hit it next. Whoever hit it next was two lines below the
+comment.
+
+The visible consequences: an "Applied" tab shown to signed-out visitors, a
+"Save this search" button offered on an unfiltered board its own comment says
+there is nothing to save on, a "Saved searches" heading over an empty list, and
+two "0" badges that wouldn't go away. Now one rule in `pp-primitives.css`:
+`[hidden]{display:none !important}`.
+
+**When the same bug recurs on a new selector, the fix belongs in the shared
+layer, not on the new selector.**
+
+Worth reusing: the way this was found. Rather than reading for it, run this in
+the console on each page and at each width —
+
+```js
+[...document.querySelectorAll('[hidden]')]
+  .filter(e => getComputedStyle(e).display !== 'none')
+```
+
+— plus `document.documentElement.scrollWidth > innerWidth` for horizontal
+overflow. Both are true/false answers, not judgement calls.
+
+## Environment caveat: the preview pane is a hidden tab
+
+`document.hidden` is `true` in the Browser pane, so **CSS transitions do not
+progress and `requestAnimationFrame` never fires**. A `getComputedStyle`
+transform read after opening a sheet returns the *start* of the animation
+forever, which reads exactly like a broken sheet — the mobile filter sheet
+appeared to open one full viewport off-screen and was in fact fine.
+
+To measure a real resting position, disable the transition first:
+
+```js
+el.style.transition = 'none';
+el.classList.add('-open');
+void el.offsetHeight;          // force reflow
+el.getBoundingClientRect();    // now trustworthy
+```
+
+Screenshots force a paint and are reliable; computed transforms mid-animation
+are not.
+
 ## Scope discipline — what was deliberately not built
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
