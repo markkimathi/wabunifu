@@ -320,7 +320,7 @@
   var WORK_TYPES = ["Remote", "Hybrid", "On-site"];
   var LEVELS = ["Junior", "Mid", "Senior", "Lead"];
   // Mirrors DISCIPLINES in scraper/models.py — keep in step when that changes.
-  var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Design Engineering","Content Design","Creative Technology","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
+  var DISCIPLINES = window.PP_DISCIPLINES;   // shared: see pp-nav.js
   function initialsOf(name){
     return (name || "?").trim().split(/\s+/).map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
   }

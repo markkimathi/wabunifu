@@ -79,6 +79,29 @@
       scrollDone(before, null, function(){ el.scrollIntoView(opts); });
     }
   };
+  // The discipline vocabulary, in one place.
+  //
+  // It was a literal in four separate pages, and they had drifted: the
+  // backend and pp-employer.html carried all sixteen, while onboarding, the
+  // dashboard profile editor and the pay-data form still had the thirteen
+  // from before Design Engineering, Content Design and Creative Technology
+  // were added. So an employer could post a design-engineering role and no
+  // designer could ever say they do design engineering — those roles matched
+  // nobody, and those designers were unfindable by an employer filtering on
+  // it.
+  //
+  // Canonical source is scraper/models.py's DISCIPLINES, which api/main.py
+  // validates against; this is its frontend twin, the same arrangement
+  // pp-elig.js has with pipeline/eligibility.py. Order matters — it is the
+  // order the chips render in. Keep the two in step.
+  window.PP_DISCIPLINES = [
+    "Product Design", "UX Design", "UI Design", "Brand Design",
+    "Motion Design", "Design Systems", "UX Research", "Graphic Design",
+    "Design Engineering", "Content Design", "Creative Technology",
+    "Game Design", "Sound Design", "Instructional Design",
+    "Fashion Design", "Interior Design"
+  ];
+
   window.PPScroll = PPScroll;
 
   /* The filter panel that becomes an overlay below 1024px — a bottom sheet on

@@ -112,7 +112,7 @@
   var token = localStorage.getItem("kazi_designer_token");
   if (!token) { location.href = "/signin?view=signup"; return; }
 
-  var DISCIPLINES = ["Product Design","UX Design","UI Design","Brand Design","Motion Design","Design Systems","UX Research","Graphic Design","Game Design","Sound Design","Instructional Design","Fashion Design","Interior Design"];
+  var DISCIPLINES = window.PP_DISCIPLINES;   // shared: see pp-nav.js
   var MAX_DISCIPLINES = 5;
   var MAX_SKILLS = 7;
   var MAX_LINKS = 8;
