@@ -204,6 +204,9 @@
     var content = document.getElementById("content");
     if (!companyName && !companySlug) { content.innerHTML = notFound("No company specified."); return; }
     document.body.dataset.coSlug = companySlug || "";
+    // Same reason as the job page and the homepage: this list shows eligibility
+    // badges, and they are only worth anything if they know who is reading.
+    if (window.PPElig) await PPElig.resolveViewer();
 
     var realCompany = null;
     try {

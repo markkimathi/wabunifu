@@ -377,30 +377,6 @@
   var job = null;
   var allJobs = [];
 
-  /* The board personalises every verdict to where the designer works from; this
-     page never did, so the badge, the note and the fit warning were all
-     impersonal on the one screen where someone decides whether to apply. Same
-     resolution order as pp-jobs.html: the account first, then the country
-     picked anonymously on the board. */
-  var LOCAL_COUNTRY_KEY = "pp_country";
-
-  async function resolveViewerCountry(){
-    var token = designerTokenOrNull();
-    if (token) {
-      try {
-        var res = await fetch("/api/designers/me", { headers: { Authorization: "Bearer " + token } });
-        if (res.ok) {
-          var me = await res.json();
-          if (me && me.country) { PPElig.setViewerCountry(me.country); return; }
-        }
-      } catch (e) {}
-    }
-    try {
-      var local = localStorage.getItem(LOCAL_COUNTRY_KEY) || "";
-      if (local) PPElig.setViewerCountry(local);
-    } catch (e) {}
-  }
-
   async function loadJob(){
     var content = document.getElementById("content");
     if (!jobId) {
@@ -409,7 +385,7 @@
     }
     // Before the render, so the first paint is already personal rather than
     // correcting itself a moment later.
-    await resolveViewerCountry();
+    if (window.PPElig) await PPElig.resolveViewer();
     try {
       var res = await fetch("/api/jobs/" + encodeURIComponent(jobId), { cache: "no-store" });
       if (!res.ok) throw new Error("not found");

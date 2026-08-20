@@ -718,7 +718,10 @@
 
     startHeroVideos();
     loadNextSession();
-    loadRoles();
+    // The role rows carry eligibility badges, so the country has to be known
+    // before they paint — otherwise the homepage tells a signed-in designer a
+    // role is "Open across Africa" when the board would tell them otherwise.
+    (window.PPElig ? PPElig.resolveViewer() : Promise.resolve()).then(loadRoles);
     loadPeople();
   }
 

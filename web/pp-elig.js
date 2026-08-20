@@ -134,12 +134,52 @@
   function setViewerCountry(c) { viewerCountry = c || ""; }
   function getViewerCountry() { return viewerCountry; }
 
+  /* Where the viewer works from, resolved once, the same way everywhere.
+
+     Every verdict this file produces is personal or it is nothing, and the
+     board was the only surface that bothered to ask. The job page, the company
+     page and the homepage all rendered "Open across Africa" at people whose
+     country the account already knew. Fixing that per page is how you end up
+     with four copies that drift; it lives here instead.
+
+     Account first, then the country picked anonymously on the board. Returns
+     the source as well as the value, because the board's "Not where you live?"
+     control has to know whether it is editing an account or a local choice. */
+  var LOCAL_COUNTRY_KEY = "pp_country";
+
+  function resolveViewer(){
+    var token = null;
+    try { token = localStorage.getItem("kazi_designer_token"); } catch (e) {}
+
+    function fromLocal(){
+      try {
+        var local = localStorage.getItem(LOCAL_COUNTRY_KEY) || "";
+        if (local) { setViewerCountry(local); return { country: local, source: "local" }; }
+      } catch (e) {}
+      return { country: "", source: "" };
+    }
+
+    if (!token) return Promise.resolve(fromLocal());
+
+    return fetch("/api/designers/me", { headers: { Authorization: "Bearer " + token } })
+      .then(function(res){ return res.ok ? res.json() : null; })
+      .then(function(me){
+        if (me && me.country) {
+          setViewerCountry(me.country);
+          return { country: me.country, source: "account" };
+        }
+        return fromLocal();
+      })
+      .catch(function(){ return fromLocal(); });
+  }
+
   global.PPElig = {
     REGION_MEMBERS: REGION_MEMBERS,
     openTo: openTo,
     label: label,
     note: note,
     badge: badge,
+    resolveViewer: resolveViewer,
     setViewerCountry: setViewerCountry,
     getViewerCountry: getViewerCountry
   };
