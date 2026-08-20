@@ -962,7 +962,7 @@
         '<div class="pp-search-drop" data-search-drop>' +
           '<div class="pp-search-inner">' +
             '<div class="pp-search-field" data-search-field>' + ICONS.search(18) +
-              '<input type="text" data-search-input placeholder="Roles, designers, companies…">' +
+              '<input type="text" data-search-input aria-label="Search Path &amp; Pixel" placeholder="Roles, designers, companies…">' +
               '<button type="button" class="pp-search-clear" data-clear-search hidden aria-label="Clear search">' + ICONS.clear(13) + '</button>' +
               '<button type="button" class="pp-search-esc" data-close-search>Esc</button>' +
             '</div>' +
@@ -989,7 +989,7 @@
       '<div class="pp-msearch" data-msearch>' +
         '<div class="pp-msearch-head">' +
           '<div class="pp-msearch-field" data-msearch-field>' + ICONS.search(17) +
-            '<input type="text" data-msearch-input placeholder="Roles, designers, companies…">' +
+            '<input type="text" data-msearch-input aria-label="Search Path &amp; Pixel" placeholder="Roles, designers, companies…">' +
             '<button type="button" class="pp-search-clear" data-clear-msearch hidden aria-label="Clear search">' + ICONS.clear(12) + '</button>' +
           '</div>' +
           '<button type="button" class="pp-msearch-cancel" data-close-msearch>Cancel</button>' +

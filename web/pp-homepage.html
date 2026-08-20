@@ -115,10 +115,10 @@
   .role-main{grid-area:main;display:grid;grid-template-columns:auto minmax(0,1fr) auto;
     align-items:center;gap:14px;min-width:0}
   @media(min-width:1280px){.role-main{gap:16px}}
-  .role-main h4{margin:0 0 3px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em;line-height:1.25;
+  .role-main h3{margin:0 0 3px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em;line-height:1.25;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  @media(min-width:768px){.role-main h4{font-size:17px}}
-  @media(min-width:1280px){.role-main h4{font-size:18px}}
+  @media(min-width:768px){.role-main h3{font-size:17px}}
+  @media(min-width:1280px){.role-main h3{font-size:18px}}
   .role-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle);
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @media(min-width:1280px){.role-main p{font-size:14px}}
@@ -143,7 +143,7 @@
   .p-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface);
     display:flex;flex-direction:column;gap:14px}
   .p-card:hover{border-color:var(--c-border-hover)}
-  .p-card h4{margin:0 0 3px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
+  .p-card h3{margin:0 0 3px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
   .p-card .role{margin:0;font-size:14px;color:var(--c-text-subtle)}
   .p-card .line{margin:0;font-size:14px;line-height:1.55;color:var(--c-text-muted);text-wrap:pretty;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
@@ -169,8 +169,8 @@
      theme-reactive, which is what this permanently-dark section needs. */
   .w-cover{aspect-ratio:4/3;border-radius:var(--pp-radius-lg);background:var(--pp-ink-raised);border:1px solid var(--pp-stone-900);margin-bottom:14px;overflow:hidden}
   .w-cover img{width:100%;height:100%;object-fit:cover;display:block}
-  .w-card h4{margin:0 0 4px;font-size:18px;font-weight:700;letter-spacing:-0.015em;color:var(--pp-white)}
-  @media(min-width:1280px){.w-card h4{font-size:19px}}
+  .w-card h3{margin:0 0 4px;font-size:18px;font-weight:700;letter-spacing:-0.015em;color:var(--pp-white)}
+  @media(min-width:1280px){.w-card h3{font-size:19px}}
   .w-card .meta{margin:0 0 10px;font-size:14px;color:var(--pp-text-subtle-on-dark)}
   .w-author{display:flex;align-items:center;gap:9px}
   .w-author .pp-avatar{width:24px;height:24px;font-size:11px}
@@ -210,7 +210,7 @@
   .c-card{padding:22px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);background:var(--c-surface)}
   @media(min-width:1280px){.c-card{padding:24px}}
   .c-card .tag{margin-bottom:14px}
-  .c-card h4{margin:0 0 7px;font-size:19px;font-weight:700;letter-spacing:-0.015em}
+  .c-card h3{margin:0 0 7px;font-size:19px;font-weight:700;letter-spacing:-0.015em}
   .c-card p{margin:0 0 18px;font-size:14px;line-height:1.55;color:var(--c-text-subtle)}
   .c-card a{font-size:14px;font-weight:600;color:var(--c-accent-text)}
   /* Facts about the real session — host, length, seats — kept quieter than the blurb. */
@@ -261,7 +261,7 @@
         <p>You know how it usually goes. You're three paragraphs into a job description, already picturing yourself in it, and then you hit the line that quietly rules you out. We hated that too, so now we read every posting to the bottom and tell you up front whether it's open to you where you live.</p>
         <div class="hero-search">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-          <input type="text" id="heroSearch" placeholder="Product designer, brand, motion…">
+          <input type="text" id="heroSearch" aria-label="Search design roles" placeholder="Product designer, brand, motion…">
           <button class="pp-btn pp-btn-primary" id="heroSearchBtn" type="button">Find roles</button>
         </div>
         <div class="hero-try">
@@ -351,19 +351,19 @@
              exist, on a site that had none. -->
         <div class="c-card" id="nextSessionCard">
           <span class="pp-status -neutral tag">Free</span>
-          <h4>Portfolio reviews and clinics</h4>
+          <h3>Portfolio reviews and clinics</h3>
           <p>Forty minutes, a handful of designers, and a reviewer who has been exactly where you are. Bring the case study you like least. They're posted here a couple of weeks ahead.</p>
           <a href="/community">See what's on →</a>
         </div>
         <div class="c-card">
           <span class="pp-status -good tag">Ask anything</span>
-          <h4>Questions answered by people doing the work</h4>
+          <h3>Questions answered by people doing the work</h3>
           <p>Rates, a portfolio you're unsure about, which studios actually pay on time. Answers come from designers here, not from a search result.</p>
           <a href="/community">Ask the community →</a>
         </div>
         <div class="c-card">
           <span class="pp-status -neutral tag">By email</span>
-          <h4>New roles that match, sent to you</h4>
+          <h3>New roles that match, sent to you</h3>
           <p>Save a search on the board — a discipline, a level, where you can work from — and the new roles matching it come to you instead.</p>
           <a href="/jobs">Save a search →</a>
         </div>
@@ -460,7 +460,7 @@
     return '<div class="role-row">' +
       '<a class="role-link" href="/jobs/' + encodeURIComponent(j.id) + '" aria-label="' + escapeHtml(j.t) + ' at ' + escapeHtml(j.co) + '"></a>' +
       '<div class="role-main"><span class="pp-card-mark">' + (j.co ? escapeHtml(j.co[0].toUpperCase()) : "?") + '</span>' +
-        '<div style="min-width:0"><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div>' +
+        '<div style="min-width:0"><h3>' + escapeHtml(j.t) + '</h3><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div>' +
         '<button type="button" class="pp-btn-icon role-save' + (saved ? " -saved" : "") + '" data-save="' + escapeHtml(j.id) + '"' +
           ' aria-pressed="' + (saved ? "true" : "false") + '" aria-label="' + (saved ? "Saved" : "Save role") + '">' + ICONS.save + '</button></div>' +
       '<div class="role-tags">' + eligBadge(j) + chips + '</div>' +
@@ -507,7 +507,7 @@
       (p.photo_path
         ? '<img class="p-photo" src="' + escapeHtml(p.photo_path) + '" alt="">'
         : '<span class="pp-avatar -md ' + tintFor(p.id) + '">' + initialsOf(p.display_name) + '</span>') +
-      '<div><h4>' + escapeHtml(p.display_name) + '</h4><p class="role">' + escapeHtml(p.headline || (p.discipline || [])[0] || "Designer") + (p.location ? " · " + escapeHtml(p.location) : "") + '</p></div>' +
+      '<div><h3>' + escapeHtml(p.display_name) + '</h3><p class="role">' + escapeHtml(p.headline || (p.discipline || [])[0] || "Designer") + (p.location ? " · " + escapeHtml(p.location) : "") + '</p></div>' +
       (p.bio ? '<p class="line">' + escapeHtml(p.bio) + '</p>' : '<div style="flex:1"></div>') +
       (thumbs.length
         ? '<div class="p-thumbs">' + thumbs.map(function(pr){
@@ -524,7 +524,7 @@
   function workCardHtml(w){
     return '<a class="w-card" href="/designers/' + encodeURIComponent(w.designerId) + '/' + encodeURIComponent(w.id) + '">' +
       '<div class="w-cover">' + (w.image_path ? '<img src="' + escapeHtml(w.image_path) + '" alt="">' : "") + '</div>' +
-      '<h4>' + escapeHtml(w.title) + '</h4>' +
+      '<h3>' + escapeHtml(w.title) + '</h3>' +
       '<p class="meta">' + escapeHtml(w.category || "Case study") + '</p>' +
       '<div class="w-author"><span class="pp-avatar -xs -tint-gold" style="background:var(--pp-ink-raised);color:var(--pp-gold)">' + initialsOf(w.authorName) + '</span>' +
         '<span class="name">' + escapeHtml(w.authorName) + '</span></div>' +
@@ -688,7 +688,7 @@
         .toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "long" });
       card.innerHTML =
         '<span class="pp-status -new tag">' + escapeHtml(when) + (next.time ? ", " + escapeHtml(next.time) : "") + '</span>' +
-        '<h4>' + escapeHtml(next.title || next.kind || "Portfolio review") + '</h4>' +
+        '<h3>' + escapeHtml(next.title || next.kind || "Portfolio review") + '</h3>' +
         '<p>' + escapeHtml(next.blurb || "") + '</p>' +
         '<p class="c-meta">Hosted by ' + escapeHtml(next.host || "a reviewer") +
           (next.length ? " · " + escapeHtml(next.length) : "") +

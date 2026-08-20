@@ -82,7 +82,7 @@
     cursor:pointer;background:var(--c-surface-inset);color:var(--c-text-muted);border:1px solid transparent}
   .rail-chip.-active{background:var(--c-text);color:var(--c-bg);border-color:var(--c-text)}
   .rail-cta{padding:16px;border-radius:10px;background:var(--c-good-bg);border:1px solid var(--c-good-border)}
-  .rail-cta h4{margin:0 0 6px;font-size:14.5px;font-weight:700;color:var(--c-good-text)}
+  .rail-cta h2{margin:0 0 6px;font-size:14.5px;font-weight:700;color:var(--c-good-text)}
   .rail-cta p{margin:0 0 12px;font-size:13px;line-height:1.5;color:var(--c-good-text)}
   .rail-cta a{font-size:13.5px;font-weight:600;color:var(--c-good-text);border-bottom:1px solid currentColor;padding-bottom:1px;text-decoration:none}
 
@@ -153,7 +153,7 @@
      the lines below never engaged and long titles ran straight out of the main
      column and over the location beside it. min-width:0 is what lets it clip. */
   .jr-main>div{flex:1;min-width:0}
-  .jr-main h4{margin:0 0 2px;font-size:16px;font-weight:700;letter-spacing:-0.015em;line-height:1.28;
+  .jr-main h2{margin:0 0 2px;font-size:16px;font-weight:700;letter-spacing:-0.015em;line-height:1.28;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .jr-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .jr-place{font-size:13.5px;color:var(--c-text-muted);margin:0;grid-area:place}
@@ -229,7 +229,7 @@
     <div class="hero-search">
       <label class="pp-field-input" style="flex:1;min-width:min(280px,100%)">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
-        <input type="text" id="searchInput" placeholder="Product designer, brand, motion…">
+        <input type="text" id="searchInput" aria-label="Search design roles" placeholder="Product designer, brand, motion…">
       </label>
       <button class="pp-btn pp-btn-primary pp-btn-lg" id="searchBtn" type="button">Search</button>
     </div>
@@ -291,7 +291,7 @@
       </div>
 
       <div class="rail-cta">
-        <h4>Not hearing back?</h4>
+        <h2>Not hearing back?</h2>
         <p>Check your résumé against any role on this board, and we'll show you what the screener isn't finding.</p>
         <a href="/resources">Run a résumé check</a>
       </div>
@@ -961,7 +961,7 @@
     // that it has gone.
     return '<div class="job-row -closed">' +
       '<div class="jr-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
-        '<div><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + '</p></div></div>' +
+        '<div><h2>' + escapeHtml(j.t) + '</h2><p>' + escapeHtml(j.co) + '</p></div></div>' +
       '<div class="jr-tags"><span class="pp-chip -closed">No longer open</span></div>' +
       '<div class="jr-meta"><span class="posted">Saved earlier</span></div>' +
       '<button type="button" class="pp-btn-icon jr-save -saved" data-save="' + j.id + '" aria-label="Remove from saved">' +
@@ -981,7 +981,7 @@
     var saved = isSaved(j.id);
     return '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
       '<div class="jr-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
-        '<div><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.co) + '</p></div></div>' +
+        '<div><h2>' + escapeHtml(j.t) + '</h2><p>' + escapeHtml(j.co) + '</p></div></div>' +
       '<p class="jr-place">' + escapeHtml(j.city || "Remote") + '</p>' +
       '<div class="jr-tags">' + tags + '</div>' +
       '<div class="jr-meta">' +
