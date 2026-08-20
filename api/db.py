@@ -3176,11 +3176,15 @@ def list_pay_submissions(status: str | None = None) -> list[dict]:
     return [dict(r) for r in rows]
 
 
-def set_pay_submission_status(submission_id: int, status: str) -> None:
+def set_pay_submission_status(submission_id: int, status: str) -> bool:
+    """Returns whether a row actually changed, so the endpoint can 404 rather
+    than reporting success for an id that doesn't exist."""
     c = _conn()
-    c.execute("UPDATE pay_submissions SET status = ? WHERE id = ?", (status, submission_id))
+    cur = c.execute("UPDATE pay_submissions SET status = ? WHERE id = ?", (status, submission_id))
+    changed = cur.rowcount > 0
     c.commit()
     c.close()
+    return changed
 
 
 def set_message_status(message_id: int, status: str) -> None:

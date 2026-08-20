@@ -4021,13 +4021,15 @@ def admin_list_pay_submissions(status: str = "pending", _: None = Depends(requir
 
 @app.post("/api/admin/pay-submissions/{submission_id}/accept")
 def admin_accept_pay_submission(submission_id: int, _: None = Depends(require_admin)):
-    set_pay_submission_status(submission_id, "accepted")
+    if not set_pay_submission_status(submission_id, "accepted"):
+        raise HTTPException(404, "no such pay submission")
     return {"ok": True}
 
 
 @app.post("/api/admin/pay-submissions/{submission_id}/reject")
 def admin_reject_pay_submission(submission_id: int, _: None = Depends(require_admin)):
-    set_pay_submission_status(submission_id, "rejected")
+    if not set_pay_submission_status(submission_id, "rejected"):
+        raise HTTPException(404, "no such pay submission")
     return {"ok": True}
 
 
