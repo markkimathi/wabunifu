@@ -73,7 +73,12 @@ def send_verification_email(email: str, code: str) -> None:
 
 
 def send_password_reset_email(email: str, token: str) -> None:
-    link = f"{SITE_URL}/login?reset={token}"
+    # /signin, and ?token= — not /login?reset=. That link was wrong twice over:
+    # /login is a 301 to /signin that dropped the query string, and the auth
+    # page reads ?token= rather than ?reset=, so the reset view never opened
+    # even when the parameter survived. Designer password reset could not be
+    # completed from the email at all.
+    link = f"{SITE_URL}/signin?token={token}"
     send_email(
         email,
         "Reset your password for Kazi",
@@ -98,7 +103,9 @@ def send_employer_verification_email(email: str, code: str) -> None:
 
 
 def send_employer_password_reset_email(email: str, token: str) -> None:
-    link = f"{SITE_URL}/pp-auth.html?role=employer&token={token}"
+    # Same clean path the rest of the product uses; the .html form still
+    # resolves, but nothing else in the product hands one to a person.
+    link = f"{SITE_URL}/signin?role=employer&token={token}"
     send_email(
         email,
         "Reset your password for Kazi",

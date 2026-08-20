@@ -114,8 +114,12 @@
 
   var EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
   var params = new URLSearchParams(location.search);
-  var view = params.get("token") ? "newpw" : (params.get("view") || "signin");
-  var resetToken = params.get("token") || "";
+  // ?reset= is the older parameter name used by password-reset emails that
+  // are already sitting in people's inboxes. Those links pointed at /login,
+  // which dropped the query string entirely, so they never worked — the
+  // redirect now carries it through and this accepts the name it carries.
+  var resetToken = params.get("token") || params.get("reset") || "";
+  var view = resetToken ? "newpw" : (params.get("view") || "signin");
   var pwVisible = false;
   var sentTo = "";
   var role = "designer";

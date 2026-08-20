@@ -3671,8 +3671,16 @@ _PP_REDIRECTS = {
 }
 for _name, _target in _PP_REDIRECTS.items():
     def _make_redirect_route(target: str):
-        def _redirect():
-            return RedirectResponse(url=target, status_code=301)
+        # Carry the query string across. Dropping it silently broke every
+        # password-reset link that pointed at /login?reset=… — the token was
+        # gone by the time the page loaded. Old links are still in inboxes, so
+        # this matters beyond the sender being fixed.
+        def _redirect(request: Request):
+            q = request.url.query
+            if not q:
+                return RedirectResponse(url=target, status_code=301)
+            joiner = "&" if "?" in target else "?"
+            return RedirectResponse(url=f"{target}{joiner}{q}", status_code=301)
         return _redirect
     app.get(f"/{_name}", include_in_schema=False)(_make_redirect_route(_target))
 
