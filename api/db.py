@@ -2254,8 +2254,11 @@ def notify(recipient_type: str, recipient_id: int, kind: str,
 def list_notifications(recipient_type: str, recipient_id: int, limit: int = 30) -> list[dict]:
     c = _conn()
     rows = c.execute(
+        # id breaks the tie: created_at has second precision, and two
+        # notifications from one action land in the same second, which left the
+        # bell showing an older one on top.
         "SELECT * FROM notifications WHERE recipient_type = ? AND recipient_id = ? "
-        "ORDER BY created_at DESC LIMIT ?",
+        "ORDER BY created_at DESC, id DESC LIMIT ?",
         (recipient_type, recipient_id, limit),
     ).fetchall()
     c.close()
@@ -2977,6 +2980,17 @@ def list_followed_target_ids(follower_designer_id: int, target_type: str) -> set
     ).fetchall()
     c.close()
     return {r["target_id"] for r in rows}
+
+
+def question_follower_ids(question_id: int) -> list[int]:
+    """Designers watching this question. question_follows was written, read to
+    light up a Follow control, and never used to tell anyone anything."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT designer_id FROM question_follows WHERE question_id = ?", (question_id,)
+    ).fetchall()
+    c.close()
+    return [r["designer_id"] for r in rows]
 
 
 def list_followers_of(target_type: str, target_id: int) -> list[int]:

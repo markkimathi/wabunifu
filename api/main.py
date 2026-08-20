@@ -78,7 +78,7 @@ from .db import (  # noqa: E402
     update_submission, list_submissions_for_company,
     create_team_invite, get_team_invite_by_token, list_pending_team_invites, set_invite_status,
     create_applicant, list_applicants_for_submission, count_applicants_by_submission,
-    list_designers_at_company_name, list_followers_of,
+    list_designers_at_company_name, list_followers_of, question_follower_ids,
     create_self_application, get_self_application, list_self_applications,
     withdraw_self_application,
     update_applicant, set_applicant_stage, delete_applicant,
@@ -3140,6 +3140,27 @@ def community_create_reply(question_id: int, payload: ReplyIn, designer: dict = 
     if not question or question["status"] != "visible":
         raise HTTPException(404, "no such question")
     reply_id = create_reply(question_id, designer["id"], payload.body)
+
+    # An answer nobody is told about is the whole failure mode of a Q&A: you
+    # ask, you leave, and you never learn that someone replied. The author
+    # first, then anyone watching the thread — deduped, and never the person
+    # who just wrote it.
+    pub = _designer_public(designer)
+    who = pub.get("display_name") or "Someone"
+    told = {designer["id"]}
+    author_id = question["designer_id"]
+    if author_id not in told:
+        told.add(author_id)
+        notify("designer", author_id, "reply",
+               f"{who} answered your question",
+               payload.body[:200], f"/community/q-{question_id}")
+    for watcher in question_follower_ids(question_id):
+        if watcher in told:
+            continue
+        told.add(watcher)
+        notify("designer", watcher, "reply",
+               f"{who} replied to a question you follow",
+               payload.body[:200], f"/community/q-{question_id}")
     return {"ok": True, "reply_id": reply_id}
 
 
@@ -3155,6 +3176,16 @@ def community_accept_reply(question_id: int, reply: ReplyAccept, designer: dict 
         if not reply_row or reply_row["question_id"] != question_id:
             raise HTTPException(404, "no such reply")
     set_accepted_reply(question_id, reply.reply_id)
+
+    # Being marked as the answer is the only reward this place offers, so it is
+    # worth saying out loud. Not to yourself, if you accepted your own.
+    if reply.reply_id is not None:
+        answerer = reply_row["designer_id"]
+        if answerer != designer["id"]:
+            asker = (_designer_public(designer).get("display_name") or "The asker")
+            notify("designer", answerer, "accepted",
+                   f"{asker} marked your reply as the answer",
+                   (question.get("title") or "")[:200], f"/community/q-{question_id}")
     return {"ok": True}
 
 
