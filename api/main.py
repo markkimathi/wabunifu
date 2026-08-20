@@ -103,7 +103,8 @@ from . import photo as photo_module  # noqa: E402
 from . import project_image as project_image_module  # noqa: E402
 from . import email as email_module  # noqa: E402
 from .email import (send_saved_search_digest, send_designer_approved_email,  # noqa: E402
-                    send_designer_rejected_email)
+                    send_designer_rejected_email, send_company_approved_email,
+                    send_company_rejected_email)
 
 # The eligibility rules live with the classifier that produces them, and the
 # digest has to apply exactly the same ones the board does — a second copy here
@@ -3615,19 +3616,48 @@ def admin_get_company(company_id: int, _: None = Depends(require_admin)):
     return {**company, "team": [_employer_public(e) for e in list_employers_for_company(company_id)]}
 
 
+def _tell_company(company_id: int, kind: str, title: str, body: str, href: str,
+                  email_fn=None, *email_args) -> None:
+    """Everyone on the team, not just the owner — any of them may be the one
+    waiting to post, and the dashboard's review banner is the only other place
+    this decision shows up. Emailed too: someone waiting to hear isn't sitting
+    on the dashboard watching for a banner to change."""
+    for e in list_employers_for_company(company_id):
+        notify("employer", e["id"], kind, title, body, href)
+        if email_fn and e.get("email"):
+            email_fn(e["email"], *email_args)
+
+
 @app.post("/api/admin/companies/{company_id}/approve")
 def admin_approve_company(company_id: int, _: None = Depends(require_admin)):
-    if not get_company(company_id):
+    co = get_company(company_id)
+    if not co:
         raise HTTPException(404, "no such company")
+    was = co.get("status")
     set_company_status(company_id, "approved")
+    # Same gap the designer side had: a company sat in review and the review
+    # finishing sent nothing. The dashboard banner told them only if they
+    # happened to come back and look.
+    if was != "approved":
+        _tell_company(company_id, "company_approved", "Your company page is live",
+                      "You can post roles now, and your page is public.", "/employer?tab=company",
+                      send_company_approved_email, co.get("name") or "Your company")
     return {"ok": True}
 
 
 @app.post("/api/admin/companies/{company_id}/reject")
-def admin_reject_company(company_id: int, _: None = Depends(require_admin)):
-    if not get_company(company_id):
+def admin_reject_company(company_id: int, payload: DesignerReview = DesignerReview(),
+                         _: None = Depends(require_admin)):
+    co = get_company(company_id)
+    if not co:
         raise HTTPException(404, "no such company")
+    was = co.get("status")
     set_company_status(company_id, "rejected")
+    if was != "rejected":
+        _tell_company(company_id, "company_rejected", "Your company page hasn't been published",
+                      payload.reason.strip() or "Have a look at what's on it and edit it from your dashboard.",
+                      "/employer?tab=company",
+                      send_company_rejected_email, co.get("name") or "Your company", payload.reason)
     return {"ok": True}
 
 

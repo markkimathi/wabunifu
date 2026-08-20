@@ -1663,9 +1663,20 @@ function renderEmployers(rows) {
     btn.addEventListener("click", async () => {
       const id = btn.closest(".item").dataset.id;
       const action = btn.dataset.eaction;
+      // Same as the designer queue: a rejection now reaches the whole team, and
+      // the reason is all they're told.
+      let body = null;
+      if (action === "reject") {
+        const name = btn.closest(".item").querySelector("h3");
+        const reason = await askRejectReason(name ? name.textContent.trim() : "");
+        if (reason === null) return;
+        body = JSON.stringify({ reason: reason });
+      }
       btn.disabled = true;
       try {
-        await api(`/api/admin/companies/${id}/${action}`, { method: "POST" });
+        await api(`/api/admin/companies/${id}/${action}`, body
+          ? { method: "POST", headers: { "Content-Type": "application/json" }, body: body }
+          : { method: "POST" });
         const activeTab = document.querySelector("#employersView .tabs button.active").dataset.estatus;
         loadEmployerTab(activeTab);
         refreshBadges();

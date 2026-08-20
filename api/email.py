@@ -168,6 +168,35 @@ def send_designer_rejected_email(email: str, name: str, reason: str = "") -> Non
     )
 
 
+def send_company_approved_email(email: str, company_name: str) -> None:
+    send_email(
+        email,
+        f"{company_name} is live on Path & Pixel",
+        f"""
+        <p>{company_name} has been reviewed and its page is public.</p>
+        <p><a href="{SITE_URL}/employer">Post a role</a></p>
+        <p>Every listing is read before it publishes — usually the same day —
+        and the one thing we check hardest is that the eligibility you choose
+        matches what your description actually says.</p>
+        """,
+    )
+
+
+def send_company_rejected_email(email: str, company_name: str, reason: str = "") -> None:
+    said = f"<p>{reason}</p>" if reason.strip() else ""
+    send_email(
+        email,
+        f"About {company_name} on Path & Pixel",
+        f"""
+        <p>We've reviewed {company_name} and haven't been able to publish its
+        page as it stands.</p>
+        {said}
+        <p>You can edit it from your <a href="{SITE_URL}/employer">dashboard</a>
+        and reply to this email when you'd like another look.</p>
+        """,
+    )
+
+
 def send_saved_search_digest(email: str, name: str, search_name: str,
                              jobs: list[dict], country: str) -> bool:
     """New roles matching one saved search. Sent only when there is something to
