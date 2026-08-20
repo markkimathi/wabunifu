@@ -197,6 +197,39 @@ def send_company_rejected_email(email: str, company_name: str, reason: str = "")
     )
 
 
+def send_designer_suspended_email(email: str, name: str, reason: str) -> None:
+    """The admin console promises "they can be told why, and can reply" — this
+    is the part that makes that true. It has to be email: a suspended account
+    is blocked from most of the site, so an in-app notification would sit
+    somewhere they can't reach."""
+    said = f"<p>{reason}</p>" if reason.strip() else ""
+    send_email(
+        email,
+        "Your Path & Pixel account has been suspended",
+        f"""
+        <p>{name}, your account has been suspended. Your profile isn't visible
+        while that's the case, and you can't message or apply.</p>
+        {said}
+        <p>Reply to this email if you think that's wrong, or once you've put it
+        right — a reply reaches a person.</p>
+        <p>What we ask of everyone is set out in the
+        <a href="{SITE_URL}/house-rules">house rules</a>.</p>
+        """,
+    )
+
+
+def send_designer_unsuspended_email(email: str, name: str) -> None:
+    send_email(
+        email,
+        "Your Path & Pixel account is back",
+        f"""
+        <p>{name}, your account has been reinstated. Your profile is visible
+        again and you can message and apply as before.</p>
+        <p><a href="{SITE_URL}/dashboard">Go to your dashboard</a></p>
+        """,
+    )
+
+
 def send_saved_search_digest(email: str, name: str, search_name: str,
                              jobs: list[dict], country: str) -> bool:
     """New roles matching one saved search. Sent only when there is something to

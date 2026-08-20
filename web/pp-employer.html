@@ -1696,12 +1696,25 @@
   }
 
   async function init(){
+    // Returning silently on failure left the page on "Loading…" forever with
+    // nothing said — same dead end the designer dashboard had.
+    function fail(e, heading){
+      document.getElementById("content").innerHTML =
+        '<div class="state-panel"><h3>' + heading + '</h3>' +
+        '<p>' + escapeHtml(e.message || "Something went wrong.") + '</p>' +
+        '<p>Try again in a moment, or write to <a href="mailto:hello@odana.design">hello@odana.design</a> if it keeps happening.</p></div>';
+    }
     try {
       me = await api("/api/employers/me");
     } catch (e) {
+      fail(e, "We couldn't load your dashboard");
       return;
     }
-    await loadSection();
+    try {
+      await loadSection();
+    } catch (e) {
+      fail(e, "We couldn't load this");
+    }
   }
 
   init();

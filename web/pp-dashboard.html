@@ -440,10 +440,16 @@
       '</div>';
     }
     if (status === "suspended") {
+      // The reason was recorded at suspension time and shown only to admins.
+      // Telling someone they're suspended without saying why leaves them
+      // nothing to answer.
+      var why = (me && me.suspend_reason || "").trim();
       return '<div class="review-banner -bad">' +
         '<h3>This account is suspended</h3>' +
-        '<p>Your profile isn\'t visible while that\'s the case. ' +
-        'Write to <a href="mailto:hello@odana.design">hello@odana.design</a> if you think that\'s wrong.</p>' +
+        (why ? '<p>' + escapeHtml(why) + '</p>' : "") +
+        '<p>Your profile isn\'t visible while that\'s the case, and you can\'t message or apply. ' +
+        'Write to <a href="mailto:hello@odana.design">hello@odana.design</a> if you think that\'s wrong ' +
+        'or you\'ve put it right.</p>' +
       '</div>';
     }
     return '<div class="review-banner">' +
@@ -1541,11 +1547,38 @@
   }
 
   async function init(){
-    try { me = await api("/api/designers/me"); } catch (e) { return; }
+    try {
+      me = await api("/api/designers/me");
+    } catch (e) {
+      // Returning silently left the page on "Loading…" with no explanation —
+      // which is exactly what a suspended designer used to see, since every
+      // call 403'd. /me now works while suspended, but anything else that
+      // fails here still needs to say so rather than hang.
+      document.getElementById("content").innerHTML =
+        '<div class="state-panel"><h3>We couldn\'t load your dashboard</h3>' +
+        '<p>' + escapeHtml(e.message || "Something went wrong.") + '</p>' +
+        '<p>Try again in a moment, or write to <a href="mailto:hello@odana.design">hello@odana.design</a> if it keeps happening.</p></div>';
+      return;
+    }
     // Same reading of eligibility as the board — a matched role shouldn't say
     // "Open in Nigeria" here and "Open to you" two clicks away.
     if (me && me.country) PPElig.setViewerCountry(me.country);
-    await loadSection();
+
+    // A suspended account can read itself and nothing else, so every section
+    // load below would 403 and leave the page hanging. Show the one thing
+    // that is actually true for them and stop.
+    if (me && me.status === "suspended") {
+      document.getElementById("content").innerHTML = reviewBannerHtml();
+      return;
+    }
+
+    try {
+      await loadSection();
+    } catch (e) {
+      document.getElementById("content").innerHTML =
+        '<div class="state-panel"><h3>We couldn\'t load this</h3>' +
+        '<p>' + escapeHtml(e.message || "Something went wrong.") + '</p></div>';
+    }
   }
 
   init();

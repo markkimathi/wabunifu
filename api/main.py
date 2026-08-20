@@ -104,7 +104,8 @@ from . import project_image as project_image_module  # noqa: E402
 from . import email as email_module  # noqa: E402
 from .email import (send_saved_search_digest, send_designer_approved_email,  # noqa: E402
                     send_designer_rejected_email, send_company_approved_email,
-                    send_company_rejected_email)
+                    send_company_rejected_email, send_designer_suspended_email,
+                    send_designer_unsuspended_email)
 
 # The eligibility rules live with the classifier that produces them, and the
 # digest has to apply exactly the same ones the board does — a second copy here
@@ -1152,6 +1153,24 @@ def require_designer(authorization: str = Header(default="")) -> dict:
     return designer
 
 
+def require_designer_any_status(authorization: str = Header(default="")) -> dict:
+    """require_designer with the suspension gate removed, for the one endpoint
+    that has to work while suspended: reading your own account.
+
+    Without this a suspended designer signed in fine, then every call 403'd —
+    including /me — so the dashboard sat on "Loading…" forever and the banner
+    written to explain the suspension could never render. Being blocked from
+    acting is the point; being unable to find out why is not."""
+    token = authorization.removeprefix("Bearer ").strip()
+    session = get_session(token) if token else None
+    if not session:
+        raise HTTPException(401, "invalid or expired session")
+    designer = get_designer(session["designer_id"])
+    if not designer:
+        raise HTTPException(401, "invalid session")
+    return designer
+
+
 def optional_designer(authorization: str = Header(default="")) -> Optional[dict]:
     """Like require_designer, but returns None instead of 401ing — for
     endpoints that are publicly readable but personalize their response
@@ -1558,9 +1577,12 @@ def designer_reset_password(payload: ResetPasswordIn):
 
 
 @app.get("/api/designers/me")
-def designer_me(designer: dict = Depends(require_designer)):
+def designer_me(designer: dict = Depends(require_designer_any_status)):
     return {**_designer_public(designer, include_drafts=True), "email": designer["email"],
             "email_verified": bool(designer["email_verified"]), "status": designer["status"],
+            # Reason included so the suspended banner can say what happened
+            # rather than leaving them to guess. Only ever their own.
+            "suspend_reason": designer.get("suspend_reason") or "",
             "onboarding_completed": bool(designer["onboarding_completed"]),
             # Always present for the owner's own view, regardless of
             # resume_public — _designer_public() only includes these when
@@ -3582,17 +3604,28 @@ def admin_suspend_designer(designer_id: int, payload: DesignerSuspend, _: None =
     to 'suspended', which the public directory/profile queries and
     require_designer() already treat as invisible/blocked. Community posts
     stay up, credited to the account as-is."""
-    if not get_designer(designer_id):
+    d = get_designer(designer_id)
+    if not d:
         raise HTTPException(404, "no such designer")
+    was = d.get("status")
     suspend_designer(designer_id, payload.rule, payload.reason)
+    # The suspend dialog says "They can be told why, and can reply." Until now
+    # the reason was written to a column only an admin ever read. It has to be
+    # email — a suspended account can't reach an in-app notification.
+    if was != "suspended" and d.get("email"):
+        send_designer_suspended_email(d["email"], d.get("display_name") or "Hello", payload.reason)
     return {"ok": True}
 
 
 @app.post("/api/admin/designers/{designer_id}/unsuspend")
 def admin_unsuspend_designer(designer_id: int, _: None = Depends(require_admin)):
-    if not get_designer(designer_id):
+    d = get_designer(designer_id)
+    if not d:
         raise HTTPException(404, "no such designer")
+    was = d.get("status")
     unsuspend_designer(designer_id)
+    if was == "suspended" and d.get("email"):
+        send_designer_unsuspended_email(d["email"], d.get("display_name") or "Hello")
     return {"ok": True}
 
 
