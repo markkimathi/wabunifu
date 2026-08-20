@@ -264,6 +264,11 @@
   .msg-bubble{padding:10px 14px;border-radius:14px;font-size:14.5px;line-height:1.5}
   .msg-row.-me .msg-bubble{background:var(--c-text);color:var(--c-bg);border-bottom-right-radius:4px}
   .msg-row.-them .msg-bubble{background:var(--c-surface-inset);color:var(--c-text);border-bottom-left-radius:4px}
+  /* Kept in place rather than dropped from the thread — the other side
+     needs to see that something was there and is gone. Declared after the
+     -me/-them rules: same specificity, so source order is what decides. */
+  .msg-row .msg-bubble.-removed{font-style:italic;color:var(--c-text-faint);
+    background:transparent;border:1px dashed var(--c-border)}
   .msg-report-btn{margin-top:3px;border:none;background:transparent;font-family:var(--pp-font);
     font-size:11.5px;color:var(--c-text-faint);cursor:pointer;padding:2px 4px}
   .msg-report-btn:hover{color:var(--c-bad-text)}
@@ -991,8 +996,10 @@
     el.innerHTML = cache.messages.map(function(m){
       var mine = m.sender_type === "employer";
       return '<div class="msg-row ' + (mine ? "-me" : "-them") + '">' +
-        '<div class="msg-bubble">' + escapeHtml(m.body) + '</div>' +
-        (mine ? "" : '<button type="button" class="msg-report-btn" data-report-msg="' + m.id + '">Report</button>' +
+        (m.removed
+          ? '<div class="msg-bubble -removed">This message was removed.</div>'
+          : '<div class="msg-bubble">' + escapeHtml(m.body) + '</div>') +
+        (mine || m.removed ? "" : '<button type="button" class="msg-report-btn" data-report-msg="' + m.id + '">Report</button>' +
           '<div class="msg-report-box" data-report-box-msg="' + m.id + '" style="display:none"></div>') +
       '</div>';
     }).join("");

@@ -270,6 +270,37 @@ def send_teammate_removed_email(email: str, name: str, company_name: str) -> Non
     )
 
 
+def send_content_removed_email(email: str, name: str, what: str) -> None:
+    """The moderation option is labelled "Remove the content and warn the
+    account". The removal happened; the warning never did."""
+    send_email(
+        email,
+        "Something you posted has been removed",
+        f"""
+        <p>{name}, {what} was reported, reviewed, and taken down for breaking
+        the house rules. Your account is otherwise unaffected.</p>
+        <p>Reply to this email if you think that's wrong.</p>
+        <p>The rules are here: <a href="{SITE_URL}/community/rules">house rules</a>.</p>
+        """,
+    )
+
+
+def send_explain_yourself_email(email: str, name: str, what: str) -> None:
+    """"Ask the account to explain first" did nothing whatsoever — the report
+    was marked resolved and nobody was asked anything."""
+    send_email(
+        email,
+        "A quick question about something you posted",
+        f"""
+        <p>{name}, we've had a report about {what} and there isn't enough in it
+        for us to judge either way.</p>
+        <p>Before we decide anything, we'd rather hear from you. Reply to this
+        email with your side of it — nothing has been removed and your account
+        is untouched.</p>
+        """,
+    )
+
+
 def send_saved_search_digest(email: str, name: str, search_name: str,
                              jobs: list[dict], country: str) -> bool:
     """New roles matching one saved search. Sent only when there is something to

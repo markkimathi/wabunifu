@@ -85,6 +85,7 @@ from .db import (  # noqa: E402
     save_job, list_saved_jobs, unsave_job,
     get_or_create_conversation, get_or_create_peer_conversation, get_conversation, list_conversations_for_designer,
     list_conversations_for_company, list_messages, create_message, mark_conversation_read,
+    set_message_status,
     create_community_session, list_community_sessions, get_community_session,
     update_community_session, set_session_status, count_session_seats, get_booking,
     book_session, cancel_booking, list_session_bookings, list_bookings_for_designer,
@@ -106,7 +107,8 @@ from .email import (send_saved_search_digest, send_designer_approved_email,  # n
                     send_designer_rejected_email, send_company_approved_email,
                     send_company_rejected_email, send_designer_suspended_email,
                     send_designer_unsuspended_email, send_teammate_approved_email,
-                    send_teammate_declined_email, send_teammate_removed_email)
+                    send_teammate_declined_email, send_teammate_removed_email,
+                    send_content_removed_email, send_explain_yourself_email)
 
 # The eligibility rules live with the classifier that produces them, and the
 # digest has to apply exactly the same ones the board does — a second copy here
@@ -2385,6 +2387,19 @@ def designer_matches(designer: dict = Depends(require_designer)):
     return {"jobs": matches[:20]}
 
 
+def _messages_out(conversation_id: int) -> list[dict]:
+    """A removed message keeps its place in the thread rather than vanishing:
+    the other side needs to see that something was there and is gone, or the
+    conversation stops making sense. The body is dropped here rather than in
+    the database, so moderation keeps what it acted on."""
+    out = []
+    for m in list_messages(conversation_id):
+        if (m.get("status") or "visible") == "removed":
+            m = {**m, "body": "", "removed": True}
+        out.append(m)
+    return out
+
+
 def _designer_conversation_out(conv: dict, viewer_designer_id: int) -> dict:
     if conv.get("peer_designer_id") is not None:
         other_id = conv["peer_designer_id"] if conv["designer_id"] == viewer_designer_id else conv["designer_id"]
@@ -2434,7 +2449,7 @@ def _require_own_conversation(conversation_id: int, designer_id: int) -> dict:
 def designer_get_messages(conversation_id: int, designer: dict = Depends(require_designer)):
     _require_own_conversation(conversation_id, designer["id"])
     mark_conversation_read(conversation_id, "designer", designer["id"])
-    return {"messages": list_messages(conversation_id)}
+    return {"messages": _messages_out(conversation_id)}
 
 
 @app.post("/api/designers/me/conversations/{conversation_id}/messages")
@@ -3123,7 +3138,7 @@ def _require_company_conversation(conversation_id: int, company_id: int) -> dict
 def employer_get_messages(conversation_id: int, employer: dict = Depends(require_employer)):
     _require_company_conversation(conversation_id, employer["company_id"])
     mark_conversation_read(conversation_id, "employer")
-    return {"messages": list_messages(conversation_id)}
+    return {"messages": _messages_out(conversation_id)}
 
 
 @app.post("/api/employers/me/conversations/{conversation_id}/messages")
@@ -3838,6 +3853,43 @@ def admin_get_report(report_id: int, _: None = Depends(require_admin)):
     return _report_out(report)
 
 
+def _report_author(kind: str, target_id: int):
+    """The account behind a reported item, whichever kind it is. Returns
+    (designer_dict | None, employer_dict | None)."""
+    if kind == "message":
+        m = get_message(target_id)
+        if not m:
+            return None, None
+        if m["sender_type"] == "designer" and m["sender_designer_id"]:
+            return get_designer(m["sender_designer_id"]), None
+        if m["sender_type"] == "employer" and m["sender_employer_id"]:
+            return None, get_employer(m["sender_employer_id"])
+        return None, None
+    if kind == "community_reply":
+        r = get_reply(target_id)
+        return (get_designer(r["designer_id"]) if r else None), None
+    if kind == "community_question":
+        q = get_question(target_id)
+        return (get_designer(q["designer_id"]) if q else None), None
+    return None, None
+
+
+def _warn_report_author(kind: str, target_id: int, what: str, ask: bool = False) -> None:
+    designer, employer = _report_author(kind, target_id)
+    account = designer or employer
+    if not account or not account.get("email"):
+        return
+    name = account.get("display_name") or account.get("full_name") or "Hello"
+    if ask:
+        send_explain_yourself_email(account["email"], name, what)
+    else:
+        send_content_removed_email(account["email"], name, what)
+        if designer:
+            notify("designer", designer["id"], "content_removed",
+                   "Something you posted was removed",
+                   f"{what.capitalize()} was reported and taken down.", "/community/rules")
+
+
 @app.post("/api/admin/reports/{report_id}/resolve")
 def admin_resolve_report(report_id: int, payload: ReportResolve, _: None = Depends(require_admin)):
     report = get_report(report_id)
@@ -3846,37 +3898,62 @@ def admin_resolve_report(report_id: int, payload: ReportResolve, _: None = Depen
     action = payload.action
     kind, target_id = report["kind"], report["target_id"]
 
+    WHAT = {"message": "a message you sent", "community_reply": "a reply you posted",
+            "community_question": "a question you posted"}
+    what = WHAT.get(kind, "something you posted")
+
     if action == "remove":
         if kind == "community_reply":
             set_reply_status(target_id, "removed")
         elif kind == "community_question":
             set_question_status(target_id, "removed")
-        # Messages have no soft-delete mechanism — the resolution is still
-        # recorded below, but the message body itself stays as-is.
+        elif kind == "message":
+            # Messages had no status at all, so this option removed nothing on
+            # a message report and only marked the report resolved — the one
+            # place removal matters most. The row is kept and its body dropped
+            # on the way out, so the thread still shows something was there.
+            set_message_status(target_id, "removed")
+        # "Remove the content and warn the account" — the warning half never
+        # happened either.
+        _warn_report_author(kind, target_id, what)
+
+    if action == "ask":
+        # This did nothing whatsoever: the report was marked resolved and
+        # nobody was asked anything.
+        _warn_report_author(kind, target_id, what, ask=True)
 
     if action == "suspend":
         # Reason recorded and sent, same as a suspension from the dialog. The
         # reporter's own words aren't repeated back — a report is one side of
         # a story — so this says what was found and where, and invites a reply.
-        WHERE = {"message": "a message you sent", "community_reply": "a reply you posted",
-                 "community_question": "a question you posted"}
-        why = (f"A report about {WHERE.get(kind, 'something you posted')} was reviewed "
-               f"and found to break the house rules.")
-        if kind == "message":
-            message = get_message(target_id)
-            if message:
-                if message["sender_type"] == "designer" and message["sender_designer_id"]:
-                    _suspend_designer_and_tell(message["sender_designer_id"], "conduct", why)
-                elif message["sender_type"] == "employer" and message["sender_employer_id"]:
-                    set_employer_suspended(message["sender_employer_id"], True)
-        elif kind == "community_reply":
-            reply = get_reply(target_id)
-            if reply:
-                _suspend_designer_and_tell(reply["designer_id"], "conduct", why)
+        why = f"A report about {what} was reviewed and found to break the house rules."
+        author_designer, author_employer = _report_author(kind, target_id)
+        if author_designer:
+            _suspend_designer_and_tell(author_designer["id"], "conduct", why)
+        elif author_employer:
+            set_employer_suspended(author_employer["id"], True)
+        # Suspending is also a removal — leaving the reported thing up while
+        # its author is suspended for posting it makes no sense.
+        if kind == "community_reply":
+            set_reply_status(target_id, "removed")
         elif kind == "community_question":
-            question = get_question(target_id)
-            if question:
-                _suspend_designer_and_tell(question["designer_id"], "conduct", why)
+            set_question_status(target_id, "removed")
+        elif kind == "message":
+            set_message_status(target_id, "removed")
+
+    # Whoever reported it hears that it was looked at. Deliberately without
+    # the outcome: what happened to someone else's account isn't the
+    # reporter's to know, and saying nothing at all is what makes reporting
+    # feel like shouting into a hole.
+    if report.get("reporter_designer_id"):
+        notify("designer", int(report["reporter_designer_id"]), "report_reviewed",
+               "Thanks — we looked at what you reported",
+               "Someone read it and acted on it. We can't share what happened to "
+               "another account, but the report wasn't ignored.", "/community/rules")
+    elif report.get("reporter_employer_id"):
+        notify("employer", int(report["reporter_employer_id"]), "report_reviewed",
+               "Thanks — we looked at what you reported",
+               "Someone read it and acted on it.", "/employer")
 
     resolve_report(report_id, action)
     return {"ok": True}

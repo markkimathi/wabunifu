@@ -585,6 +585,12 @@ _MIGRATIONS = [
     # Defaults to 0 so every listing that existed before this keeps behaving
     # exactly as it did, and as its employer agreed to when they posted it.
     "ALTER TABLE submissions ADD COLUMN accepts_applications INTEGER NOT NULL DEFAULT 0",
+    # Moderation offers "Remove the content" on a reported message, and there
+    # was nothing to set — messages had no status at all, so choosing it on a
+    # message report removed nothing and only marked the report resolved.
+    # Removed messages are kept, not deleted: the other side of the thread
+    # needs to see that something was there and is gone.
+    "ALTER TABLE messages ADD COLUMN status TEXT NOT NULL DEFAULT 'visible'",
 ]
 
 
@@ -2530,7 +2536,7 @@ def _conversation_summaries(rows: list[sqlite3.Row], reader_type: str, reader_de
         # (created_at only has second resolution), and id is the one value
         # that always reflects true insertion order regardless.
         last = c.execute(
-            "SELECT body, sender_type, created_at FROM messages WHERE conversation_id = ? "
+            "SELECT body, sender_type, created_at, status FROM messages WHERE conversation_id = ? "
             "ORDER BY id DESC LIMIT 1", (conv["id"],)
         ).fetchone()
         if conv.get("peer_designer_id") is not None and reader_designer_id is not None:
@@ -2543,7 +2549,15 @@ def _conversation_summaries(rows: list[sqlite3.Row], reader_type: str, reader_de
                 "SELECT COUNT(*) FROM messages WHERE conversation_id = ? AND sender_type != ? AND read_at = ''",
                 (conv["id"], reader_type),
             ).fetchone()[0]
-        conv["last_message"] = dict(last) if last else None
+        # A removed message must not survive as the thread preview — the
+        # inbox would go on showing exactly the text moderation took down.
+        if last:
+            lm = dict(last)
+            if (lm.pop("status", "visible") or "visible") == "removed":
+                lm["body"] = "This message was removed."
+            conv["last_message"] = lm
+        else:
+            conv["last_message"] = None
         conv["unread_count"] = unread
         out.append(conv)
     c.close()
@@ -3165,6 +3179,13 @@ def list_pay_submissions(status: str | None = None) -> list[dict]:
 def set_pay_submission_status(submission_id: int, status: str) -> None:
     c = _conn()
     c.execute("UPDATE pay_submissions SET status = ? WHERE id = ?", (status, submission_id))
+    c.commit()
+    c.close()
+
+
+def set_message_status(message_id: int, status: str) -> None:
+    c = _conn()
+    c.execute("UPDATE messages SET status = ? WHERE id = ?", (status, message_id))
     c.commit()
     c.close()
 
