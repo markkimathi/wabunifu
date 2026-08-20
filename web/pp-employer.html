@@ -843,7 +843,7 @@
       (canWrite() ? '<div class="card-actions">' +
         (canMoveBack ? '<button type="button" data-move="' + a.id + '" data-dir="-1">← Back</button>' : "") +
         (canMoveNext ? '<button type="button" data-move="' + a.id + '" data-dir="1">Next →</button>' : "") +
-        '<button type="button" data-remove-applicant="' + a.id + '">Remove</button>' +
+        '<button type="button" data-remove-applicant="' + a.id + '" data-applied-here="' + (a.designer_id ? "1" : "0") + '">Remove</button>' +
       '</div>' : "") +
     '</div>';
   }
@@ -1545,8 +1545,17 @@
     });
     document.querySelectorAll("[data-remove-applicant]").forEach(function(btn){
       btn.addEventListener("click", async function(){
+        // Two different actions wearing one label. Removing a card you typed
+        // in yourself is housekeeping. Removing someone who applied through
+        // Kazi also deletes their own record of having applied — it vanishes
+        // from their dashboard with no explanation — so say that plainly
+        // rather than letting "comes off the board" imply it's only yours.
+        var viaKazi = btn.getAttribute("data-applied-here") === "1";
         var ok = await window.showPPConfirm({
-          title: "Remove this applicant?", description: "Their card comes off the board. This can't be undone.",
+          title: viaKazi ? "Remove this application?" : "Remove this applicant?",
+          description: viaKazi
+            ? "They applied through Kazi, so this deletes their copy too — it disappears from their dashboard and they aren't told why. If you've decided against them, leaving the card where it is says less."
+            : "Their card comes off the board. This can't be undone.",
           confirmLabel: "Remove", safeLabel: "Keep them", danger: true
         });
         if (!ok) return;

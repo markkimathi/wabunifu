@@ -81,7 +81,7 @@ from .db import (  # noqa: E402
     list_designers_at_company_name, list_followers_of, question_follower_ids,
     create_self_application, get_self_application, list_self_applications,
     withdraw_self_application,
-    update_applicant, set_applicant_stage, delete_applicant,
+    update_applicant, set_applicant_stage, delete_applicant, get_applicant,
     save_job, list_saved_jobs, unsave_job,
     get_or_create_conversation, get_or_create_peer_conversation, get_conversation, list_conversations_for_designer,
     list_conversations_for_company, list_messages, create_message, mark_conversation_read,
@@ -2860,9 +2860,24 @@ def employer_update_applicant(applicant_id: int, payload: ApplicantIn, employer:
 
 @app.put("/api/employers/me/applicants/{applicant_id}/stage")
 def employer_move_applicant(applicant_id: int, payload: ApplicantStageUpdate, employer: dict = Depends(require_employer_role("owner", "can_post"))):
+    before = get_applicant(applicant_id, employer["company_id"])
     updated = set_applicant_stage(applicant_id, employer["company_id"], payload.stage)
     if not updated:
         raise HTTPException(404, "no such applicant")
+
+    # Being moved to Interviewing is the most consequential thing that happens
+    # to a designer on this site, and it was completely silent — visible only
+    # if they happened to open the Applications tab and notice the word had
+    # changed. Only forward: an employer correcting a mis-click backwards is
+    # not news worth sending, and "you've been moved back to Reviewing" is a
+    # message nobody needs.
+    if before and before.get("designer_id") and payload.stage > (before.get("stage") or 0):
+        sub = get_submission(before["submission_id"]) or {}
+        company = get_company(employer["company_id"]) or {}
+        notify("designer", int(before["designer_id"]), "application_stage",
+               f"{company.get('name') or 'An employer'} moved you to "
+               f"{APPLICANT_STAGES[payload.stage]}",
+               sub.get("title") or "", "/dashboard?tab=applications")
     return {"ok": True}
 
 

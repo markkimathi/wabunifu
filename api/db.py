@@ -2166,6 +2166,15 @@ def update_applicant(applicant_id: int, company_id: int, full_name: str, email: 
     return updated
 
 
+def get_applicant(applicant_id: int, company_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute(
+        "SELECT * FROM job_applicants WHERE id = ? AND company_id = ?", (applicant_id, company_id)
+    ).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
 def set_applicant_stage(applicant_id: int, company_id: int, stage: int) -> bool:
     c = _conn()
     cur = c.execute(
