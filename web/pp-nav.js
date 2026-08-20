@@ -268,6 +268,14 @@
   };
 
   var STYLE = ""
+    // Off-canvas until focused rather than display:none, because a hidden
+    // element is not focusable and the link would never be reachable.
+    + ".pp-skip{position:absolute;left:8px;top:-64px;z-index:calc(var(--pp-z-modal,20) + 10);"
+    + "display:inline-flex;align-items:center;height:44px;padding:0 18px;border-radius:var(--pp-radius-md);"
+    + "background:var(--c-text);color:var(--c-bg);font-family:var(--pp-font);font-size:15px;font-weight:600;"
+    + "text-decoration:none;transition:top var(--pp-duration,.18s) var(--pp-ease,ease)}"
+    + ".pp-skip:focus{top:8px}"
+    + "main:focus{outline:none}"
     // These elements have their own `display` rule AND are toggled via the
     // `hidden` attribute (clear buttons, the recent-searches row); an author
     // `display` declaration otherwise beats the UA [hidden] rule.
@@ -1224,6 +1232,36 @@
     buildBreadcrumbs(el);
   }
 
+  // Twelve focusable elements sit between the top of every page and its
+  // content — the mark, five nav links, search, "Post a role", the theme
+  // toggle and two account buttons. Keyboard-only visitors were tabbing
+  // through all of it on every page before reaching a single job.
+  //
+  // Lives here rather than in each page's markup so it exists everywhere at
+  // once, and is inserted as the document's first focusable element so it is
+  // what Tab reaches first. Hidden until focused, which is the whole point:
+  // it costs sighted mouse users nothing and saves everyone else twelve
+  // keystrokes a page.
+  function addSkipLink(){
+    if (document.querySelector(".pp-skip")) return;
+    var main = document.querySelector("main");
+    if (!main) return;                       // focused shells have no <main>
+    if (!main.id) main.id = "pp-main";
+    // Without tabindex the target takes the scroll but not the focus, so the
+    // next Tab would continue from the header rather than from the content.
+    if (!main.hasAttribute("tabindex")) main.setAttribute("tabindex", "-1");
+
+    var a = document.createElement("a");
+    a.className = "pp-skip";
+    a.href = "#" + main.id;
+    a.textContent = "Skip to content";
+    a.addEventListener("click", function(){
+      // Belt and braces: Safari moves the scroll but not focus on a hash jump.
+      setTimeout(function(){ main.focus(); }, 0);
+    });
+    document.body.insertBefore(a, document.body.firstChild);
+  }
+
   function init(){
     injectStyle();
     try {
@@ -1236,6 +1274,8 @@
         document.documentElement.setAttribute("data-pp-theme", "dark");
       }
     } catch (e) {}
+
+    addSkipLink();
 
     var navRoot = document.getElementById("pp-nav");
     if (navRoot) render(navRoot);
