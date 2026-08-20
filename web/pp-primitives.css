@@ -26,6 +26,32 @@
 [hidden]{display:none !important}
 
 /* -----------------------------------------------------------------
+   REDUCED MOTION
+
+   Individual spinners and the skeleton pulse already opt out, but every
+   transition on the site ran regardless — sheets sliding up, drawers
+   sliding in, the filter rail, hover fades. "Reduce motion" is set by
+   people who get migraines or motion sickness from exactly that, and a
+   180ms slide is still a slide.
+
+   Blanket rather than per-component because the durations are not all
+   tokenised: most use var(--pp-duration), but a dozen hardcode .2s/.25s/
+   .6s, so redefining the token would miss them and keep missing them.
+   Nothing in this codebase listens for transitionend or animationend, so
+   collapsing the duration breaks no behaviour — checked before writing
+   this. 1ms rather than 0 so anything that ever does listen still gets
+   its event.
+   ----------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* -----------------------------------------------------------------
    BUTTONS
    Never more than one primary button in a view. Height 44px default
    (40px compact, 52px large), the 44px floor is also the minimum
