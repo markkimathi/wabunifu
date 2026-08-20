@@ -191,7 +191,20 @@ def _valid_avatar_path(path: str) -> bool:
 # just by checking .isdigit(). "me" is reserved because /api/designers/me
 # is a literal route registered ahead of the dynamic /{identifier} one.
 HANDLE_RE = re.compile(r"^[a-z][a-z0-9_]{2,29}$")
-RESERVED_HANDLES = {"me"}
+# A handle is the last segment of /designers/{handle}, so it cannot shadow a
+# top-level route — but it is also the name shown beside anything that person
+# says in messages and the community, and "admin" was takeable. These are the
+# words someone could hide behind to look official, plus the product's own
+# section names, which would read as a system page rather than a person.
+RESERVED_HANDLES = {
+    "me", "admin", "administrator", "root", "staff", "team", "support",
+    "help", "moderator", "mod", "official", "system", "security", "billing",
+    "kazi", "pathandpixel", "path_and_pixel", "pixel", "noreply", "no_reply",
+    "about", "settings", "account", "profile", "dashboard", "employer",
+    "jobs", "job", "people", "designers", "designer", "companies", "company",
+    "community", "resources", "signin", "signup", "login", "logout", "new",
+    "search", "invite", "terms", "privacy", "cookies", "api",
+}
 
 # Dev default so `uvicorn api.main:app` works out of the box. Set a real
 # KAZI_ADMIN_TOKEN env var before deploying anywhere reachable; anyone with
@@ -560,8 +573,12 @@ class HandleUpdate(BaseModel):
     @classmethod
     def _valid_handle(cls, v: str) -> str:
         v = v.strip().lstrip("@").lower()
-        if not HANDLE_RE.match(v) or v in RESERVED_HANDLES:
+        if not HANDLE_RE.match(v):
             raise ValueError("handle must be 3-30 characters: lowercase letters, numbers, and underscores, starting with a letter")
+        # Told apart from the format rule on purpose: "admin" satisfies every
+        # rule that message lists, so answering with it would read as nonsense.
+        if v in RESERVED_HANDLES:
+            raise ValueError("that word is reserved — try another")
         return v
 
 

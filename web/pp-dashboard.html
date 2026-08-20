@@ -53,6 +53,10 @@
   .exp-item .note{margin:8px 0 0;font-size:14px;line-height:1.55;color:var(--c-text-subtle);max-width:66ch}
   .exp-item .actions{display:flex;gap:8px;flex:none}
 
+  .handle-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .handle-prefix{font-size:13.5px;color:var(--c-text-faint)}
+  .handle-row .pp-field-input{height:38px}
+
   .verify-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
   .verify-row .pp-field-input{height:38px}
   .verify-row input{font-variant-numeric:tabular-nums;letter-spacing:.08em}
@@ -724,11 +728,35 @@
           '<p class="fielderr" id="verifyErr" role="alert" hidden></p>' +
           '<p id="verifyNote" role="status" style="margin:8px 0 0;font-size:13px;color:var(--c-text-subtle)" hidden></p>') +
     '</div>';
+    // The handle is the link the product tells designers to send instead of a
+    // PDF. It was generated from their name at signup and could never be
+    // changed, though the endpoint to change it has always been there.
+    body += '<div class="form-panel"><h3>Your profile link</h3>' +
+      '<p style="margin:0 0 10px;font-size:13px;color:var(--c-text-subtle)">This is the link you send people.</p>' +
+      '<div class="handle-row">' +
+        '<span class="handle-prefix">' + escapeHtml(location.host) + '/designers/</span>' +
+        '<span class="pp-field-input" style="max-width:220px"><input id="handleInput" maxlength="30" ' +
+          'value="' + escapeHtml(me.handle || "") + '" aria-label="Your profile handle"></span>' +
+        '<button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="handleSave">Save</button>' +
+      '</div>' +
+      '<p class="fielderr" id="handleErr" role="alert" hidden></p>' +
+      '<p id="handleNote" role="status" style="margin:8px 0 0;font-size:13px;color:var(--c-text-subtle)" hidden></p>' +
+    '</div>';
     body += '<div class="form-panel"><h3>Password</h3><a class="pp-btn pp-btn-secondary" href="/signin?view=reset">Reset your password</a></div>';
     body += '<div class="form-panel"><h3>Résumé</h3>' +
       (me.resume_filename ? '<p style="margin:0 0 10px;font-size:14.5px">' + escapeHtml(me.resume_filename) + '</p>' : '<p style="margin:0 0 10px;font-size:14.5px;color:var(--c-text-subtle)">No résumé uploaded.</p>') +
       '<button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="resumeUploadBtn">Upload résumé</button>' +
-      '<input type="file" id="resumeInput" accept=".pdf,.doc,.docx" style="display:none"></div>';
+      '<input type="file" id="resumeInput" accept=".pdf,.doc,.docx" style="display:none">' +
+      // Private by default, and there was no way to change that — so the
+      // public-résumé feature could never be switched on by anyone.
+      (me.resume_filename
+        ? '<label class="pp-check-row" style="margin-top:14px">' +
+            '<input type="checkbox" id="resumePublic"' + (me.resume_public ? " checked" : "") + '>' +
+            '<span>Let employers download it from my profile</span></label>' +
+          '<p style="margin:6px 0 0;font-size:12.5px;color:var(--c-text-faint)">' +
+            'Off by default. With it on, anyone viewing your public profile can download this file.</p>'
+        : "") +
+    '</div>';
     body += '<div class="danger-block"><h3>Close your account</h3><p>Removes your profile, projects, saved roles and messages. This can\'t be undone.</p>' +
       '<button type="button" class="pp-btn pp-btn-danger" id="deleteAccountBtn">Close account</button></div>';
     return body;
@@ -1259,6 +1287,50 @@
     });
 
     // Account
+    var resumePublic = document.getElementById("resumePublic");
+    if (resumePublic) resumePublic.addEventListener("change", async function(){
+      try {
+        await api("/api/designers/me/resume/visibility", {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ public: resumePublic.checked })
+        });
+        me.resume_public = resumePublic.checked;
+        toast(resumePublic.checked ? "Employers can download it now." : "Back to private.");
+      } catch (e) {
+        resumePublic.checked = !resumePublic.checked;   // put the switch back
+        toast(e.message || "Couldn't change that.");
+      }
+    });
+
+    var handleSave = document.getElementById("handleSave");
+    if (handleSave) handleSave.addEventListener("click", async function(){
+      var input = document.getElementById("handleInput");
+      var err = document.getElementById("handleErr");
+      var note = document.getElementById("handleNote");
+      var next = input.value.trim().replace(/^@/, "").toLowerCase();
+      err.hidden = true; note.hidden = true;
+      if (next === (me.handle || "")) { note.textContent = "That's already your link."; note.hidden = false; return; }
+      if (!/^[a-z][a-z0-9_]{2,29}$/.test(next)) {
+        err.textContent = "Three to thirty characters: lowercase letters, numbers and underscores, starting with a letter.";
+        err.hidden = false; input.focus(); return;
+      }
+      handleSave.disabled = true;
+      try {
+        var data = await api("/api/designers/me/handle", {
+          method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ handle: next })
+        });
+        me.handle = data.handle;
+        // Worth saying plainly: the old link stops working the moment this
+        // changes, and people may already have sent it to someone.
+        note.textContent = "Saved. Your old link no longer works, so send the new one.";
+        note.hidden = false;
+      } catch (e) {
+        err.textContent = e.message || "Couldn't save that.";
+        err.hidden = false;
+      } finally { handleSave.disabled = false; }
+    });
+
     var resumeUploadBtn = document.getElementById("resumeUploadBtn");
     var resumeInput = document.getElementById("resumeInput");
     if (resumeUploadBtn) resumeUploadBtn.addEventListener("click", function(){ resumeInput.click(); });
