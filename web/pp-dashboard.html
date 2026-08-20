@@ -43,6 +43,13 @@
 
   /* Completion, framed as what it unlocks. Gold carries the progress; the rows
      are plain buttons so the whole line is the target, not just a link. */
+  .thread-head{display:flex;align-items:center;gap:11px;padding:12px 14px;border-bottom:1px solid var(--c-border)}
+  .thread-head .th-av{width:34px;height:34px;font-size:14px;overflow:hidden;flex:none}
+  .thread-head .th-av img{width:100%;height:100%;object-fit:cover;display:block}
+  .thread-head strong{display:block;font-size:15px;font-weight:700;letter-spacing:-0.012em}
+  .thread-head a{font-size:12.5px;color:var(--c-accent-text);text-decoration:none}
+  .thread-head a:hover{text-decoration:underline}
+
   .app-list{display:flex;flex-direction:column;gap:10px}
   .app-item{display:flex;align-items:flex-start;gap:16px;padding:16px;border:1px solid var(--c-border);
     border-radius:var(--pp-radius-md);background:var(--c-surface);flex-wrap:wrap}
@@ -502,7 +509,13 @@
   function renderMessages(){
     var body = '<div class="section-head"><h2>Messages</h2></div>';
     if (!cache.conversations.length) {
-      body += '<div class="pp-empty"><h3>No conversations yet</h3><p>Message a company from their page and the thread shows up here.</p></div>';
+      // Named both routes: designer↔designer threads have worked for a while
+      // and this only ever mentioned companies, so the one people are most
+      // likely to want was the one nothing pointed at.
+      body += '<div class="pp-empty"><h3>No conversations yet</h3>' +
+        '<p>Message a designer from their profile, or a company from theirs, and the thread shows up here. ' +
+        'Nobody can start one with you until your profile is live.</p>' +
+        '<a class="pp-btn pp-btn-primary" href="/people">Browse designers</a></div>';
       return body;
     }
     if (!activeThreadId) activeThreadId = cache.conversations[0].id;
@@ -510,11 +523,12 @@
     body += '<div class="thread-layout">' +
       '<div class="thread-list">' + cache.conversations.map(function(c){
         return '<button type="button" class="thread-item' + (c.id === active.id ? " -active" : "") + '" data-thread="' + c.id + '">' +
-          '<span class="name">' + (c.unread_count ? '<span class="unread-dot"></span>' : "") + escapeHtml(c.company_name) + '</span>' +
+          '<span class="name">' + (c.unread_count ? '<span class="unread-dot"></span>' : "") + escapeHtml(threadName(c)) + '</span>' +
           '<span class="preview">' + escapeHtml(c.last_message ? c.last_message.body : "") + '</span>' +
         '</button>';
       }).join("") + '</div>' +
       '<div class="thread-body">' +
+        threadHeaderHtml(active) +
         '<div class="thread-messages" id="threadMessages"><p style="color:var(--c-text-faint);font-size:13.5px">Loading…</p></div>' +
         '<form class="thread-composer" id="composerForm"><input id="composerInput" placeholder="Write a reply…" autocomplete="off"><button type="submit" class="pp-btn pp-btn-primary">Send</button></form>' +
       '</div>' +
@@ -522,12 +536,45 @@
     return body;
   }
 
+  /* Who a thread is with. Conversations used to be designer↔company only, so
+     the list showed company_name — which is empty on a designer↔designer
+     thread, leaving a row with an unread dot and no name on it. */
+  function threadName(c){
+    if (c.peer) return c.peer.display_name || "A designer";
+    return c.company_name || "";
+  }
+
+  /* And a header, so an open thread says who you are talking to rather than
+     making you infer it from the messages. */
+  function threadHeaderHtml(c){
+    if (!c) return "";
+    if (c.peer) {
+      var handle = c.peer.handle || c.peer.id;
+      var mark = c.peer.photo_path
+        ? '<span class="pp-card-mark -logo th-av"><img src="' + escapeHtml(c.peer.photo_path) + '" alt=""></span>'
+        : '<span class="pp-card-mark th-av">' + escapeHtml((c.peer.display_name || "?").trim().charAt(0).toUpperCase()) + '</span>';
+      return '<div class="thread-head">' + mark +
+        '<div><strong>' + escapeHtml(c.peer.display_name || "A designer") + '</strong>' +
+        '<a href="/designers/' + encodeURIComponent(handle) + '">See their profile</a></div></div>';
+    }
+    if (!c.company_name) return "";
+    return '<div class="thread-head">' +
+      '<span class="pp-card-mark th-av">' + escapeHtml(c.company_name.trim().charAt(0).toUpperCase()) + '</span>' +
+      '<div><strong>' + escapeHtml(c.company_name) + '</strong>' +
+      (c.company_slug ? '<a href="/companies/' + encodeURIComponent(c.company_slug) + '">See the company</a>' : "") +
+      '</div></div>';
+  }
+
   function renderThreadMessages(){
     var el = document.getElementById("threadMessages");
     if (!el) return;
     if (!cache.messages.length) { el.innerHTML = '<p style="color:var(--c-text-faint);font-size:13.5px">Say hello.</p>'; return; }
     el.innerHTML = cache.messages.map(function(m){
-      var mine = m.sender_type === "designer";
+      // Both sides of a peer thread are designers, so sender_type alone said
+      // "mine" for every message — including the ones you received, which
+      // rendered on your side and could not be reported.
+      var mine = m.sender_type === "designer" &&
+                 (m.sender_designer_id == null || String(m.sender_designer_id) === String(me.id));
       return '<div class="msg-row ' + (mine ? "-me" : "-them") + '">' +
         '<div class="msg-bubble">' + escapeHtml(m.body) + '</div>' +
         (mine ? "" : '<button type="button" class="msg-report-btn" data-report-msg="' + m.id + '">Report</button>' +
