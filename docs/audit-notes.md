@@ -205,6 +205,33 @@ submission or a session at all, so every mistake stayed for good. Both now
 have one. **A moderation queue with no exit fills up with things nobody meant
 to keep.**
 
+## Seventh shape: a default that only holds because nobody made a mistake
+
+`ADMIN_TOKEN` fell back to `"dev-only-change-me"` — a string published in
+`api/main.py` — whenever `KAZI_ADMIN_TOKEN` was unset. The comment above it
+said to set a real one before deploying anywhere reachable, and that comment
+*was* the entire control. Production happened to have the secret set, so it
+was never wrong; it was one forgotten `flyctl secrets set` away from shipping
+an open admin console.
+
+The fix is to make the mistake fail closed: on a hosted instance (`FLY_APP_NAME`
+is set by the Fly runtime and absent locally) the dev default is refused with a
+503 that names the cause. Local development still works with no env var.
+
+**A comment telling the next person to do the right thing is documentation, not
+a control.** When an insecure default exists for developer convenience, make
+the production path refuse it rather than trusting deploys to override it.
+
+Audited every other `os.environ.get` while there: `RESEND_API_KEY` defaults to
+empty (no key means no send, logged — fails closed), and the rest are paths and
+public URLs. This was the only one.
+
+Also worth knowing about the admin token: it is a single shared secret used as
+both the console login and the CI credential for the digest workflow, so
+rotating it means updating Fly and the GitHub secret together. It goes in an
+`Authorization` header and never a URL, so it stays out of server logs and
+browser history, and `require_admin` now compares with `secrets.compare_digest`.
+
 ## Scope discipline — what was deliberately not built
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
