@@ -196,6 +196,13 @@ live**, don't batch it for later.
 
 If you're an AI agent picking this project up fresh:
 
+- **Design research lives in `docs/`, not in the conversation.** `docs/mobbin-research.md`
+  holds the Mobbin study this product's roadmap came from — what was reviewed, the seven
+  moves it produced, which shipped, and the caveats. Read it before starting design work,
+  and write any new round into it. It exists because that research was once done in a chat,
+  compacted away, and then confidently reported as never having happened. Conversation
+  context is not storage.
+
 - **Development happens directly against the live site**, not local-first: edit →
   `flyctl deploy -a wabunifu` → verify against `https://kazi.odana.design/` (or
   `wabunifu.fly.dev`) → commit → push. Local `uvicorn`/`http.server` runs are still
