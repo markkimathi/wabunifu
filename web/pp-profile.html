@@ -517,7 +517,7 @@
     '</div>';
     backdrop.querySelector("#lbClose").addEventListener("click", closeLightbox);
     backdrop.addEventListener("click", function(e){ if (e.target === backdrop) closeLightbox(); });
-    requestAnimationFrame(function(){ backdrop.classList.add("-open"); });
+    (window.PPRaf || requestAnimationFrame)(function(){ backdrop.classList.add("-open"); });
     document.addEventListener("keydown", onEscClose);
   }
   function closeLightbox(){
@@ -585,7 +585,7 @@
     backdrop.querySelector("#msgCancel").addEventListener("click", closeMessage);
     backdrop.addEventListener("click", function(e){ if (e.target === backdrop) closeMessage(); });
     send.addEventListener("click", function(){ sendMessage(note.value.trim(), send, backdrop.querySelector("#msgHint")); });
-    requestAnimationFrame(function(){ backdrop.classList.add("-open"); note.focus(); });
+    (window.PPRaf || requestAnimationFrame)(function(){ backdrop.classList.add("-open"); note.focus(); });
     document.addEventListener("keydown", onEscClose);
   }
   function closeMessage(){

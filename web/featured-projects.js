@@ -301,7 +301,7 @@
       updateCoverPreview(existing && existing.image_path ? existing.image_path : null);
       lastFocused = document.activeElement;
       document.addEventListener("keydown", onFormKeydown);
-      requestAnimationFrame(function(){
+      (window.PPRaf || requestAnimationFrame)(function(){
         formBackdrop.classList.add("-open");
         titleInput.focus();
       });

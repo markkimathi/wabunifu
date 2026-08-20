@@ -194,6 +194,24 @@
   }
   window.PPCount = PPCount;
 
+  /* rAF with a floor.
+
+     Overlays here set display first and add their -open class on a later frame
+     so the transition has something to animate from. requestAnimationFrame is
+     the right way to get that frame — except it does not fire at all while the
+     tab is hidden. Click something that opens a lightbox, switch tab before the
+     frame lands, and the element is displayed but never gets -open: an
+     invisible panel sitting over the page, swallowing clicks.
+
+     Whichever fires first wins, so a visible tab still animates normally. */
+  function PPRaf(fn){
+    var done = false;
+    function run(){ if (done) return; done = true; fn(); }
+    requestAnimationFrame(run);
+    setTimeout(run, 60);
+  }
+  window.PPRaf = PPRaf;
+
   var NAV_ITEMS = [
     { key: "home", label: "Home", href: ROUTES.home,
       icon: '<path d="M4 11l8-7 8 7"/><path d="M6 9.5V20a1 1 0 001 1h4v-6h2v6h4a1 1 0 001-1V9.5"/>' },

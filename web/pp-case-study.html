@@ -390,7 +390,7 @@
     backdrop.querySelector("#msgCancel").addEventListener("click", closeMessage);
     backdrop.addEventListener("click", function(e){ if (e.target === backdrop) closeMessage(); });
     send.addEventListener("click", function(){ sendMessage(note.value.trim(), send, backdrop.querySelector("#msgHint")); });
-    requestAnimationFrame(function(){ backdrop.classList.add("-open"); note.focus(); });
+    (window.PPRaf || requestAnimationFrame)(function(){ backdrop.classList.add("-open"); note.focus(); });
     document.addEventListener("keydown", onEscClose);
   }
   function closeMessage(){
@@ -428,7 +428,7 @@
       '<div class="ib-body"><img src="' + escapeHtml(img.image_path) + '" alt="' + escapeHtml(img.caption || "") + '"></div>';
     backdrop.querySelector("#ibClose").addEventListener("click", closeLightbox);
     backdrop.addEventListener("click", function(e){ if (e.target === backdrop) closeLightbox(); });
-    requestAnimationFrame(function(){ backdrop.classList.add("-open"); });
+    (window.PPRaf || requestAnimationFrame)(function(){ backdrop.classList.add("-open"); });
     document.addEventListener("keydown", onEscClose);
   }
   function closeLightbox(){

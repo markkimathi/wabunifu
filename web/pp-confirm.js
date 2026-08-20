@@ -21,7 +21,18 @@
   // danger:true = account loss/deletion, red fill. danger:false (default)
   // = merely disruptive but recoverable (e.g. sign out), dark fill. Gold
   // never carries a destructive action, per house rules.
-  if (window.showPPConfirm) return;
+  // Guards against the script being included twice on one page, which built a
+  // second dialog and a second window.showPPConfirm, each owning its own
+  // backdrop: the function callers reached showed one element while the other
+  // stayed hidden, so the dialog never appeared and its promise never
+  // resolved. Sign out, delete account and delete project all hung on that.
+  //
+  // The flag is set synchronously, at script-evaluation time. Testing for
+  // showPPConfirm — as this did — never worked, because that is assigned
+  // inside the DOMContentLoaded callback below and both copies evaluate long
+  // before it fires.
+  if (window.__ppConfirmLoaded) return;
+  window.__ppConfirmLoaded = true;
 
   function ready(fn){
     if (document.readyState !== "loading") fn();
@@ -133,10 +144,20 @@
       return new Promise(function(resolve){
         activeResolve = resolve;
         document.addEventListener("keydown", onKeydown);
-        requestAnimationFrame(function(){
+        // The rAF is what lets the open transition run — the class has to land
+        // on a later frame than the display change. But rAF does not fire at
+        // all while the tab is hidden, and a dialog that never appears also
+        // never resolves its promise, so the caller waits forever with nothing
+        // on screen. The timeout is the floor: whichever runs first wins.
+        var revealed = false;
+        function reveal(){
+          if (revealed) return;
+          revealed = true;
           backdrop.classList.add("-open");
           confirmBtn.focus();
-        });
+        }
+        requestAnimationFrame(reveal);
+        setTimeout(reveal, 60);
       });
     };
   });

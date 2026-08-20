@@ -445,7 +445,7 @@
     }
     host.innerHTML = "";
     host.appendChild(panel);
-    requestAnimationFrame(function(){ panel.classList.add("-show"); });
+    (window.PPRaf || requestAnimationFrame)(function(){ panel.classList.add("-show"); });
     clearTimeout(toastTimer);
     toastTimer = setTimeout(function(){ host.innerHTML = ""; }, 2600);
   }
