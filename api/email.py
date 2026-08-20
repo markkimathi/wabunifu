@@ -118,7 +118,7 @@ def send_employer_password_reset_email(email: str, token: str) -> None:
 
 
 def send_team_invite_email(email: str, company_name: str, inviter_name: str, token: str) -> None:
-    link = f"{SITE_URL}/pp-invite.html?token={token}"
+    link = f"{SITE_URL}/invite/{token}"
     send_email(
         email,
         f"{inviter_name} invited you to {company_name} on Kazi",

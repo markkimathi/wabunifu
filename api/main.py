@@ -3763,6 +3763,14 @@ def company_page(slug: str, request: Request):
         image=f"{base}{record['logo_path']}" if record and record.get("logo_path") else f"{base}/logo.png", request=request)
 
 
+# The invite link goes in an email to someone who has never used the product,
+# so it was the last raw .html URL handed to a person. ?token= still resolves,
+# since links already sent have to keep working.
+@app.get("/invite/{token}", include_in_schema=False)
+def invite_page(token: str):
+    return FileResponse(WEB_DIR / "pp-invite.html")
+
+
 # A case study is the thing a designer actually sends someone — "a link
 # instead of a PDF nobody opens" is the promise on the homepage. It lived at
 # /pp-case-study.html?designer=&project=, the only raw .html URL left in the

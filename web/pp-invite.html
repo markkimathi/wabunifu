@@ -83,7 +83,11 @@
     eyeClosed: '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4l16 16"></path><path d="M9.5 6a8.6 8.6 0 012.5-.4c6 0 9.5 6.4 9.5 6.4a17 17 0 01-2.7 3.4"></path><path d="M6.3 8.2A16.7 16.7 0 002.5 12S6 18.5 12 18.5c1 0 1.9-.2 2.7-.5"></path></svg>'
   };
 
-  var token = new URLSearchParams(location.search).get("token") || "";
+  // /invite/{token} is the real URL; ?token= still works for links already
+  // sent out.
+  var pathToken = (location.pathname.match(/^\/invite\/([^\/?#]+)/) || [])[1];
+  var token = (pathToken ? decodeURIComponent(pathToken) : "") ||
+              new URLSearchParams(location.search).get("token") || "";
 
   var invite = null; // {company_name, inviter_name, invited_email, needs_approval}, filled from the server
   var state = { view: "loading", name: "", pw: "", pwVisible: false, error: "", submitting: false };
