@@ -117,7 +117,8 @@ are not.
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
 0 listings taking applications, 0 follows, 0 conversations, 3 sessions,
-0 bookings.
+1 booking (cancelled), 0 pay submissions, 0 questions, 0 saved searches,
+3 projects, 0 notifications.
 
 At that size, some correct-sounding features are speculative:
 
@@ -129,6 +130,19 @@ At that size, some correct-sounding features are speculative:
 - **A "0 followers" line** — the count renders only above zero. At this size a
   zero under every profile reads as an empty room, and it is a number nobody
   can act on.
+- **Telling a pay-data contributor their figure was accepted** — 0 pay
+  submissions exist. The cheap correctness half was worth doing (both admin
+  decisions reported success for ids that don't exist); the notification half
+  was not.
+
+## Live data that needs a person, not a commit
+
+The three community sessions carry joining links of the form
+`https://meet.google.com/kazi-portfolio-sept`. That is not a valid Google Meet
+code — real ones are `xxx-xxxx-xxx`. The link is only revealed once someone
+books, so the first person to book any of the three gets sent somewhere that
+doesn't exist. This is production data an admin typed, not a code path, so it
+needs real meetings created and the links pasted in.
 
 This is the Mobbin caveat applied to our own backlog: *Contra's earnings strip
 reads as confident there and would read as empty here.* Check the production
