@@ -394,12 +394,8 @@
     }
 
     if (!bucket.items.length) {
-      var copy = {
-        sessions: ["No sessions on the calendar yet", "Check back soon — new sessions get posted regularly."],
-        questions: ["No questions yet", "Be the first to ask something the community can actually help with."],
-        work: ["Nothing to feature yet", "Once designers add featured projects to their profiles, the best ones show up here."]
-      }[state.tab];
-      area.innerHTML = '<div class="pp-empty"><h3>' + copy[0] + '</h3><p>' + copy[1] + '</p></div>';
+      area.innerHTML = emptyStateHtml(state.tab);
+      wireEmptyState(state.tab);
       return;
     }
 
@@ -589,6 +585,53 @@
       } catch (e) {}
     }
     renderSidebar();
+  }
+
+  // Each of these is a different situation and only one of them is the
+  // reader's to fix. A shared "check back soon" says nothing and offers
+  // nothing; say what the thing is for, and where there is something to do,
+  // put the button in the panel rather than expecting them to find it.
+  var EMPTY_ICONS = {
+    sessions: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M8 3v4M16 3v4M3 10h18"></path></svg>',
+    questions: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L3 21l1.9-6.4A8 8 0 1 1 21 12z"></path></svg>',
+    work: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><circle cx="9" cy="10" r="1.6"></circle><path d="M4.5 18l4.6-4.6a2 2 0 0 1 2.8 0l3 3M15 15l1.4-1.4a2 2 0 0 1 2.8 0L21 15"></path></svg>'
+  };
+
+  function emptyStateHtml(tab){
+    var signedIn = !!token();
+    var copy = {
+      sessions: {
+        h: "Nothing on the calendar yet",
+        p: "Sessions are portfolio reviews, r\u00e9sum\u00e9 clinics and pricing office hours \u2014 free, a handful of seats each so everyone gets time, and posted here a couple of weeks ahead.",
+        btn: "Ask the community instead", act: "ask"
+      },
+      questions: {
+        h: "No questions yet",
+        p: "Somebody has to go first. Rates, a portfolio you\u2019re unsure about, which studios actually pay on time \u2014 the answers here come from people doing the work.",
+        btn: signedIn ? "Ask the first question" : "Sign in to ask", act: "ask"
+      },
+      work: {
+        h: "No featured work yet",
+        p: "This fills up from designer profiles. Publish a project on yours and it can show up here.",
+        btn: signedIn ? "Add your work" : "Browse designers", act: signedIn ? "work" : "people"
+      }
+    }[tab];
+    return '<div class="pp-empty">' +
+      '<span class="pp-empty-icon">' + EMPTY_ICONS[tab] + '</span>' +
+      '<h3>' + copy.h + '</h3><p>' + copy.p + '</p>' +
+      '<button type="button" class="pp-btn pp-btn-secondary" id="emptyAct" data-act="' + copy.act + '">' + copy.btn + '</button>' +
+    '</div>';
+  }
+
+  function wireEmptyState(){
+    var btn = document.getElementById("emptyAct");
+    if (!btn) return;
+    btn.addEventListener("click", function(){
+      var act = btn.getAttribute("data-act");
+      if (act === "ask") { openComposer(); return; }
+      if (act === "work") { location.href = "/dashboard?tab=work"; return; }
+      location.href = "/people";
+    });
   }
 
   function openComposer(){

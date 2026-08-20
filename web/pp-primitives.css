@@ -296,3 +296,6 @@ a.pp-card:hover,.pp-card.-clickable:hover{border-color:var(--c-border-hover);box
 .pp-empty h3{margin:0 0 7px;font-size:19px;font-weight:700;letter-spacing:-0.015em;color:var(--c-text)}
 .pp-empty p{margin:0 0 20px;font-size:14px;line-height:1.55;color:var(--c-text-subtle);
   max-width:34ch;margin-left:auto;margin-right:auto}
+/* The 20px above is room for an action button. Where there isn't one it was
+   just a hanging gap under the last line. */
+.pp-empty p:last-child{margin-bottom:0}
