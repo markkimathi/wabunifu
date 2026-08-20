@@ -31,6 +31,7 @@ import re
 import secrets
 import sqlite3
 import statistics
+from urllib.parse import urlparse
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
 
@@ -687,6 +688,104 @@ def _conn() -> sqlite3.Connection:
     return c
 
 
+# Reserved by RFC 2606 and RFC 6761 so that nobody can ever register them —
+# which is exactly why they end up typed into a form during a deploy check and
+# left there. Defined here rather than in main.py because both the validators
+# that reject new ones and the purge that removes old ones need the same list,
+# and main.py imports db.py, not the other way round.
+PLACEHOLDER_HOSTS = ("example.com", "example.org", "example.net", "example.edu",
+                     "localhost", "test.com")
+PLACEHOLDER_SUFFIXES = (".test", ".example", ".invalid", ".localhost")
+_LIKE_PLACEHOLDER = [f"%@{h}" for h in PLACEHOLDER_HOSTS] + [f"%{sfx}" for sfx in PLACEHOLDER_SUFFIXES]
+
+# A real Google Meet code is three-four-three lowercase letters. Anything else
+# on that host is a made-up slug Google answers with "invalid meeting code".
+_MEET_CODE_RE = re.compile(r"^[a-z]{3}-[a-z]{4}-[a-z]{3}$")
+
+
+def _is_dead_meeting_link(link: str) -> bool:
+    link = (link or "").strip()
+    if not link:
+        return True
+    host = (urlparse(link).hostname or "").lower()
+    if host in PLACEHOLDER_HOSTS or any(host.endswith(sfx) for sfx in PLACEHOLDER_SUFFIXES):
+        return True
+    if host in ("meet.google.com", "www.meet.google.com"):
+        code = urlparse(link).path.strip("/").split("/")[0]
+        return not _MEET_CODE_RE.match(code)
+    return False
+
+
+def purge_placeholder_content() -> dict:
+    """Remove content that can only ever have been a placeholder.
+
+    Production was serving three community sessions with invented hosts,
+    invented credentials and Google Meet links that were not valid meeting
+    codes — someone could book a seat for a portfolio review that did not
+    exist. Alongside them sat accounts, companies and listings left behind by
+    deploy checks, all on domains the RFCs reserve so they can never resolve.
+
+    Deliberately narrow: an address on a reserved domain cannot belong to a
+    real person, and a joining link that is not a reachable meeting cannot be
+    honoured. Nothing here matches on "looks like a test" — only on things
+    that are unreachable by construction. Idempotent, so it costs one query
+    per boot once everything is clean.
+    """
+    c = _conn()
+    cur = c.cursor()
+    removed: dict[str, int] = {}
+
+    def drop(label: str, sql: str, args=()):
+        cur.execute(sql, args)
+        if cur.rowcount > 0:
+            removed[label] = removed.get(label, 0) + cur.rowcount
+
+    # Sessions whose joining link goes nowhere. Attendees are handed that link
+    # the moment they book, so a dead one is the whole feature failing.
+    dead = [r["id"] for r in cur.execute("SELECT id, joining_link FROM community_sessions").fetchall()
+            if _is_dead_meeting_link(r["joining_link"])]
+    if dead:
+        marks = ",".join("?" * len(dead))
+        drop("session_bookings", f"DELETE FROM session_bookings WHERE session_id IN ({marks})", dead)
+        drop("community_sessions", f"DELETE FROM community_sessions WHERE id IN ({marks})", dead)
+
+    like = " OR ".join(["email LIKE ?"] * len(_LIKE_PLACEHOLDER))
+    emp = [r["id"] for r in cur.execute(f"SELECT id FROM employers WHERE {like}", _LIKE_PLACEHOLDER).fetchall()]
+    for e in emp:
+        drop("employer_sessions", "DELETE FROM employer_sessions WHERE employer_id = ?", (e,))
+        drop("notifications", "DELETE FROM notifications WHERE recipient_type = 'employer' AND recipient_id = ?", (e,))
+        drop("employers", "DELETE FROM employers WHERE id = ?", (e,))
+
+    site_like = [f"%{h}%" for h in PLACEHOLDER_HOSTS] + [f"%{sfx}" for sfx in PLACEHOLDER_SUFFIXES]
+    where = " OR ".join(["website LIKE ?"] * len(site_like))
+    cos = [r["id"] for r in cur.execute(f"SELECT id FROM companies WHERE {where}", site_like).fetchall()]
+    for co in cos:
+        drop("team_invites", "DELETE FROM team_invites WHERE company_id = ?", (co,))
+        drop("submissions", "DELETE FROM submissions WHERE company_id = ?", (co,))
+        drop("companies", "DELETE FROM companies WHERE id = ?", (co,))
+
+    des = [r["id"] for r in cur.execute(f"SELECT id FROM designers WHERE {like}", _LIKE_PLACEHOLDER).fetchall()]
+    for d in des:
+        for table, col in (("designer_sessions", "designer_id"), ("designer_email_tokens", "designer_id"),
+                           ("designer_links", "designer_id"), ("designer_projects", "designer_id"),
+                           ("designer_saved_jobs", "designer_id"), ("session_bookings", "designer_id")):
+            drop(table, f"DELETE FROM {table} WHERE {col} = ?", (d,))
+        drop("notifications", "DELETE FROM notifications WHERE recipient_type = 'designer' AND recipient_id = ?", (d,))
+        drop("designers", "DELETE FROM designers WHERE id = ?", (d,))
+
+    url_like = [f"%{h}%" for h in PLACEHOLDER_HOSTS] + [f"%{sfx}/%" for sfx in PLACEHOLDER_SUFFIXES]
+    drop("submissions", "DELETE FROM submissions WHERE " +
+         " OR ".join(["url LIKE ?"] * len(url_like)) + " OR " +
+         " OR ".join(["contact_email LIKE ?"] * len(_LIKE_PLACEHOLDER)),
+         url_like + _LIKE_PLACEHOLDER)
+
+    c.commit()
+    c.close()
+    if removed:
+        print(f"[purge] removed placeholder content: {removed}")
+    return removed
+
+
 def init_db() -> None:
     c = _conn()
     c.close()
@@ -695,6 +794,7 @@ def init_db() -> None:
     cleanup_stale_employer_tokens()
     backfill_designer_handles()
     backfill_onboarding_completed()
+    purge_placeholder_content()
 
 
 def insert_submission(data: dict, company_id: int | None = None, employer_id: int | None = None) -> int:
@@ -2699,6 +2799,20 @@ def update_community_session(session_id: int, **fields) -> bool:
     c.commit()
     c.close()
     return updated
+
+
+def delete_community_session(session_id: int) -> bool:
+    """Cancelling flips the status and leaves the session readable at its own
+    URL; that is right for a real session people booked, and wrong for one
+    posted by mistake. Removing it takes its bookings with it, since half a
+    booking is not a thing anyone can act on."""
+    c = _conn()
+    c.execute("DELETE FROM session_bookings WHERE session_id = ?", (session_id,))
+    cur = c.execute("DELETE FROM community_sessions WHERE id = ?", (session_id,))
+    deleted = cur.rowcount > 0
+    c.commit()
+    c.close()
+    return deleted
 
 
 def set_session_status(session_id: int, status: str) -> None:

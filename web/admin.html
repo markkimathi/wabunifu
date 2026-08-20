@@ -1802,9 +1802,33 @@ async function loadSessionList() {
         </div>
         <div class="actions">
           ${s.status === "scheduled" ? `<button class="reject" data-scancel="${s.id}">Cancel</button>` : `<span class="status rejected">${escapeHtml(s.status)}</span>`}
+          <button class="quiet" data-sdelete="${s.id}">Delete</button>
         </div>
       </div>
     `).join("");
+    // Cancel is for a session that was real and is now off — it stays
+    // readable so whoever booked can see what happened. Delete is for one that
+    // should never have been posted, and there was no way to do that at all.
+    sessionList.querySelectorAll("[data-sdelete]").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const item = btn.closest(".item");
+        const title = item.querySelector("h3").textContent.trim();
+        const ok = await window.showPPConfirm({
+          title: "Delete this session?",
+          description: `"${title}" and any bookings on it come off the site for good. If it was real and is simply not happening, cancel it instead so the people who booked can see why.`,
+          confirmLabel: "Delete", safeLabel: "Keep it", danger: true
+        });
+        if (!ok) return;
+        btn.disabled = true;
+        try {
+          await api(`/api/admin/community/sessions/${btn.dataset.sdelete}`, { method: "DELETE" });
+          loadSessionList();
+        } catch (e) {
+          showToast(`Couldn't delete: ${e.message}`);
+          btn.disabled = false;
+        }
+      });
+    });
     sessionList.querySelectorAll("[data-scancel]").forEach(btn => {
       btn.addEventListener("click", async () => {
         btn.disabled = true;

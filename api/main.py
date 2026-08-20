@@ -89,6 +89,8 @@ from .db import (  # noqa: E402
     create_community_session, list_community_sessions, get_community_session,
     update_community_session, set_session_status, count_session_seats, get_booking,
     book_session, cancel_booking, list_session_bookings, list_bookings_for_designer,
+    PLACEHOLDER_HOSTS, PLACEHOLDER_SUFFIXES,
+    delete_community_session,
     create_question, list_questions, get_question, set_accepted_reply, set_question_status,
     list_questions_by_designer, list_replies_by_designer,
     create_reply, list_replies, get_reply, set_reply_status, toggle_vote, toggle_follow,
@@ -380,6 +382,16 @@ class JobSubmission(BaseModel):
         if not v or not v.strip():
             raise ValueError("must not be blank")
         return v.strip()
+
+    @field_validator("url")
+    @classmethod
+    def _real_apply_url(cls, v: str) -> str:
+        # This is the only link between a designer and the job. Production was
+        # carrying a listing pointing at example.com when this was added.
+        v = (v or "").strip()
+        if v and not v.startswith("http://") and not v.startswith("https://"):
+            raise ValueError("the application link must start with http:// or https://")
+        return _reject_placeholder_url(v, "application link")
 
     @field_validator("work_type")
     @classmethod
@@ -815,6 +827,16 @@ class CompanyUpdate(BaseModel):
     eligibility: str = ""
     eligibility_note: str = ""
 
+    @field_validator("website")
+    @classmethod
+    def _real_website(cls, v: str) -> str:
+        v = (v or "").strip()
+        if not v:
+            return v
+        probe = v if v.startswith(("http://", "https://")) else "https://" + v
+        _reject_placeholder_url(probe, "website")
+        return v[:300]
+
     @field_validator("name")
     @classmethod
     def _valid_name(cls, v: str) -> str:
@@ -968,6 +990,46 @@ class EmployerConversationStart(BaseModel):
         return v[:4000]
 
 
+# PLACEHOLDER_HOSTS / PLACEHOLDER_SUFFIXES live in db.py: the validators here
+# that refuse new placeholder content and the purge there that removes old
+# content have to agree, and a second copy is how those two drift apart.
+def _reject_placeholder_url(v: str, what: str = "link") -> str:
+    """A URL nobody can ever reach is worse than no URL: it looks like content
+    and fails only for the person who trusts it."""
+    from urllib.parse import urlparse
+    host = (urlparse(v).hostname or "").lower()
+    if not host:
+        return v
+    if host in PLACEHOLDER_HOSTS or any(host.endswith(sfx) for sfx in PLACEHOLDER_SUFFIXES):
+        raise ValueError(f"{host} is a placeholder domain — the {what} has to be somewhere real")
+    return v
+
+
+# meet.google.com codes are exactly three-four-three lowercase letters. Anything
+# else on that host is a made-up slug that Google answers with "invalid meeting
+# code" — which is what three live sessions were handing to whoever booked them.
+_MEET_CODE = re.compile(r"^[a-z]{3}-[a-z]{4}-[a-z]{3}$")
+
+
+def _valid_joining_link(v: str) -> str:
+    v = (v or "").strip()
+    if not v:
+        raise ValueError("a session needs a joining link — attendees are given it the moment they book")
+    if not v.startswith("https://"):
+        raise ValueError("the joining link must start with https://")
+    _reject_placeholder_url(v, "joining link")
+    from urllib.parse import urlparse
+    parsed = urlparse(v)
+    if (parsed.hostname or "").lower() in ("meet.google.com", "www.meet.google.com"):
+        code = parsed.path.strip("/").split("/")[0]
+        if not _MEET_CODE.match(code):
+            raise ValueError(
+                "that isn't a real Google Meet code — they look like abc-defg-hij. "
+                "Create the meeting first, then paste its link."
+            )
+    return v[:500]
+
+
 class CommunitySessionIn(BaseModel):
     title: str
     kind: str = ""
@@ -993,6 +1055,11 @@ class CommunitySessionIn(BaseModel):
             raise ValueError("required")
         return v
 
+    @field_validator("joining_link")
+    @classmethod
+    def _joining(cls, v: str) -> str:
+        return _valid_joining_link(v)
+
 
 class CommunitySessionUpdate(BaseModel):
     title: Optional[str] = None
@@ -1010,6 +1077,13 @@ class CommunitySessionUpdate(BaseModel):
     joining_link: Optional[str] = None
     bring_list: Optional[list[str]] = None
     agenda: Optional[list[dict]] = None
+
+    @field_validator("joining_link")
+    @classmethod
+    def _joining(cls, v):
+        # None means "leave it alone" on a partial update; a supplied value has
+        # to clear the same bar as it did at creation.
+        return v if v is None else _valid_joining_link(v)
 
 
 # The six the community composer offers. The field was free text, so the
@@ -4037,6 +4111,17 @@ def admin_cancel_session(session_id: int, _: None = Depends(require_admin)):
     if not get_community_session(session_id):
         raise HTTPException(404, "no such session")
     set_session_status(session_id, "cancelled")
+    return {"ok": True}
+
+
+@app.delete("/api/admin/community/sessions/{session_id}")
+def admin_delete_session(session_id: int, _: None = Depends(require_admin)):
+    """Cancel is for a session that was real and is now off. This is for one
+    that should never have been posted — there was no way to remove it, so
+    the only tool for bad content was a status flip that left it readable at
+    its own URL."""
+    if not delete_community_session(session_id):
+        raise HTTPException(404, "no such session")
     return {"ok": True}
 
 
