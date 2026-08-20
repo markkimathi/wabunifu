@@ -467,7 +467,7 @@
   function avatarInnerHtml(user){
     var initials = initialsOf(user);
     if (!user.photo) return initials;
-    return initials + '<img src="' + user.photo + '" alt="" onerror="this.onerror=null;this.remove()">';
+    return initials + '<img src="' + escHtml(user.photo) + '" alt="" onerror="this.onerror=null;this.remove()">';
   }
 
   // pp-nav.js is meant to be self-contained (one <script> tag, see the
@@ -790,9 +790,13 @@
         '<div class="pp-notif-head"><span>Notifications</span>' +
           '<button type="button" data-notif-readall>Mark all read</button></div>' +
         items.map(function(n){
-          return '<a class="pp-notif-item' + (n.read ? "" : " -unread") + '" href="' + (n.href || "#") + '">' +
-            '<span class="t">' + n.title + '</span>' +
-            (n.body ? '<span class="b">' + n.body + '</span>' : "") +
+          // A notification's title and body are other people's words — the
+          // sender's display name and their message text. Rendering them raw
+          // meant someone could name themselves a script tag, message you, and
+          // have it run in your header.
+          return '<a class="pp-notif-item' + (n.read ? "" : " -unread") + '" href="' + escHtml(n.href || "#") + '">' +
+            '<span class="t">' + escHtml(n.title) + '</span>' +
+            (n.body ? '<span class="b">' + escHtml(n.body) + '</span>' : "") +
           '</a>';
         }).join("");
       var all = panel.querySelector("[data-notif-readall]");
@@ -885,7 +889,7 @@
         '<div class="pp-notif-panel" data-notif-panel hidden></div>' +
         '<div class="pp-avatar-menu" data-avatar-menu>' +
         '<button type="button" class="pp-avatar-chip" data-avatar-trigger aria-haspopup="true" aria-expanded="false">' +
-          '<span class="pp-av-name">' + user.name + '</span>' +
+          '<span class="pp-av-name">' + escHtml(user.name) + '</span>' +
           '<span class="pp-av-circle">' + avatarInnerHtml(user) + '</span></button>' +
         '<div class="pp-avatar-dropdown" data-avatar-dropdown>' +
           '<a href="' + (user.href || "#") + '">' +
@@ -952,7 +956,7 @@
           (user ? '<button type="button" class="pp-bell" data-bell aria-label="Notifications" hidden style="width:34px;height:34px">' +
               ICONS.bell(18) + '<span class="pp-bell-dot" data-bell-count hidden></span></button>' +
             '<div class="pp-notif-panel" data-notif-panel hidden></div>' : '') +
-          (user ? '<a class="pp-av-circle" href="' + user.href + '" aria-label="Your profile" style="width:30px;height:30px;font-size:11px;text-decoration:none">' +
+          (user ? '<a class="pp-av-circle" href="' + escHtml(user.href) + '" aria-label="Your profile" style="width:30px;height:30px;font-size:11px;text-decoration:none">' +
             avatarInnerHtml(user) + '</a>' : '') +
           '<button type="button" class="pp-tap-theme" data-theme-toggle aria-label="Toggle dark mode" title="Toggle dark mode">' + ICONS.theme(19) + '</button>' +
           '<button type="button" class="pp-tap-btn pp-menu-btn" data-open-menu aria-label="Menu">' + ICONS.hamburger(22) + '</button>' +
@@ -995,9 +999,9 @@
         '</div>' +
         (user
           ? '<div class="pp-menu-user-wrap">' +
-              '<a class="pp-menu-user" href="' + user.href + '">' +
+              '<a class="pp-menu-user" href="' + escHtml(user.href) + '">' +
                 '<span class="pp-av-circle">' + avatarInnerHtml(user) + '</span>' +
-                '<span style="flex:1;min-width:0"><span class="pp-menu-user-name" style="display:block">' + user.name + '</span>' +
+                '<span style="flex:1;min-width:0"><span class="pp-menu-user-name" style="display:block">' + escHtml(user.name) + '</span>' +
                 '<span class="pp-menu-user-sub">View your profile</span></span>' + ICONS.chevronRight(18) +
               '</a>' +
               '<button type="button" class="pp-menu-signout" data-sign-out>Sign out</button>' +
@@ -1125,6 +1129,17 @@
     });
   }
 
+  /* Breadcrumb labels and hrefs are user data on every page that matters: a
+     designer's display name, a project title, a company name. They were
+     interpolated straight into innerHTML, so a name like
+     <img src=x onerror=...> executed for anyone who opened that profile.
+     Stored XSS, reachable by anyone who could set their own name. */
+  function escHtml(t){
+    return String(t == null ? "" : t).replace(/[&<>"']/g, function(c){
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
   function buildBreadcrumbs(el){
     var crumbs;
     try { crumbs = JSON.parse(el.getAttribute("data-crumbs") || "[]"); } catch (e) { crumbs = []; }
@@ -1138,15 +1153,16 @@
       var isLast = idx === all.length - 1;
       var sep = idx > 0 ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"></path></svg>' : "";
       var item = isLast
-        ? '<span class="-current">' + c.label + '</span>'
-        : '<a href="' + (c.href || "#") + '">' + c.label + '</a>';
+        ? '<span class="-current">' + escHtml(c.label) + '</span>'
+        : '<a href="' + escHtml(c.href || "#") + '">' + escHtml(c.label) + '</a>';
       return sep + item;
     }).join("");
 
     el.className = "pp-crumbs";
     el.innerHTML =
-      '<a class="pp-crumbs-back" href="' + (parent.href || ROUTES.home) + '" aria-label="Back to ' + parent.label + '">' +
-        ICONS.back(18) + '<span style="margin-left:6px">' + parent.label + '</span>' +
+      '<a class="pp-crumbs-back" href="' + escHtml(parent.href || ROUTES.home) +
+        '" aria-label="Back to ' + escHtml(parent.label) + '">' +
+        ICONS.back(18) + '<span style="margin-left:6px">' + escHtml(parent.label) + '</span>' +
       '</a>' +
       '<span class="pp-crumbs-full">' + full + '</span>';
   }
