@@ -163,7 +163,7 @@ def send_designer_rejected_email(email: str, name: str, reason: str = "") -> Non
         <p>You can edit it from your <a href="{SITE_URL}/dashboard">dashboard</a>
         and reply to this email when you'd like another look — a reply reaches a
         person, not an inbox nobody reads.</p>
-        <p>What we look for is set out in the <a href="{SITE_URL}/house-rules">house rules</a>.</p>
+        <p>What we look for is set out in the <a href="{SITE_URL}/community/rules">house rules</a>.</p>
         """,
     )
 
@@ -213,7 +213,7 @@ def send_designer_suspended_email(email: str, name: str, reason: str) -> None:
         <p>Reply to this email if you think that's wrong, or once you've put it
         right — a reply reaches a person.</p>
         <p>What we ask of everyone is set out in the
-        <a href="{SITE_URL}/house-rules">house rules</a>.</p>
+        <a href="{SITE_URL}/community/rules">house rules</a>.</p>
         """,
     )
 
