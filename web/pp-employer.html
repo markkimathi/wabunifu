@@ -244,7 +244,11 @@
     background:var(--c-surface);cursor:pointer;font-family:var(--pp-font);color:var(--c-text)}
   .thread-item.-active{background:var(--c-bg-sunken)}
   .thread-item .name{font-size:14.5px;font-weight:700;display:flex;align-items:center;gap:8px}
-  .thread-item .preview{font-size:13px;color:var(--c-text-subtle);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* display:block matters: this is a <span>, and text-overflow does nothing on
+     an inline box — the preview ran its full width instead of ellipsing, which
+     dragged the whole thread list into a horizontal scroll it never wanted. */
+  .thread-item .preview{display:block;font-size:13px;color:var(--c-text-subtle);margin-top:3px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .unread-dot{width:8px;height:8px;border-radius:50%;background:var(--pp-gold);flex:none}
   .thread-body{display:flex;flex-direction:column;background:var(--c-bg)}
   .thread-messages{flex:1;padding:18px;overflow-y:auto;max-height:460px;display:flex;flex-direction:column;gap:10px}
