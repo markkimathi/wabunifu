@@ -8,6 +8,24 @@
    then <link rel="stylesheet" href="pp-primitives.css">. */
 
 /* -----------------------------------------------------------------
+   [hidden] MUST WIN
+
+   Any author `display` rule outranks the UA stylesheet's [hidden]
+   declaration, so `el.hidden = true` silently does nothing to an
+   element whose class sets display. This file's history is a list of
+   that bug: a "0" notification dot that wouldn't go away, a "0" tab
+   badge, a "Saved searches" heading over an empty list, an "Applied"
+   tab shown to signed-out visitors, and a "Save this search" button
+   offered on an unfiltered board.
+
+   Each was patched one selector at a time, and the next one appeared
+   somewhere else. This is the general fix. !important is right here
+   precisely because the whole bug is author rules winning: an element
+   that is both hidden and displayed is a contradiction, never intent.
+   ----------------------------------------------------------------- */
+[hidden]{display:none !important}
+
+/* -----------------------------------------------------------------
    BUTTONS
    Never more than one primary button in a view. Height 44px default
    (40px compact, 52px large), the 44px floor is also the minimum
