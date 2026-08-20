@@ -152,8 +152,6 @@ built. Three findings, all shipped:
 
 ---
 
----
-
 ## Status, verified 20 August 2026
 
 All seven moves are shipped. Verified against the running site rather than from
