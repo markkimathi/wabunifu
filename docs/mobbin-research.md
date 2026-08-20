@@ -174,6 +174,16 @@ The lesson worth carrying: move 01 was fixed on the board in the first round and
 was still wrong on the job page and in the model underneath it. A finding is not
 done when the surface it was found on is fixed.
 
+Acting on that immediately paid: checking every surface that renders a verdict
+found the homepage and the company page impersonal as well. A signed-in designer
+in the United Kingdom was told a role was "Open across Africa" on the homepage
+while the board, one click away, said otherwise. Resolution now lives once in
+`PPElig.resolveViewer()` rather than as a copy per page.
+
+**Four surfaces had to be checked to finish one move.** When a finding is about a
+shared helper, the work is not "fix the page it was reported on" — it is "find
+every caller".
+
 ## Caveats that still apply
 
 These were in the original artifact rather than buried, and they have not stopped
