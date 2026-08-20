@@ -303,7 +303,7 @@
       <div class="sec-head">
         <div>
           <h2>Designers worth knowing</h2>
-          <p>No leaderboard here, nobody climbed anything. Just designers who published something this month, and yes, they'd love to hear from you.</p>
+          <p>No leaderboard here, nobody climbed anything. Just designers who've put their work up where you can read it, and yes, they'd love to hear from you.</p>
         </div>
         <a class="see-all" href="/people">Browse everyone →</a>
       </div>
@@ -316,7 +316,7 @@
       <div class="sec-head">
         <div>
           <h2>Work from people here</h2>
-          <p>Case studies people published here this month. The thinking is still in them, not just the tidy final screens.</p>
+          <p>Case studies published here by the designers who made them. The thinking is still in them, not just the tidy final screens.</p>
         </div>
         <a class="see-all" href="/people">See more work →</a>
       </div>
@@ -328,8 +328,8 @@
     <div class="wrap why-grid">
       <h2>Most job boards were never built with you in mind</h2>
       <div class="why-copy">
-        <p>A role posted in Berlin rarely stops to think about whether someone in Nairobi could take it. So we do that reading for you, and we say it plainly: open across Africa, global remote, or worth checking. Then we hand you straight to the company's own page.</p>
-        <p>We don't touch your application, take a cut, or sell your details. There's nothing clever going on behind the scenes. We just make good work visible, yours to the people hiring and theirs to you, long before you spend an afternoon on a role that was never open to you.</p>
+        <p>A role posted in Berlin rarely stops to think about whether someone in Nairobi could take it. So we do that reading for you, and we say it plainly: open across Africa, global remote, or worth checking. Then we hand you to the company's own page — or, where an employer takes applications here, we say so on the listing before you start.</p>
+        <p>We never take a cut, screen you, or sell your details. There's nothing clever going on behind the scenes. We just make good work visible, yours to the people hiring and theirs to you, long before you spend an afternoon on a role that was never open to you.</p>
         <div class="why-stats" id="whyStats"></div>
       </div>
     </div>
@@ -340,30 +340,32 @@
       <div class="sec-head">
         <div>
           <h2>Community, small on purpose</h2>
-          <p>We'd rather six designers get a proper portfolio review than six hundred join another feed. Everything here is running right now, and there's usually room for you.</p>
+          <p>We'd rather six designers get a proper portfolio review than six hundred join another feed. Sessions are free and capped at a handful of seats, and the questions board is open to anyone.</p>
         </div>
       </div>
       <div class="community-grid">
-        <!-- Replaced with the real next session once one loads. The static copy
-             below is the honest fallback: it describes what these sessions are,
-             without claiming a specific one is happening. -->
+        <!-- Replaced with the real next session once one loads, seats and all.
+             The copy below is what shows when nothing is scheduled, so it says
+             what a session is without implying one is happening: "Thursdays"
+             and "see this week's session" both claimed a session that did not
+             exist, on a site that had none. -->
         <div class="c-card" id="nextSessionCard">
-          <span class="pp-status -new tag">Thursdays</span>
-          <h4>Portfolio reviews</h4>
-          <p>Forty minutes, six designers, and a reviewer who has been exactly where you are. Bring the case study you like least. You'll leave with three things to change.</p>
-          <a href="/community">See this week's session →</a>
+          <span class="pp-status -neutral tag">Free</span>
+          <h4>Portfolio reviews and clinics</h4>
+          <p>Forty minutes, a handful of designers, and a reviewer who has been exactly where you are. Bring the case study you like least. They're posted here a couple of weeks ahead.</p>
+          <a href="/community">See what's on →</a>
         </div>
         <div class="c-card">
-          <span class="pp-status -good tag">Mentors</span>
-          <h4>Sessions with people ahead of you</h4>
-          <p>Designers at companies across the continent keep a few slots open each month, for the questions you'd rather not ask in public. All free.</p>
-          <a href="/community">See who's available →</a>
+          <span class="pp-status -good tag">Ask anything</span>
+          <h4>Questions answered by people doing the work</h4>
+          <p>Rates, a portfolio you're unsure about, which studios actually pay on time. Answers come from designers here, not from a search result.</p>
+          <a href="/community">Ask the community →</a>
         </div>
         <div class="c-card">
-          <span class="pp-status -neutral tag">Every Friday</span>
-          <h4>The week in roles</h4>
-          <p>One email on Friday: the roles you can actually apply for, and who joined this week. Written by a person, for people.</p>
-          <a href="/resources">Read last week's →</a>
+          <span class="pp-status -neutral tag">By email</span>
+          <h4>New roles that match, sent to you</h4>
+          <p>Save a search on the board — a discipline, a level, where you can work from — and the new roles matching it come to you instead.</p>
+          <a href="/jobs">Save a search →</a>
         </div>
       </div>
     </div>
@@ -691,7 +693,7 @@
         '<p class="c-meta">Hosted by ' + escapeHtml(next.host || "a reviewer") +
           (next.length ? " · " + escapeHtml(next.length) : "") +
           ' · ' + left + (left === 1 ? " seat left" : " seats left") + '</p>' +
-        '<a href="/community/' + encodeURIComponent(next.id) + '">Take a seat →</a>';
+        '<a href="/community/s-' + encodeURIComponent(next.id) + '">Take a seat →</a>';
     } catch (e) { /* keep the written fallback */ }
   }
 
