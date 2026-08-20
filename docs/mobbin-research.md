@@ -103,10 +103,19 @@ Two different failures that were showing one message. *Shipped:* the measured
 empty state that counts what each relaxation would recover, and separate copy for
 "nothing matches your filters" versus "nothing here yet".
 
-### 07 — Live community teaser · PARTIAL
+### 07 — Live community teaser · SHIPPED
 
-Community exists with sessions, questions and work. The homepage teaser is still
-static copy rather than live counts.
+*Shipped:* the homepage teaser fetches sessions, picks the next scheduled one that
+still has seats, and shows its real date, host, length and seats remaining.
+
+Worth keeping the rule it was built with, because it is the honest half: anything
+unverifiable leaves the written fallback in place. No upcoming session, a past
+date, or a full room all fall back rather than inventing urgency — "a full room is
+not an invitation".
+
+*(Recorded here as PARTIAL when this file was first written, from memory rather
+than from the code. It was already shipped. Check before you write status down —
+that is the same mistake, in miniature, that this file exists because of.)*
 
 ---
 
@@ -142,6 +151,30 @@ built. Three findings, all shipped:
   a worse version of what is already on that page.
 
 ---
+
+---
+
+## Status, verified 20 August 2026
+
+All seven moves are shipped. Verified against the running site rather than from
+memory, after getting move 07's status wrong in the first draft of this file.
+
+Two bugs found while applying the second round, both in the eligibility model the
+whole product rests on — and both exactly what move 01 was about, surviving in a
+place it had not been checked:
+
+- `openTo()` returned true whenever a badge carried no scope, so an `africa` badge
+  answered "open to you" for a designer in the United Kingdom, and a `kenya` badge
+  answered "open to you" for Nigeria — which is every employer-posted Kenya role,
+  since employers never set a scope. `label()` and `note()` had the same
+  conflation and called a Kenya-only role "Open across Africa".
+- The job detail page never resolved the viewer's country. The board personalised
+  every verdict; the page where someone decides whether to apply was impersonal
+  for everyone.
+
+The lesson worth carrying: move 01 was fixed on the board in the first round and
+was still wrong on the job page and in the model underneath it. A finding is not
+done when the surface it was found on is fixed.
 
 ## Caveats that still apply
 
