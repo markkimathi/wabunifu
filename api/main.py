@@ -1012,10 +1012,26 @@ class CommunitySessionUpdate(BaseModel):
     agenda: Optional[list[dict]] = None
 
 
+# The six the community composer offers. The field was free text, so the
+# taxonomy the whole Questions filter depends on could be set to anything by
+# posting straight to the API — and a topic nobody can filter to is a question
+# nobody finds. Empty stays allowed: it means "not categorised", which the
+# feed already handles.
+COMMUNITY_TOPICS = {"Money", "Portfolio", "Freelancing", "Getting hired", "Tools", "Other"}
+
+
 class QuestionIn(BaseModel):
     topic: str = ""
     title: str
     body: str
+
+    @field_validator("topic")
+    @classmethod
+    def _known_topic(cls, v: str) -> str:
+        v = (v or "").strip()
+        if v and v not in COMMUNITY_TOPICS:
+            raise ValueError(f"topic must be one of {sorted(COMMUNITY_TOPICS)}")
+        return v
 
     @field_validator("title", "body")
     @classmethod
