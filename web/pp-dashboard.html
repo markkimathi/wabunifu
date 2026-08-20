@@ -322,7 +322,14 @@
     if (res.status === 401) { localStorage.removeItem("kazi_designer_token"); location.href = "/signin?view=signin"; throw new Error("signed out"); }
     if (!res.ok) {
       var body = await res.json().catch(function(){ return {}; });
-      throw new Error((body.detail && typeof body.detail === "string") ? body.detail : "Request failed (" + res.status + ")");
+      // FastAPI details are sometimes an object, not a string — a 423
+      // lockout sends {message, locked}. Only unwrapping strings turned
+      // "Too many attempts. Try again in 15 minutes." into
+      // "Request failed (423)". admin.html and pp-auth.html already read
+      // both shapes; these two didn't.
+      var detail = body.detail;
+      if (detail && typeof detail === "object" && detail.message) detail = detail.message;
+      throw new Error((detail && typeof detail === "string") ? detail : "Request failed (" + res.status + ")");
     }
     return res.json();
   }

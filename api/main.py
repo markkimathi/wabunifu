@@ -1555,9 +1555,22 @@ def designer_verify_email(payload: VerifyCodeIn, designer: dict = Depends(requir
     # 256-bit link tokens used elsewhere — this closes off anonymous
     # brute-forcing: an attacker needs their own valid session first, and
     # can only guess against the one account it belongs to.
+    # Rate-limited on the same counter as sign-in, because it is the same kind
+    # of thing: a wrong secret for this account. Without it a 6-digit code took
+    # unlimited guesses, and the prize is real — verifying an address you don't
+    # control, by signing up as someone else and guessing the code mailed to
+    # them. 15 minutes of expiry is not a substitute for a limit.
+    minutes_left = _lockout_minutes_left(designer.get("locked_until") or "")
+    if minutes_left > 0:
+        raise HTTPException(423, {"message": f"Too many attempts. Try again in {minutes_left} minutes.", "locked": True})
+
     designer_id = consume_email_token(payload.code.strip(), "verify")
     if not designer_id or designer_id != designer["id"]:
+        result = record_designer_login_failure(designer["id"])
+        if result["locked_until"]:
+            raise HTTPException(423, {"message": f"Too many attempts. Try again in {LOGIN_LOCKOUT_MINUTES} minutes.", "locked": True})
         raise HTTPException(400, "That code is incorrect or has expired.")
+    reset_designer_login_failures(designer_id)
     set_designer_email_verified(designer_id)
     return {"ok": True}
 
@@ -2607,9 +2620,17 @@ def employer_logout(authorization: str = Header(default="")):
 
 @app.post("/api/employers/me/verify-email")
 def employer_verify_email(payload: VerifyCodeIn, employer: dict = Depends(require_employer)):
+    minutes_left = _lockout_minutes_left(employer.get("locked_until") or "")
+    if minutes_left > 0:
+        raise HTTPException(423, {"message": f"Too many attempts. Try again in {minutes_left} minutes.", "locked": True})
+
     employer_id = consume_employer_email_token(payload.code.strip(), "verify")
     if not employer_id or employer_id != employer["id"]:
+        result = record_employer_login_failure(employer["id"])
+        if result["locked_until"]:
+            raise HTTPException(423, {"message": f"Too many attempts. Try again in {LOGIN_LOCKOUT_MINUTES} minutes.", "locked": True})
         raise HTTPException(400, "That code is incorrect or has expired.")
+    reset_employer_login_failures(employer_id)
     set_employer_email_verified(employer_id)
     return {"ok": True}
 
