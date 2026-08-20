@@ -396,7 +396,11 @@
         </div>
         <div class="ctas">
           <a class="pp-btn pp-btn-dark" href="/onboarding">Create your profile</a>
-          <a class="pp-btn pp-btn-secondary" style="background:transparent;border-color:var(--pp-ink)" href="/post-a-role">I'm hiring designers</a>
+          <!-- The banner is always gold, in both themes, so everything on it pins a
+                 fixed colour rather than a theme token — the h3 and p above already
+                 do. This one kept color:var(--c-text) from .pp-btn-secondary, which
+                 flips to near-white in dark mode: white on gold, 1.57:1. -->
+            <a class="pp-btn pp-btn-secondary" style="background:transparent;border-color:var(--pp-ink);color:var(--pp-ink)" href="/post-a-role">I'm hiring designers</a>
         </div>
       </div>
     </div>
