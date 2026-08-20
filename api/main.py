@@ -3048,9 +3048,17 @@ def _session_out(session: dict, designer_id: int | None = None) -> dict:
         "seats_taken": seats["taken"],
         "seats_waitlisted": seats["waitlisted"],
     }
+    booking = get_booking(session["id"], designer_id) if designer_id is not None else None
     if designer_id is not None:
-        booking = get_booking(session["id"], designer_id)
         out["your_status"] = booking["status"] if booking else None
+
+    # The joining link goes to people who took a seat, and nobody else. The
+    # detail page has always gated it on your_status === "booked", but the API
+    # handed it to anyone who asked — including anonymously, and including
+    # someone who had cancelled. A six-seat room whose link is public isn't a
+    # six-seat room.
+    if not (booking and booking["status"] == "booked"):
+        out["joining_link"] = ""
     return out
 
 
