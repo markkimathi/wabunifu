@@ -2979,6 +2979,19 @@ def list_followed_target_ids(follower_designer_id: int, target_type: str) -> set
     return {r["target_id"] for r in rows}
 
 
+def list_followers_of(target_type: str, target_id: int) -> list[int]:
+    """Designer ids following this target. The follows table has only ever been
+    read to decide whether a Follow button looks pressed; this is what makes
+    following mean something."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT follower_designer_id FROM follows WHERE target_type = ? AND target_id = ?",
+        (target_type, target_id),
+    ).fetchall()
+    c.close()
+    return [r["follower_designer_id"] for r in rows]
+
+
 def list_follows_for_designer(follower_designer_id: int) -> list[dict]:
     c = _conn()
     rows = c.execute(

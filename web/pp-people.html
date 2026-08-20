@@ -136,6 +136,15 @@
           </button>
         </div>
       </div>
+      <!-- Only rendered for someone signed in; following means nothing to a
+           visitor, and an always-empty filter is worse than no filter. -->
+      <div class="rail-group" id="followingGroup" hidden>
+        <span class="rail-label">People</span>
+        <div class="rail-chips">
+          <button type="button" class="rail-chip" id="followingOnly" aria-pressed="false">Only people I follow</button>
+        </div>
+      </div>
+      <div class="rail-divider" id="followingDivider" hidden></div>
       <div class="rail-group">
         <span class="rail-label">Discipline</span>
         <div class="rail-chips" id="disciplineFilters"></div>
@@ -214,7 +223,7 @@
   var state = {
     all: [], loaded: false, failed: false, query: "",
     disciplines: new Set(), availability: new Set(), cities: new Set(), portfolioOnly: false,
-    followedIds: new Set()
+    followedIds: new Set(), followingOnly: false
   };
 
   function designerToken(){ return localStorage.getItem("kazi_designer_token"); }
@@ -229,6 +238,14 @@
       state.followedIds = new Set(
         (data.follows || []).filter(function(f){ return f.target_type === "designer"; }).map(function(f){ return f.target_id; })
       );
+      // Only worth offering once there is something to filter to.
+      if (state.followedIds.size) {
+        var g = document.getElementById("followingGroup");
+        var d = document.getElementById("followingDivider");
+        if (g) g.hidden = false;
+        if (d) d.hidden = false;
+        wireFollowingFilter();
+      }
     } catch (e) {}
   }
 
@@ -265,6 +282,7 @@
     if (state.availability.size && !state.availability.has(p.availability_status || "")) return false;
     if (state.cities.size && !state.cities.has(p.location)) return false;
     if (state.portfolioOnly && !(p.projects && p.projects.length)) return false;
+    if (state.followingOnly && !state.followedIds.has(p.id)) return false;
     if (state.query) {
       var q = state.query.toLowerCase();
       var hay = [p.display_name, p.headline, p.bio, p.location].concat(p.discipline || [], p.skills || []).join(" ").toLowerCase();
@@ -355,8 +373,20 @@
     '</a>';
   }
 
+  function wireFollowingFilter(){
+    var btn = document.getElementById("followingOnly");
+    if (!btn) return;
+    btn.addEventListener("click", function(){
+      state.followingOnly = !state.followingOnly;
+      btn.classList.toggle("-active", state.followingOnly);
+      btn.setAttribute("aria-pressed", state.followingOnly ? "true" : "false");
+      renderResults();
+    });
+  }
+
   function activeFilterCount(){
-    return state.disciplines.size + state.availability.size + state.cities.size + (state.portfolioOnly ? 1 : 0);
+    return state.disciplines.size + state.availability.size + state.cities.size +
+           (state.portfolioOnly ? 1 : 0) + (state.followingOnly ? 1 : 0);
   }
 
   function renderResults(){
@@ -419,6 +449,9 @@
     state.cities = new Set();
     state.query = "";
     state.portfolioOnly = false;
+    state.followingOnly = false;
+    var fo = document.getElementById("followingOnly");
+    if (fo) { fo.classList.remove("-active"); fo.setAttribute("aria-pressed", "false"); }
     document.getElementById("searchInput").value = "";
     document.getElementById("portfolioOnly").checked = false;
     renderFilterRail();

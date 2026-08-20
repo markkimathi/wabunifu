@@ -78,7 +78,7 @@ from .db import (  # noqa: E402
     update_submission, list_submissions_for_company,
     create_team_invite, get_team_invite_by_token, list_pending_team_invites, set_invite_status,
     create_applicant, list_applicants_for_submission, count_applicants_by_submission,
-    list_designers_at_company_name,
+    list_designers_at_company_name, list_followers_of,
     create_self_application, get_self_application, list_self_applications,
     withdraw_self_application,
     update_applicant, set_applicant_stage, delete_applicant,
@@ -1931,8 +1931,23 @@ def designer_set_project_status(project_id: int, payload: ProjectStatusIn,
                                 designer: dict = Depends(require_designer)):
     """Publishing is the designer's own call, not a review step — this is their
     work, and the admin queue is for profiles, not for each project."""
+    was = next((p for p in list_designer_projects(designer["id"]) if p["id"] == project_id), None)
     if not set_project_status(designer["id"], project_id, payload.status):
         raise HTTPException(404, "No such project.")
+
+    # Going live is the moment worth telling people about, and following a
+    # designer had meant nothing until now — the follows table was only ever
+    # read to decide whether a button looked pressed. Only on the transition,
+    # so re-publishing something already public doesn't notify twice.
+    if payload.status == "published" and was and was.get("status") != "published":
+        pub = _designer_public(designer)
+        who = pub.get("display_name") or "A designer"
+        handle = pub.get("handle") or designer["id"]
+        for follower_id in list_followers_of("designer", designer["id"]):
+            notify("designer", follower_id, "new_work",
+                   f"{who} published {was.get('title') or 'a new project'}",
+                   (was.get("description") or "")[:200],
+                   f"/designers/{handle}/{project_id}")
     return {"ok": True, "status": payload.status}
 
 
@@ -2401,7 +2416,24 @@ FOLLOW_TARGET_TYPES = {"designer", "company"}
 
 @app.get("/api/designers/me/follows")
 def designer_list_follows(designer: dict = Depends(require_designer)):
-    return {"follows": list_follows_for_designer(designer["id"])}
+    """Each row carries enough to render without a lookup per follow. The
+    target_type/target_id pair is unchanged, since the Follow buttons match on
+    it; name, handle and photo are additions."""
+    out = []
+    for f in list_follows_for_designer(designer["id"]):
+        row = {**f, "name": "", "handle": "", "photo_path": ""}
+        if f["target_type"] == "designer":
+            d = get_designer(f["target_id"])
+            if d and d["status"] == "approved":
+                pub = _designer_public(d)
+                row.update(name=pub.get("display_name") or "", handle=pub.get("handle") or "",
+                           photo_path=pub.get("photo_path") or "")
+        elif f["target_type"] == "company":
+            co = get_company(f["target_id"])
+            if co and co["status"] == "approved":
+                row.update(name=co["name"], handle=co["slug"], photo_path=co.get("logo_path") or "")
+        out.append(row)
+    return {"follows": out}
 
 
 @app.post("/api/designers/me/follows/{target_type}/{target_id}")
