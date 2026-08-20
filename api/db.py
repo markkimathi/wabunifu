@@ -1182,11 +1182,66 @@ def list_approved_designers(discipline: str | None = None) -> list[dict]:
 
 
 def delete_designer(designer_id: int) -> None:
+    """Close an account and take the personal data with it.
+
+    This used to clear five tables out of nineteen that hold a designer_id,
+    leaving saved roles, saved searches, applications, role history, follows,
+    votes, bookings, shortlist entries and every message behind — while the
+    button offering it said "Removes your profile, projects, saved roles and
+    messages". Two of the four things it named were not being removed.
+
+    What is deliberately NOT deleted, because removing it would damage someone
+    else's record rather than this person's:
+
+      community_questions / community_replies — a question carries the replies
+        other people wrote under it, and deleting the thread deletes their
+        words too. The author already renders blank once the account is gone.
+      pay_submissions — the salary figures behind the community pay table,
+        which exist to be aggregated and are no longer attributable.
+      reports — the moderation trail for things this person reported.
+
+    privacy.html offers a contact route for erasing those on request, which is
+    the honest place for a decision that affects other people's content.
+    """
     c = _conn()
-    c.execute("DELETE FROM designer_links WHERE designer_id = ?", (designer_id,))
-    c.execute("DELETE FROM designer_projects WHERE designer_id = ?", (designer_id,))
-    c.execute("DELETE FROM designer_sessions WHERE designer_id = ?", (designer_id,))
-    c.execute("DELETE FROM designer_email_tokens WHERE designer_id = ?", (designer_id,))
+
+    # Two-sided threads go whole. The other party's copy goes with them, since
+    # half a conversation is not a thing either side can read.
+    convs = [r[0] for r in c.execute(
+        "SELECT id FROM conversations WHERE designer_id = ? OR peer_designer_id = ?",
+        (designer_id, designer_id),
+    ).fetchall()]
+    if convs:
+        marks = ",".join("?" * len(convs))
+        c.execute(f"DELETE FROM messages WHERE conversation_id IN ({marks})", convs)
+        c.execute(f"DELETE FROM conversations WHERE id IN ({marks})", convs)
+
+    for table, column in (
+        ("designer_links", "designer_id"),
+        ("designer_projects", "designer_id"),
+        ("designer_sessions", "designer_id"),
+        ("designer_email_tokens", "designer_id"),
+        ("designer_saved_jobs", "designer_id"),
+        ("designer_saved_searches", "designer_id"),
+        ("designer_applied_jobs", "designer_id"),
+        ("role_history", "designer_id"),
+        ("question_follows", "designer_id"),
+        ("follows", "follower_designer_id"),
+        ("reply_votes", "designer_id"),
+        ("session_bookings", "designer_id"),
+        ("company_shortlist", "designer_id"),
+        ("notifications", None),          # handled below: keyed by recipient
+    ):
+        if table == "notifications":
+            c.execute(
+                "DELETE FROM notifications WHERE recipient_type = 'designer' AND recipient_id = ?",
+                (designer_id,),
+            )
+            continue
+        # Tables are added to this list by hand, so a typo would fail silently
+        # at exactly the moment nobody is watching. Fail loudly instead.
+        c.execute(f"DELETE FROM {table} WHERE {column} = ?", (designer_id,))
+
     c.execute("DELETE FROM designers WHERE id = ?", (designer_id,))
     c.commit()
     c.close()

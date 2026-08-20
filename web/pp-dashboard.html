@@ -769,7 +769,15 @@
             'Off by default. With it on, anyone viewing your public profile can download this file.</p>'
         : "") +
     '</div>';
-    body += '<div class="danger-block"><h3>Close your account</h3><p>Removes your profile, projects, saved roles and messages. This can\'t be undone.</p>' +
+    // Says what actually happens now, including what stays. The old copy named
+    // saved roles and messages, neither of which was being deleted.
+    body += '<div class="danger-block"><h3>Close your account</h3>' +
+      '<p>Removes your profile, work, experience, saved roles and searches, applications, ' +
+      'follows and every message you\'ve sent. This can\'t be undone.</p>' +
+      '<p style="margin-top:8px">Anything you posted in the community stays up, because deleting a ' +
+      'question would take other people\'s replies with it, and so do any pay figures you shared — ' +
+      'those are only counted, never shown next to your name. Email ' +
+      '<a href="mailto:hello@odana.design">hello@odana.design</a> if you want those gone too.</p>' +
       '<button type="button" class="pp-btn pp-btn-danger" id="deleteAccountBtn">Close account</button></div>';
     return body;
   }
@@ -1375,7 +1383,9 @@
     var deleteAccountBtn = document.getElementById("deleteAccountBtn");
     if (deleteAccountBtn) deleteAccountBtn.addEventListener("click", async function(){
       var ok = await window.showPPConfirm({
-        title: "Close your account?", description: "Your profile, projects, saved roles and messages are all removed. This can't be undone.",
+        title: "Close your account?",
+        description: "Your profile, work, experience, saved roles, applications and messages are removed. " +
+                     "Community posts stay up. This can't be undone.",
         confirmLabel: "Close account", safeLabel: "Keep my account", danger: true
       });
       if (!ok) return;
