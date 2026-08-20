@@ -189,6 +189,12 @@ REGION_MEMBERS = {
 }
 
 
+# Every country named in REGION_MEMBERS — the working definition of "in Africa"
+# for an africa badge that names no narrower scope. Kept next to REGION_MEMBERS
+# so the two cannot drift.
+AFRICAN_COUNTRY_NAMES = {c for members in REGION_MEMBERS.values() for c in members}
+
+
 def _any(patterns, text) -> bool:
     return any(re.search(p, text) for p in patterns)
 
@@ -294,6 +300,12 @@ def open_to_country(badge: str, scope: str, country: str) -> bool | None:
         return country in allowed
     if badge == "world":
         return True
-    if badge in ("kenya", "africa"):
-        return True              # continent-wide, no narrowing stated
+    # A badge with no scope still says where it is open. Reading it as "open to
+    # everyone" was wrong both ways: an africa badge answered True for the
+    # United Kingdom, and a kenya badge — which employer-posted roles always
+    # carry unscoped — answered True for Nigeria.
+    if badge == "africa":
+        return country in AFRICAN_COUNTRY_NAMES
+    if badge == "kenya":
+        return country == "Kenya"
     return None                  # bare "check": genuinely nothing stated

@@ -37,7 +37,10 @@
   .applied-state .tick{flex:none;width:22px;height:22px;border-radius:50%;background:var(--c-good);
     color:var(--pp-white);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
   .applied-state strong{display:block;font-size:15px;font-weight:700;color:var(--c-good-text)}
-  .applied-state span{font-size:13px;line-height:1.5;color:var(--c-text-subtle)}
+  .applied-state span{display:block;font-size:13px;line-height:1.5;color:var(--c-text-subtle)}
+  .applied-state span.quiet{margin-top:6px;color:var(--c-text-faint)}
+  .applied-state a{color:var(--c-good-text)}
+  .similar-card.-next{border-color:var(--pp-gold-400)}
 
   .apply-modal{width:min(560px,calc(100vw - 32px));max-height:88vh;overflow-y:auto;
     background:var(--c-surface);border-radius:var(--pp-radius-xl);padding:26px 28px;box-sizing:border-box}
@@ -46,6 +49,23 @@
   .apply-sub{margin:0 0 18px;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle)}
   .apply-flag{margin:0 0 18px;padding:10px 12px;border-radius:var(--pp-radius-sm);
     background:var(--c-bg-sunken);font-size:13.5px;line-height:1.5;color:var(--c-text-subtle)}
+  /* The fit warning. Neutral by default because "we don't know" and "they
+     didn't say" are not failures; red only when the role genuinely can't hire
+     from where this person is. */
+  .apply-fit{margin:0 0 16px;padding:12px 14px;border-radius:var(--pp-radius-md);
+    background:var(--c-bg-sunken);border:1px solid var(--c-border)}
+  .apply-fit strong{display:block;font-size:14px;font-weight:700;margin-bottom:4px}
+  .apply-fit span{display:block;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)}
+  .apply-fit.-bad{background:var(--c-bad-bg);border-color:var(--c-bad-border)}
+  .apply-fit.-bad strong{color:var(--c-bad-text)}
+
+  .apply-you{display:flex;align-items:center;gap:12px;margin:0 0 18px;padding:12px 14px;
+    border:1px solid var(--c-border);border-radius:var(--pp-radius-md)}
+  .apply-you .pp-card-mark{width:38px;height:38px;font-size:15px;overflow:hidden;flex:none}
+  .apply-you .pp-card-mark img{width:100%;height:100%;object-fit:cover;display:block}
+  .apply-you strong{display:block;font-size:14.5px;font-weight:700}
+  .apply-you span{display:block;font-size:13px;line-height:1.5;color:var(--c-text-subtle)}
+
   .apply-field{margin-bottom:16px}
   .apply-field label{display:block;font-size:14px;font-weight:600;margin-bottom:7px}
   .apply-field label .opt{font-weight:400;color:var(--c-text-faint)}
@@ -357,12 +377,39 @@
   var job = null;
   var allJobs = [];
 
+  /* The board personalises every verdict to where the designer works from; this
+     page never did, so the badge, the note and the fit warning were all
+     impersonal on the one screen where someone decides whether to apply. Same
+     resolution order as pp-jobs.html: the account first, then the country
+     picked anonymously on the board. */
+  var LOCAL_COUNTRY_KEY = "pp_country";
+
+  async function resolveViewerCountry(){
+    var token = designerTokenOrNull();
+    if (token) {
+      try {
+        var res = await fetch("/api/designers/me", { headers: { Authorization: "Bearer " + token } });
+        if (res.ok) {
+          var me = await res.json();
+          if (me && me.country) { PPElig.setViewerCountry(me.country); return; }
+        }
+      } catch (e) {}
+    }
+    try {
+      var local = localStorage.getItem(LOCAL_COUNTRY_KEY) || "";
+      if (local) PPElig.setViewerCountry(local);
+    } catch (e) {}
+  }
+
   async function loadJob(){
     var content = document.getElementById("content");
     if (!jobId) {
       content.innerHTML = notFoundHtml("No role specified.");
       return;
     }
+    // Before the render, so the first paint is already personal rather than
+    // correcting itself a moment later.
+    await resolveViewerCountry();
     try {
       var res = await fetch("/api/jobs/" + encodeURIComponent(jobId), { cache: "no-store" });
       if (!res.ok) throw new Error("not found");
@@ -594,6 +641,31 @@
   /* Applying, for the listings whose employer takes applications here. The
      form is deliberately short: they already have the profile, and a cover
      letter box mostly produces a worse version of what is on that page. */
+  /* Borrowed from how Wellfound handles this: the fit warning belongs inside
+     the apply panel, not only on the listing behind it. Someone who has
+     scrolled past the badge and committed to applying is exactly the person
+     who should be told the role can't hire them — before they write anything,
+     and without stopping them if they want to try anyway. */
+  function applyFitWarningHtml(){
+    var country = PPElig.getViewerCountry();
+    if (!country) {
+      return '<div class="apply-fit"><strong>We don\'t know where you work from</strong>' +
+        '<span>Set your country and the board can tell you which roles can actually hire you. ' +
+        '<a href="/dashboard">Add it to your profile</a>.</span></div>';
+    }
+    var verdict = PPElig.openTo(job.elig, job.elig_scope || "", country);
+    if (verdict === false) {
+      return '<div class="apply-fit -bad"><strong>This role isn\'t open to ' + escapeHtml(country) + '</strong>' +
+        '<span>' + escapeHtml(PPElig.note(job.elig, job.elig_scope || "", country)) +
+        ' You can still apply, but say why you\'d work out anyway — it\'s the question they\'ll have.</span></div>';
+    }
+    if (verdict === null) {
+      return '<div class="apply-fit"><strong>This posting doesn\'t say where it can hire</strong>' +
+        '<span>Worth asking before you invest much in it. Applying is a fine way to ask.</span></div>';
+    }
+    return "";
+  }
+
   function applyModalHtml(){
     var qs = job.screening || [];
     return '<div class="apply-backdrop" id="applyBackdrop">' +
@@ -601,6 +673,15 @@
         '<h3 id="applyTitle">Apply to ' + escapeHtml(job.t) + '</h3>' +
         '<p class="apply-sub">' + escapeHtml(job.co) + ' sees your profile, your name and your account email. ' +
           'Nothing else from your account goes with it.</p>' +
+        applyFitWarningHtml() +
+        // Behance shows the profile that will be attached, inside the modal.
+        // Kazi says "they see your profile" and until now gave you no way to
+        // look at what that means from here.
+        '<div class="apply-you" id="applyYou">' +
+          '<span class="pp-card-mark -logo" id="applyAv"></span>' +
+          '<div><strong id="applyName">Your profile</strong>' +
+          '<span>Sent with this application. <a href="#" id="applyPreview" target="_blank" rel="noopener">See how it looks</a></span></div>' +
+        '</div>' +
         (job.portfolio_required
           ? '<p class="apply-flag">This role asks for a portfolio or case study, so make sure your profile has one.</p>' : "") +
         qs.map(function(q, i){
@@ -638,6 +719,27 @@
         closeBtn: document.getElementById("applyCancel")
       });
       applySheet = sheet;
+      // Fill in who the employer will see. Fetched rather than assumed, so it
+      // shows the profile as it actually stands right now.
+      (async function(){
+        try {
+          var meRes = await fetch("/api/designers/me", { headers: { Authorization: "Bearer " + token } });
+          if (!meRes.ok) return;
+          var me = await meRes.json();
+          var handle = me.handle || me.id;
+          var nameEl = document.getElementById("applyName");
+          var avEl = document.getElementById("applyAv");
+          var link = document.getElementById("applyPreview");
+          if (nameEl) nameEl.textContent = me.display_name || "Your profile";
+          if (link) link.setAttribute("href", "/designers/" + encodeURIComponent(handle));
+          if (avEl) {
+            avEl.innerHTML = me.photo_path
+              ? '<img src="' + escapeHtml(me.photo_path) + '" alt="">'
+              : escapeHtml((me.display_name || "?").trim().charAt(0).toUpperCase());
+          }
+        } catch (e) { /* the block still says "Your profile" */ }
+      })();
+
       if (window.PPCount) {
         PPCount(document.getElementById("applyNote"));
         (job.screening || []).forEach(function(_, i){ PPCount(document.getElementById("applyA" + i)); });
@@ -685,14 +787,35 @@
   /* Replaces the button once it has been sent. The state lives on the page
      rather than only in a toast, because "did that go through?" is the whole
      anxiety of applying. */
+  /* Mercor's confirmation is the reference here: it says what happens next
+     and how long it takes, then offers somewhere to go. Landing on "Applied"
+     and nothing else leaves the one question applying creates — now what? —
+     unanswered, and the honest answer for this board is that we can't make an
+     employer reply, so the useful move is the next role. */
   function markApplied(){
     var btn = document.getElementById("applyHereBtn");
     if (!btn) return;
     var note = btn.parentNode.querySelector(".apply-here-note");
     btn.outerHTML = '<div class="applied-state"><span class="tick">✓</span>' +
-      '<div><strong>Applied</strong><span>It\'s with ' + escapeHtml(job.co) +
-      '. You can withdraw it from your dashboard.</span></div></div>';
+      '<div><strong>Applied</strong>' +
+      '<span>It\'s with ' + escapeHtml(job.co) + '. They see it next to your profile, and ' +
+      'the stage they put you at shows on your <a href="/dashboard">dashboard</a>, where you can ' +
+      'also withdraw it.</span>' +
+      '<span class="quiet">We can\'t make anyone reply, and plenty never do. Keep going.</span>' +
+      '</div></div>';
     if (note) note.remove();
+    highlightSimilar();
+  }
+
+  /* The similar-roles card already exists in the rail; after applying it stops
+     being a footnote and becomes the next thing to do. */
+  function highlightSimilar(){
+    var card = document.getElementById("similarCard");
+    if (!card) return;
+    card.classList.add("-next");
+    var h = card.querySelector("h4");
+    if (h) h.textContent = "Worth applying to next";
+    card.scrollIntoView({ block: "nearest" });
   }
 
   function initCvWidget(){

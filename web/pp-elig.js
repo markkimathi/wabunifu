@@ -45,11 +45,25 @@
 
   /* true / false / null — null meaning we genuinely don't know, which callers
      must render as "worth checking" rather than as a verdict either way. */
+  /* Every country named anywhere in REGION_MEMBERS — the working definition of
+     "in Africa" for the africa badge when a posting names no narrower scope. */
+  var AFRICAN = (function(){
+    var all = [];
+    Object.keys(REGION_MEMBERS).forEach(function(r){ all = all.concat(REGION_MEMBERS[r]); });
+    return all;
+  })();
+
   function openTo(elig, scope, country) {
     if (!country) return null;
     if (scope) return scopeList(scope).indexOf(country) !== -1;
     if (elig === "world") return true;
-    if (elig === "kenya" || elig === "africa") return true;
+    // A badge with no scope still says something about where it is open, and
+    // taking it as "open to everyone" was wrong in both directions: an
+    // Africa-wide role reported as open to a designer in the United Kingdom,
+    // and every employer-posted Kenya role — which never carries a scope —
+    // reported as open to Nigeria.
+    if (elig === "africa") return AFRICAN.indexOf(country) !== -1;
+    if (elig === "kenya") return country === "Kenya";
     return null;
   }
 
@@ -69,7 +83,11 @@
     // Impersonal, or genuinely unknown.
     if (elig === "world") return { text: "Global remote", tone: "open" };
     if (!scope) {
-      if (elig === "africa" || elig === "kenya") return { text: "Open across Africa", tone: "open" };
+      // Same conflation openTo() had: a kenya badge is not continent-wide, and
+      // saying so sends designers elsewhere in Africa at a role that can only
+      // hire in Kenya.
+      if (elig === "kenya") return { text: "Open to Kenya", tone: "open" };
+      if (elig === "africa") return { text: "Open across Africa", tone: "open" };
       return { text: "Worth checking", tone: "neutral" };
     }
     return { text: "Open in " + scope, tone: "neutral" };
@@ -83,7 +101,10 @@
       return "This role is open to remote candidates without a location restriction.";
     }
     if (!scope) {
-      if (elig === "africa" || elig === "kenya") {
+      if (elig === "kenya") {
+        return "This company's listing says it hires in Kenya.";
+      }
+      if (elig === "africa") {
         return "This company's listing states where it can hire, and it covers countries across Africa.";
       }
       return "The posting doesn't say where you can work from. We've flagged it as worth checking — " +
