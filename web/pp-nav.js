@@ -475,21 +475,58 @@
   // only source of signed-in state: read the same token pp-dashboard.html
   // etc. already store, and ask the API who that is.
   function resolveSignedInUser(cb){
-    var token;
-    try { token = localStorage.getItem(DESIGNER_TOKEN_KEY); } catch (e) { token = null; }
-    if (!token) { cb(null); return; }
-    fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + token } })
+    var dToken = null, eToken = null;
+    try {
+      dToken = localStorage.getItem(DESIGNER_TOKEN_KEY);
+      eToken = localStorage.getItem("kazi_employer_token");
+    } catch (e) {}
+
+    if (dToken) {
+      fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + dToken } })
+        .then(function(res){
+          if (!res.ok) {
+            if (res.status === 401) { try { localStorage.removeItem(DESIGNER_TOKEN_KEY); } catch (e) {} }
+            return null;
+          }
+          return res.json();
+        })
+        .then(function(me){
+          if (me) {
+            cb({ kind: "designer", name: me.display_name, initials: initialsOf({ name: me.display_name }),
+                 photo: me.photo_path || DEFAULT_AVATAR,
+                 href: "/designers/" + encodeURIComponent(me.handle || me.id) });
+          } else if (eToken) { resolveEmployer(eToken, cb); }
+          else { cb(null); }
+        })
+        .catch(function(){ cb(null); });
+      return;
+    }
+    // An employer signed in and browsing the board used to see "Sign in" and
+    // "Join for free" in the header, because the nav only ever looked for a
+    // designer — and with no signed-in user there was no bell either, so the
+    // notification saying their role went live had nowhere to appear.
+    if (eToken) { resolveEmployer(eToken, cb); return; }
+    cb(null);
+  }
+
+  function resolveEmployer(token, cb){
+    fetch("/api/employers/me", { headers: { "Authorization": "Bearer " + token } })
       .then(function(res){
         if (!res.ok) {
-          if (res.status === 401) { try { localStorage.removeItem(DESIGNER_TOKEN_KEY); } catch (e) {} }
+          if (res.status === 401) { try { localStorage.removeItem("kazi_employer_token"); } catch (e) {} }
           return null;
         }
         return res.json();
       })
       .then(function(me){
-        cb(me ? { name: me.display_name, initials: initialsOf({ name: me.display_name }),
-                  photo: me.photo_path || DEFAULT_AVATAR,
-                  href: "/designers/" + encodeURIComponent(me.handle || me.id) } : null);
+        if (!me) { cb(null); return; }
+        var company = me.company || {};
+        cb({ kind: "employer", name: me.full_name,
+             initials: initialsOf({ name: me.full_name }),
+             // An employer has no public profile to show, so the mark is their
+             // company's logo where there is one.
+             photo: company.logo_path || "",
+             href: "/employer" });
       })
       .catch(function(){ cb(null); });
   }
@@ -626,6 +663,7 @@
         var term = input.value.trim();
         clearTimeout(timer);
         timer = setTimeout(function(){ run(term); }, 220);
+        trackSearch(term);
       });
       // Enter now goes somewhere. The board is the honest destination: it is
       // the only surface that can hold a full result set.
@@ -654,6 +692,32 @@
      identifier, no cookie, nothing that ties two visits together. Query
      strings are stripped rather than trimmed, since those are where search
      terms and tokens end up. */
+  /* Search analytics. The admin console shows a "Searches" figure that has
+     read zero since the rebuild: the only caller of /api/track/search was the
+     retired legacy page, which is no longer routed. Same shape as the pageview
+     tracking that was dead for the same reason.
+
+     Debounced so a query is recorded once the person stops typing, not once
+     per keystroke. Query text only — no identifier, matching what the
+     analytics tables already store. */
+  var searchTrackTimer = null;
+  function trackSearch(query){
+    var q = String(query || "").trim();
+    clearTimeout(searchTrackTimer);
+    if (q.length < 2) return;
+    searchTrackTimer = setTimeout(function(){
+      try {
+        fetch("/api/track/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ query: q.slice(0, 200) }),
+          keepalive: true
+        }).catch(function(){});
+      } catch (e) {}
+    }, 800);
+  }
+  window.PPTrackSearch = trackSearch;
+
   function trackPageview(){
     try {
       var path = (location.pathname || "/").slice(0, 200);
@@ -675,8 +739,18 @@
     var panels = Array.prototype.slice.call(root.querySelectorAll("[data-notif-panel]"));
     if (!bells.length || !panels.length) return;
 
-    var token = null;
-    try { token = localStorage.getItem(DESIGNER_TOKEN_KEY); } catch (e) {}
+    // Whichever side is signed in. The bell only ever read the designer token,
+    // so an employer never saw a notification at all — including the ones that
+    // tell them a role was approved or turned down, which are the only way
+    // they learn a review happened without opening the dashboard.
+    var token = null, base = "/api/designers/me/notifications";
+    try {
+      token = localStorage.getItem(DESIGNER_TOKEN_KEY);
+      if (!token) {
+        token = localStorage.getItem("kazi_employer_token");
+        if (token) base = "/api/employers/me/notifications";
+      }
+    } catch (e) {}
     if (!token) return;
     bells.forEach(function(b){ b.hidden = false; });
 
@@ -696,7 +770,7 @@
 
     async function load(){
       try {
-        var res = await fetch("/api/designers/me/notifications", {
+        var res = await fetch(base, {
           headers: { "Authorization": "Bearer " + token }
         });
         if (!res.ok) return;
@@ -725,7 +799,7 @@
       if (all) all.addEventListener("click", async function(e){
         e.stopPropagation();
         try {
-          await fetch("/api/designers/me/notifications/read", {
+          await fetch(base + "/read", {
             method: "POST", headers: { "Authorization": "Bearer " + token }
           });
         } catch (err) {}
@@ -814,7 +888,8 @@
           '<span class="pp-av-name">' + user.name + '</span>' +
           '<span class="pp-av-circle">' + avatarInnerHtml(user) + '</span></button>' +
         '<div class="pp-avatar-dropdown" data-avatar-dropdown>' +
-          '<a href="' + (user.href || "#") + '">My profile</a>' +
+          '<a href="' + (user.href || "#") + '">' +
+            (user.kind === "employer" ? "Hiring dashboard" : "My profile") + '</a>' +
           '<button type="button" data-sign-out>Sign out</button>' +
         '</div>' +
       '</div>';
@@ -1040,8 +1115,13 @@
         }
       });
     }
+    // Sign out the identity that is actually signed in. Hardcoding "designer"
+    // here would have cleared the wrong token for an employer and left them
+    // signed in after being told they had signed out.
     root.querySelectorAll("[data-sign-out]").forEach(function(btn){
-      btn.addEventListener("click", function(){ doSignOut("designer"); });
+      btn.addEventListener("click", function(){
+        doSignOut(root.__ppUserKind === "employer" ? "employer" : "designer");
+      });
     });
   }
 
@@ -1094,7 +1174,9 @@
     // swap in the real state once the token check resolves.
     buildFullHeader(el, active, null);
     resolveSignedInUser(function(user){
-      if (user) buildFullHeader(el, active, user);
+      if (!user) return;
+      el.__ppUserKind = user.kind || "designer";
+      buildFullHeader(el, active, user);
     });
   }
 

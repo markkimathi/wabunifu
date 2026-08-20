@@ -1300,6 +1300,11 @@
     });
     var searchInput = document.getElementById("searchInput");
     function runSearch(){ state.query = searchInput.value.trim(); state.page = 1; renderResults(); }
+    // What people look for on the board is the most useful search signal there
+    // is — it says what the board is missing. Nothing recorded it.
+    searchInput.addEventListener("input", function(){
+      if (window.PPTrackSearch) PPTrackSearch(searchInput.value);
+    });
     document.getElementById("searchBtn").addEventListener("click", runSearch);
     searchInput.addEventListener("keydown", function(e){ if (e.key === "Enter") runSearch(); });
 
