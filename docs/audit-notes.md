@@ -232,6 +232,49 @@ rotating it means updating Fly and the GitHub secret together. It goes in an
 `Authorization` header and never a URL, so it stays out of server logs and
 browser history, and `require_admin` now compares with `secrets.compare_digest`.
 
+## Accessibility: what a first pass actually found
+
+Most of it was already right, which is worth recording so the next pass starts
+from the gaps rather than from scratch: **no control anywhere lacks an
+accessible name**, every image carries an `alt`, every page has exactly one
+`h1`, and modals already trap focus (`PPSheet`). Three things were not.
+
+- **Search inputs had no name.** All five — homepage hero, jobs board, people
+  directory, and both nav overlays — leaned on the browser falling back to the
+  placeholder. The board's input is wrapped in a `<label>`, but that label
+  contains only a magnifying-glass icon, so it named nothing. A wrapping label
+  is not automatically an accessible name.
+- **Heading levels skipped.** Job titles were `h4` directly under the page
+  `h1`; homepage cards were `h4` under section `h2`s. Skimming by heading is
+  how a screen-reader user reads a job board, and every item jumped two levels.
+  Job titles and person names are now `h2`, homepage cards `h3`. The CSS keyed
+  on the tag in six places, so each selector moved with its element and the
+  computed styles are byte-identical.
+- **One contrast failure sitewide**, and only in dark: white-on-gold at 1.57:1
+  on the join banner. Its siblings pin fixed colours because the banner is gold
+  in both themes; the button kept a theme token that flips.
+
+Two things measured and correctly left alone: `"Previous"` and `"Check my CV"`
+fail contrast only while `disabled`, which WCAG 1.4.3 exempts.
+
+The checks, all runnable in the console — they answer true/false, not taste:
+
+```js
+// controls with no accessible name
+[...document.querySelectorAll('button,a[href]')]
+  .filter(e => !(e.getAttribute('aria-label') || e.textContent).trim())
+// heading level jumps
+// contrast: compute luminance of getComputedStyle(el).color against the
+// nearest ancestor with a non-transparent backgroundColor
+```
+
+**Measuring theme-dependent styles:** set the theme the way the app does
+(`localStorage.pp_theme`) and reload. Flipping `data-pp-theme` at runtime and
+reading `getComputedStyle` immediately returns stale values — it reported a
+button as black-on-black that was in fact black-on-white. Same family as the
+frozen-transition trap above: **the preview pane lies about anything that
+depends on a recompute you did not wait for.**
+
 ## Scope discipline — what was deliberately not built
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
