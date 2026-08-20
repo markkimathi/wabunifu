@@ -78,6 +78,14 @@
   .logo-preview{width:56px;height:56px;font-size:21px;overflow:hidden;flex:none}
   .logo-preview img{width:100%;height:100%;object-fit:cover;display:block}
 
+  .verify-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .verify-row .pp-field-input{height:38px}
+  .verify-row input{font-variant-numeric:tabular-nums;letter-spacing:.08em}
+  .danger-block{padding:20px;border:1px solid var(--c-bad-border);border-radius:var(--pp-radius-lg);
+    background:var(--c-bad-bg);margin-top:18px}
+  .danger-block h3{margin:0 0 6px;font-size:17px;font-weight:700;color:var(--c-bad-text)}
+  .danger-block p{margin:0 0 14px;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle);max-width:66ch}
+
   .apply-choice{display:grid;gap:10px}
   .apply-opt{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1px solid var(--c-border);
     border-radius:var(--pp-radius-md);background:var(--c-surface);cursor:pointer}
@@ -309,7 +317,8 @@
     messages: '<path d="M21 15a2 2 0 01-2 2H8l-4 4V5a2 2 0 012-2h13a2 2 0 012 2z"/>',
     team: '<circle cx="9" cy="8" r="3.4"/><path d="M2.5 20a6.5 6.5 0 0113 0"/><path d="M16 5.5a3.2 3.2 0 010 6M17 14.6a6.2 6.2 0 014.5 5.4"/>',
     company: '<rect x="4" y="3" width="16" height="18" rx="1.5"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1"/>',
-    billing: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19"/><path d="M6 15h4"/>'
+    billing: '<rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 9.5h19"/><path d="M6 15h4"/>',
+    account: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0116 0"/>'
   };
   var SECTIONS = [
     { key: "listings", label: "Listings" }, { key: "applicants", label: "Applicants" },
@@ -317,7 +326,8 @@
     // directions: people who came to you, and people you go and find.
     { key: "talent", label: "Talent" },
     { key: "messages", label: "Messages" },
-    { key: "team", label: "Team" }, { key: "company", label: "Company" }, { key: "billing", label: "Billing" }
+    { key: "team", label: "Team" }, { key: "company", label: "Company" }, { key: "billing", label: "Billing" },
+    { key: "account", label: "Account" }
   ];
 
   var me = null;
@@ -997,6 +1007,129 @@
 
   // ---------------- Billing ----------------
 
+  /* Employers had no account screen at all: four endpoints — update your own
+     details, verify your email, resend that code, close your account — and
+     nowhere to reach any of them. */
+  function renderEmployerAccount(){
+    var body = '<div class="section-head"><h2>Account</h2></div>';
+
+    body += '<div class="form-panel"><h3>You</h3><form id="accountForm">' +
+      '<div class="field-row2">' +
+        '<div class="field-block"><label class="pp-field-label" for="aName">Your name</label>' +
+          '<div class="pp-field-input"><input id="aName" maxlength="120" value="' + escapeHtml(me.full_name || "") + '"></div></div>' +
+        '<div class="field-block"><label class="pp-field-label" for="aRole">Your role <span style="font-weight:400;color:var(--c-text-faint)">(optional)</span></label>' +
+          '<div class="pp-field-input"><input id="aRole" maxlength="120" value="' + escapeHtml(me.role_title || "") + '" placeholder="Head of Design"></div></div>' +
+      '</div>' +
+      '<div class="fielderr" id="accountErr" hidden></div>' +
+      '<button type="submit" class="pp-btn pp-btn-primary" id="accountSaveBtn">Save changes</button></form></div>';
+
+    body += '<div class="form-panel"><h3>Sign-in email</h3>' +
+      '<p style="margin:0 0 4px;font-size:14.5px">' + escapeHtml(me.email || "") + '</p>' +
+      (me.email_verified
+        ? '<p style="margin:0;font-size:13px;color:var(--c-good-text)">Verified.</p>'
+        : '<p style="margin:0 0 12px;font-size:13px;color:var(--c-text-subtle)">Not verified yet. ' +
+            'Verifying it is how we know a reset link is going to you.</p>' +
+          '<div class="verify-row">' +
+            '<span class="pp-field-input" style="max-width:190px">' +
+              '<input id="empVerifyCode" type="text" inputmode="numeric" autocomplete="one-time-code" ' +
+              'maxlength="6" placeholder="6-digit code" aria-label="Verification code">' +
+            '</span>' +
+            '<button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="empVerifyBtn">Verify</button>' +
+            '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" id="empResendBtn">Send it again</button>' +
+          '</div>' +
+          '<p class="fielderr" id="empVerifyErr" role="alert" hidden></p>' +
+          '<p id="empVerifyNote" role="status" style="margin:8px 0 0;font-size:13px;color:var(--c-text-subtle)" hidden></p>') +
+    '</div>';
+
+    body += '<div class="form-panel"><h3>Password</h3>' +
+      '<a class="pp-btn pp-btn-secondary" href="/signin?role=employer&view=reset">Reset your password</a></div>';
+
+    body += '<div class="danger-block"><h3>Close your account</h3>' +
+      '<p>Removes you from ' + escapeHtml((me.company && me.company.name) || "this company") + '. ' +
+      'The company page, its listings and its applicants stay — they belong to the company, not to you. ' +
+      'This can\'t be undone.</p>' +
+      '<button type="button" class="pp-btn pp-btn-danger" id="empDeleteBtn">Close account</button></div>';
+    return body;
+  }
+
+  function wireEmployerAccount(){
+    var form = document.getElementById("accountForm");
+    if (form) form.addEventListener("submit", async function(e){
+      e.preventDefault();
+      var err = document.getElementById("accountErr");
+      var btn = document.getElementById("accountSaveBtn");
+      err.hidden = true;
+      btn.disabled = true;
+      try {
+        await api("/api/employers/me", { method: "PUT", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ full_name: document.getElementById("aName").value.trim(),
+                                 role_title: document.getElementById("aRole").value.trim() }) });
+        me = await api("/api/employers/me");
+        toast("Saved.");
+        render();
+      } catch (e2) {
+        err.textContent = e2.message || "Couldn't save that.";
+        err.hidden = false;
+        btn.disabled = false;
+      }
+    });
+
+    var vBtn = document.getElementById("empVerifyBtn");
+    if (vBtn) {
+      var input = document.getElementById("empVerifyCode");
+      var err = document.getElementById("empVerifyErr");
+      var note = document.getElementById("empVerifyNote");
+      vBtn.addEventListener("click", async function(){
+        var code = input.value.trim();
+        err.hidden = true; note.hidden = true;
+        if (!/^\d{6}$/.test(code)) { err.textContent = "That code is six digits."; err.hidden = false; input.focus(); return; }
+        vBtn.disabled = true;
+        try {
+          await api("/api/employers/me/verify-email", { method: "POST",
+            headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code }) });
+          me.email_verified = true;
+          toast("Email verified.");
+          render();
+        } catch (e3) {
+          err.textContent = e3.message || "That code is incorrect or has expired.";
+          err.hidden = false;
+          vBtn.disabled = false;
+        }
+      });
+      document.getElementById("empResendBtn").addEventListener("click", async function(e4){
+        var b = e4.currentTarget;
+        b.disabled = true; err.hidden = true;
+        try {
+          await api("/api/employers/me/resend-verification", { method: "POST" });
+          note.textContent = "Sent. It can take a minute — check your spam folder if it doesn't arrive.";
+          note.hidden = false;
+        } catch (e5) {
+          err.textContent = "Couldn't send that. Try again in a moment.";
+          err.hidden = false;
+          b.disabled = false;
+        }
+      });
+    }
+
+    var del = document.getElementById("empDeleteBtn");
+    if (del) del.addEventListener("click", async function(){
+      var ok = window.showPPConfirm ? await window.showPPConfirm({
+        title: "Close your account?",
+        description: "You're removed from this company. Its page, listings and applicants stay. This can't be undone.",
+        confirmLabel: "Close account", safeLabel: "Keep my account", danger: true }) : true;
+      if (!ok) return;
+      try {
+        await api("/api/employers/me", { method: "DELETE" });
+        localStorage.removeItem("kazi_employer_token");
+        location.href = "/";
+      } catch (e6) {
+        // The last owner of a company is deliberately blocked from leaving it
+        // with nobody to run it, and that reason is worth showing in full.
+        toast(e6.message || "Couldn't close that account.");
+      }
+    });
+  }
+
   function renderBilling(){
     return '<div class="section-head"><h2>Billing</h2></div>' +
       '<div class="billing-panel"><h3>Hiring tools are free right now</h3>' +
@@ -1137,12 +1270,14 @@
     else if (section === "messages") body = renderMessages();
     else if (section === "team") body = renderTeam(cache);
     else if (section === "company") body = renderCompany(cache);
-    else body = renderBilling();
+    else if (section === "billing") body = renderBilling();
+    else body = renderEmployerAccount();
     content.innerHTML = head + body;
     document.getElementById("dashRail").innerHTML = railHtml();
     document.getElementById("dashChipsMobile").innerHTML = chipsMobileHtml();
     wire();
     wireWizardCounters();
+    if (section === "account") wireEmployerAccount();
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
 
