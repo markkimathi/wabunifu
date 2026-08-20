@@ -1391,10 +1391,21 @@ def _combined_jobs() -> tuple[list[dict], str | None]:
 @app.get("/api/jobs")
 def get_jobs():
     combined, generated_at = _combined_jobs()
+    # The full HTML description is 91% of this response — 356KB of the 392KB
+    # for fifty roles — and no caller of the list renders it. Six pages fetch
+    # this (the board, the homepage, companies, how-it-works, onboarding, and
+    # the job page's "similar roles"); every one of them shows a title, a
+    # company, badges and the short desc_text. The description belongs to one
+    # screen, and that screen has its own endpoint below.
+    #
+    # It matters more here than the number suggests: the people this board is
+    # for are largely on mobile data, and this was the heaviest request on
+    # every page they land on.
+    listed = [{k: v for k, v in j.items() if k != "desc"} for j in combined]
     return {
         "generated_at": generated_at or datetime.now().isoformat(timespec="seconds"),
-        "count": len(combined),
-        "jobs": combined,
+        "count": len(listed),
+        "jobs": listed,
     }
 
 
