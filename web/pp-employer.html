@@ -803,7 +803,10 @@
     }
     if (showNewListing) body += listingFormHtml(state.editingListing || {});
     if (!listings.length && !showNewListing) {
-      body += '<div class="pp-empty"><h3>No listings yet</h3><p>Post your first role and it goes through the same review queue as everything else on Kazi.</p></div>';
+      // The panel named the action and left them to find it. It's one click.
+      body += '<div class="pp-empty">' + '<span class="pp-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5M9 13h6M9 17h4"></path></svg></span>' +
+        '<h3>No listings yet</h3><p>Post your first role and it goes through the same review queue as everything else on Kazi.</p>' +
+        '<button type="button" class="pp-btn pp-btn-primary" id="emptyPostBtn">Post a role</button></div>';
     } else {
       listings.forEach(function(l){
         body += '<div class="listing-row">' +
@@ -864,7 +867,9 @@
     var listings = (state.listings || []).filter(function(l){ return l.status !== "rejected"; });
     var body = '<div class="section-head"><h2>Applicants</h2></div>';
     if (!listings.length) {
-      return body + '<div class="pp-empty"><h3>Post a role first</h3><p>Applicants are tracked per listing — add one from the Listings tab.</p></div>';
+      return body + '<div class="pp-empty">' + '<span class="pp-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20v-1.5a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4V20"></path><circle cx="9.5" cy="8" r="3.5"></circle><path d="M20 20v-1.5a4 4 0 0 0-3-3.9"></path></svg></span>' +
+        '<h3>Post a role first</h3><p>Applicants are tracked per listing, so there is nowhere to put one yet.</p>' +
+        '<button type="button" class="pp-btn pp-btn-primary" id="emptyPostBtn">Post a role</button></div>';
     }
     if (!applicantListingId || !listings.some(function(l){ return l.id === applicantListingId; })) applicantListingId = listings[0].id;
     body += '<div class="applicant-picker pp-field"><label class="pp-field-label">Listing</label><div class="pp-field-input"><select id="applicantListingSelect">' +
@@ -1418,11 +1423,17 @@
     });
 
     // Listings
-    var addListingBtn = document.getElementById("addListingBtn");
-    if (addListingBtn) addListingBtn.addEventListener("click", function(){
+    function startNewListing(){
       cache.editingListing = null; wizardData = blankWizardData(); wizardStep = 1; wizardMax = 1;
+      section = "listings";
       showNewListing = true; render();
-    });
+    }
+    var addListingBtn = document.getElementById("addListingBtn");
+    if (addListingBtn) addListingBtn.addEventListener("click", startNewListing);
+    // Same action from either empty panel — the applicants one has to switch
+    // tab as well, which is exactly the step it used to leave to the reader.
+    var emptyPostBtn = document.getElementById("emptyPostBtn");
+    if (emptyPostBtn) emptyPostBtn.addEventListener("click", startNewListing);
     var listingCancelBtn = document.getElementById("listingCancelBtn");
     if (listingCancelBtn) listingCancelBtn.addEventListener("click", function(){ showNewListing = false; wizardData = null; render(); });
     document.querySelectorAll("[data-edit-listing]").forEach(function(btn){

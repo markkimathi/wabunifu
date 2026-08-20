@@ -262,6 +262,10 @@
     renderProfile();
     await loadViewerState();
     renderSideActions();
+    // Who is looking is only known after loadViewerState(), and the tab panel
+    // was painted before that — so the owner's view of their own empty
+    // profile always rendered the visitor's copy.
+    renderTabPanel();
   }
 
   async function loadViewerState(){
@@ -439,9 +443,17 @@
     if (currentTab === "work") {
       var projects = designer.projects || [];
       if (!projects.length) {
+        // Your own empty profile used to describe you in the third person —
+        // "Blank Person hasn't added any featured work" — and offer no way to
+        // change it from the page you were standing on.
         panel.innerHTML = '<div class="pp-empty" style="max-width:420px">' +
           '<div class="pp-empty-icon">' + ICONS.project + '</div>' +
-          '<h3>No projects yet</h3><p>' + escapeHtml(designer.display_name) + ' hasn\'t added any featured work.</p></div>';
+          (isOwn
+            ? '<h3>No work on your profile yet</h3>' +
+              '<p>This is the part employers actually look at. One project is enough to start.</p>' +
+              '<a class="pp-btn pp-btn-primary" href="/dashboard?tab=work">Add a project</a>'
+            : '<h3>No projects yet</h3><p>' + escapeHtml(designer.display_name) + ' hasn\'t added any featured work.</p>') +
+        '</div>';
         return;
       }
       panel.innerHTML = '<div class="work-grid">' + projects.map(function(p){
@@ -488,8 +500,16 @@
     } catch (e) { /* fall through to empty state */ }
     if (currentTab !== "community") return;
     if (!items.length) {
+      // Same as the Work tab: your own profile shouldn't talk about you in
+      // the third person, and it should offer the way in.
       panel.innerHTML = '<div class="pp-empty" style="max-width:420px">' +
-        '<h3>No community activity yet</h3><p>' + escapeHtml(designer.display_name) + ' hasn\'t asked, answered or joined a session yet.</p></div>';
+        '<div class="pp-empty-icon">' + ICONS.question + '</div>' +
+        (isOwn
+          ? '<h3>Nothing from you in the community yet</h3>' +
+            '<p>Questions you ask or answer, and sessions you attend, show up here.</p>' +
+            '<a class="pp-btn pp-btn-secondary" href="/community">Go to the community</a>'
+          : '<h3>No community activity yet</h3><p>' + escapeHtml(designer.display_name) + ' hasn\'t asked, answered or joined a session yet.</p>') +
+      '</div>';
       return;
     }
     panel.innerHTML = '<div class="activity-block">' + items.map(function(a){

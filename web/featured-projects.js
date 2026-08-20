@@ -122,7 +122,7 @@
   function renderProjectsEmptyState(opts){
     opts = opts || {};
     var message = opts.message || EMPTY_MESSAGE;
-    var ctaLabel = opts.ctaLabel || "Add Featured Project";
+    var ctaLabel = opts.ctaLabel || "Add a project";
     return '<div class="fp-empty">' +
       '<div class="fp-empty-cover">' + ICON_IMAGE + '</div>' +
       '<p class="fp-empty-text">' + escapeHtml(message) + '</p>' +
@@ -408,7 +408,7 @@
           return renderProjectCard(p, variant, { index: projects.indexOf(p), total: projects.length });
         }).join("");
         var addBtn = variant === "manage"
-          ? '<button type="button" class="fp-add-btn" data-fp-add' + (projects.length >= max ? " disabled" : "") + '>' + ICON_PLUS + ' Add Featured Project</button>'
+          ? '<button type="button" class="fp-add-btn" data-fp-add' + (projects.length >= max ? " disabled" : "") + '>' + ICON_PLUS + ' Add a project</button>'
           : "";
         container.innerHTML = '<div class="fp-grid">' + cardsHtml + '</div>' + addBtn;
       }
