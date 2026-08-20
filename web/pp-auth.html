@@ -480,10 +480,23 @@
       });
       var data = await res.json();
       if (!res.ok) { showFieldError("pwErr", data.detail || "That reset link is invalid or has expired."); setBusy(btn, false, "", "Save and sign in"); return; }
-      // The reset endpoint only confirms {ok:true} — it doesn't hand back
-      // the designer's email — so a real auto-login isn't possible here
-      // without asking for it again. Send them to sign in instead of
-      // fabricating that step.
+      // The endpoint now returns a session for whoever consumed the
+      // single-use token — they've just proved they control the address, and
+      // every older session was killed a line earlier. So the button that
+      // says "Save and sign in" can finally do the second half; it used to
+      // drop people at a sign-in form to retype what they'd just chosen.
+      if (data.token) {
+        if (role === "employer") {
+          localStorage.setItem("kazi_employer_token", data.token);
+          location.href = "/pp-employer.html";
+          return;
+        }
+        localStorage.setItem("kazi_designer_token", data.token);
+        var me = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + data.token } })
+          .then(function(r){ return r.json(); }).catch(function(){ return {}; });
+        location.href = "/designers/" + encodeURIComponent(me.handle || me.id || "");
+        return;
+      }
       resetJustSucceeded = true;
       setView("signin");
     } catch (e) {

@@ -1591,7 +1591,11 @@ def designer_reset_password(payload: ResetPasswordIn):
     # A password reset might mean the account was compromised — invalidate
     # every other active session rather than leaving a stolen token valid.
     delete_sessions_for_designer(designer_id)
-    return {"ok": True}
+    # Then issue one for the person standing here, who just proved they
+    # control the address. Returning only {ok:true} was why the reset page
+    # sent them to a sign-in form to retype what they'd just chosen, under a
+    # button that says "Save and sign in".
+    return {"ok": True, "token": create_session(designer_id)}
 
 
 @app.get("/api/designers/me")
@@ -2636,7 +2640,7 @@ def employer_reset_password(payload: ResetPasswordIn):
     password_hash = bcrypt.hashpw(payload.new_password.encode(), bcrypt.gensalt()).decode()
     set_employer_password(employer_id, password_hash)
     delete_employer_sessions_for_employer(employer_id)
-    return {"ok": True}
+    return {"ok": True, "token": create_employer_session(employer_id)}
 
 
 @app.get("/api/employers/me")
