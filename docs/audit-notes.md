@@ -129,6 +129,33 @@ el.getBoundingClientRect();    // now trustworthy
 Screenshots force a paint and are reliable; computed transforms mid-animation
 are not.
 
+## Empty states: three questions that catch the bad ones
+
+Swept every list-rendering surface by loading the site with accounts that had
+nothing. The panels that were wrong were wrong in one of three ways:
+
+1. **Does it name an action without offering it?** The employer's Listings
+   panel said "post your first role" and the Applicants one said "add one from
+   the Listings tab" — neither had a button.
+2. **Is it your own doing?** "Nothing saved yet" reads as your own doing.
+   Signed out it isn't, because the list lives on the account. Different
+   situation, different copy.
+3. **Whose profile is this?** Your own empty profile said "Blank Person hasn't
+   added any featured work" — about you, in the third person. That one had a
+   cause worth remembering: `renderProfile()` paints the tab before
+   `loadViewerState()` resolves who's looking, so `isOwn` was always false at
+   paint time. **An "is this me" branch is worthless if it runs before the
+   answer is known.**
+
+The check that found them, run per page with an account that has nothing:
+
+```js
+const p = document.querySelector('.pp-empty,.state-panel');
+({ panel: !!p, icon: !!p?.querySelector('svg'), action: !!p?.querySelector('button,a') })
+```
+
+No icon is a polish gap; no action next to copy that names one is a bug.
+
 ## Scope discipline — what was deliberately not built
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
