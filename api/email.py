@@ -130,6 +130,44 @@ def send_team_invite_email(email: str, company_name: str, inviter_name: str, tok
     )
 
 
+def send_designer_approved_email(email: str, name: str, handle: str) -> None:
+    """The end of the wait. Someone signs up, sees "in review", and until now
+    was told nothing when the review finished — so the one moment they were
+    waiting for was the one moment we stayed quiet."""
+    link = f"{SITE_URL}/designers/{handle}"
+    send_email(
+        email,
+        "Your Path & Pixel profile is live",
+        f"""
+        <p>{name}, your profile has been reviewed and it's live.</p>
+        <p><a href="{link}">See how it looks</a></p>
+        <p>You can now be found in the directory, message other designers, and
+        apply to roles that take applications through Kazi.</p>
+        <p>If something on it needs changing, everything is editable from your
+        <a href="{SITE_URL}/dashboard">dashboard</a>.</p>
+        """,
+    )
+
+
+def send_designer_rejected_email(email: str, name: str, reason: str = "") -> None:
+    """Silence here is the worst option: someone who is never told waits
+    indefinitely for a decision that has already been made."""
+    said = f"<p>{reason}</p>" if reason.strip() else ""
+    send_email(
+        email,
+        "About your Path & Pixel profile",
+        f"""
+        <p>{name}, we've reviewed your profile and haven't been able to publish
+        it as it stands.</p>
+        {said}
+        <p>You can edit it from your <a href="{SITE_URL}/dashboard">dashboard</a>
+        and reply to this email when you'd like another look — a reply reaches a
+        person, not an inbox nobody reads.</p>
+        <p>What we look for is set out in the <a href="{SITE_URL}/house-rules">house rules</a>.</p>
+        """,
+    )
+
+
 def send_saved_search_digest(email: str, name: str, search_name: str,
                              jobs: list[dict], country: str) -> bool:
     """New roles matching one saved search. Sent only when there is something to

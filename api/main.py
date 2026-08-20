@@ -102,7 +102,8 @@ from . import ats_check  # noqa: E402
 from . import photo as photo_module  # noqa: E402
 from . import project_image as project_image_module  # noqa: E402
 from . import email as email_module  # noqa: E402
-from .email import send_saved_search_digest  # noqa: E402
+from .email import (send_saved_search_digest, send_designer_approved_email,  # noqa: E402
+                    send_designer_rejected_email)
 
 # The eligibility rules live with the classifier that produces them, and the
 # digest has to apply exactly the same ones the board does — a second copy here
@@ -1278,6 +1279,12 @@ def get_job(job_id: str):
 @app.get("/api/admin/submissions")
 def admin_list(status: str = "pending", _: None = Depends(require_admin)):
     return list_submissions(status=status if status != "all" else None)
+
+
+class DesignerReview(BaseModel):
+    """Optional note from the reviewer. On a rejection this is the only thing
+    that tells the designer what to change — same shape as SubmissionReview."""
+    reason: str = ""
 
 
 class SubmissionReview(BaseModel):
@@ -3487,17 +3494,42 @@ def admin_list_designers(status: str = "pending", _: None = Depends(require_admi
 
 @app.post("/api/admin/designers/{designer_id}/approve")
 def admin_approve_designer(designer_id: int, _: None = Depends(require_admin)):
-    if not get_designer(designer_id):
+    d = get_designer(designer_id)
+    if not d:
         raise HTTPException(404, "no such designer")
+    was = d.get("status")
     set_designer_status(designer_id, "approved")
+    # Someone signs up, sees "in review", and the review finishing was the one
+    # moment nothing was sent. Only on the transition, so re-approving an
+    # already-approved account doesn't send a second "you're live" email.
+    if was != "approved":
+        handle = d.get("handle") or designer_id
+        notify("designer", designer_id, "profile_approved",
+               "Your profile is live",
+               "You can be found in the directory and apply to roles here.",
+               f"/designers/{handle}")
+        if d.get("email"):
+            send_designer_approved_email(d["email"], d.get("display_name") or "Hello", str(handle))
     return {"ok": True}
 
 
 @app.post("/api/admin/designers/{designer_id}/reject")
-def admin_reject_designer(designer_id: int, _: None = Depends(require_admin)):
-    if not get_designer(designer_id):
+def admin_reject_designer(designer_id: int, payload: DesignerReview = DesignerReview(),
+                          _: None = Depends(require_admin)):
+    d = get_designer(designer_id)
+    if not d:
         raise HTTPException(404, "no such designer")
+    was = d.get("status")
     set_designer_status(designer_id, "rejected")
+    # Silence is the worst option here: someone never told waits indefinitely
+    # for a decision that has already been made.
+    if was != "rejected":
+        notify("designer", designer_id, "profile_rejected",
+               "Your profile hasn't been published",
+               payload.reason.strip() or "Have a look at the house rules and edit it from your dashboard.",
+               "/dashboard?tab=profile")
+        if d.get("email"):
+            send_designer_rejected_email(d["email"], d.get("display_name") or "Hello", payload.reason)
     return {"ok": True}
 
 

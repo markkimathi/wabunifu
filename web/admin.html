@@ -683,6 +683,26 @@
   </div>
 </div>
 
+<div class="pp-backdrop" id="rejectModalBackdrop">
+  <div class="pp-modal">
+    <div class="modal-head">
+      <div style="flex:1"><h3>Don't publish this profile</h3><p id="rejectModalWho"></p></div>
+    </div>
+    <div class="modal-body">
+      <p style="margin:0 0 16px;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle)">They're emailed and notified either way. What you write here is the whole of what they're told, so write it to be acted on.</p>
+      <label>
+        <span style="display:block;font-size:13.5px;font-weight:600;margin-bottom:7px">Reason, in their words not ours</span>
+        <textarea id="rejectReason" rows="3" placeholder="What would they need to change to get this published?" style="width:100%;font:inherit;font-size:14.5px;line-height:1.55;border:1px solid var(--c-border-strong);border-radius:var(--pp-radius-md);padding:12px 14px;background:var(--c-bg);color:var(--c-text);resize:vertical;box-sizing:border-box"></textarea>
+      </label>
+    </div>
+    <div class="modal-foot">
+      <div style="flex:1"></div>
+      <button class="quiet" id="rejectCancel" type="button" style="padding:10px 16px">Cancel</button>
+      <button class="reject" id="rejectConfirm" type="button" style="padding:10px 18px">Don't publish</button>
+    </div>
+  </div>
+</div>
+
 <div class="pp-backdrop" id="reportModalBackdrop">
   <div class="pp-modal">
     <div class="modal-head">
@@ -1406,9 +1426,21 @@ function renderDesigners(rows, status) {
     btn.addEventListener("click", async () => {
       const id = btn.closest(".item").dataset.id;
       const action = btn.dataset.daction;
+      // Rejecting used to be one silent click. Now it emails and notifies the
+      // designer, and the reason is the entire content of that message — so
+      // ask for it before sending, not after.
+      let body = null;
+      if (action === "reject") {
+        const name = btn.closest(".item").querySelector("h3");
+        const reason = await askRejectReason(name ? name.textContent.trim() : "");
+        if (reason === null) return;
+        body = JSON.stringify({ reason: reason });
+      }
       btn.disabled = true;
       try {
-        await api(`/api/admin/designers/${id}/${action}`, { method: "POST" });
+        await api(`/api/admin/designers/${id}/${action}`, body
+          ? { method: "POST", headers: { "Content-Type": "application/json" }, body: body }
+          : { method: "POST" });
         const activeTab = document.querySelector("#designersView .tabs button.active").dataset.dstatus;
         loadDesignerTab(activeTab);
         refreshBadges();
@@ -1510,6 +1542,32 @@ function renderDesignerDetail(d) {
       showToast(`Couldn't unsuspend: ${e.message}`);
       unsuspendBtn.disabled = false;
     }
+  });
+}
+
+/* ---------- reject-a-profile modal ---------- */
+// Elements are looked up when it opens, not at module scope: a top-level const
+// pointing at markup further down the file is a temporal-dead-zone error that
+// takes the whole console with it, and this file has hit that before.
+function askRejectReason(who) {
+  return new Promise(resolve => {
+    const backdrop = document.getElementById("rejectModalBackdrop");
+    const box = document.getElementById("rejectReason");
+    document.getElementById("rejectModalWho").textContent = who || "";
+    box.value = "";
+    backdrop.classList.add("-open");
+    setTimeout(() => box.focus(), 0);
+
+    function done(value) {
+      backdrop.classList.remove("-open");
+      document.removeEventListener("keydown", onKey);
+      resolve(value);
+    }
+    function onKey(e) { if (e.key === "Escape") done(null); }
+    document.addEventListener("keydown", onKey);
+    document.getElementById("rejectCancel").onclick = () => done(null);
+    document.getElementById("rejectConfirm").onclick = () => done(box.value.trim());
+    backdrop.onclick = e => { if (e.target === backdrop) done(null); };
   });
 }
 
