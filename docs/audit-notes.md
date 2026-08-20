@@ -24,6 +24,9 @@ by reading code for correctness. The code was correct in all of them.
 | Follows | table, toggle, notify-on-new-work | no count on any designer profile, no notification to the person followed |
 | Community Q&A | questions, replies, votes | told nobody anything |
 | Application stages | employer board, designer tab | moving someone to Interviewing was silent |
+| Designer review | approve/reject endpoints, status column | neither outcome was ever sent — people waited indefinitely for a decision already made |
+| Company review | same | same |
+| Suspension | rule + reason recorded | shown only to admins; the person was told nothing, and `/me` 403'd so the banner explaining it could never render — the dashboard hung on "Loading…" forever |
 
 The tell is always the same: the data model and the API are complete and
 symmetrical, and exactly one endpoint or one element — the human end — is
@@ -46,6 +49,21 @@ the same question, asked of a different feature.
 
 **If a record expires by date rather than by a status change, every endpoint
 that reads it needs the date check, not just the one that lists it.**
+
+## Third shape: two routes into one state, one of them forgotten
+
+A designer reaches `suspended` two ways — the admin suspend dialog, and
+resolving a report with `action="suspend"`. Making suspension explain itself
+covered the dialog; the report path still called `set_designer_status()`
+directly and recorded nothing. Both now go through one helper.
+
+This is the Mobbin lesson in miniature: *a finding is not done when the surface
+it was found on is fixed.* **When a fix adds a side effect to a state change,
+grep for every writer of that state, not just the one you were looking at.**
+
+A related self-inflicted version: I concluded employer suspension was
+unreachable after grepping `suspend_employer`. The function is
+`set_employer_suspended`. Grep for the column name, not the verb you expect.
 
 ## Scope discipline — what was deliberately not built
 
@@ -74,7 +92,12 @@ counts before building the surface — `flyctl ssh console -a wabunifu` and quer
 **Verified:** every notification href resolves and opens the tab it names
 (`?tab=` is honoured by both dashboards); eligibility verdicts agree across the
 board, job page, homepage and company page; application flow end to end
-including stage moves; past-session handling.
+including stage moves; past-session handling; designer and company review
+(approve, repeat-approve, reject with reason) end to end including the admin
+dialog; suspension from both routes; the suspended dashboard.
+
+Emails are verified as *sent* — the local server logs each one it would post to
+Resend. Actual delivery has never been checked from here.
 
 **Never audited:** real devices, any browser other than the WebKit preview
 pane, actual email delivery, screen readers, performance under load.
