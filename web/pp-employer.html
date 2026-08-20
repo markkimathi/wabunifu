@@ -74,6 +74,10 @@
   .section-head{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:16px;flex-wrap:wrap}
   .section-head h2{margin:0;font-size:20px;font-weight:700;letter-spacing:-0.015em}
 
+  .logo-row{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .logo-preview{width:56px;height:56px;font-size:21px;overflow:hidden;flex:none}
+  .logo-preview img{width:100%;height:100%;object-fit:cover;display:block}
+
   .review-banner{padding:18px 20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
     background:var(--c-bg-sunken);margin-bottom:18px}
   .review-banner h3{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
@@ -856,6 +860,19 @@
     var body = '<div class="section-head"><h2>Company page</h2></div>';
     body += '<div class="form-panel"><form id="companyForm">' +
       '<div class="field-block"><label class="pp-field-label">Company name</label><div class="pp-field-input"><input id="cName" value="' + escapeHtml(c.name || "") + '"' + (isOwner() ? "" : " disabled") + '></div></div>' +
+      // The logo endpoint existed and the companies directory renders one, but
+      // there was nowhere to upload it — so every company was a monogram.
+      '<div class="field-block"><label class="pp-field-label">Logo</label>' +
+        '<div class="logo-row">' +
+          (c.logo_path
+            ? '<span class="pp-card-mark -logo logo-preview"><img id="cLogoPreview" src="' + escapeHtml(c.logo_path) + '" alt=""></span>'
+            : '<span class="pp-card-mark logo-preview" id="cLogoMark">' + escapeHtml((c.name || "?").trim().charAt(0).toUpperCase()) + '</span>') +
+          (isOwner()
+            ? '<div><button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" id="logoUploadBtn">Upload a logo</button>' +
+              '<p style="margin:6px 0 0;font-size:12.5px;color:var(--c-text-faint)">Square works best. JPG, PNG or WebP, up to 3MB.</p></div>' +
+              '<input type="file" id="logoInput" accept=".jpg,.jpeg,.png,.webp" style="display:none">'
+            : '<p style="margin:0;font-size:13px;color:var(--c-text-faint)">Only an owner can change the logo.</p>') +
+        '</div></div>' +
       '<div class="field-block"><label class="pp-field-label">Website</label><div class="pp-field-input"><input id="cWebsite" value="' + escapeHtml(c.website || "") + '"' + (isOwner() ? "" : " disabled") + '></div></div>' +
       '<div class="field-block"><label class="pp-field-label">One line about the company</label><textarea id="cBlurb" class="pp-textarea" rows="2"' + (isOwner() ? "" : " disabled") + '>' + escapeHtml(c.blurb || "") + '</textarea></div>' +
       '<div class="field-row2">' +
@@ -1398,6 +1415,31 @@
     });
 
     // Company
+    var logoBtn = document.getElementById("logoUploadBtn");
+    var logoInput = document.getElementById("logoInput");
+    if (logoBtn && logoInput) {
+      logoBtn.addEventListener("click", function(){ logoInput.click(); });
+      logoInput.addEventListener("change", async function(){
+        if (!logoInput.files[0]) return;
+        var fd = new FormData();
+        fd.append("file", logoInput.files[0]);
+        logoBtn.disabled = true;
+        try {
+          var data = await api("/api/employers/me/company/logo", { method: "POST", body: fd });
+          // The file is written to a stable path per company, so without a
+          // cache-buster a re-upload keeps showing the old image.
+          if (me.company) me.company.logo_path = data.logo_path + "?t=" + Date.now();
+          toast("Logo updated.");
+          // Re-render rather than swapping the src: the monogram and the image
+          // are different elements, so the first upload has to replace one with
+          // the other. Cache-bust so a re-upload actually shows.
+          render();
+        } catch (err) {
+          toast(err.message || "Couldn't upload that.");
+        } finally { logoBtn.disabled = false; }
+      });
+    }
+
     var companyForm = document.getElementById("companyForm");
     if (companyForm) companyForm.addEventListener("submit", async function(e){
       e.preventDefault();
