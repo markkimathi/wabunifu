@@ -557,6 +557,12 @@
         list.querySelectorAll("[data-save]").forEach(function(btn){
           btn.addEventListener("click", function(){
             var id = btn.getAttribute("data-save");
+            // Same as the board: a save made signed out is discarded the
+            // moment the account syncs, so ask for the sign-in instead.
+            if (!localStorage.getItem("kazi_designer_token")) {
+              location.href = "/signin?next=" + encodeURIComponent(location.pathname + location.search);
+              return;
+            }
             var next = !isSaved(id);
             setSaved(id, next, shown.filter(function(j){ return j.id === id; })[0]);
             btn.classList.toggle("-saved", next);

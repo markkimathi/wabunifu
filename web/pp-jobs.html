@@ -174,6 +174,9 @@
     display:flex;flex-direction:column;align-items:center}
   .state-panel h3{margin:0 0 7px;font-size:20px;font-weight:700;letter-spacing:-0.02em}
   .state-panel p{margin:0 0 20px;font-size:15px;line-height:1.6;max-width:44ch;color:var(--c-text-subtle)}
+  /* The signed-out states offer two actions; the panel is a column, so
+     without this they sit flush against each other. */
+  .state-panel .pp-btn + .pp-btn{margin-top:10px}
   .state-icon{width:44px;height:44px;border-radius:50%;background:var(--c-bad-bg);color:var(--c-bad-text);
     display:inline-flex;align-items:center;justify-content:center;margin-bottom:16px}
   /* Green because it's a thing you did, not a claim about the role. */
@@ -364,6 +367,9 @@
   // what the UI reacts to either way, so a slow or failed network call
   // never blocks the toggle.
   function designerToken(){ return localStorage.getItem("kazi_designer_token"); }
+  function promptSignIn(){
+    location.href = "/signin?next=" + encodeURIComponent(location.pathname + location.search);
+  }
   function setSaved(id, on, job){
     var ids = savedIds();
     var idx = ids.indexOf(id);
@@ -391,6 +397,38 @@
       var res = await fetch("/api/designers/me/saved-jobs", { headers: { "Authorization": "Bearer " + token } });
       if (!res.ok) return;
       var data = await res.json();
+
+      // Anything saved on this device before saving required an account would
+      // be thrown away by the overwrite below. Push those up first, so signing
+      // in rescues them instead of quietly costing them. Only ids we can still
+      // resolve to a real listing — the server needs a title and a company,
+      // and localStorage only ever held ids.
+      var onServer = data.jobs.map(function(j){ return j.job_id; });
+      var orphans = savedIds().filter(function(id){ return onServer.indexOf(id) === -1; });
+      if (orphans.length && state.all.length) {
+        var rescued = [];
+        for (var i = 0; i < orphans.length; i++) {
+          var j = state.all.filter(function(x){ return x.id === orphans[i]; })[0];
+          if (!j) continue;
+          try {
+            await fetch("/api/designers/me/saved-jobs", {
+              method: "POST",
+              headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },
+              body: JSON.stringify({ job_id: j.id, title: j.t, company: j.co,
+                                     location: j.city || "", eligibility: j.elig || "", url: j.url || "" })
+            });
+            rescued.push(j);
+          } catch (e) {}
+        }
+        if (rescued.length) {
+          data = await fetch("/api/designers/me/saved-jobs", { headers: { "Authorization": "Bearer " + token } })
+            .then(function(r){ return r.json(); });
+          showToast(rescued.length === 1
+            ? "Kept the role you saved before signing in."
+            : "Kept the " + rescued.length + " roles you saved before signing in.");
+        }
+      }
+
       localStorage.setItem("pp_saved_jobs", JSON.stringify(data.jobs.map(function(j){ return j.job_id; })));
       // The snapshot taken at save time is what lets a role that has since
       // closed still appear here, labelled, instead of quietly vanishing from
@@ -1022,6 +1060,30 @@
       return;
     }
 
+    // Both these lists live on the account, so signed out there is nothing to
+    // show and nothing to add — say so rather than listing whatever this
+    // browser happens to remember from before saving needed an account.
+    if ((state.tab === "saved" || state.tab === "applied") && !designerToken()) {
+      var savedTab = state.tab === "saved";
+      var strays = savedTab ? savedIds().length : 0;
+      renderResultsHead(0);
+      area.innerHTML = '<div class="state-panel">' +
+        '<span class="empty-icon">' + ICONS.save + '</span>' +
+        '<h3>' + (savedTab ? "Saved roles live on your account" : "Applications live on your account") + '</h3>' +
+        '<p>' + (savedTab
+          ? "Sign in and the roles you save stay put — on this device and any other, with the closing date attached."
+          : "Sign in and you can mark the roles you've applied to, so you have the record we can't keep for you.") +
+          (strays ? " We still have the " + strays + (strays === 1 ? " role" : " roles") +
+                    " saved on this browser, and they'll come with you." : "") +
+        '</p>' +
+        '<a class="pp-btn pp-btn-primary" href="/signin?next=' + encodeURIComponent(location.pathname + location.search) + '">Sign in</a>' +
+        '<button type="button" class="pp-btn pp-btn-secondary" id="browseBtn">Browse open roles</button>' +
+      '</div>';
+      document.getElementById("browseBtn").addEventListener("click", function(){ setTab("all"); });
+      pager.hidden = true;
+      return;
+    }
+
     var filtered = sortJobs(state.all.filter(matchesFilters));
 
     // A saved role that has closed, or aged out, drops out of the live feed.
@@ -1101,6 +1163,11 @@
       btn.addEventListener("click", function(e){
         e.preventDefault(); e.stopPropagation();
         var id = btn.getAttribute("data-save");
+        // Saving used to work signed out, writing to localStorage only — and
+        // syncSavedFromServer() overwrites that list the moment you sign in,
+        // so every role saved beforehand was silently thrown away. Ask for
+        // the sign-in first rather than accept a save we're going to lose.
+        if (!designerToken()) { promptSignIn(); return; }
         var wasSaved = isSaved(id);
         var job = state.all.filter(function(j){ return j.id === id; })[0];
         setSaved(id, !wasSaved, job);
@@ -1283,6 +1350,10 @@
         new Date(data.generated_at).toLocaleDateString(undefined, { month: "long", day: "numeric" }) +
         ". We've read every one of them and said plainly who can take it, so you know where you stand before you open it. When you're ready, you'll apply on the company's own page.";
       renderFilterRail();
+      // After the listings exist, not before: the rescue in here needs to
+      // resolve saved ids to real jobs, and init() runs while state.all is
+      // still empty.
+      syncSavedFromServer();
     } catch (e) {
       state.failed = true;
     }
@@ -1291,7 +1362,6 @@
 
   function init(){
     document.getElementById("savedCount").textContent = savedIds().length;
-    syncSavedFromServer();
     document.getElementById("tabAll").addEventListener("click", function(){ setTab("all"); });
     document.getElementById("tabSaved").addEventListener("click", function(){ setTab("saved"); });
     document.getElementById("tabApplied").addEventListener("click", function(){ setTab("applied"); });

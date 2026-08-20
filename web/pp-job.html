@@ -543,7 +543,16 @@
       saveBtn.innerHTML = ICONS.save.replace("{{fill}}", saved ? "currentColor" : "none") + (saved ? "Saved" : "Save role");
     }
     paintSave();
-    saveBtn.addEventListener("click", function(){ setSaved(job.id, !isSaved(job.id), job); paintSave(); });
+    saveBtn.addEventListener("click", function(){
+      // Same as the board: a save made signed out is discarded the moment the
+      // account syncs, so ask for the sign-in instead of losing it later.
+      if (!designerToken()) {
+        location.href = "/signin?next=" + encodeURIComponent(location.pathname + location.search);
+        return;
+      }
+      setSaved(job.id, !isSaved(job.id), job);
+      paintSave();
+    });
 
     // Only present when the role sends people to the employer's own site. A
     // role that takes applications here has no outbound click to track, and no

@@ -112,6 +112,22 @@
     match: '<svg class="match-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5l5.5 5.5L20 7"></path></svg>'
   };
 
+  // Where to go once signed in. Seven pages send ?next= when they bounce
+  // someone here to save a role, follow a designer or book a seat — and
+  // nothing read it, so every one of those flows dropped you on your profile
+  // with the thing you were trying to do still undone.
+  //
+  // Only same-origin paths: a single leading slash, never "//" (which is
+  // protocol-relative and would leave the site) and never a scheme. Anything
+  // else is ignored rather than followed.
+  function nextTarget(){
+    var raw;
+    try { raw = new URLSearchParams(location.search).get("next"); } catch (e) { return ""; }
+    if (!raw) return "";
+    if (raw.charAt(0) !== "/" || raw.charAt(1) === "/" || raw.charAt(1) === "\\") return "";
+    return raw;
+  }
+
   var EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/;
   var params = new URLSearchParams(location.search);
   // ?reset= is the older parameter name used by password-reset emails that
@@ -402,10 +418,12 @@
       }
       if (role === "employer") {
         localStorage.setItem("kazi_employer_token", data.token);
-        location.href = "/pp-employer.html";
+        location.href = nextTarget() || "/pp-employer.html";
         return;
       }
       localStorage.setItem("kazi_designer_token", data.token);
+      var back = nextTarget();
+      if (back) { location.href = back; return; }
       var me = await fetch("/api/designers/me", { headers: { "Authorization": "Bearer " + data.token } }).then(function(r){ return r.json(); });
       location.href = "/designers/" + encodeURIComponent(me.handle || me.id);
     } catch (e) {
