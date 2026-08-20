@@ -78,6 +78,14 @@
   .logo-preview{width:56px;height:56px;font-size:21px;overflow:hidden;flex:none}
   .logo-preview img{width:100%;height:100%;object-fit:cover;display:block}
 
+  .apply-choice{display:grid;gap:10px}
+  .apply-opt{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-md);background:var(--c-surface);cursor:pointer}
+  .apply-opt.-on{border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+  .apply-opt input{margin-top:3px;flex:none}
+  .apply-opt strong{display:block;font-size:15px;font-weight:700;letter-spacing:-0.012em}
+  .apply-opt em{display:block;margin-top:4px;font-style:normal;font-size:13.5px;line-height:1.55;color:var(--c-text-subtle)}
+
   .review-banner{padding:18px 20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
     background:var(--c-bg-sunken);margin-bottom:18px}
   .review-banner h3{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
@@ -406,7 +414,7 @@
       discipline: "", level: "Mid",
       url: (me.company && me.company.website ? "https://" + me.company.website.replace(/^https?:\/\//, "") : ""),
       eligibility: (me.company && me.company.eligibility) || "africa",
-      cross_border_note: "", salary: "", closes_at: "",
+      cross_border_note: "", salary: "", closes_at: "", accepts_applications: false,
       skills: [], screening: [], portfolio_required: false,
       contact_email: me.email || "", description: ""
     };
@@ -416,6 +424,7 @@
       id: l.id, title: l.title || "", company: l.company || "", location: l.location || "", work_type: l.work_type || "Remote",
       discipline: l.discipline || "", level: l.level || "Mid", url: l.url || "",
       eligibility: l.eligibility || "africa", cross_border_note: l.cross_border_note || "", salary: l.salary || "",
+      accepts_applications: !!l.accepts_applications,
       closes_at: l.closes_at || "",
       skills: l.skills || [], screening: l.screening || [], portfolio_required: !!l.portfolio_required,
       contact_email: l.contact_email || "", description: l.description || ""
@@ -519,8 +528,25 @@
         '<p class="wiz-hint" style="margin:0 0 8px">Up to eight, from the same list designers pick from — that is what lets us put your role in front of the right people rather than everyone in the discipline.</p>' +
         '<div class="chip-select" id="wSkills"></div></div>' +
 
+      // Where applications land. Off by default, which is how every listing
+      // behaved before this existed.
+      '<div class="field-block"><label class="pp-field-label">Where should applications go?</label>' +
+        '<div class="apply-choice">' +
+          '<label class="apply-opt' + (!d.accepts_applications ? " -on" : "") + '">' +
+            '<input type="radio" name="wApplyMode" value="site"' + (!d.accepts_applications ? " checked" : "") + '>' +
+            '<span><strong>To your own site</strong>' +
+            '<em>The Apply button sends people to the link above. You handle it in your own ATS, and Kazi is not involved.</em></span></label>' +
+          '<label class="apply-opt' + (d.accepts_applications ? " -on" : "") + '">' +
+            '<input type="radio" name="wApplyMode" value="kazi"' + (d.accepts_applications ? " checked" : "") + '>' +
+            '<span><strong>To you, here on Kazi</strong>' +
+            '<em>Applications arrive in your Applicants tab with the designer\'s profile attached. No fee, and only your team sees them.</em></span></label>' +
+        '</div></div>' +
+
       '<div class="field-block"><label class="pp-field-label">What should an applicant be ready to answer?</label>' +
-        '<p class="wiz-hint" style="margin:0 0 8px">Up to three. These appear on the listing so candidates can prepare — we never collect the answers, because the application happens on your own site.</p>' +
+        '<p class="wiz-hint" style="margin:0 0 8px" id="wScreenHint">' +
+          (d.accepts_applications
+            ? "Up to three. Applicants answer these when they apply, and you read the answers next to their profile."
+            : "Up to three. These appear on the listing so candidates can prepare — the answers go to your own site with the application.") + '</p>' +
         [0,1,2].map(function(i){
           return '<div class="pp-field-input" style="margin-bottom:8px"><input id="wScreen' + i + '" value="' +
             escapeHtml(d.screening[i] || "") + '" placeholder="' +
@@ -632,6 +658,8 @@
       if (get("wContactEmail") !== null) wizardData.contact_email = get("wContactEmail");
     } else if (wizardStep === 2) {
       if (get("wCrossBorder") !== null) wizardData.cross_border_note = get("wCrossBorder");
+      var mode = document.querySelector('input[name="wApplyMode"]:checked');
+      if (mode) wizardData.accepts_applications = mode.value === "kazi";
       if (get("wSalary") !== null) wizardData.salary = get("wSalary");
       if (get("wCloses") !== null) wizardData.closes_at = get("wCloses");
       var screen = [];
@@ -1271,6 +1299,7 @@
           location: wizardData.location, work_type: wizardData.work_type,
           discipline: wizardData.discipline, level: wizardData.level,
           eligibility: wizardData.eligibility, cross_border_note: wizardData.cross_border_note,
+          accepts_applications: !!wizardData.accepts_applications,
           salary: wizardData.salary, agreed_to_terms: true
         };
         wizNextBtn.disabled = true;
@@ -1415,6 +1444,19 @@
     });
 
     // Company
+    document.querySelectorAll('input[name="wApplyMode"]').forEach(function(r){
+      r.addEventListener("change", function(){
+        var kazi = r.value === "kazi" && r.checked;
+        document.querySelectorAll(".apply-opt").forEach(function(o){
+          o.classList.toggle("-on", o.contains(r) ? r.checked : !r.checked);
+        });
+        var hint = document.getElementById("wScreenHint");
+        if (hint) hint.textContent = kazi
+          ? "Up to three. Applicants answer these when they apply, and you read the answers next to their profile."
+          : "Up to three. These appear on the listing so candidates can prepare — the answers go to your own site with the application.";
+      });
+    });
+
     var logoBtn = document.getElementById("logoUploadBtn");
     var logoInput = document.getElementById("logoInput");
     if (logoBtn && logoInput) {

@@ -78,6 +78,8 @@ from .db import (  # noqa: E402
     update_submission, list_submissions_for_company,
     create_team_invite, get_team_invite_by_token, list_pending_team_invites, set_invite_status,
     create_applicant, list_applicants_for_submission, count_applicants_by_submission,
+    create_self_application, get_self_application, list_self_applications,
+    withdraw_self_application,
     update_applicant, set_applicant_stage, delete_applicant,
     save_job, list_saved_jobs, unsave_job,
     get_or_create_conversation, get_or_create_peer_conversation, get_conversation, list_conversations_for_designer,
@@ -332,10 +334,14 @@ class JobSubmission(BaseModel):
     # Structured, so matching can be sharper than discipline alone.
     skills: list[str] = []
     # What an applicant should be ready to answer. Shown on the listing as
-    # preparation — we never collect the answers, since the application itself
-    # happens on the employer's own site.
+    # preparation when the employer takes applications on their own site, and
+    # asked directly when they take them here.
     screening: list[str] = []
     portfolio_required: bool = False
+    # The employer's choice: applications through Kazi, or a link to their own
+    # site. Defaults to their own site, which is how every listing behaved
+    # before this existed and what every existing employer agreed to.
+    accepts_applications: bool = False
 
     @field_validator("skills", "screening")
     @classmethod
@@ -1184,7 +1190,11 @@ def require_employer_role(*allowed: str):
 
 @app.post("/api/submissions")
 def submit_job(payload: JobSubmission):
-    sub_id = insert_submission(payload.model_dump())
+    # Went through model_dump() raw, which hands sqlite Python lists for skills
+    # and screening — it has been returning 500 for anything posted to it. The
+    # dashboard path already had _listing_row() to do this conversion; this now
+    # uses the same one rather than a second, broken copy of the idea.
+    sub_id = insert_submission(_listing_row(payload))
     return {"ok": True, "id": sub_id, "status": "pending"}
 
 
@@ -1209,6 +1219,8 @@ def _combined_jobs() -> tuple[list[dict], str | None]:
                 level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
                 desc=desc_html or None, desc_text=desc_text or None, posted_at=s["created_at"][:10],
                 cross_border_note=s.get("cross_border_note", ""),
+                accepts_applications=bool(s.get("accepts_applications")),
+                submission_id=s["id"],
                 closes_at=s.get("closes_at", "") or "",
                 skills=parse_multi_field(s.get("skills")),
                 screening=parse_multi_field(s.get("screening")),
@@ -2180,6 +2192,92 @@ def designer_delete_me(designer: dict = Depends(require_designer)):
 # just this file's existing designer endpoints, reused as-is).
 # ---------------------------------------------------------------------------
 
+class ApplicationIn(BaseModel):
+    """What a designer sends with an application. Deliberately short: the
+    employer already has their profile, and asking for a cover letter is how
+    you get a worse version of what is already on the page."""
+    note: str = ""
+    answers: list[str] = []
+
+    @field_validator("note")
+    @classmethod
+    def _clean_note(cls, v: str) -> str:
+        return (v or "").strip()[:2000]
+
+    @field_validator("answers")
+    @classmethod
+    def _clean_answers(cls, v: list) -> list:
+        return [str(a or "").strip()[:1000] for a in (v or [])][:3]
+
+
+def _applications_open(sub: dict) -> bool:
+    """A listing takes applications here only if its employer chose that, it is
+    approved, and it hasn't closed. Scraped listings never qualify — there is no
+    employer on the other end to receive anything."""
+    if not sub or not sub.get("accepts_applications"):
+        return False
+    if sub.get("status") != "approved":
+        return False
+    closes = (sub.get("closes_at") or "").strip()
+    return not (closes and closes < date.today().isoformat())
+
+
+@app.post("/api/designers/me/applications/{submission_id}")
+def designer_apply(submission_id: int, payload: ApplicationIn,
+                   designer: dict = Depends(require_designer)):
+    sub = get_submission(submission_id)
+    if not _applications_open(sub):
+        raise HTTPException(404, "This role isn't taking applications through Kazi.")
+    if designer["status"] != "approved":
+        raise HTTPException(
+            403,
+            "Your profile is still in review. Employers see your profile with an application, "
+            "so it has to be live first.",
+        )
+    if get_self_application(submission_id, designer["id"]):
+        raise HTTPException(400, "You've already applied to this role.")
+
+    pub = _designer_public(designer)
+    applicant_id = create_self_application(
+        submission_id, sub["company_id"], designer["id"],
+        pub.get("display_name") or "", designer.get("email") or "",
+        pub.get("location") or pub.get("country") or "",
+        f"{PUBLIC_ORIGIN}/designers/{pub.get('handle') or designer['id']}",
+        payload.note, json.dumps(payload.answers),
+    )
+    if applicant_id is None:
+        raise HTTPException(400, "You've already applied to this role.")
+
+    if sub.get("employer_id"):
+        notify("employer", int(sub["employer_id"]), "application",
+               f"{pub.get('display_name') or 'A designer'} applied to {sub['title']}",
+               (payload.note or "")[:200], "/employer")
+    return {"ok": True, "id": applicant_id}
+
+
+@app.get("/api/designers/me/applications")
+def designer_list_applications(designer: dict = Depends(require_designer)):
+    return {"applications": [
+        {
+            "id": a["id"], "submission_id": a["submission_id"], "title": a["title"],
+            "company": a["company"], "location": a.get("role_location") or "",
+            "note": a.get("note") or "", "stage": a.get("stage") or 0,
+            "created_at": a["created_at"],
+            # The employer moves this; the designer only ever reads it.
+            "stage_label": APPLICANT_STAGES[a["stage"]] if 0 <= (a.get("stage") or 0) < len(APPLICANT_STAGES) else "Applied",
+            "listing_status": a.get("listing_status") or "",
+        }
+        for a in list_self_applications(designer["id"])
+    ]}
+
+
+@app.delete("/api/designers/me/applications/{applicant_id}")
+def designer_withdraw_application(applicant_id: int, designer: dict = Depends(require_designer)):
+    if not withdraw_self_application(designer["id"], applicant_id):
+        raise HTTPException(404, "No such application.")
+    return {"ok": True}
+
+
 @app.get("/api/designers/me/saved-jobs")
 def designer_list_saved_jobs(designer: dict = Depends(require_designer)):
     return {"jobs": list_saved_jobs(designer["id"])}
@@ -2487,6 +2585,8 @@ def _company_listings(company: dict) -> list[dict]:
                 level=s["level"], eligibility=s["eligibility"], salary=s.get("salary"),
                 desc=desc_html or None, desc_text=desc_text or None, posted_at=s["created_at"][:10],
                 cross_border_note=s.get("cross_border_note", ""),
+                accepts_applications=bool(s.get("accepts_applications")),
+                submission_id=s["id"],
             ).to_web()
         )
     return out
@@ -2620,6 +2720,7 @@ def _listing_row(payload: JobSubmission) -> dict:
     row["skills"] = json.dumps(row.get("skills") or [])
     row["screening"] = json.dumps(row.get("screening") or [])
     row["portfolio_required"] = 1 if row.get("portfolio_required") else 0
+    row["accepts_applications"] = 1 if row.get("accepts_applications") else 0
     return row
 
 

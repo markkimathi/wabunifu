@@ -25,6 +25,36 @@
   .sk-head{display:flex;align-items:flex-start;gap:18px;margin-bottom:22px}
   .sk-lines{flex:1;min-width:0}
 
+  /* Same shape as .share-backdrop above — this page styles its own overlays
+     rather than relying on a class it doesn't define. */
+  .apply-backdrop{position:fixed;inset:0;z-index:var(--pp-z-modal);background:rgba(10,10,10,.48);
+    display:none;align-items:center;justify-content:center;padding:16px}
+  .apply-backdrop.-open{display:flex}
+
+  .apply-here-note{margin:10px 0 0;font-size:12.5px;line-height:1.5;color:var(--c-text-faint)}
+  .applied-state{display:flex;gap:11px;align-items:flex-start;padding:14px 16px;border-radius:var(--pp-radius-md);
+    background:var(--c-good-bg);border:1px solid var(--c-good-border)}
+  .applied-state .tick{flex:none;width:22px;height:22px;border-radius:50%;background:var(--c-good);
+    color:var(--pp-white);display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+  .applied-state strong{display:block;font-size:15px;font-weight:700;color:var(--c-good-text)}
+  .applied-state span{font-size:13px;line-height:1.5;color:var(--c-text-subtle)}
+
+  .apply-modal{width:min(560px,calc(100vw - 32px));max-height:88vh;overflow-y:auto;
+    background:var(--c-surface);border-radius:var(--pp-radius-xl);padding:26px 28px;box-sizing:border-box}
+  @media(max-width:639px){.apply-modal{padding:22px 18px;border-radius:var(--pp-radius-lg)}}
+  .apply-modal h3{margin:0 0 8px;font-size:22px;font-weight:700;letter-spacing:-0.022em}
+  .apply-sub{margin:0 0 18px;font-size:14.5px;line-height:1.6;color:var(--c-text-subtle)}
+  .apply-flag{margin:0 0 18px;padding:10px 12px;border-radius:var(--pp-radius-sm);
+    background:var(--c-bg-sunken);font-size:13.5px;line-height:1.5;color:var(--c-text-subtle)}
+  .apply-field{margin-bottom:16px}
+  .apply-field label{display:block;font-size:14px;font-weight:600;margin-bottom:7px}
+  .apply-field label .opt{font-weight:400;color:var(--c-text-faint)}
+  .apply-field textarea{width:100%;box-sizing:border-box;padding:11px 13px;border-radius:var(--pp-radius-md);
+    border:1px solid var(--c-border-strong);background:var(--c-bg);color:var(--c-text);
+    font-family:inherit;font-size:15px;line-height:1.55;resize:vertical;outline:none}
+  .apply-field textarea:focus{border-color:var(--pp-gold);box-shadow:var(--pp-focus-ring)}
+  .apply-foot{display:flex;justify-content:flex-end;gap:10px;margin-top:20px}
+
   /* The employer's own words, set apart from our reading of the listing so
      the two are not mistaken for each other. */
   .elig-proof{margin:14px 0;padding:14px 16px;border-left:2px solid var(--c-border-strong);
@@ -425,7 +455,12 @@
           '<div class="rail-card">' +
             '<div class="pay-amount">' + escapeHtml(job.pay || "Not disclosed") + '</div>' +
             '<div class="pay-note">' + (job.pay && job.pay !== "Not disclosed" ? "published by the company" : "the company hasn't shared a figure") + '</div>' +
-            '<a class="pp-btn pp-btn-primary pp-btn-lg" href="' + escapeHtml(job.url) + '" target="_blank" rel="noopener" id="applyBtn">Apply on ' + escapeHtml(job.co) + ICONS.external + '</a>' +
+            (job.accepts_applications
+              // This employer takes applications here. Scraped listings never
+              // do — there is no employer on the other end of one.
+              ? '<button type="button" class="pp-btn pp-btn-primary pp-btn-lg" id="applyHereBtn">Apply through Path &amp; Pixel</button>' +
+                '<p class="apply-here-note">Goes straight to ' + escapeHtml(job.co) + ' with your profile attached. No fee, and you can withdraw it.</p>'
+              : '<a class="pp-btn pp-btn-primary pp-btn-lg" href="' + escapeHtml(job.url) + '" target="_blank" rel="noopener" id="applyBtn">Apply on ' + escapeHtml(job.co) + ICONS.external + '</a>') +
             '<button type="button" class="pp-btn pp-btn-secondary" id="saveBtn"></button>' +
             '<div class="applied-ask" id="appliedAsk" hidden></div>' +
             '<div class="rail-meta">' +
@@ -437,7 +472,9 @@
           '<div class="company-card" id="companyCard">' +
             '<div class="row"><span class="pp-card-mark -logo">LOGO</span>' +
               '<div><div class="name">' + escapeHtml(job.co) + '</div><div class="sub">' + escapeHtml(job.city || "Remote") + '</div></div></div>' +
-            '<p>Applications go to their own careers page, Path &amp; Pixel never hosts the application itself.</p>' +
+            '<p>' + (job.accepts_applications
+              ? 'This role takes applications here on Path &amp; Pixel. They go to ' + escapeHtml(job.co) + ' and nobody else.'
+              : 'Applications go to their own careers page, Path &amp; Pixel never hosts the application itself.') + '</p>' +
             '<a class="more" id="moreRolesLink" href="/pp-company.html?name=' + encodeURIComponent(job.co) + '">More roles at ' + escapeHtml(job.co) + ' →</a>' +
           '</div>' +
 
@@ -485,7 +522,11 @@
     paintSave();
     saveBtn.addEventListener("click", function(){ setSaved(job.id, !isSaved(job.id), job); paintSave(); });
 
-    document.getElementById("applyBtn").addEventListener("click", function(){
+    // Only present when the role sends people to the employer's own site. A
+    // role that takes applications here has no outbound click to track, and no
+    // "did you apply?" to ask on return — we already know.
+    var applyOut = document.getElementById("applyBtn");
+    if (applyOut) applyOut.addEventListener("click", function(){
       fetch("/api/track/apply", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ job_id: job.id, job_title: job.t, company: job.co })
@@ -508,6 +549,8 @@
         expandBtn.querySelector("svg").style.transform = open ? "none" : "rotate(180deg)";
       });
     }
+
+    wireApplyHere();
 
     var shareBackdrop = document.getElementById("shareBackdrop");
     var shareUrl = location.origin + "/jobs/" + encodeURIComponent(job.id);
@@ -548,6 +591,110 @@
   // ---- résumé check widget: wired to the real endpoints. Anonymous
   // upload goes through /api/ats/check; a signed-in designer with a saved
   // résumé can reuse it through /api/designers/me/ats-check instead. ----
+  /* Applying, for the listings whose employer takes applications here. The
+     form is deliberately short: they already have the profile, and a cover
+     letter box mostly produces a worse version of what is on that page. */
+  function applyModalHtml(){
+    var qs = job.screening || [];
+    return '<div class="apply-backdrop" id="applyBackdrop">' +
+      '<div class="apply-modal" role="dialog" aria-modal="true" aria-labelledby="applyTitle">' +
+        '<h3 id="applyTitle">Apply to ' + escapeHtml(job.t) + '</h3>' +
+        '<p class="apply-sub">' + escapeHtml(job.co) + ' sees your profile, your name and your account email. ' +
+          'Nothing else from your account goes with it.</p>' +
+        (job.portfolio_required
+          ? '<p class="apply-flag">This role asks for a portfolio or case study, so make sure your profile has one.</p>' : "") +
+        qs.map(function(q, i){
+          return '<div class="apply-field"><label for="applyA' + i + '">' + escapeHtml(q) + '</label>' +
+            '<textarea id="applyA' + i + '" rows="2" maxlength="1000"></textarea></div>';
+        }).join("") +
+        '<div class="apply-field"><label for="applyNote">Anything you want to add ' +
+          '<span class="opt">(optional)</span></label>' +
+          '<textarea id="applyNote" rows="4" maxlength="2000" placeholder="What in your work is closest to this role?"></textarea></div>' +
+        '<p class="fielderr" id="applyErr" role="alert" hidden></p>' +
+        '<div class="apply-foot">' +
+          '<button type="button" class="pp-btn pp-btn-tertiary" id="applyCancel">Cancel</button>' +
+          '<button type="button" class="pp-btn pp-btn-primary" id="applySend">Send application</button>' +
+        '</div>' +
+      '</div></div>';
+  }
+
+  var applySheet = null;
+
+  function wireApplyHere(){
+    var open = document.getElementById("applyHereBtn");
+    if (!open) return;
+
+    open.addEventListener("click", async function(){
+      var token = designerToken();
+      if (!token) {
+        location.href = "/signin?next=" + encodeURIComponent(location.pathname);
+        return;
+      }
+      if (applySheet) { applySheet.open(); return; }
+      document.body.insertAdjacentHTML("beforeend", applyModalHtml());
+      var backdrop = document.getElementById("applyBackdrop");
+      var sheet = window.PPSheet && PPSheet({
+        panel: backdrop, alwaysModal: true, toggle: open,
+        closeBtn: document.getElementById("applyCancel")
+      });
+      applySheet = sheet;
+      if (window.PPCount) {
+        PPCount(document.getElementById("applyNote"));
+        (job.screening || []).forEach(function(_, i){ PPCount(document.getElementById("applyA" + i)); });
+      }
+      // Through the sheet rather than by adding the class directly, so focus
+      // moves in, Escape closes, and focus returns — the first version set the
+      // class itself and got an open modal nobody's keyboard could reach.
+      if (sheet) sheet.open();
+      else backdrop.classList.add("-open");
+
+      document.getElementById("applySend").addEventListener("click", async function(e){
+        var btn = e.currentTarget;
+        var err = document.getElementById("applyErr");
+        err.hidden = true;
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        try {
+          var res = await fetch("/api/designers/me/applications/" + job.submission_id, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+            body: JSON.stringify({
+              note: document.getElementById("applyNote").value.trim(),
+              answers: (job.screening || []).map(function(_, i){
+                return document.getElementById("applyA" + i).value.trim();
+              })
+            })
+          });
+          if (!res.ok) {
+            var body = await res.json().catch(function(){ return {}; });
+            throw new Error(body.detail || "That didn't send.");
+          }
+          if (sheet) sheet.close();
+          applySheet = null;
+          markApplied();
+        } catch (e2) {
+          err.textContent = e2.message;
+          err.hidden = false;
+          btn.disabled = false;
+          btn.textContent = "Send application";
+        }
+      });
+    });
+  }
+
+  /* Replaces the button once it has been sent. The state lives on the page
+     rather than only in a toast, because "did that go through?" is the whole
+     anxiety of applying. */
+  function markApplied(){
+    var btn = document.getElementById("applyHereBtn");
+    if (!btn) return;
+    var note = btn.parentNode.querySelector(".apply-here-note");
+    btn.outerHTML = '<div class="applied-state"><span class="tick">✓</span>' +
+      '<div><strong>Applied</strong><span>It\'s with ' + escapeHtml(job.co) +
+      '. You can withdraw it from your dashboard.</span></div></div>';
+    if (note) note.remove();
+  }
+
   function initCvWidget(){
     var body = document.getElementById("cvBody");
     var token = localStorage.getItem("kazi_designer_token");
@@ -687,7 +834,7 @@
     var companyCard = document.getElementById("companyCard");
     if (companyCard && companyCount === 0) {
       var p = companyCard.querySelector("p");
-      if (p) p.textContent = "Applications go to their own careers page, Path & Pixel never hosts the application itself.";
+      if (p && !job.accepts_applications) p.textContent = "Applications go to their own careers page, Path & Pixel never hosts the application itself.";
     }
 
     var similar = allJobs.filter(function(j){ return j.id !== job.id && j.cat === job.cat; }).slice(0, 3);

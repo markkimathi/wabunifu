@@ -581,7 +581,56 @@ _MIGRATIONS = [
     # employer verbatim: a rejection they can't see the reason for is one they
     # can't fix, and they'll just post the same thing again.
     "ALTER TABLE submissions ADD COLUMN review_note TEXT NOT NULL DEFAULT ''",
+    # Whether applications come through Kazi or go to the employer's own site.
+    # Defaults to 0 so every listing that existed before this keeps behaving
+    # exactly as it did, and as its employer agreed to when they posted it.
+    "ALTER TABLE submissions ADD COLUMN accepts_applications INTEGER NOT NULL DEFAULT 0",
 ]
+
+
+def _migrate_applicants_self_applied(c: sqlite3.Connection) -> None:
+    """job_applicants was built for an employer typing in someone they were
+    already talking to, so created_by_employer_id was NOT NULL. A designer
+    applying through Kazi has no employer creating the row, and carries a
+    designer_id instead. SQLite can't relax NOT NULL via ALTER, so this
+    rebuilds the table once, guarded on the new column."""
+    cols = [r["name"] for r in c.execute("PRAGMA table_info(job_applicants)").fetchall()]
+    if "designer_id" in cols:
+        return
+    c.executescript("""
+        CREATE TABLE job_applicants_new (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          submission_id INTEGER NOT NULL,
+          company_id INTEGER NOT NULL,
+          full_name TEXT NOT NULL,
+          email TEXT NOT NULL DEFAULT '',
+          location TEXT NOT NULL DEFAULT '',
+          portfolio_url TEXT NOT NULL DEFAULT '',
+          note TEXT NOT NULL DEFAULT '',
+          stage INTEGER NOT NULL DEFAULT 0,
+          created_by_employer_id INTEGER,
+          designer_id INTEGER,
+          screening_answers TEXT NOT NULL DEFAULT '[]',
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL
+        );
+        INSERT INTO job_applicants_new
+          (id, submission_id, company_id, full_name, email, location, portfolio_url,
+           note, stage, created_by_employer_id, designer_id, screening_answers, created_at, updated_at)
+          SELECT id, submission_id, company_id, full_name, email, location, portfolio_url,
+                 note, stage, created_by_employer_id, NULL, '[]', created_at, updated_at
+          FROM job_applicants;
+        DROP TABLE job_applicants;
+        ALTER TABLE job_applicants_new RENAME TO job_applicants;
+        CREATE INDEX idx_job_applicants_submission ON job_applicants(submission_id);
+        CREATE INDEX idx_job_applicants_company ON job_applicants(company_id);
+        CREATE INDEX idx_job_applicants_designer ON job_applicants(designer_id);
+        -- One application per designer per role. The UI blocks a second, but
+        -- a double-tap on a slow connection should not get through either.
+        CREATE UNIQUE INDEX idx_job_applicants_once
+          ON job_applicants(submission_id, designer_id) WHERE designer_id IS NOT NULL;
+    """)
+    c.commit()
 
 
 def _migrate_conversations_peer_support(c: sqlite3.Connection) -> None:
@@ -628,6 +677,7 @@ def _conn() -> sqlite3.Connection:
             pass  # column already exists
     c.commit()
     _migrate_conversations_peer_support(c)
+    _migrate_applicants_self_applied(c)
     return c
 
 
@@ -654,12 +704,12 @@ def insert_submission(data: dict, company_id: int | None = None, employer_id: in
           (title, company, url, contact_email, location, work_type,
            discipline, level, eligibility, salary, description, agreed_to_terms,
            cross_border_note, closes_at, skills, screening, portfolio_required,
-           company_id, employer_id, status, created_at)
+           accepts_applications, company_id, employer_id, status, created_at)
         VALUES
           (:title, :company, :url, :contact_email, :location, :work_type,
            :discipline, :level, :eligibility, :salary, :description, :agreed_to_terms,
            :cross_border_note, :closes_at, :skills, :screening, :portfolio_required,
-           :company_id, :employer_id, 'pending', :created_at)
+           :accepts_applications, :company_id, :employer_id, 'pending', :created_at)
     """, row)
     c.commit()
     sub_id = cur.lastrowid
@@ -1230,6 +1280,8 @@ def delete_designer(designer_id: int) -> None:
         ("reply_votes", "designer_id"),
         ("session_bookings", "designer_id"),
         ("company_shortlist", "designer_id"),
+        ("job_applicants", "designer_id"),   # withdraws every application
+
         ("notifications", None),          # handled below: keyed by recipient
     ):
         if table == "notifications":
@@ -1977,6 +2029,67 @@ def create_applicant(submission_id: int, company_id: int, full_name: str, email:
     applicant_id = cur.lastrowid
     c.close()
     return applicant_id
+
+
+def create_self_application(submission_id: int, company_id: int, designer_id: int,
+                            full_name: str, email: str, location: str,
+                            portfolio_url: str, note: str, screening_answers: str) -> int | None:
+    """A designer applying to a role themselves. Distinct from create_applicant,
+    where an employer types in someone they already knew about: this row has a
+    designer_id and no creating employer.
+
+    Returns None when they have already applied — the unique index is the real
+    guard, so a double submit races into a no-op rather than two applications."""
+    now = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    c = _conn()
+    try:
+        cur = c.execute(
+            "INSERT INTO job_applicants (submission_id, company_id, full_name, email, location, "
+            "portfolio_url, note, stage, created_by_employer_id, designer_id, screening_answers, "
+            "created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 0, NULL, ?, ?, ?, ?)",
+            (submission_id, company_id, full_name, email, location, portfolio_url, note,
+             designer_id, screening_answers, now, now),
+        )
+        c.commit()
+        return cur.lastrowid
+    except sqlite3.IntegrityError:
+        return None
+    finally:
+        c.close()
+
+
+def get_self_application(submission_id: int, designer_id: int) -> dict | None:
+    c = _conn()
+    row = c.execute(
+        "SELECT * FROM job_applicants WHERE submission_id = ? AND designer_id = ?",
+        (submission_id, designer_id),
+    ).fetchone()
+    c.close()
+    return dict(row) if row else None
+
+
+def list_self_applications(designer_id: int) -> list[dict]:
+    """Every application this designer sent, newest first, with the role and
+    company attached so the dashboard doesn't need a lookup per row."""
+    c = _conn()
+    rows = c.execute(
+        "SELECT a.*, s.title, s.company, s.location AS role_location, s.status AS listing_status "
+        "FROM job_applicants a JOIN submissions s ON s.id = a.submission_id "
+        "WHERE a.designer_id = ? ORDER BY a.created_at DESC",
+        (designer_id,),
+    ).fetchall()
+    c.close()
+    return [dict(r) for r in rows]
+
+
+def withdraw_self_application(designer_id: int, applicant_id: int) -> bool:
+    c = _conn()
+    cur = c.execute(
+        "DELETE FROM job_applicants WHERE id = ? AND designer_id = ?", (applicant_id, designer_id)
+    )
+    c.commit()
+    c.close()
+    return cur.rowcount > 0
 
 
 def list_applicants_for_submission(submission_id: int, company_id: int) -> list[dict]:

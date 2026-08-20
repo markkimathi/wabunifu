@@ -18,6 +18,13 @@
   .kicker{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--c-accent-text);font-weight:600;margin:0 0 14px}
   .legal h1{font-weight:800;font-size:clamp(28px,4vw,38px);letter-spacing:-.02em;margin:0 0 8px;line-height:1.1}
   .legal .updated{color:var(--c-text-faint);font-size:13px;margin:0 0 36px}
+  /* A material change to terms people already agreed to should be readable
+     without diffing the page against a version they no longer have. */
+  .whatchanged{margin:0 0 32px;padding:18px 20px;border:1px solid var(--c-border);
+    border-radius:var(--pp-radius-lg);background:var(--c-bg-sunken)}
+  .whatchanged h3{margin:0 0 8px;font-size:16px;font-weight:700;letter-spacing:-0.014em}
+  .whatchanged p{margin:0 0 8px;font-size:15px;line-height:1.6;color:var(--c-text-subtle)}
+  .whatchanged p:last-child{margin:0}
   .legal h2{font-weight:700;font-size:19px;margin:36px 0 12px;letter-spacing:-.01em}
   .legal p{color:var(--c-text-muted);margin:0 0 14px;line-height:1.65}
   .legal ul{color:var(--c-text-muted);margin:0 0 14px;padding-left:20px;line-height:1.65}
@@ -35,34 +42,56 @@
     <div class="legal">
       <p class="kicker">Legal</p>
       <h1>Terms and Conditions</h1>
-      <p class="updated">Last updated 29 July 2026</p>
+      <p class="updated">Last updated 20 August 2026</p>
+      <div class="whatchanged">
+        <h3>What changed on 20 August 2026</h3>
+        <p>Kazi used to send every application to the employer's own site and never handle one itself. That is still what happens for the roles we aggregate from company career pages, and it is still the default for roles employers post here.</p>
+        <p>What is new: an employer posting a role can now choose to receive applications through Kazi instead. When they do, the listing says so before you start, and section 4 below covers what we do with what you send.</p>
+      </div>
 
       <h2>1. About Kazi</h2>
-      <p>Kazi is a job board for design roles open to designers in Kenya and across Africa. It works two ways: we aggregate publicly listed roles from company career pages and job boards, and employers can submit roles directly for review. Kazi is not a recruitment agency, staffing firm, or employer of record, and never hosts job applications: every "Apply" link sends you straight to the employer's own site.</p>
+      <p>Kazi is a job board for design roles open to designers in Kenya and across Africa. It works two ways: we aggregate publicly listed roles from company career pages and job boards, and employers can submit roles directly for review. Kazi is not a recruitment agency, staffing firm, or employer of record. We never charge you to apply, and we never take a fee from either side of a hire.</p>
+      <p>Applications work one of two ways, and every listing tells you which before you start:</p>
+      <ul>
+        <li><strong>On the employer's own site.</strong> This is how every aggregated listing works, and how employer-posted roles work unless the employer chooses otherwise. The "Apply" button sends you to their site and Kazi is not involved in what happens next.</li>
+        <li><strong>Through Kazi.</strong> An employer posting a role here can choose to receive applications through us. You send your application from the listing, and we pass it to that employer. We are still not a recruitment agency: we do not screen, rank, or represent you, and we take no fee.</li>
+      </ul>
 
       <h2>2. Using the board</h2>
-      <p>Kazi is free to browse. We do our best to keep listings current and to classify each one's eligibility (who can genuinely apply) accurately, but we can't guarantee that every aggregated listing is accurate, still open, or correctly classified. Always confirm the details on the employer's own site before applying.</p>
+      <p>Kazi is free to browse and free to apply through. We do our best to keep listings current and to classify each one's eligibility (who can genuinely apply) accurately, but we can't guarantee that every aggregated listing is accurate, still open, or correctly classified. Where a listing points at the employer's own site, confirm the details there before applying.</p>
 
       <h2>3. Eligibility badges</h2>
       <p>The "Open to Kenya," "Open to Africa," "Worldwide remote," and "Check restrictions" badges are a best-effort classification based on the listing's stated location and text, or on what an employer told us directly. They are not a legal or contractual guarantee that you're eligible to work in any given location. Visa, work-permit, and immigration questions are between you and the employer.</p>
 
-      <h2>4. Posting a job (for employers)</h2>
-      <p>By submitting a role through "Post a job," you confirm that the role and company are real, the application link goes straight to it, and the eligibility you select genuinely reflects who can apply. We review every submission before it appears on the board and may reject or remove a listing at our discretion, including after it's published, without notice. We don't guarantee placement, how long a listing stays visible, or applicant volume.</p>
+      <h2>4. Applying through Kazi</h2>
+      <p>Where a listing accepts applications through Kazi, this is what that means.</p>
+      <ul>
+        <li><strong>What you send.</strong> Your name, the email on your account, a link to your Kazi profile, anything you write in the application, and your r&eacute;sum&eacute; if you attach one. Nothing else from your account is sent.</li>
+        <li><strong>Who receives it.</strong> The employer who posted that role, and their teammates on Kazi who can see applicants. Nobody else. We do not sell applications, share them with other employers, or use them to advertise to you.</li>
+        <li><strong>What we do with it.</strong> We pass it on and we keep a copy so you can see what you applied to. We do not screen, score, rank, or recommend applicants, and we take no fee from you or the employer at any point.</li>
+        <li><strong>What we cannot promise.</strong> That an employer reads it, replies, or ever updates its status. Once an application is with an employer, what happens next is between the two of you.</li>
+        <li><strong>Withdrawing.</strong> You can withdraw an application from your dashboard, which removes it from the employer's list. Closing your account withdraws all of them.</li>
+      </ul>
 
-      <h2>5. No warranty</h2>
+      <h2>5. Posting a job (for employers)</h2>
+      <p>By submitting a role through "Post a job," you confirm that the role and company are real, the eligibility you select genuinely reflects who can apply, and — where you send applicants to your own site — that the link goes straight to it. We review every submission before it appears on the board and may reject or remove a listing at our discretion, including after it's published, without notice. We don't guarantee placement, how long a listing stays visible, or applicant volume.</p>
+      <p>If you choose to receive applications through Kazi, you agree to use what applicants send you only to consider them for that role, to keep it within your own team, and not to sell it or add anyone to a mailing list on the strength of an application. Applications are personal data, and the applicant retains their rights over it.</p>
+
+      <h2>6. No warranty</h2>
       <p>Kazi is provided "as is," without warranties of any kind. We don't guarantee that the board, any listing, or any employer's information is accurate, complete, or current. To the extent permitted by law, Kazi isn't liable for loss or damage arising from your use of the site or from your interactions with any employer or applicant.</p>
 
-      <h2>6. Prohibited use</h2>
+      <h2>7. Prohibited use</h2>
       <ul>
         <li>Submitting fake, misleading, or non-genuine job listings.</li>
         <li>Scraping or systematically extracting data from Kazi without permission.</li>
         <li>Using the site to harass, spam, or defraud anyone.</li>
+        <li>Using an applicant's details for anything other than considering them for the role they applied to.</li>
       </ul>
 
-      <h2>7. Changes to these terms</h2>
-      <p>We may update these terms as the site evolves. Continuing to use Kazi after a change means you accept the update.</p>
+      <h2>8. Changes to these terms</h2>
+      <p>We may update these terms as the site evolves. When something material changes — as it did on 20 August 2026 — we date it and say plainly at the top of this page what changed, rather than leaving you to diff it. Continuing to use Kazi after a change means you accept the update.</p>
 
-      <h2>8. Contact</h2>
+      <h2>9. Contact</h2>
       <p>Questions about these terms: <a href="mailto:hello@odana.design">hello@odana.design</a></p>
     </div>
   </div>

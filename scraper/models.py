@@ -53,6 +53,11 @@ class Job:
     desc_text: str | None = None # short plain-text teaser derived from desc, for card previews
     posted_at: str = ""      # ISO date "YYYY-MM-DD"
     cross_border_note: str = ""  # employer's own words on how they hire outside their home country
+    # Employer-posted roles only: whether applications are taken on Kazi rather
+    # than on the employer's own site. Scraped roles can never be True — there
+    # is no employer on the other end to receive one.
+    accepts_applications: bool = False
+    submission_id: int | None = None
     # ISO date applications close. Employer-posted roles only — no ATS we
     # scrape publishes one, so a scraped listing stays open until it ages out.
     closes_at: str = ""
@@ -108,6 +113,8 @@ class Job:
             "skills": self.skills,
             "screening": self.screening,
             "portfolio_required": self.portfolio_required,
+            "accepts_applications": self.accepts_applications,
+            "submission_id": self.submission_id,
         }
 
     def to_dict(self) -> dict:
