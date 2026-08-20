@@ -1195,6 +1195,21 @@ def require_employer(authorization: str = Header(default="")) -> dict:
     return employer
 
 
+def require_employer_any_status(authorization: str = Header(default="")) -> dict:
+    """require_employer without the suspension gate, for reading your own
+    account. Mirrors require_designer_any_status and exists for the same
+    reason: an employer can be suspended by a report resolution, and without
+    this their dashboard could never load the status that explains why."""
+    token = authorization.removeprefix("Bearer ").strip()
+    session = get_employer_session(token) if token else None
+    if not session:
+        raise HTTPException(401, "invalid or expired session")
+    employer = get_employer(session["employer_id"])
+    if not employer:
+        raise HTTPException(401, "invalid session")
+    return employer
+
+
 def require_employer_role(*allowed: str):
     """Gates write endpoints by team_role. A pending (not-yet-approved)
     teammate is blocked from every write regardless of the proposed role
@@ -2609,12 +2624,13 @@ def employer_reset_password(payload: ResetPasswordIn):
 
 
 @app.get("/api/employers/me")
-def employer_me(employer: dict = Depends(require_employer)):
+def employer_me(employer: dict = Depends(require_employer_any_status)):
     company = get_company(employer["company_id"])
     return {
         **_employer_public(employer), "email": employer["email"],
         "email_verified": bool(employer["email_verified"]),
         "is_pending_approval": bool(employer["is_pending_approval"]),
+        "suspended": bool(employer["suspended"]),
         "company": company,
     }
 
@@ -3604,17 +3620,30 @@ def admin_suspend_designer(designer_id: int, payload: DesignerSuspend, _: None =
     to 'suspended', which the public directory/profile queries and
     require_designer() already treat as invisible/blocked. Community posts
     stay up, credited to the account as-is."""
-    d = get_designer(designer_id)
-    if not d:
+    if not get_designer(designer_id):
         raise HTTPException(404, "no such designer")
-    was = d.get("status")
-    suspend_designer(designer_id, payload.rule, payload.reason)
-    # The suspend dialog says "They can be told why, and can reply." Until now
-    # the reason was written to a column only an admin ever read. It has to be
-    # email — a suspended account can't reach an in-app notification.
-    if was != "suspended" and d.get("email"):
-        send_designer_suspended_email(d["email"], d.get("display_name") or "Hello", payload.reason)
+    _suspend_designer_and_tell(designer_id, payload.rule, payload.reason)
     return {"ok": True}
+
+
+def _suspend_designer_and_tell(designer_id: int, rule: str, reason: str) -> None:
+    """The only way a designer should ever reach 'suspended'.
+
+    There are two routes to this state — the suspend dialog and resolving a
+    report with action='suspend' — and the second one called
+    set_designer_status() directly, so it recorded no rule, no reason, and
+    sent nothing. Someone suspended that way saw a banner with no explanation
+    and got no email. Same bug as the dialog had, surviving on the path that
+    wasn't the one it was found on.
+    """
+    d = get_designer(designer_id)
+    if not d or d.get("status") == "suspended":
+        return
+    suspend_designer(designer_id, rule, reason)
+    # Email, not a notification: a suspended account is blocked from the
+    # endpoints an in-app notification would be read through.
+    if d.get("email"):
+        send_designer_suspended_email(d["email"], d.get("display_name") or "Hello", reason)
 
 
 @app.post("/api/admin/designers/{designer_id}/unsuspend")
@@ -3781,21 +3810,28 @@ def admin_resolve_report(report_id: int, payload: ReportResolve, _: None = Depen
         # recorded below, but the message body itself stays as-is.
 
     if action == "suspend":
+        # Reason recorded and sent, same as a suspension from the dialog. The
+        # reporter's own words aren't repeated back — a report is one side of
+        # a story — so this says what was found and where, and invites a reply.
+        WHERE = {"message": "a message you sent", "community_reply": "a reply you posted",
+                 "community_question": "a question you posted"}
+        why = (f"A report about {WHERE.get(kind, 'something you posted')} was reviewed "
+               f"and found to break the house rules.")
         if kind == "message":
             message = get_message(target_id)
             if message:
                 if message["sender_type"] == "designer" and message["sender_designer_id"]:
-                    set_designer_status(message["sender_designer_id"], "suspended")
+                    _suspend_designer_and_tell(message["sender_designer_id"], "conduct", why)
                 elif message["sender_type"] == "employer" and message["sender_employer_id"]:
                     set_employer_suspended(message["sender_employer_id"], True)
         elif kind == "community_reply":
             reply = get_reply(target_id)
             if reply:
-                set_designer_status(reply["designer_id"], "suspended")
+                _suspend_designer_and_tell(reply["designer_id"], "conduct", why)
         elif kind == "community_question":
             question = get_question(target_id)
             if question:
-                set_designer_status(question["designer_id"], "suspended")
+                _suspend_designer_and_tell(question["designer_id"], "conduct", why)
 
     resolve_report(report_id, action)
     return {"ok": True}

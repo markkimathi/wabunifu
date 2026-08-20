@@ -1710,6 +1710,18 @@
       fail(e, "We couldn't load your dashboard");
       return;
     }
+
+    // A suspended employer can read their own account and nothing else, so
+    // every section load would 403. Say what's true and stop, rather than
+    // showing a generic failure for something that isn't a failure.
+    if (me && me.suspended) {
+      document.getElementById("content").innerHTML =
+        '<div class="review-banner -bad"><h3>This account is suspended</h3>' +
+        '<p>You can\'t post roles or message while that\'s the case, and your listings aren\'t showing. ' +
+        'Write to <a href="mailto:hello@odana.design">hello@odana.design</a> if you think that\'s wrong.</p></div>';
+      return;
+    }
+
     try {
       await loadSection();
     } catch (e) {
