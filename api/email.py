@@ -230,6 +230,46 @@ def send_designer_unsuspended_email(email: str, name: str) -> None:
     )
 
 
+def send_teammate_approved_email(email: str, name: str, company_name: str) -> None:
+    send_email(
+        email,
+        f"You're approved to post for {company_name}",
+        f"""
+        <p>{name}, an owner at {company_name} has approved your account. You can
+        post roles and manage applicants now.</p>
+        <p><a href="{SITE_URL}/employer">Go to your dashboard</a></p>
+        """,
+    )
+
+
+def send_teammate_declined_email(email: str, name: str, company_name: str) -> None:
+    """The account is deleted outright when an owner declines, so this is the
+    only thing standing between that and someone finding their brand-new
+    login simply doesn't work."""
+    send_email(
+        email,
+        f"About your account for {company_name}",
+        f"""
+        <p>{name}, an owner at {company_name} didn't approve your account, so it
+        has been removed. Nothing you entered was shared with anyone.</p>
+        <p>If you think that's a mistake, the person who invited you is the one
+        to ask — they can send a new invite.</p>
+        """,
+    )
+
+
+def send_teammate_removed_email(email: str, name: str, company_name: str) -> None:
+    send_email(
+        email,
+        f"Your access to {company_name} has been removed",
+        f"""
+        <p>{name}, an owner at {company_name} has removed your account from the
+        team, so you no longer have access to its listings or applicants.</p>
+        <p>If that's unexpected, they're the ones to ask.</p>
+        """,
+    )
+
+
 def send_saved_search_digest(email: str, name: str, search_name: str,
                              jobs: list[dict], country: str) -> bool:
     """New roles matching one saved search. Sent only when there is something to

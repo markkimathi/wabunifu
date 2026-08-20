@@ -105,7 +105,8 @@ from . import email as email_module  # noqa: E402
 from .email import (send_saved_search_digest, send_designer_approved_email,  # noqa: E402
                     send_designer_rejected_email, send_company_approved_email,
                     send_company_rejected_email, send_designer_suspended_email,
-                    send_designer_unsuspended_email)
+                    send_designer_unsuspended_email, send_teammate_approved_email,
+                    send_teammate_declined_email, send_teammate_removed_email)
 
 # The eligibility rules live with the classifier that produces them, and the
 # digest has to apply exactly the same ones the board does — a second copy here
@@ -2994,6 +2995,25 @@ def accept_team_invite(token: str, payload: TeamInviteAccept):
         invited_by_employer_id=invite["invited_by_employer_id"],
     )
     set_invite_status(token, "accepted")
+
+    # The whole invite lifecycle used to be silent. Two people needed telling
+    # here: whoever sent the invite, and — when the new account needs an
+    # owner's approval — the owners, who otherwise had no idea anyone was
+    # waiting on them. That's how someone ends up pending indefinitely.
+    who = payload.full_name or invite["invited_email"]
+    company = get_company(invite["company_id"])
+    company_name = (company or {}).get("name") or "your company"
+    if invite["invited_by_employer_id"]:
+        notify("employer", int(invite["invited_by_employer_id"]), "invite_accepted",
+               f"{who} accepted your invite",
+               f"They've joined {company_name}.", "/employer?tab=team")
+    if invite["needs_approval"]:
+        for e in list_employers_for_company(invite["company_id"]):
+            if e["team_role"] == "owner" and e["id"] != employer_id:
+                notify("employer", e["id"], "teammate_pending",
+                       f"{who} is waiting for you to approve them",
+                       "They can't post or manage anything until an owner approves.",
+                       "/employer?tab=team")
     return {"ok": True, "token": create_employer_session(employer_id), "needs_approval": bool(invite["needs_approval"])}
 
 
@@ -3003,6 +3023,11 @@ def decline_team_invite(token: str):
     if not invite or invite["status"] != "pending":
         raise HTTPException(404, "This invite is no longer valid.")
     set_invite_status(token, "declined")
+    if invite["invited_by_employer_id"]:
+        notify("employer", int(invite["invited_by_employer_id"]), "invite_declined",
+               f"{invite['invited_email']} declined your invite",
+               "Nothing else happens — you can invite someone else whenever.",
+               "/employer?tab=team")
     return {"ok": True}
 
 
@@ -3011,7 +3036,16 @@ def employer_approve_teammate(target_id: int, employer: dict = Depends(require_e
     target = get_employer(target_id)
     if not target or target["company_id"] != employer["company_id"]:
         raise HTTPException(404, "no such teammate")
+    was_pending = bool(target["is_pending_approval"])
     approve_pending_employer(target_id)
+    # They've been looking at a banner saying someone needs to approve them.
+    # This is that someone doing it — worth saying so.
+    if was_pending:
+        company_name = (get_company(employer["company_id"]) or {}).get("name") or "your company"
+        notify("employer", target_id, "teammate_approved",
+               "You're approved", f"You can post roles for {company_name} now.", "/employer")
+        if target.get("email"):
+            send_teammate_approved_email(target["email"], target.get("full_name") or "Hello", company_name)
     return {"ok": True}
 
 
@@ -3022,7 +3056,14 @@ def employer_decline_teammate(target_id: int, employer: dict = Depends(require_e
     target = get_employer(target_id)
     if not target or target["company_id"] != employer["company_id"] or not target["is_pending_approval"]:
         raise HTTPException(404, "no such pending teammate")
+    # Read before deleting: the account is about to stop existing, so email is
+    # the only channel left. Without this someone signs up through an invite
+    # and then simply finds their brand-new password doesn't work.
+    company_name = (get_company(employer["company_id"]) or {}).get("name") or "the company"
+    email, name = target.get("email"), target.get("full_name") or "Hello"
     delete_employer(target_id)
+    if email:
+        send_teammate_declined_email(email, name, company_name)
     return {"ok": True}
 
 
@@ -3033,7 +3074,11 @@ def employer_remove_teammate(target_id: int, employer: dict = Depends(require_em
         raise HTTPException(404, "no such teammate")
     if target["team_role"] == "owner" and count_company_owners(employer["company_id"], exclude_id=target_id) == 0:
         raise HTTPException(400, "Can't remove the only owner — add another owner first.")
+    company_name = (get_company(employer["company_id"]) or {}).get("name") or "the company"
+    email, name = target.get("email"), target.get("full_name") or "Hello"
     delete_employer(target_id)
+    if email:
+        send_teammate_removed_email(email, name, company_name)
     return {"ok": True}
 
 
