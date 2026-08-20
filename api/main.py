@@ -326,7 +326,7 @@ async def cache_headers(request: Request, call_next):
 class JobSubmission(BaseModel):
     title: str
     company: str
-    url: str                 # where candidates actually apply; Kazi never hosts applications
+    url: str                 # the employer's own apply page; used unless they opt into accepts_applications
     contact_email: str       # ours only, never shown on the public board
     description: str
     location: str = ""
