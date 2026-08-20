@@ -21,6 +21,7 @@ import hashlib
 import html as html_mod
 import os
 import re
+import secrets
 from uuid import uuid4
 from typing import Optional
 import sys
@@ -217,10 +218,21 @@ RESERVED_HANDLES = {
     "search", "invite", "terms", "privacy", "cookies", "api",
 }
 
-# Dev default so `uvicorn api.main:app` works out of the box. Set a real
-# KAZI_ADMIN_TOKEN env var before deploying anywhere reachable; anyone with
-# this token can approve/reject submissions.
-ADMIN_TOKEN = os.environ.get("KAZI_ADMIN_TOKEN", "dev-only-change-me")
+# Dev default so `uvicorn api.main:app` works out of the box. Anyone holding
+# this token can approve listings, suspend designers and delete submissions.
+#
+# The comment here used to say "set a real one before deploying anywhere
+# reachable" and leave it at that — so a deploy that simply forgot the secret
+# would come up with the whole admin console guarded by a string published in
+# this file. Hoping is not a control: on Fly the default is refused outright
+# (see require_admin), which turns that mistake into a locked door rather than
+# an open one.
+DEV_ADMIN_TOKEN = "dev-only-change-me"
+ADMIN_TOKEN = os.environ.get("KAZI_ADMIN_TOKEN", DEV_ADMIN_TOKEN)
+
+# Set by the Fly runtime on every machine; absent locally. The marker for
+# "this instance is reachable from the internet".
+IS_HOSTED = bool(os.environ.get("FLY_APP_NAME"))
 
 # Profile photos live next to the SQLite file (same persistent volume in
 # production, /data — see fly.toml), so they survive redeploys the same way
@@ -1228,8 +1240,14 @@ class PaySubmissionIn(BaseModel):
 
 
 def require_admin(authorization: str = Header(default="")) -> None:
+    # A hosted instance running on the published dev default is a wide-open
+    # admin console, so it is treated as no admin console at all.
+    if IS_HOSTED and ADMIN_TOKEN == DEV_ADMIN_TOKEN:
+        raise HTTPException(503, "admin is unavailable: KAZI_ADMIN_TOKEN is not set on this deployment")
     token = authorization.removeprefix("Bearer ").strip()
-    if not token or token != ADMIN_TOKEN:
+    # compare_digest rather than != so the check does not return early on the
+    # first wrong character.
+    if not token or not secrets.compare_digest(token, ADMIN_TOKEN):
         raise HTTPException(401, "invalid or missing admin token")
 
 
