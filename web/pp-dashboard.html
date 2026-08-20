@@ -43,6 +43,10 @@
 
   /* Completion, framed as what it unlocks. Gold carries the progress; the rows
      are plain buttons so the whole line is the target, not just a link. */
+  .verify-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+  .verify-row .pp-field-input{height:38px}
+  .verify-row input{font-variant-numeric:tabular-nums;letter-spacing:.08em}
+
   .review-banner{padding:18px 20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-lg);
     background:var(--c-bg-sunken);margin-bottom:16px}
   .review-banner h3{margin:0 0 6px;font-size:17px;font-weight:700;letter-spacing:-0.015em}
@@ -689,8 +693,26 @@
 
   function renderAccount(){
     var body = '<div class="section-head"><h2>Account</h2></div>';
+    // Unverified used to be a dead sentence. The code is emailed on signup and
+    // both endpoints existed, but nothing ever asked for the code or offered to
+    // resend it — so no designer could verify, and job alerts (which skip
+    // unverified addresses) never reached anyone.
     body += '<div class="form-panel"><h3>Sign-in email</h3><p style="margin:0 0 4px;font-size:14.5px">' + escapeHtml(me.email) + '</p>' +
-      '<p style="margin:0;font-size:13px;color:var(--c-text-subtle)">' + (me.email_verified ? "Verified." : "Not verified yet.") + '</p></div>';
+      (me.email_verified
+        ? '<p style="margin:0;font-size:13px;color:var(--c-good-text)">Verified.</p>'
+        : '<p style="margin:0 0 12px;font-size:13px;color:var(--c-text-subtle)">Not verified yet. ' +
+            'Job alerts only go to a verified address, so this is worth doing.</p>' +
+          '<div class="verify-row">' +
+            '<span class="pp-field-input" style="max-width:190px">' +
+              '<input id="verifyCode" type="text" inputmode="numeric" autocomplete="one-time-code" ' +
+              'maxlength="6" placeholder="6-digit code" aria-label="Verification code">' +
+            '</span>' +
+            '<button type="button" class="pp-btn pp-btn-primary pp-btn-sm" id="verifyBtn">Verify</button>' +
+            '<button type="button" class="pp-btn pp-btn-tertiary pp-btn-sm" id="resendVerifyBtn">Send it again</button>' +
+          '</div>' +
+          '<p class="fielderr" id="verifyErr" role="alert" hidden></p>' +
+          '<p id="verifyNote" role="status" style="margin:8px 0 0;font-size:13px;color:var(--c-text-subtle)" hidden></p>') +
+    '</div>';
     body += '<div class="form-panel"><h3>Password</h3><a class="pp-btn pp-btn-secondary" href="/signin?view=reset">Reset your password</a></div>';
     body += '<div class="form-panel"><h3>Résumé</h3>' +
       (me.resume_filename ? '<p style="margin:0 0 10px;font-size:14.5px">' + escapeHtml(me.resume_filename) + '</p>' : '<p style="margin:0 0 10px;font-size:14.5px;color:var(--c-text-subtle)">No résumé uploaded.</p>') +
@@ -699,6 +721,49 @@
     body += '<div class="danger-block"><h3>Close your account</h3><p>Removes your profile, projects, saved roles and messages. This can\'t be undone.</p>' +
       '<button type="button" class="pp-btn pp-btn-danger" id="deleteAccountBtn">Close account</button></div>';
     return body;
+  }
+
+  function wireVerifyEmail(){
+    var btn = document.getElementById("verifyBtn");
+    if (!btn) return;
+    var input = document.getElementById("verifyCode");
+    var err = document.getElementById("verifyErr");
+    var note = document.getElementById("verifyNote");
+
+    function say(msg){ note.textContent = msg; note.hidden = !msg; }
+    function fail(msg){ err.textContent = msg; err.hidden = !msg; if (msg) input.focus(); }
+
+    btn.addEventListener("click", async function(){
+      var code = input.value.trim();
+      fail(""); say("");
+      if (!/^\d{6}$/.test(code)) { fail("That code is six digits."); return; }
+      btn.disabled = true;
+      try {
+        await api("/api/designers/me/verify-email", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code: code })
+        });
+        me.email_verified = true;
+        toast("Email verified.");
+        render();
+      } catch (e) {
+        fail(e.message || "That code is incorrect or has expired.");
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("resendVerifyBtn").addEventListener("click", async function(e){
+      var b = e.currentTarget;
+      b.disabled = true;
+      fail("");
+      try {
+        await api("/api/designers/me/resend-verification", { method: "POST" });
+        say("Sent. It can take a minute — check your spam folder if it doesn't arrive.");
+      } catch (err2) {
+        fail("Couldn't send that. Try again in a moment.");
+        b.disabled = false;
+      }
+    });
   }
 
   // ---------------- Render + wire ----------------
@@ -864,6 +929,7 @@
     if (section === "availability") { selectedOpenTo = (me.open_to || []).slice(); renderOpenToChips(); }
     if (section === "profile") { selectedDisciplines = (me.discipline || []).slice(); selectedSkills = (me.skills || []).slice(); renderDisciplineChips(); renderSkillChips(); fillCountrySelect(me.country || ""); }
     wire();
+    wireVerifyEmail();
     if (section === "messages" && cache.conversations.length) loadThread(activeThreadId || cache.conversations[0].id);
   }
 
