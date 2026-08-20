@@ -136,7 +136,7 @@
   <div class="wrap hero">
     <div class="hero-copy">
       <h1>Somewhere to ask, and someone to ask</h1>
-      <p>Reviews you can book, questions answered by people doing the work, and the projects worth stopping on this month.</p>
+      <p>Reviews you can book, questions answered by people doing the work, and the projects worth stopping on.</p>
     </div>
     <button class="pp-btn pp-btn-primary pp-btn-lg" id="askBtn" type="button">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"></path></svg>
@@ -164,7 +164,7 @@
         <div id="seatList" style="display:flex;flex-direction:column;gap:10px"></div>
       </div>
 
-      <div class="rail-card">
+      <div class="rail-card" id="helperCard" hidden>
         <h3>People answering things</h3>
         <p>Most useful replies this month.</p>
         <div id="helperList"></div>
@@ -519,8 +519,12 @@
     }
 
     var helperBox = document.getElementById("helperList");
+    var helperCard = document.getElementById("helperCard");
+    // Hidden until there is somebody to name. It used to render the heading and
+    // "Most useful replies this month." over an empty list on every load.
+    if (helperCard) helperCard.hidden = !state.leaderboard.length;
     if (!state.leaderboard.length) {
-      helperBox.innerHTML = '<p style="margin:0;font-size:13.5px;color:var(--c-text-faint)">Nobody\'s answered a question yet this month.</p>';
+      helperBox.innerHTML = "";
     } else {
       helperBox.innerHTML = state.leaderboard.map(function(p){
         return '<a class="helper-row" href="/designers/' + encodeURIComponent(p.handle || p.designer_id) + '" style="text-decoration:none;color:inherit">' +
