@@ -153,6 +153,9 @@
      the lines below never engaged and long titles ran straight out of the main
      column and over the location beside it. min-width:0 is what lets it clip. */
   .jr-main>div{flex:1;min-width:0}
+  /* Sits above the title, so it is read before the role is. Kept tight — this
+     is a lead-in, not a third line of body copy. */
+  .jr-elig{margin:0 0 5px;line-height:1}
   .jr-main h2{margin:0 0 2px;font-size:16px;font-weight:700;letter-spacing:-0.015em;line-height:1.28;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .jr-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -971,7 +974,7 @@
 
   function renderJobRow(j){
     if (j.closed) return renderClosedRow(j);
-    var tags = eligBadge(j) + '<span class="pp-chip">' + (j.cat || "Design") + '</span>' +
+    var tags = '<span class="pp-chip">' + (j.cat || "Design") + '</span>' +
       // Only shown when the posting actually stated it. Most roles are
       // full-time and saying so on every row is noise; saying so when it is
       // our own guess would be worse.
@@ -981,7 +984,12 @@
     var saved = isSaved(j.id);
     return '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
       '<div class="jr-main"><span class="pp-card-mark">' + (j.co ? j.co[0].toUpperCase() : "?") + '</span>' +
-        '<div><h2>' + escapeHtml(j.t) + '</h2><p>' + escapeHtml(j.co) + '</p></div></div>' +
+        // Eligibility reads first, before the role even names itself. It is the
+        // question this board exists to answer, and it sat mid-row among the
+        // discipline chips where it read as one attribute among several.
+        // Remote's board does the same thing for the same reason.
+        '<div><div class="jr-elig">' + eligBadge(j) + '</div>' +
+          '<h2>' + escapeHtml(j.t) + '</h2><p>' + escapeHtml(j.co) + '</p></div></div>' +
       '<p class="jr-place">' + escapeHtml(j.city || "Remote") + '</p>' +
       '<div class="jr-tags">' + tags + '</div>' +
       '<div class="jr-meta">' +
