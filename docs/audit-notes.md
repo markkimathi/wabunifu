@@ -344,6 +344,44 @@ an ordinary quiet week.
 after the 60-day age filter. Zero fetch failures. Only Wasoko and Deel returned
 nothing, legitimately.
 
+## Auditing the classifier: read the output, not the rules
+
+7,393 raw listings become ~50 design roles, and that judgement is the product.
+The rules read fine; the output is where the problems were. Two kinds, both
+found by printing every live role's title beside its category and looking:
+
+**Roles that aren't design jobs.** "Senior Product Manager, Design Systems" and
+"UX Product Manager" passed because their titles name a discipline. Reading the
+descriptions settled it — one owns the design system as a product, the other
+sat in Commercial HQ. The `EXCLUDE` list was thorough about engineering titles
+and had nothing about product management.
+
+**Roles filed under the wrong discipline.** Title and department were
+concatenated and matched in rule order, and Product Design is the *last* rule —
+so any other discipline named anywhere outranked it. Three roles literally
+titled "Product Designer" sat under UX Design. Anyone filtering the board by
+the discipline they actually do would miss them.
+
+Two things worth carrying:
+
+1. **A precise match should outrank a fuzzy one.** `\bproduct designer` is a
+   precise title match; `\bdesigner\b` is a catch-all. Letting the precise
+   title win fixed four roles while leaving "Learning Experience Designer"
+   under Instructional Design, which is where the department correctly put it.
+2. **Scope an exclusion to the field that means it.** The first attempt checked
+   "product manager" against title *and* department, and dropped Duolingo's
+   "Senior Learning Designer" — because Duolingo files it under a department
+   called "Product Manager". The department says where a role sits; the title
+   says what it is.
+
+Check adjacency when writing an exclusion: `\bproduct\s+manager\b` catches
+"Product Manager" and not "Product Design Manager", which manages designers and
+belongs on the board.
+
+**Baseline after this pass:** 49 roles — Product Design 28, UX Research 5, UX
+Design 5, Instructional Design 3, Design Systems 3, Content Design 2, and one
+each of Motion, Brand and Design Engineering.
+
 ## Scope discipline — what was deliberately not built
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
