@@ -230,7 +230,12 @@ RESERVED_HANDLES = {
 # (see require_admin), which turns that mistake into a locked door rather than
 # an open one.
 DEV_ADMIN_TOKEN = "dev-only-change-me"
-ADMIN_TOKEN = os.environ.get("KAZI_ADMIN_TOKEN", DEV_ADMIN_TOKEN)
+# .strip() because the incoming header is stripped before comparison, and an
+# asymmetric comparison can never match: a secret stored with a trailing
+# newline — which is easy to do by piping a file, or pasting into a web form —
+# would reject every correct token forever, while reporting only "invalid or
+# missing admin token".
+ADMIN_TOKEN = os.environ.get("KAZI_ADMIN_TOKEN", DEV_ADMIN_TOKEN).strip()
 
 # Set by the Fly runtime on every machine; absent locally. The marker for
 # "this instance is reachable from the internet".
