@@ -320,6 +320,30 @@ performance.getEntriesByType('resource')
 and for oversized images, compare `img.naturalWidth` against
 `getBoundingClientRect().width` — anything past ~3× is waste.
 
+## Eighth shape: an error that is caught, logged, and then ignored
+
+The scraper wraps every source fetch in try/except so one dead host cannot take
+the run down with it. That is correct. It also meant a run where most sources
+failed finished **green**, wrote a much smaller `jobs.json`, committed it, and
+deployed it. The board would drop from 51 roles to a handful, and the only
+trace would be a line on stderr in a workflow log nobody opens when the run is
+green.
+
+Catching an error is not handling it. **If the recovery path can produce a
+materially worse outcome than the failure, something has to decide whether the
+result is still worth publishing.** Two guards now do: more than a quarter of
+sources failing, or fewer than half the previous roles, exits non-zero — which
+stops the workflow before the commit and the deploy, so a bad scrape never
+reaches the site rather than reaching it and being noticed later.
+
+Both are deliberately loose. They exist to catch an ATS changing its API, not
+an ordinary quiet week.
+
+**Current state, for comparison next time:** 56 companies across 7 ATS types,
+7,393 raw listings, 64 design roles after classification, 55 after dedupe, 51
+after the 60-day age filter. Zero fetch failures. Only Wasoko and Deel returned
+nothing, legitimately.
+
 ## Scope discipline — what was deliberately not built
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
