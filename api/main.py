@@ -4399,7 +4399,11 @@ def designer_profile_page(identifier: str, request: Request):
     except Exception:
         designer = None
     if designer is None:
-        return FileResponse(WEB_DIR / "pp-profile.html")
+        # Same reasoning as an expired job below: the page still renders its own
+        # explanation (including "your profile is still in review" if it is the
+        # owner looking), but the status has to say the resource isn't there, or
+        # a crawler treats every mistyped handle as a real page.
+        return FileResponse(WEB_DIR / "pp-profile.html", status_code=404)
 
     name = (designer.get("display_name") or "").strip() or "A designer"
     disciplines = parse_multi_field(designer.get("discipline"))
@@ -4449,7 +4453,7 @@ def company_page(slug: str, request: Request):
     if record and record.get("status") == "approved":
         name = record["name"]
     if not name:
-        return FileResponse(WEB_DIR / "pp-company.html")
+        return FileResponse(WEB_DIR / "pp-company.html", status_code=404)
     roles = sum(1 for j in combined if (j.get("co") or "") == name)
     african = sum(1 for j in combined
                   if (j.get("co") or "") == name and j.get("elig") in ("kenya", "africa"))
@@ -4560,7 +4564,7 @@ def _clip(text: str, limit: int = 300) -> str:
 
 def _page_with_head(filename: str, *, title: str, description: str,
                     canonical: str, image: str, extra_head: str = "",
-                    request: Optional[Request] = None) -> Response:
+                    request: Optional[Request] = None, status_code: int = 200) -> Response:
     """Serve a static page with its <title> replaced and social/meta tags added.
 
     Values are escaped for an HTML attribute context. extra_head is trusted
@@ -4595,7 +4599,7 @@ def _page_with_head(filename: str, *, title: str, description: str,
     etag = '"' + hashlib.md5(doc.encode("utf-8")).hexdigest() + '"'
     if request is not None and request.headers.get("if-none-match") == etag:
         return Response(status_code=304, headers={"etag": etag})
-    return HTMLResponse(doc, headers={"etag": etag})
+    return HTMLResponse(doc, status_code=status_code, headers={"etag": etag})
 
 
 def _job_share_text(job: dict) -> tuple[str, str]:
@@ -4671,11 +4675,17 @@ def job_details_page(job_id: str, request: Request):
     if job is None:
         # Still the same page — it renders its own "this role is gone" state —
         # but nothing here should invite a crawler to index a dead listing.
+        # 404, not 200. noindex keeps it out of the index eventually, but a
+        # removed job posting is exactly what Google asks to be answered with a
+        # 404 so it drops out of Google Jobs promptly rather than lingering as
+        # a listing that no longer exists. The body is still the real page —
+        # the reader gets the explanation and the similar roles, not a dead end.
         return _page_with_head(
             "pp-job.html", title="This role is no longer listed · Path & Pixel",
             description="This listing has closed or expired. See what else is open.",
             canonical=f"{base}/jobs", image=f"{base}/logo.png",
-            extra_head='<meta name="robots" content="noindex">\n', request=request)
+            extra_head='<meta name="robots" content="noindex">\n', request=request,
+            status_code=404)
 
     title, description = _job_share_text(job)
     posted = (date.today() - timedelta(days=int(job.get("days") or 0))).isoformat()
@@ -4805,7 +4815,20 @@ def community_rules_page():
 
 @app.get("/community/{item_id}", include_in_schema=False)
 def community_detail_page(item_id: str):
-    return FileResponse(WEB_DIR / "pp-community-detail.html")
+    # The id carries its own type ("s-3" / "q-17"), so whether the thing exists
+    # is answerable here rather than only after the client has fetched and
+    # failed. The page still renders its own not-found state either way.
+    found = False
+    try:
+        if item_id.startswith("s-") and item_id[2:].isdigit():
+            found = get_community_session(int(item_id[2:])) is not None
+        elif item_id.startswith("q-") and item_id[2:].isdigit():
+            q = get_question(int(item_id[2:]))
+            found = bool(q and q.get("status") == "visible")
+    except Exception:
+        found = False
+    return FileResponse(WEB_DIR / "pp-community-detail.html",
+                        status_code=200 if found else 404)
 
 
 @app.get("/resources", include_in_schema=False)
@@ -4815,7 +4838,11 @@ def resources_page():
 
 @app.get("/resources/{slug}", include_in_schema=False)
 def resources_guide_page(slug: str):
-    return FileResponse(WEB_DIR / "pp-guide.html")
+    # Guides are JSON files on disk, so whether one exists is knowable here
+    # rather than only after the client has fetched and failed.
+    safe = slug.replace("/", "").replace("\\", "").replace("..", "")
+    exists = (WEB_DIR / "guide-content" / f"{safe}.json").is_file()
+    return FileResponse(WEB_DIR / "pp-guide.html", status_code=200 if exists else 404)
 
 
 # Static site last: /api/* and the routes above take priority, everything
