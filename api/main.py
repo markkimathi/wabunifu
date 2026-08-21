@@ -32,7 +32,8 @@ import bcrypt
 from fastapi import (
     FastAPI, HTTPException, Header, Depends, Request, UploadFile, File, Form, BackgroundTasks,
 )
-from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse, PlainTextResponse, Response
+from fastapi.responses import (FileResponse, RedirectResponse, HTMLResponse, PlainTextResponse,
+                               Response, JSONResponse)
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, field_validator, model_validator
 
@@ -286,6 +287,26 @@ def client_ip(request: Request) -> str:
 
 app = FastAPI(title="Kazi API")
 init_db()
+
+
+@app.exception_handler(404)
+async def not_found(request: Request, exc):
+    """A mistyped URL used to answer {"detail":"Not Found"} — raw JSON, on a
+    site that is otherwise entirely designed. Anyone following a stale link or
+    an old bookmark got developer output.
+
+    API paths keep the JSON: a client calling /api/ wants a machine-readable
+    body, and so does anything asking for JSON by Accept header. Everything
+    else — which in practice means a browser — gets the page.
+    """
+    wants_json = (
+        request.url.path.startswith("/api/")
+        or "application/json" in (request.headers.get("accept") or "")
+    )
+    if wants_json:
+        detail = getattr(exc, "detail", "Not Found")
+        return JSONResponse({"detail": detail}, status_code=404)
+    return FileResponse(WEB_DIR / "pp-404.html", status_code=404)
 
 
 def _backfill_designer_countries() -> None:

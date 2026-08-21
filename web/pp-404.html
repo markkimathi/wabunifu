@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page not found · Path &amp; Pixel</title>
+<meta name="robots" content="noindex">
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" href="/tokens.css">
+<link rel="stylesheet" href="/pp-primitives.css">
+<style>
+  body{margin:0;background:var(--c-bg);color:var(--c-text);font-family:var(--pp-font);
+    font-size:16px;line-height:1.5;min-height:100vh;display:flex;flex-direction:column}
+  main{flex:1;display:flex;align-items:center}
+  .wrap{max-width:var(--pp-container);width:100%;margin:0 auto;padding:64px var(--pp-page-margin) 96px;box-sizing:border-box}
+  a{color:inherit}
+
+  .nf{max-width:56ch}
+  .nf .code{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--c-accent-text);font-weight:600;margin:0 0 14px}
+  .nf h1{margin:0 0 14px;font-size:var(--pp-h1-size);line-height:1.04;
+    letter-spacing:-0.035em;font-weight:800;text-wrap:balance}
+  .nf p{margin:0 0 28px;font-size:17.5px;line-height:1.6;color:var(--c-text-muted)}
+  .nf .actions{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:40px}
+
+  /* Where people were most likely heading. A dead end that only says "not
+     found" makes the reader do the work of guessing what else exists. */
+  .nf-links{border-top:1px solid var(--c-border);padding-top:24px;
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px}
+  .nf-links a{text-decoration:none;display:block}
+  .nf-links b{display:block;font-size:15.5px;font-weight:650;letter-spacing:-0.012em;margin-bottom:3px}
+  .nf-links span{display:block;font-size:13.5px;line-height:1.5;color:var(--c-text-subtle)}
+  .nf-links a:hover b{color:var(--c-accent-text)}
+</style>
+</head>
+<body>
+
+<div id="pp-nav"></div>
+
+<main>
+  <div class="wrap">
+    <div class="nf">
+      <p class="code">Error 404</p>
+      <h1>That page isn't here</h1>
+      <p>The link may be out of date, or the address slightly off. Nothing is broken on your end.</p>
+      <div class="actions">
+        <a class="pp-btn pp-btn-primary" href="/jobs">Browse open roles</a>
+        <a class="pp-btn pp-btn-secondary" href="/">Back to the homepage</a>
+      </div>
+      <div class="nf-links">
+        <a href="/jobs"><b>Jobs</b><span>Every role, read for who can actually apply.</span></a>
+        <a href="/people"><b>Designers</b><span>Profiles written by the designers themselves.</span></a>
+        <a href="/community"><b>Community</b><span>Sessions to book and questions to ask.</span></a>
+        <a href="/resources"><b>Resources</b><span>Pay ranges, a CV check, and guides.</span></a>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="pp-footer" data-variant="short"></div>
+
+<script src="/pp-nav.js"></script>
+<script src="/pp-footer.js"></script>
+</body>
+</html>
