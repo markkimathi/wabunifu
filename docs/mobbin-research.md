@@ -242,6 +242,29 @@ detail view; [Contra](https://mobbin.com/screens/92510215-ab70-4b3b-ba2a-7b385f9
   roles nest beneath. We have a separate /companies page that already does the
   company-level view.
 
+### Empty states — checked, deliberately different
+
+Every one of eight cold-start screens reviewed leads with a large illustration:
+[Klarna](https://mobbin.com/screens/ab5556c1-f9bd-4e69-92fb-2c9e0b2edda3),
+[Typeform](https://mobbin.com/screens/648d4700-8592-4be4-8b65-5931ac44fd17),
+[Tally](https://mobbin.com/screens/0f2523c5-d61e-4384-a934-c169dbb1eaeb),
+[ClickUp](https://mobbin.com/screens/3f3c2432-3db0-4cfc-b469-2a088d38dde5),
+[Miro](https://mobbin.com/screens/6d68f5aa-f33f-42b9-8334-7b4901d9dc3a),
+[PayPal](https://mobbin.com/screens/f4e1520d-0cb2-4222-b131-30e88051a74d),
+[Contractbook](https://mobbin.com/screens/d4a88de4-c3c3-4718-94c2-b1563f42a718),
+[Laravel Cloud](https://mobbin.com/screens/5a0b71b3-f06f-4b14-af43-b862c1550a8f).
+The structure underneath is identical to ours — graphic, heading, one line,
+one button.
+
+Ours uses a 52px icon in a tinted square instead. That is a real difference and
+it is being kept: this site's identity is typographic and plain-spoken, and
+bolting on illustration would be borrowing someone else's voice. The structure
+is what matters and we already have it.
+
+One idea worth remembering if the aesthetic ever shifts: **ClickUp shows a
+screenshot of the filled state** rather than a decorative drawing — it shows
+you the payoff instead of apologising for the absence.
+
 ### Worth deciding, not worth deciding alone
 
 **Remote puts the eligibility restriction above the role title** — it is the
