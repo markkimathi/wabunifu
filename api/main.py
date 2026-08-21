@@ -40,6 +40,7 @@ ROOT = Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT / "scraper"))
 from models import Job, DISCIPLINES, ELIGIBILITY, MAX_AGE_DAYS  # noqa: E402  (reuse the canonical schema)
 from desc_format import format_description  # noqa: E402
+from pipeline.eligibility import REGION_MEMBERS, AFRICAN_COUNTRY_NAMES  # noqa: E402
 
 from .db import (  # noqa: E402
     init_db, insert_submission, list_submissions, get_submission, set_status,
@@ -4611,6 +4612,36 @@ def _job_share_text(job: dict) -> tuple[str, str]:
     return title, _clip(desc or job.get("desc_text") or "")
 
 
+def _applicant_countries(job: dict) -> list[str]:
+    """Countries a remote role will take applications from, for
+    applicantLocationRequirements.
+
+    Reads the same (badge, scope) pair the board renders, so the structured
+    data and the badge can never disagree. A bare "check" says nothing was
+    stated and returns nothing rather than guessing, and "world" is no
+    restriction at all — in both cases the field is omitted, which is what
+    Google reads as unrestricted.
+    """
+    scope = (job.get("elig_scope") or "").strip()
+    names: list[str] = []
+    if scope:
+        for part in (p.strip() for p in scope.split(",") if p.strip()):
+            names.extend(REGION_MEMBERS.get(part, [part]))
+    elif job.get("elig") == "kenya":
+        names = ["Kenya"]
+    elif job.get("elig") == "africa":
+        names = sorted(AFRICAN_COUNTRY_NAMES)
+
+    # "the United States" is how the board writes it in a sentence; schema.org
+    # wants the country, not the phrase.
+    cleaned, seen = [], set()
+    for n in names:
+        n = n[4:] if n.lower().startswith("the ") else n
+        if n and n not in seen:
+            seen.add(n); cleaned.append(n)
+    return cleaned
+
+
 @app.get("/jobs/{job_id}", include_in_schema=False)
 def job_details_page(job_id: str, request: Request):
     base = _site_base(request)
@@ -4629,6 +4660,12 @@ def job_details_page(job_id: str, request: Request):
     posted = (date.today() - timedelta(days=int(job.get("days") or 0))).isoformat()
     # JobPosting is what puts a role into Google Jobs, which for a board this
     # size is a bigger door than the site's own search ranking.
+    #
+    # baseSalary is deliberately absent. Every role carries a pay string, but
+    # it is scraped free text and a bare "$" is genuinely ambiguous — USD,
+    # CAD and AUD all write it the same way. Publishing a guessed currency as
+    # structured data, which Google then shows to job seekers as fact, is the
+    # exact kind of confident-but-wrong claim this board exists to avoid.
     ld = {
         "@context": "https://schema.org",
         "@type": "JobPosting",
@@ -4649,6 +4686,23 @@ def job_details_page(job_id: str, request: Request):
         }}
     if job.get("closes"):
         ld["validThrough"] = job["closes"]
+
+    # The identifier is what lets Google recognise a re-crawl as the same
+    # posting rather than a new one.
+    ld["identifier"] = {"@type": "PropertyValue", "name": "Path & Pixel", "value": job["id"]}
+
+    # Whose applications a remote role will actually accept — the one thing
+    # this board exists to answer, and it was the one thing missing from the
+    # markup that decides how the role appears in Google Jobs. Google only
+    # honours it alongside TELECOMMUTE, which is also the only case where it
+    # means anything: an on-site role's location already says it.
+    if ld.get("jobLocationType") == "TELECOMMUTE":
+        where = _applicant_countries(job)
+        if where:
+            ld["applicantLocationRequirements"] = [
+                {"@type": "Country", "name": name} for name in where
+            ]
+
     ld = {k: v for k, v in ld.items() if v is not None}
     extra = ('<script type="application/ld+json">'
              + json.dumps(ld).replace("</", "<\\/") + "</script>\n")
