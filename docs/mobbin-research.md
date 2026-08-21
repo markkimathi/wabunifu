@@ -307,3 +307,69 @@ Two things that made the first round useful and are worth repeating:
   amount of screenshot-reading would have told you.
 
 **And write the results here when you are done.**
+
+## Fourth round — 21 August 2026, posting a role
+
+The commercial path, and the one surface never compared against anything.
+Four flows on Mobbin, all web: [Remote, "Creating a
+job"](https://mobbin.com/flows/393d7857-4bec-420c-9be6-4aa6c92ecaca) (21
+screens), [Wellfound, "Posting a
+job"](https://mobbin.com/flows/ca94097f-f1c4-48cb-98b3-906755f0b91d) (13),
+[Dribbble, "Post a job
+listing"](https://mobbin.com/flows/5db7f9a6-4067-44fd-9e84-b2a4867dc6c0) (15),
+[Uxcel, "Posting a
+job"](https://mobbin.com/flows/1c4fd96f-f703-4c83-a1d0-c0ad2147aecb) (12).
+
+### Already good, no change needed
+
+Our wizard came out of this well, which is worth recording so it isn't
+re-litigated:
+
+- **A preview** — Remote links "Preview job" at the top, Wellfound has an
+  Overview tab, Dribbble shows the rendered listing before payment. Ours is
+  better: a live card in the sidebar that updates as you type, labelled with
+  where it will appear.
+- **Guidance under the field** — Remote: *"For example, Product Designer. Don't
+  include the job's location, schedule, or salary in the title."* We already do
+  this on title, apply link, closing date and screening questions.
+- **Eligibility as a first-class structured section** rather than a text field.
+  Remote splits workplace from hiring location and Uxcel asks "is this role
+  open worldwide?" before narrowing. Ours is a full step with the tradeoff
+  written on each option and a required proof paragraph for the two broad
+  answers — stricter than any of the four.
+
+### What shipped
+
+**Draft persistence.** All four have it and we had none — Wellfound "Save
+draft" with a Drafts tab, Remote a Draft filter and a "Successfully saved"
+toast, Uxcel "Save & continue" at step 1/2. Our wizard held everything in one
+variable that a tab switch set to null. This was the whole finding of the
+round; the shape is written up as the ninth in `audit-notes.md`.
+
+### Rejected, on the scale caveat
+
+**A live reach count on each eligibility option.** Remote echoes what your
+location setting means: *"Your job will be set to attract talent within Almaty
+(+06:00) and Ust-Nera (+10:00)."* The obvious analogue is to replace our
+qualitative tags ("Widest reach", "Narrowest reach") with the real number of
+designers on the platform who could take the role — turning a judgement into a
+fact, on precisely the question the platform exists to answer.
+
+It is the best idea in this round and it must not be built yet. Production has
+four designers. "2 designers could take this role" is actively worse than
+"Narrowest reach" — it argues against posting. Revisit when the directory is
+large enough that the number is an argument for the platform rather than an
+admission about it. Gating it behind a threshold is not a fix either: it would
+be dead code for months, and code that never runs is code nobody notices is
+wrong.
+
+### Rejected, on evidence
+
+**A consequence attached to the pay-range nudge.** Remote: *"Not including a
+pay range may lead to reduced visibility and a smaller applicant pool."*
+Uxcel goes further with a legal claim and a Google-indexing claim. Both are
+persuasive and neither is something we have measured here. Our field says "Pay
+range, if you're sharing it" and stays neutral, which is the honest version
+until we can say something true about *this* board. Writing the sentence
+because it works on someone else's site is how the fabricated-content problem
+started.

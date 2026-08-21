@@ -439,3 +439,76 @@ Run the local server with `python3 -u`. Without it, `print()` from `api/email.py
 is block-buffered while uvicorn's own logging is not, so the email lines appear
 out of order or not at all. This looked exactly like "forgot-password returns ok
 and sends nothing" — a critical bug that wasn't there. The reset flow was fine.
+
+## Ninth shape: work held in one variable, with no way to get it back
+
+The post-a-role wizard was complete — three steps, a live preview card, the
+eligibility tradeoffs written out, a checklist before submit. It collected
+title, company, location, work type, discipline, seniority, two links,
+eligibility plus the paragraph proving it, pay, a closing date, eight skills,
+three screening questions and 900 characters of description.
+
+All of it lived in `var wizardData` and nowhere else. `setSection()` set that
+variable to null on every tab switch. Clicking Applicants — a click on the next
+item in the same rail, no navigation, no crash — silently threw away ten
+minutes of work. Reloading did the same.
+
+The tell is the same as the earlier eight: the feature was finished, and the
+thing missing was durability at the one moment a person would look away. Nobody
+walking the happy path start-to-finish would ever hit it, because the happy
+path never leaves the form.
+
+**Where else to look for this shape:** any multi-step or long-form input whose
+state is a module-level variable. Grep for a state variable being nulled in a
+navigation handler. Onboarding is the other candidate on this platform — it
+writes each step to the server as it goes, so it is fine, but that is worth
+re-checking rather than assuming.
+
+**Two design notes worth keeping.** Restore only where there is no
+server-side copy: an edit already has one, and reviving a stale local draft
+over it would be a worse bug than the one being fixed. And a draft nobody can
+see is the same bug as no draft at all — the listings tab had to change its
+button to "Finish your draft", or the persistence would have been invisible.
+
+## Tenth shape: the sentence the server wrote, dropped at the last step
+
+Found while testing the wizard. Submitting with a bad apply link showed
+"Request failed (422)". The server had written *"the application link must
+start with http:// or https://"* — the client discarded it.
+
+FastAPI sends `detail` in three shapes: a plain string, an object
+(`{message, locked}` for the sign-in lockout), and — for anything raised by a
+Pydantic `field_validator` — a **list** of `{type, loc, msg}`. Every carefully
+worded rule on this platform is a field validator, so every one of them takes
+the list path, and no page handled it:
+
+- `pp-dashboard.html`, `pp-employer.html` checked string-or-`.message`, so a
+  list fell through to `"Request failed (422)"`.
+- `pp-resources.html`, `pp-onboarding.html`, `featured-projects.js` did
+  `body.detail || "Request failed"`. **An array is truthy**, so these printed
+  `[object Object]`. Designer signup was one of them: choose a password under
+  eight characters and the front door of the platform answered `[object
+  Object]`.
+- `pp-auth.html`'s sign-in branched on `typeof detail === "object"` to render
+  the lockout callout — and an array passes that test too.
+
+Now one `window.PPErrorText(body, status)` in `pp-nav.js`, with every caller
+keeping a fallback so a load-order change degrades to the old behaviour rather
+than throwing.
+
+Two things that only showed up once it was rendering real messages: never
+append punctuation of your own, because *"must start with https://."* reads as
+though the dot is part of the URL; and joining several messages with a space
+runs them together, so join with `; ` instead.
+
+`scripts/regression.py` now pins the 422 body shape (list, carrying `loc` and
+`msg`, with our wording behind Pydantic's `"Value error, "` prefix). The helper
+degrades *silently* if that shape ever changes, which is exactly the kind of
+regression nothing else would catch.
+
+**The general lesson:** server-side validation was never the weak half here.
+The messages were good. What had never been exercised was the path they travel
+to reach a person — and every page had written that path slightly differently,
+so each one failed in its own way. When the same three-line idiom is copied
+into six files, assume at least one copy is wrong, and that none of them were
+tested against the shape that matters.
