@@ -274,10 +274,16 @@
       <div class="hero-side">
         <div class="hero-videos" aria-hidden="true">
           <div class="hero-vtrack" id="heroVTrack">
+            <!-- Only the first is fetched up front. The other three were
+                 preload="auto" as well, so every homepage visit pulled 1.9MB
+                 of video before showing a single job — on a board whose
+                 readers are largely on mobile data. Each one is warmed by
+                 startHeroVideos() while the previous plays, which is several
+                 seconds of head start. -->
             <div class="hero-vslide"><video muted playsinline preload="auto" src="video/1.mp4"></video></div>
-            <div class="hero-vslide"><video muted playsinline preload="auto" src="video/2.mp4"></video></div>
-            <div class="hero-vslide"><video muted playsinline preload="auto" src="video/3.mp4"></video></div>
-            <div class="hero-vslide"><video muted playsinline preload="auto" src="video/4.mp4"></video></div>
+            <div class="hero-vslide"><video muted playsinline preload="none" src="video/2.mp4"></video></div>
+            <div class="hero-vslide"><video muted playsinline preload="none" src="video/3.mp4"></video></div>
+            <div class="hero-vslide"><video muted playsinline preload="none" src="video/4.mp4"></video></div>
           </div>
         </div>
         <div class="hero-joined" id="heroJoined"></div>
@@ -706,13 +712,43 @@
     if (!track) return;
     var videos = Array.prototype.slice.call(track.querySelectorAll("video"));
     if (!videos.length) return;
+
+    // A carousel that advances on its own is motion, and someone who has asked
+    // for less of it should get the first frame and nothing moving. Load just
+    // enough to paint that frame rather than the whole file.
+    var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      videos[0].preload = "metadata";
+      return;
+    }
+
     var i = 0;
+    function warm(n){
+      var next = videos[(n + videos.length) % videos.length];
+      if (next && next.preload === "none") next.preload = "auto";
+    }
     function goTo(n){
       i = (n + videos.length) % videos.length;
       track.style.transform = "translateX(-" + (i * 100) + "%)";
+      // Whatever we are about to show has to be fetchable now, even if the
+      // mid-playback warm never ran — a slide arriving on preload="none"
+      // would stall visibly.
+      warm(i);
       videos.forEach(function(v, idx){
         if (idx === i) { v.currentTime = 0; v.play().catch(function(){}); }
         else v.pause();
+      });
+      // Fetch the next one part-way through this one, not at the moment this
+      // one starts: warming immediately still puts two files on the critical
+      // path. Waiting until 40% leaves several seconds of head start, which is
+      // plenty, and keeps first paint down to a single video.
+      var cur = videos[i], warmed = false;
+      cur.addEventListener("timeupdate", function onTick(){
+        if (warmed || !cur.duration) return;
+        if (cur.currentTime / cur.duration < 0.4) return;
+        warmed = true;
+        cur.removeEventListener("timeupdate", onTick);
+        warm(i + 1);
       });
     }
     videos.forEach(function(v, idx){ v.addEventListener("ended", function(){ goTo(idx + 1); }); });
