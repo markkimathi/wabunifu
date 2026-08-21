@@ -421,20 +421,32 @@
 
   async function toggleBooking(){
     var t = token();
-    if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+    if (!t) { location.href = "/signin?view=signin&next=" + encodeURIComponent(location.pathname); return; }
     var btn = document.getElementById("bookBtn");
     btn.disabled = true;
     try {
-      if (currentSession.your_status) {
-        await fetch("/api/community/sessions/" + currentSession.id + "/cancel-booking", { method: "POST", headers: { "Authorization": "Bearer " + t } });
-      } else {
-        await fetch("/api/community/sessions/" + currentSession.id + "/book", { method: "POST", headers: { "Authorization": "Bearer " + t } });
+      // The server has real things to say here — "That session has already
+      // happened" is one — and none of them used to reach anyone. The button
+      // re-enabled, nothing changed, and no reason was given.
+      var act = currentSession.your_status ? "cancel-booking" : "book";
+      var r = await fetch("/api/community/sessions/" + currentSession.id + "/" + act,
+        { method: "POST", headers: { "Authorization": "Bearer " + t } });
+      if (!r.ok) {
+        var bErr = await r.json().catch(function(){ return {}; });
+        if (window.showPPToast) showPPToast(window.PPErrorText ? PPErrorText(bErr, r.status) : "That didn't work. Try again.", { tone: "error" });
+        // Re-read regardless: if this failed because the seat went or the date
+        // passed, the page is currently showing something that isn't true.
+        var stale = await fetch("/api/community/sessions/" + currentSession.id, { headers: { "Authorization": "Bearer " + t } });
+        if (stale.ok) renderSession(await stale.json());
+        btn.disabled = false;
+        return;
       }
       var res = await fetch("/api/community/sessions/" + currentSession.id, { headers: { "Authorization": "Bearer " + t } });
       var session = await res.json();
-      var res2 = await fetch("/api/community/sessions/" + currentSession.id + "/attendees", { headers: { "Authorization": "Bearer " + t } }).catch(function(){});
       renderSession(session);
-    } catch (e) {}
+    } catch (e) {
+      if (window.showPPToast) showPPToast("Couldn't reach the server. Try again.", { tone: "error" });
+    }
     btn.disabled = false;
   }
 
@@ -488,7 +500,7 @@
     box.querySelector(".report-cancel").addEventListener("click", function(){ box.style.display = "none"; });
     box.querySelector(".report-send").addEventListener("click", async function(){
       var t = token();
-      if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+      if (!t) { location.href = "/signin?view=signin&next=" + encodeURIComponent(location.pathname); return; }
       var btn = box.querySelector(".report-send");
       btn.disabled = true;
       try {
@@ -606,9 +618,17 @@
 
   async function voteReply(replyId){
     var t = token();
-    if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+    if (!t) { location.href = "/signin?view=signin&next=" + encodeURIComponent(location.pathname); return; }
     try {
       var res = await fetch("/api/community/replies/" + replyId + "/vote", { method: "POST", headers: { "Authorization": "Bearer " + t } });
+      // Without this, a failed vote parsed to {}, `data.voted` was undefined,
+      // and the branch below took the falsy path — showing the reader a count
+      // one lower than the true one.
+      if (!res.ok) {
+        var vErr = await res.json().catch(function(){ return {}; });
+        if (window.showPPToast) showPPToast(window.PPErrorText ? PPErrorText(vErr, res.status) : "Couldn't register that vote.", { tone: "error" });
+        return;
+      }
       var data = await res.json();
       var countEl = document.querySelector('[data-vote-count="' + replyId + '"]');
       var btnEl = document.querySelector('[data-vote="' + replyId + '"]');
@@ -621,19 +641,29 @@
     var t = token();
     if (!t) return;
     try {
-      await fetch("/api/community/questions/" + currentQuestion.id + "/accept-reply", {
+      var aRes = await fetch("/api/community/questions/" + currentQuestion.id + "/accept-reply", {
         method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + t },
         body: JSON.stringify({ reply_id: replyId })
       });
+      if (!aRes.ok) {
+        var aErr = await aRes.json().catch(function(){ return {}; });
+        if (window.showPPToast) showPPToast(window.PPErrorText ? PPErrorText(aErr, aRes.status) : "Couldn't mark that answer.", { tone: "error" });
+        return;
+      }
       loadQuestion(currentQuestion.id);
     } catch (e) {}
   }
 
   async function toggleFollow(){
     var t = token();
-    if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+    if (!t) { location.href = "/signin?view=signin&next=" + encodeURIComponent(location.pathname); return; }
     try {
       var res = await fetch("/api/community/questions/" + currentQuestion.id + "/follow", { method: "POST", headers: { "Authorization": "Bearer " + t } });
+      if (!res.ok) {
+        var fErr = await res.json().catch(function(){ return {}; });
+        if (window.showPPToast) showPPToast(window.PPErrorText ? PPErrorText(fErr, res.status) : "Couldn't change that.", { tone: "error" });
+        return;
+      }
       var data = await res.json();
       document.getElementById("followBtn").textContent = data.following ? "Following" : "Follow this question";
     } catch (e) {}
@@ -641,7 +671,7 @@
 
   async function postReply(){
     var t = token();
-    if (!t) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent(location.pathname); return; }
+    if (!t) { location.href = "/signin?view=signin&next=" + encodeURIComponent(location.pathname); return; }
     var draft = document.getElementById("mainDraft");
     var msg = document.getElementById("postReplyMsg");
     var body = draft.value.trim();

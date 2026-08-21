@@ -360,7 +360,7 @@
         '<textarea rows="1" placeholder="Add what you know…" data-draft="' + q.id + '">' + escapeHtml(open.draft || "") + '</textarea>' +
         '<button type="button" class="pp-btn pp-btn-dark" data-send="' + q.id + '">Reply</button></div>' +
         '<span class="msg" id="replyMsg-' + q.id + '" style="font-size:13px;color:var(--c-bad-text)"></span>'
-        : '<p style="margin:0;font-size:13.5px;color:var(--c-text-faint)"><a href="/pp-auth.html?view=signin&next=' + encodeURIComponent("/community") + '" style="font-weight:600;color:var(--c-accent-text)">Sign in</a> to add a reply.</p>') +
+        : '<p style="margin:0;font-size:13.5px;color:var(--c-text-faint)"><a href="/signin?view=signin&next=' + encodeURIComponent("/community") + '" style="font-weight:600;color:var(--c-accent-text)">Sign in</a> to add a reply.</p>') +
     '</div>';
   }
 
@@ -419,7 +419,7 @@
   }
 
   async function toggleSessionBooking(sessionId, btn){
-    if (!token()) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent("/community"); return; }
+    if (!token()) { location.href = "/signin?view=signin&next=" + encodeURIComponent("/community"); return; }
     var session = state.sessions.items.filter(function(s){ return s.id === sessionId; })[0];
     if (!session) return;
     btn.disabled = true;
@@ -639,7 +639,7 @@
   }
 
   function openComposer(){
-    if (!token()) { location.href = "/pp-auth.html?view=signin&next=" + encodeURIComponent("/community"); return; }
+    if (!token()) { location.href = "/signin?view=signin&next=" + encodeURIComponent("/community"); return; }
     document.getElementById("composerOverlay").style.display = "flex";
     document.getElementById("qTitle").value = "";
     document.getElementById("qBody").value = "";
@@ -665,7 +665,7 @@
     var msg = document.getElementById("composerMsg");
     if (!title || !body) { msg.textContent = "A title and some context are both required."; return; }
     var t = token();
-    if (!t) { location.href = "/pp-auth.html?view=signin"; return; }
+    if (!t) { location.href = "/signin?view=signin"; return; }
     var btn = document.getElementById("composerPost");
     btn.disabled = true; msg.textContent = "";
     try {

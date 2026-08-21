@@ -415,7 +415,7 @@
       }
       if (role === "employer") {
         localStorage.setItem("kazi_employer_token", data.token);
-        location.href = nextTarget() || "/pp-employer.html";
+        location.href = nextTarget() || "/employer";
         return;
       }
       localStorage.setItem("kazi_designer_token", data.token);
@@ -516,7 +516,7 @@
       if (data.token) {
         if (role === "employer") {
           localStorage.setItem("kazi_employer_token", data.token);
-          location.href = "/pp-employer.html";
+          location.href = "/employer";
           return;
         }
         localStorage.setItem("kazi_designer_token", data.token);
