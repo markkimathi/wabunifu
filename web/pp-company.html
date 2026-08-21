@@ -54,6 +54,8 @@
   @media(max-width:900px){.job-row{grid-template-columns:1fr auto;grid-template-areas:"main go" "tags tags" "meta meta";row-gap:8px}
     .job-row .jr-go{display:none}}
   .jr-main{grid-area:main}
+  /* Matches .jr-elig on the board and .role-elig on the homepage. */
+  .jr-elig{margin:0 0 5px;line-height:1}
   .jr-main h4{margin:0 0 2px;font-size:16px;font-weight:700;letter-spacing:-0.015em}
   .jr-main p{margin:0;font-size:13.5px;color:var(--c-text-subtle)}
   .jr-tags{display:flex;flex-wrap:wrap;gap:6px;grid-area:tags}
@@ -404,8 +406,11 @@
 
   function renderJobRow(j){
     return '<a class="job-row" href="/jobs/' + encodeURIComponent(j.id) + '">' +
-      '<div class="jr-main"><h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.city || "Remote") + '</p></div>' +
-      '<div class="jr-tags">' + eligBadge(j.elig, j.elig_scope) + '<span class="pp-chip">' + escapeHtml(j.cat || "Design") + '</span></div>' +
+      // Same order as the board and the homepage: this is a browse surface,
+      // and eligibility is what decides whether the rest is worth reading.
+      '<div class="jr-main"><div class="jr-elig">' + eligBadge(j.elig, j.elig_scope) + '</div>' +
+        '<h4>' + escapeHtml(j.t) + '</h4><p>' + escapeHtml(j.city || "Remote") + '</p></div>' +
+      '<div class="jr-tags"><span class="pp-chip">' + escapeHtml(j.cat || "Design") + '</span></div>' +
       '<div class="jr-meta"><span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span><span class="posted">' + postedLabel(j.days) + '</span></div>' +
       '<span class="jr-go">' + ICONS.chevron + '</span>' +
     '</a>';
