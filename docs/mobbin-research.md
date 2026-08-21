@@ -184,6 +184,77 @@ while the board, one click away, said otherwise. Resolution now lives once in
 shared helper, the work is not "fix the page it was reported on" — it is "find
 every caller".
 
+## Third round — 21 August 2026, the UI itself
+
+The first two rounds were about flows and features. This one looked at how
+things are drawn: the job row, the job page, the profile, the filter controls.
+
+Reviewed on web: [Braintrust](https://mobbin.com/screens/250cfe71-dd3f-49fd-b1ae-142161165ba7),
+[SuperHi](https://mobbin.com/screens/74400279-3254-48f8-85a2-7d7cfdebc08f),
+[Wellfound](https://mobbin.com/screens/b9c48a73-babe-422a-92c8-f0bbe3363291),
+[Remote](https://mobbin.com/screens/83fece5e-20a4-4391-b038-450e6b2923f7),
+[Dribbble](https://mobbin.com/screens/7c2a37fb-2778-466d-82d0-c34191b65655),
+[Behance](https://mobbin.com/screens/7cebaa64-dc78-4e5f-b78c-05d47621d839),
+[Peerlist](https://mobbin.com/screens/466734da-df47-4f96-8d60-65ebbfae371e) and
+[Upwork](https://mobbin.com/screens/1abc558d-6362-4261-bf65-63efe0cf3e35) for the
+board; [Remote's job page](https://mobbin.com/screens/4d5fe158-f5c2-47d4-82b3-9946b03060ef),
+[Dribbble's](https://mobbin.com/screens/da43ef96-6751-427b-aecb-e66885bea3d0),
+[Uxcel's](https://mobbin.com/screens/af99aea0-7b57-49ba-8e6a-a56a3d422c97) and
+[Contra's](https://mobbin.com/screens/48e661e0-64f0-4234-8f5c-f5c8bf8a5628) for the
+detail view; [Contra](https://mobbin.com/screens/92510215-ab70-4b3b-ba2a-7b385f91264f),
+[Polywork](https://mobbin.com/screens/f8d0e856-762c-4287-9178-34e7933d7b59),
+[Uxcel](https://mobbin.com/screens/c5c7d5cd-4683-4a8e-9bb2-13503bdbb0a5) and
+[Dribbble](https://mobbin.com/screens/68ad58dc-2800-40d6-86c4-8d31aff1735e) for profiles.
+
+### Shipped
+
+- **Remote's job sidebar is a labelled fact list**, and one of the facts is
+  "Applications ends — Nov 21 · 8 DAYS LEFT". Our board had said "Closes in 4
+  days" on the row all along and the job page said nothing. *Applied:* a
+  "Closes" row in the sidebar, sharing the board's helper rather than copying
+  it. Urgency belongs where the decision happens.
+- **Contra puts availability inline in the headline** ("Booked through
+  October"); Uxcel runs "Available for work" as a banner. Neither has a way to
+  say "unknown", because unknown is not worth saying. Ours showed a grey
+  "Availability not set" chip on every profile that had none — a hole where a
+  signal should be, on the page whose job is making someone look worth hiring.
+  *Applied:* the chip renders only when there is an answer.
+
+### Checked, already good
+
+- **Our job page is richer than any of them.** None has an equivalent of "How
+  we checked this role", none names the ATS a listing came from, none offers a
+  résumé check against the posting. Do not trade those away for a tidier layout.
+- **Active filters** already render as removable chips beside the result count,
+  *and* the Filters button carries a badge with the number applied. Unity and
+  Etsy do the chips; neither does the badge. This matters most on mobile, where
+  the rail is a sheet and there is otherwise nothing on screen saying what is on.
+- **Row density** is comparable to Braintrust and Remote — logo, title, company,
+  location, eligibility, discipline and type chips, pay, age, save. SuperHi's
+  three-column table is the minimal extreme and drops eligibility entirely,
+  which for us would be the one thing we cannot drop.
+
+### Considered and not done
+
+- **Contra's stat strip** ($100k earned · 1x hired · ★5.00 · 152 followers).
+  The same caveat as the first round: confident at their scale, empty at ours.
+- **Wellfound's company-first grouping**, where the company is the unit and
+  roles nest beneath. We have a separate /companies page that already does the
+  company-level view.
+
+### Worth deciding, not worth deciding alone
+
+**Remote puts the eligibility restriction above the role title** — it is the
+first line of the row, before the job even names itself:
+`remote - GMT+6 to GMT+10 only` and then "UX Researcher". We put the badge in
+the middle of the row, beside the discipline chips.
+
+Eligibility is the entire premise of this board. Leading with it would make the
+row say what the site is for, in the position that gets read first. It would
+also be a real restructure of the most-used component on the site, and the
+current row is not broken — so it is a judgement call about emphasis rather
+than a defect to fix.
+
 ## Caveats that still apply
 
 These were in the original artifact rather than buried, and they have not stopped
