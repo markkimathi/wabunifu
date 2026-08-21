@@ -933,6 +933,10 @@
   async function loadSimilarAndCompany(){
     try {
       var res = await fetch("/api/jobs", { cache: "no-store" });
+      // A 500 is not a rejected promise, so without this the catch below never
+      // ran and the retry card never appeared — the panel just sat empty, as
+      // though there were genuinely no similar roles.
+      if (!res.ok) throw new Error("jobs " + res.status);
       var data = await res.json();
       allJobs = data.jobs || [];
     } catch (e) {

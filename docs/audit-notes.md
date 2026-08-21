@@ -512,3 +512,69 @@ to reach a person — and every page had written that path slightly differently,
 so each one failed in its own way. When the same three-line idiom is copied
 into six files, assume at least one copy is wrong, and that none of them were
 tested against the shape that matters.
+
+### Sweeping for the tenth shape
+
+Two greps found the rest of it, and both are worth keeping.
+
+**Unchecked parses.** Look for `x = await fetch(...)` followed within a few
+lines by `await x.json()` with no `x.ok` or `x.status` between them. Five sites
+across the codebase. `fetch` only rejects on a network failure, so a 4xx or 5xx
+sails straight through and the parsed body is an error object, not the shape
+the next line expects:
+
+- Voting on a reply: `data.voted` came back undefined, the ternary took the
+  falsy path, and a vote that never registered showed the reader a count *one
+  lower* than the truth.
+- Posting a reply checked `res.ok` on the POST but not on the refetch after it,
+  so a failed refetch set `open.replies = []` — the author watched their own
+  reply vanish immediately after it saved.
+- Opening a question thread rendered a failed load as a thread with no replies.
+  "No replies yet" and "we couldn't load the replies" are different things to
+  tell someone.
+- Similar-roles on the job page had a good catch block with a retry card, and a
+  500 skipped it entirely, leaving the panel empty as though the board had
+  nothing to offer.
+
+**Silent catches.** `grep` for `.catch(function(){})` and `catch (e) {}`. Not
+all are wrong — analytics beacons, `video.play()` rejections and a cancelled
+`navigator.share` are all correctly silent. The test is whether a *person
+pressed something* and is now waiting for it to have worked.
+
+Two clean negatives from the same sweep, recorded so they are not re-audited:
+all 27 copies of `escapeHtml` escape the same five characters, and the
+saved-jobs fire-and-forget is fine — `syncSavedFromServer` pushes local-only
+ids up on the next load, so a failed save repairs itself.
+
+## Eleventh shape: a component with only one state, used for two
+
+The toast was built for confirmations: a dark pill with a gold checkmark. That
+was right when everything routed through it was "Joining link copied".
+
+The moment failures started going through it, "That session is full." arrived
+under a gold tick — which reads as *done*. The message was correct, the
+component contradicted it.
+
+It now takes `{ tone: "error" }`: alert glyph instead of the check, five
+seconds instead of three, because a failure takes longer to read than a
+confirmation.
+
+**And check the token flips with the surface.** The obvious colour for the
+error glyph is `--c-bad-text`. That token is theme-aware and the toast pill is
+not — its background is `--pp-ink` in both themes — so in light mode the icon
+resolved to `#A61111` on near-black: **2.55:1**. Fixed red instead, 7.13:1 in
+both. A `--c-*` token is only correct on a surface that also flips; on a
+deliberately theme-independent surface it is a bug waiting for someone to
+switch themes.
+
+**One trap this nearly walked into.** `pp-community.html` did not load
+`pp-toast.js`. The new call was written as `if (window.showPPToast)
+showPPToast(...)`, so it would have failed the guard and done nothing —
+silently, forever, looking exactly like the bug it was meant to fix. Before
+calling a shared helper from a new page, check the page actually loads it:
+
+    for f in $(grep -rl "showPPToast" web/*.html); do
+      echo "$f calls:$(grep -c showPPToast $f) loads:$(grep -c pp-toast.js $f)"
+    done
+
+The same check applies to `PPErrorText` and `pp-nav.js`.

@@ -210,6 +210,7 @@
 
 <script src="/pp-nav.js"></script>
 <script src="/pp-footer.js"></script>
+<script src="/pp-toast.js"></script>
 <script>
 (function(){
   "use strict";
@@ -348,6 +349,9 @@
 
   function questionOpenHtml(q, open){
     if (open.loading) return '<div class="thread-open"><p style="margin:0;font-size:14px;color:var(--c-text-faint)">Loading replies…</p></div>';
+    if (open.failed) return '<div class="thread-open">' +
+      '<p style="margin:0 0 10px;font-size:14px;color:var(--c-text-subtle)">These replies didn\'t load. The question above is unaffected.</p>' +
+      '<button type="button" class="pp-btn pp-btn-secondary pp-btn-sm" data-retry-q="' + q.id + '">Try again</button></div>';
     var replies = open.replies || [];
     return '<div class="thread-open">' +
       (replies.length ? replies.map(function(r){
@@ -427,10 +431,19 @@
     btn.textContent = "…";
     try {
       var endpoint = session.your_status ? "/cancel-booking" : "/book";
-      await fetch("/api/community/sessions/" + sessionId + endpoint, {
+      var r = await fetch("/api/community/sessions/" + sessionId + endpoint, {
         method: "POST", headers: { Authorization: "Bearer " + token() }
       });
+      // Unchecked, this swallowed "That session has already happened" and
+      // every other refusal. The row re-rendered from the server so it looked
+      // right, and the person was never told why what they clicked did not
+      // happen.
+      if (!r.ok) {
+        var bErr = await r.json().catch(function(){ return {}; });
+        if (window.showPPToast) showPPToast(window.PPErrorText ? PPErrorText(bErr, r.status) : "That didn't work. Try again.", { tone: "error" });
+      }
       var res = await fetch("/api/community/sessions/" + sessionId, { headers: { Authorization: "Bearer " + token() } });
+      if (!res.ok) throw new Error("reload failed");
       var updated = await res.json();
       state.sessions.items = state.sessions.items.map(function(s){ return s.id === sessionId ? updated : s; });
       renderFeed();
@@ -446,6 +459,13 @@
     });
     document.querySelectorAll("[data-send]").forEach(function(btn){
       btn.addEventListener("click", function(){ sendReply(parseInt(btn.getAttribute("data-send"), 10)); });
+    });
+    document.querySelectorAll("[data-retry-q]").forEach(function(btn){
+      btn.addEventListener("click", function(){
+        var qid = parseInt(btn.getAttribute("data-retry-q"), 10);
+        delete state.openQuestions[qid];   // toggleQuestion reopens and refetches
+        toggleQuestion(qid);
+      });
     });
     document.querySelectorAll("[data-draft]").forEach(function(ta){
       ta.addEventListener("input", function(){
@@ -465,10 +485,13 @@
     renderFeed();
     try {
       var res = await fetch("/api/community/questions/" + qid, { cache: "no-store" });
+      if (!res.ok) throw new Error("load failed");
       var data = await res.json();
       state.openQuestions[qid] = { loading: false, replies: data.replies || [], draft: "" };
     } catch (e) {
-      state.openQuestions[qid] = { loading: false, replies: [], draft: "" };
+      // "No replies yet" and "we couldn't load the replies" are different
+      // things to tell someone, and this showed the first for both.
+      state.openQuestions[qid] = { loading: false, replies: [], draft: "", failed: true };
     }
     renderFeed();
   }
@@ -487,6 +510,10 @@
       if (!res.ok) throw new Error("failed");
       open.draft = "";
       var res2 = await fetch("/api/community/questions/" + qid, { cache: "no-store" });
+      // The reply is saved by this point. Emptying the list because the
+      // refetch failed would show the author their own reply disappearing
+      // straight after a successful post, so leave the screen as it is.
+      if (!res2.ok) { renderFeed(); return; }
       var data = await res2.json();
       open.replies = data.replies || [];
       var q = state.questions.items.filter(function(x){ return x.id === qid; })[0];
