@@ -204,7 +204,8 @@
     "Available": { label: "Available", positive: true },
     "Open to offers": { label: "Open to offers", positive: true },
     "Not available": { label: "Not available", positive: false },
-    "": { label: "Availability not set", positive: false }
+    // Nothing to show rather than "not set": see where this is rendered.
+    "": { label: "", positive: false }
   };
 
   var ACTIVITY_META = {
@@ -344,7 +345,13 @@
               '<p class="meta">' + [designer.headline, designer.location, designer.years_experience ? designer.years_experience + " years" : ""]
                 .filter(Boolean).map(escapeHtml).join(" · ") + '</p>' +
               '<div class="head-tags">' +
-                '<span class="pp-status' + (avail.positive ? " -good" : " -neutral") + '">' + avail.label + '</span>' +
+                // An unset status told a visitor nothing and quietly counted
+                // against the designer — the profile announced an absence where
+                // it could simply say nothing. Contra and Uxcel both treat
+                // availability as a positive signal or not at all.
+                (avail.label
+                  ? '<span class="pp-status' + (avail.positive ? " -good" : " -neutral") + '">' + avail.label + '</span>'
+                  : "") +
                 // What kind of work, next to whether they're looking — the two
                 // halves an employer needs before deciding to write.
                 (designer.open_to || []).map(function(o){
