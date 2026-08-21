@@ -187,6 +187,11 @@
   .wiz-elig-label{display:block;font-size:15.5px;font-weight:600;margin-bottom:3px}
   .wiz-elig-note{display:block;font-size:14px;line-height:1.5;color:var(--c-text-subtle)}
 
+  .wiz-draft-note{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center;margin:0 0 20px;padding:11px 14px;
+    border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-bg-sunken);
+    font-size:13.5px;line-height:1.5;color:var(--c-text-subtle)}
+  .wiz-draft-note button{background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--c-text);
+    text-decoration:underline;text-underline-offset:2px;cursor:pointer}
   .wiz-preview{padding:18px;border-radius:var(--pp-radius-lg);background:var(--c-surface);border:1px solid var(--c-border)}
   .wiz-preview-label{display:block;font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--c-text-faint);margin-bottom:10px}
   .wiz-preview-head{display:flex;gap:12px;align-items:flex-start;margin-bottom:12px}
@@ -361,6 +366,77 @@
   var wizardStep = 1;
   var wizardMax = 1;
   var wizardData = null;
+  var draftRestored = false;
+
+  /* A posted role is a long form: title, company, location, work type,
+     discipline, seniority, two links, eligibility plus the proof paragraph,
+     pay, closing date, eight skills, three screening questions and 900
+     characters of description. All of that lived in the variable above and
+     nowhere else, so switching to the Applicants tab threw it away without
+     asking. Now it survives a tab switch, a reload, and a closed browser.
+
+     New listings only. An existing listing already has a copy on the server,
+     and restoring a stale local one over it would be a worse bug than the one
+     this fixes. */
+  var DRAFT_KEY = "kazi_listing_draft_v1";
+  var DRAFT_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+  function draftKey(){ return DRAFT_KEY + ":" + (me && me.email ? me.email : "anon"); }
+  function saveWizardDraft(){
+    if (!wizardData || wizardData.id) return;
+    // A form holding nothing but the fields we prefilled from the account is
+    // not a draft. Storing one would leave a key behind after "Start fresh"
+    // and after clearing every field by hand.
+    if (!draftHasContent(wizardData)) { clearWizardDraft(); return; }
+    try {
+      localStorage.setItem(draftKey(), JSON.stringify({
+        v: 1, step: wizardStep, max: wizardMax, saved_at: Date.now(), data: wizardData
+      }));
+    } catch (e) { /* private mode, or the quota is full. The form still works. */ }
+  }
+  function readWizardDraft(){
+    var raw;
+    try { raw = localStorage.getItem(draftKey()); } catch (e) { return null; }
+    if (!raw) return null;
+    var d;
+    try { d = JSON.parse(raw); } catch (e) { clearWizardDraft(); return null; }
+    if (!d || d.v !== 1 || !d.data || d.data.id) { clearWizardDraft(); return null; }
+    if (!d.saved_at || Date.now() - d.saved_at > DRAFT_MAX_AGE_MS) { clearWizardDraft(); return null; }
+    return d;
+  }
+  // Blank fields do not count. Prefilled ones do not either: company name,
+  // website and contact email are filled in from the account, so a draft that
+  // only contains those is one the employer never actually started.
+  function draftHasContent(d){
+    if (!d) return false;
+    var base = blankWizardData();
+    var keys = ["title", "location", "discipline", "cross_border_note", "salary", "closes_at", "description"];
+    for (var i = 0; i < keys.length; i++) {
+      if ((d[keys[i]] || "").trim() && (d[keys[i]] || "").trim() !== (base[keys[i]] || "").trim()) return true;
+    }
+    if ((d.skills || []).length) return true;
+    if ((d.screening || []).filter(function(q){ return (q || "").trim(); }).length) return true;
+    return false;
+  }
+  function clearWizardDraft(){
+    try { localStorage.removeItem(draftKey()); } catch (e) {}
+  }
+  /* A draft nobody can see is the same bug as no draft at all, so the
+     listings tab says one is waiting and the button changes what it offers. */
+  function pendingDraftLabel(){
+    var d = readWizardDraft();
+    if (!d || !draftHasContent(d.data)) return null;
+    return (d.data.title || "").trim() || "Untitled role";
+  }
+  function draftAgeLabel(ts){
+    var mins = Math.round((Date.now() - ts) / 60000);
+    if (mins < 1) return "a moment ago";
+    if (mins < 60) return mins + (mins === 1 ? " minute ago" : " minutes ago");
+    var hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + (hrs === 1 ? " hour ago" : " hours ago");
+    var days = Math.round(hrs / 24);
+    return days + (days === 1 ? " day ago" : " days ago");
+  }
+
   var applicantListingId = null;
   var showNewApplicant = false;
   var activeThreadId = null;
@@ -383,9 +459,7 @@
       // "Too many attempts. Try again in 15 minutes." into
       // "Request failed (423)". admin.html and pp-auth.html already read
       // both shapes; these two didn't.
-      var detail = body.detail;
-      if (detail && typeof detail === "object" && detail.message) detail = detail.message;
-      throw new Error((detail && typeof detail === "string") ? detail : "Request failed (" + res.status + ")");
+      throw new Error(window.PPErrorText ? PPErrorText(body, res.status) : "Request failed (" + res.status + ")");
     }
     return res.json();
   }
@@ -662,6 +736,8 @@
     var gateNote = wizardStep === 2 && needsProof(d.eligibility) && !d.cross_border_note.trim()
       ? "Add how you hire abroad to continue." : "";
     return '<div class="form-panel"><h3>' + (d.id ? "Edit listing" : "Post a role") + '</h3>' +
+      (draftRestored ? '<div class="wiz-draft-note"><span>Picked up where you left off &mdash; saved ' +
+        escapeHtml(draftRestored) + '.</span><button type="button" id="wizDiscardDraft">Start fresh</button></div>' : "") +
       wizStepsHtml() +
       '<div class="wiz-layout">' +
         '<div class="wiz-main"><form id="listingForm" onsubmit="return false">' + stepHtml + '</form></div>' +
@@ -722,8 +798,26 @@
     if (el) el.outerHTML = wizPreviewHtml();
   }
 
+  var draftSaveTimer = null;
+  function scheduleDraftSave(){
+    if (draftSaveTimer) clearTimeout(draftSaveTimer);
+    draftSaveTimer = setTimeout(function(){
+      draftSaveTimer = null;
+      readWizardStepFields();
+      saveWizardDraft();
+    }, 400);
+  }
+
   function wireWizardStep(){
     if (!wizardData) return;
+    // One delegated listener covers every field on the step, including the
+    // ones only read at step boundaries — screening questions, the apply-link,
+    // the cross-border paragraph. Typing into any of them now persists.
+    var wizForm = document.getElementById("listingForm");
+    if (wizForm) {
+      wizForm.addEventListener("input", scheduleDraftSave);
+      wizForm.addEventListener("change", scheduleDraftSave);
+    }
     if (wizardStep === 1) {
       document.querySelectorAll("[data-pick-worktype]").forEach(function(btn){
         btn.addEventListener("click", function(){ wizardData.work_type = btn.getAttribute("data-pick-worktype"); render(); });
@@ -785,7 +879,8 @@
     var listings = state.listings || [];
     var body = companyReviewBannerHtml() +
       '<div class="section-head"><h2>Listings</h2>' +
-      (canWrite() && !showNewListing ? '<button type="button" class="pp-btn pp-btn-primary" id="addListingBtn">Post a role</button>' : "") +
+      (canWrite() && !showNewListing ? '<button type="button" class="pp-btn pp-btn-primary" id="addListingBtn">' +
+        (pendingDraftLabel() ? "Finish your draft" : "Post a role") + '</button>' : "") +
       '</div>';
     var perf = (cache.perf || []).filter(function(r){ return r.views > 0; });
     if (!showNewListing && perf.length) {
@@ -1342,7 +1437,15 @@
       if (s === "listings") url.searchParams.delete("tab"); else url.searchParams.set("tab", s);
       history.replaceState(null, "", url);
     } catch (e) {}
-    showNewListing = false; wizardData = null; showNewApplicant = false;
+    // The debounced save is up to 400ms behind the keyboard, so flush it
+    // before dropping the wizard — a tab switch is exactly the moment those
+    // last few characters would have gone missing.
+    if (showNewListing && wizardData) {
+      if (draftSaveTimer) { clearTimeout(draftSaveTimer); draftSaveTimer = null; }
+      readWizardStepFields();
+      saveWizardDraft();
+    }
+    showNewListing = false; wizardData = null; draftRestored = false; showNewApplicant = false;
     loadSection();
   }
 
@@ -1423,8 +1526,23 @@
     });
 
     // Listings
-    function startNewListing(){
-      cache.editingListing = null; wizardData = blankWizardData(); wizardStep = 1; wizardMax = 1;
+    function startNewListing(opts){
+      cache.editingListing = null;
+      var saved = (opts && opts.fresh) ? null : readWizardDraft();
+      if (saved && draftHasContent(saved.data)) {
+        // Merge over a blank so a draft written before a field existed still
+        // opens, rather than throwing on a key that is not there.
+        var base = blankWizardData();
+        Object.keys(saved.data).forEach(function(k){ if (k in base) base[k] = saved.data[k]; });
+        wizardData = base;
+        wizardStep = saved.step || 1;
+        wizardMax = Math.max(saved.max || 1, wizardStep);
+        draftRestored = draftAgeLabel(saved.saved_at);
+      } else {
+        if (saved) clearWizardDraft();
+        wizardData = blankWizardData(); wizardStep = 1; wizardMax = 1;
+        draftRestored = false;
+      }
       section = "listings";
       showNewListing = true; render();
     }
@@ -1435,7 +1553,17 @@
     var emptyPostBtn = document.getElementById("emptyPostBtn");
     if (emptyPostBtn) emptyPostBtn.addEventListener("click", startNewListing);
     var listingCancelBtn = document.getElementById("listingCancelBtn");
-    if (listingCancelBtn) listingCancelBtn.addEventListener("click", function(){ showNewListing = false; wizardData = null; render(); });
+    if (listingCancelBtn) listingCancelBtn.addEventListener("click", function(){
+      // Cancel closes the form, it does not destroy work. Anything typed is
+      // already saved, and the listings tab offers it back.
+      if (draftSaveTimer) { clearTimeout(draftSaveTimer); draftSaveTimer = null; }
+      readWizardStepFields();
+      var kept = !wizardData.id && draftHasContent(wizardData);
+      if (kept) saveWizardDraft();
+      showNewListing = false; wizardData = null; draftRestored = false;
+      render();
+      if (kept) toast("Draft saved. Pick it up from Post a role.");
+    });
     document.querySelectorAll("[data-edit-listing]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var id = parseInt(btn.getAttribute("data-edit-listing"), 10);
@@ -1460,6 +1588,17 @@
       });
     });
     wireWizardStep();
+    saveWizardDraft();
+    var wizDiscard = document.getElementById("wizDiscardDraft");
+    if (wizDiscard) wizDiscard.addEventListener("click", async function(){
+      var ok = await window.showPPConfirm({
+        title: "Start this role over?", description: "The draft you saved earlier is deleted and the form goes back to empty.",
+        confirmLabel: "Start fresh", safeLabel: "Keep the draft", danger: true
+      });
+      if (!ok) return;
+      clearWizardDraft();
+      startNewListing({ fresh: true });
+    });
     document.querySelectorAll("[data-goto-step]").forEach(function(btn){
       btn.addEventListener("click", function(){
         var n = parseInt(btn.getAttribute("data-goto-step"), 10);
@@ -1515,7 +1654,8 @@
             await api("/api/employers/me/listings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
             toast("Submitted for review.");
           }
-          showNewListing = false; wizardData = null;
+          clearWizardDraft();
+          showNewListing = false; wizardData = null; draftRestored = false;
           loadSection();
         } catch (err) {
           showErr(errId, err.message);

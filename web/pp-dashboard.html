@@ -327,9 +327,7 @@
       // "Too many attempts. Try again in 15 minutes." into
       // "Request failed (423)". admin.html and pp-auth.html already read
       // both shapes; these two didn't.
-      var detail = body.detail;
-      if (detail && typeof detail === "object" && detail.message) detail = detail.message;
-      throw new Error((detail && typeof detail === "string") ? detail : "Request failed (" + res.status + ")");
+      throw new Error(window.PPErrorText ? PPErrorText(body, res.status) : "Request failed (" + res.status + ")");
     }
     return res.json();
   }

@@ -36,6 +36,19 @@ def call(path, data=None, tok=None, method=None):
         det = d.get("detail")
         return {"HTTP": e.code, "detail": det[0]["msg"] if isinstance(det, list) else det}
 
+def raw_error(path, data, tok):
+    """The response body exactly as the browser sees it, without call()'s
+    flattening — these checks are about the shape itself."""
+    req = urllib.request.Request(B + path, data=json.dumps(data).encode(), method="POST")
+    req.add_header("Content-Type", "application/json")
+    if tok: req.add_header("Authorization", "Bearer " + tok)
+    try:
+        urllib.request.urlopen(req, timeout=25)
+        return {}
+    except urllib.error.HTTPError as e:
+        try: return json.loads(e.read())
+        except Exception: return {}
+
 def check(name, cond, got=""):
     (passed if cond else failed).append(name)
     print(("  PASS  " if cond else "  FAIL  ") + name + ("" if cond else f"   got: {got}"))
@@ -117,6 +130,22 @@ ok = call("/api/employers/me/listings", {"title": "Reg Role", "company": "Reg Co
     "contact_email": "a@b.co", "description": "d", "accepts_applications": True}, et)
 subid = ok.get("id"); check("real listing accepted (new discipline)", bool(subid), ok)
 check("admin can delete a submission", call(f"/api/admin/submissions/{subid}", None, A, method="DELETE").get("ok") is True)
+
+# ---- 7. the shape the browser reads validation errors out of ---------------
+# Every rule written as a Pydantic field_validator reaches the user through
+# PPErrorText in web/pp-nav.js, which unwraps detail=[{loc, msg}] and strips
+# the "Value error, " prefix. Before that helper existed the pages printed
+# "[object Object]" or "Request failed (422)" and threw the sentence away. If
+# FastAPI ever changes this shape the helper degrades silently, so pin it.
+raw = raw_error("/api/employers/me/listings", {"title": "T", "company": "Reg Co", "location": "Nairobi",
+    "url": "draftco.co.ke/careers", "eligibility": "kenya", "discipline": "Product Design",
+    "contact_email": "a@b.co", "description": "d"}, et)
+det = raw.get("detail")
+check("validation errors arrive as a list", isinstance(det, list) and bool(det), raw)
+first = det[0] if isinstance(det, list) and det else {}
+check("each carries loc and msg", "loc" in first and "msg" in first, first)
+check("our own wording survives in msg",
+      str(first.get("msg", "")).startswith("Value error, ") and "http://" in str(first.get("msg", "")), first)
 
 print()
 print(f"  {len(passed)} passed, {len(failed)} failed")

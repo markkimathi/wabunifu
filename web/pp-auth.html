@@ -405,10 +405,10 @@
       });
       var data = await res.json();
       if (!res.ok) {
-        if (data.detail && typeof data.detail === "object") {
+        if (data.detail && typeof data.detail === "object" && !Array.isArray(data.detail)) {
           renderAuthCallout(data.detail);
         } else {
-          showFieldError("pwErr", data.detail || "Incorrect email or password.");
+          showFieldError("pwErr", window.PPErrorText ? PPErrorText(data, res.status) : "Incorrect email or password.");
         }
         setBusy(btn, false, "", "Sign in");
         return;
@@ -451,7 +451,16 @@
         body: JSON.stringify({ email: email, password: pw, display_name: name })
       });
       var data = await res.json();
-      if (!res.ok) { showFieldError("emailErr", data.detail || "Couldn't create that account."); setBusy(btn, false, "", "Create account"); return; }
+      if (!res.ok) {
+        var signupMsg = window.PPErrorText ? PPErrorText(data, res.status)
+          : (typeof data.detail === "string" ? data.detail : "Couldn't create that account.");
+        // A password rule belongs under the password field, not the email one.
+        var pwField = Array.isArray(data.detail) && data.detail.some(function(e){
+          return (e.loc || []).indexOf("password") !== -1;
+        });
+        showFieldError(pwField ? "pwErr" : "emailErr", signupMsg);
+        setBusy(btn, false, "", "Create account"); return;
+      }
       localStorage.setItem("kazi_designer_token", data.token);
       location.href = "/onboarding";
     } catch (e) {
@@ -494,7 +503,11 @@
         body: JSON.stringify({ token: resetToken, new_password: pw })
       });
       var data = await res.json();
-      if (!res.ok) { showFieldError("pwErr", data.detail || "That reset link is invalid or has expired."); setBusy(btn, false, "", "Save and sign in"); return; }
+      if (!res.ok) {
+        showFieldError("pwErr", window.PPErrorText ? PPErrorText(data, res.status)
+          : (typeof data.detail === "string" ? data.detail : "That reset link is invalid or has expired."));
+        setBusy(btn, false, "", "Save and sign in"); return;
+      }
       // The endpoint now returns a session for whoever consumed the
       // single-use token — they've just proved they control the address, and
       // every older session was killed a line earlier. So the button that

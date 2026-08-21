@@ -442,7 +442,8 @@
       var res = await fetch("/api/ats/check", { method: "POST", body: fd });
       if (!res.ok) {
         var body = await res.json().catch(function(){ return {}; });
-        throw new Error(body.detail || "Request failed (" + res.status + ")");
+        throw new Error(window.PPErrorText ? PPErrorText(body, res.status)
+          : (typeof body.detail === "string" ? body.detail : "Request failed (" + res.status + ")"));
       }
       var data = await res.json();
       renderScoreRing(data.score);

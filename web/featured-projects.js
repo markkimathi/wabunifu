@@ -43,7 +43,8 @@
   async function fpHandle(res){
     if (!res.ok) {
       var body = await res.json().catch(function(){ return {}; });
-      var err = new Error(body.detail || ("Request failed (" + res.status + ")"));
+      var err = new Error(window.PPErrorText ? PPErrorText(body, res.status)
+        : (typeof body.detail === "string" ? body.detail : "Request failed (" + res.status + ")"));
       err.status = res.status;
       throw err;
     }

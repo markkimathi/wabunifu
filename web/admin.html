@@ -794,7 +794,8 @@ async function api(path, opts = {}) {
   if (res.status === 401) throw new Error("unauthorized");
   if (!res.ok) {
     let msg = `request failed (${res.status})`;
-    try { const body = await res.json(); if (body && body.detail) msg = typeof body.detail === "string" ? body.detail : (body.detail.message || msg); } catch (e) {}
+    try { const body = await res.json(); if (body && body.detail) msg = window.PPErrorText ? PPErrorText(body, res.status)
+      : (typeof body.detail === "string" ? body.detail : (body.detail.message || msg)); } catch (e) {}
     throw new Error(msg);
   }
   return res.json();

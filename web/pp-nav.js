@@ -112,6 +112,62 @@
   // exists to avoid.
   // `short` is for a row already labelled "Closes" — repeating the word in the
   // value reads like a stutter. The board's chip stands alone and needs it.
+  /* Turning an error response into a sentence a person can act on.
+
+     FastAPI sends `detail` in three different shapes and every page here
+     handled a different subset. A Pydantic field validator — which is where
+     all our carefully worded rules live, like "the application link must
+     start with http:// or https://" — sends an ARRAY, and no caller handled
+     that. Pages doing `body.detail || "Request failed"` printed
+     "[object Object]", because an array is truthy. Pages checking for
+     `.message` fell through to "Request failed (422)". Either way the useful
+     sentence the server had already written was thrown away at the last step.
+
+     Shapes: a plain string, {message, ...} for the lockout responses, or
+     [{type, loc, msg}, ...] for validation. */
+  function sentence(t){
+    t = String(t || "").trim();
+    return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+  }
+  function fieldLabel(loc){
+    if (!loc || !loc.length) return "";
+    var last = String(loc[loc.length - 1]);
+    if (last === "body" || last === "query" || last === "path") return "";
+    return last.replace(/_/g, " ");
+  }
+  window.PPErrorText = function(body, status){
+    var detail = body && body.detail;
+    if (typeof detail === "string" && detail.trim()) return detail;
+    if (detail && !Array.isArray(detail) && typeof detail === "object") {
+      if (typeof detail.message === "string" && detail.message.trim()) return detail.message;
+    }
+    if (Array.isArray(detail) && detail.length) {
+      var parts = [];
+      for (var i = 0; i < detail.length; i++) {
+        var e = detail[i] || {};
+        var msg = typeof e.msg === "string" ? e.msg : "";
+        if (!msg) continue;
+        // Pydantic prefixes our own ValueError text with "Value error, ".
+        // What follows is already a finished sentence written for a person.
+        var own = msg.replace(/^(Value error|Assertion failed),\s*/, "");
+        if (own !== msg) { parts.push(sentence(own)); continue; }
+        // Anything else is Pydantic's own wording ("Field required"), which
+        // means nothing without knowing which field it is about.
+        var label = fieldLabel(e.loc);
+        parts.push(label ? sentence(label) + " — " + own.toLowerCase() : sentence(own));
+      }
+      if (parts.length) {
+        var seen = {}, uniq = [];
+        for (var j = 0; j < parts.length; j++) {
+          if (seen[parts[j]]) continue;
+          seen[parts[j]] = 1; uniq.push(parts[j]);
+        }
+        return uniq.length === 1 ? uniq[0] : uniq.join("; ");
+      }
+    }
+    return "Request failed (" + (status || "?") + ")";
+  };
+
   window.PPCloses = function(closes, short){
     if (!closes) return "";
     var days = Math.ceil((new Date(closes + "T23:59:59") - new Date()) / 86400000);
