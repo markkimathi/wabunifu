@@ -4749,6 +4749,15 @@ def job_details_page(job_id: str, request: Request):
 # reachable directly for now, same as every other pp-*.html page so far.
 # Nothing told a crawler these pages existed: no robots.txt, no sitemap, and
 # fifty role pages reachable only by clicking through a client-rendered board.
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon_ico():
+    """Browsers probe /favicon.ico regardless of what <link rel="icon"> says,
+    so this 404'd on every page load. The bytes are the same PNG — every
+    browser still in use sniffs the content rather than trusting the
+    extension, and keeping one real file beats maintaining a second format."""
+    return FileResponse(WEB_DIR / "favicon.png", media_type="image/png")
+
+
 @app.get("/robots.txt", include_in_schema=False)
 def robots_txt(request: Request):
     base = _site_base(request)
