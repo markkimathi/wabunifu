@@ -27,6 +27,12 @@ from desc_format import format_description
 
 OUT = Path(__file__).parent.parent / "web" / "jobs.json"
 
+# Guard rails for a run that half-worked. Both are deliberately loose: they are
+# meant to catch an ATS changing its API under us, not an ordinary quiet week.
+MAX_BROKEN_SHARE = 0.25          # more than a quarter of sources failing is systemic
+MAX_DROP_RATIO = 0.5             # publishing fewer than half the previous roles
+MIN_BOARD_FOR_DROP_CHECK = 20    # ...but only once the board is big enough to judge
+
 
 def build_job(common: dict) -> Job | None:
     """common dict (from a source's to_common) -> a classified Job, or None if not design."""
@@ -98,10 +104,12 @@ def gather_live() -> list[dict]:
     }
 
     out: list[dict] = []
+    broken: list[str] = []
     for c in COMPANIES:
         mod = FETCHERS.get(c["ats"])
         if mod is None:
             print(f"  ! no fetcher for ats={c['ats']} ({c['name']}), skipping", file=sys.stderr)
+            broken.append(c["name"])
             continue
         try:
             raw = mod.fetch(c["token"])
@@ -109,17 +117,35 @@ def gather_live() -> list[dict]:
             print(f"  ok  {c['name']}: {len(raw)} listings")
         except Exception as e:
             print(f"  !! {c['name']} failed: {e}", file=sys.stderr)
-    return out
+            broken.append(c["name"])
+    return out, broken, len(COMPANIES)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--sample", action="store_true", help="use offline fixtures instead of live fetch")
+    ap.add_argument("--force", action="store_true",
+                    help="publish even if many sources failed or the board collapsed")
     args = ap.parse_args()
 
     print("Kazi pipeline:", "SAMPLE mode" if args.sample else "LIVE mode")
-    common = gather_sample() if args.sample else gather_live()
+    if args.sample:
+        common, broken, total = gather_sample(), [], 0
+    else:
+        common, broken, total = gather_live()
     print(f"fetched {len(common)} raw listings")
+
+    # Every fetch error is caught so one dead host cannot take the run down
+    # with it. That is right, and it also meant a run where most sources
+    # failed finished green, wrote a much smaller jobs.json, and deployed it —
+    # the board would quietly shrink with nothing to show it had.
+    if broken and total:
+        share = len(broken) / total
+        print(f"{len(broken)}/{total} sources failed: {', '.join(broken[:8])}"
+              + (" ..." if len(broken) > 8 else ""), file=sys.stderr)
+        if share > MAX_BROKEN_SHARE and not args.force:
+            sys.exit(f"refusing to publish: {share:.0%} of sources failed "
+                     f"(limit {MAX_BROKEN_SHARE:.0%}). Re-run with --force to publish anyway.")
 
     jobs = [j for j in (build_job(c) for c in common) if j]
     print(f"{len(jobs)} design roles after classification")
@@ -137,9 +163,25 @@ def main():
         "count": len(jobs),
         "jobs": [j.to_web() for j in jobs],
     }
+    previous = 0
+    try:
+        previous = int(json.loads(OUT.read_text()).get("count") or 0)
+    except Exception:
+        previous = 0
+    # A board that halves overnight is a broken fetch, not churn. Roles do come
+    # and go, so this only bites when the previous board was substantial enough
+    # for the drop to mean something. Never in --sample: a dozen fixtures are
+    # supposed to be smaller than the live board, and local testing should not
+    # need a flag to write its own output.
+    if (not args.sample and previous >= MIN_BOARD_FOR_DROP_CHECK
+            and len(jobs) < previous * MAX_DROP_RATIO and not args.force):
+        sys.exit(f"refusing to publish: {len(jobs)} roles, down from {previous}. "
+                 f"That is more than a {(1 - MAX_DROP_RATIO):.0%} drop, which is usually a "
+                 f"broken source rather than a quiet week. Re-run with --force to publish anyway.")
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False))
-    print(f"wrote {OUT} ({len(jobs)} jobs)")
+    print(f"wrote {OUT} ({len(jobs)} jobs, previously {previous})")
 
     # quick eligibility breakdown: useful sanity check
     from collections import Counter
