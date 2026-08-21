@@ -275,6 +275,51 @@ button as black-on-black that was in fact black-on-white. Same family as the
 frozen-transition trap above: **the preview pane lies about anything that
 depends on a recompute you did not wait for.**
 
+## Performance: the payload, not the server
+
+Response times looked bad — 1.2 to 2.0 seconds. Almost none of it was the
+server. **A fifteen-byte endpoint has a TTFB of 0.86s from Europe**, because
+the machine is in Johannesburg; that is the floor, and measuring anything
+against zero instead of against that floor invents problems. `/api/jobs` runs
+in 11ms locally.
+
+What was actually wrong was weight, and all of it on the pages a first-time
+visitor lands on:
+
+| | before | after |
+|---|---|---|
+| `/api/jobs` | 398KB | 34KB |
+| homepage, total | 2,244KB | 625KB |
+| brand marks (every page) | 147KB | 21KB |
+
+- **`/api/jobs` shipped every job's full HTML description** — 356KB of 392KB —
+  to six pages, none of which render it. The description belongs to the detail
+  page, which has its own endpoint.
+- **Four hero videos all had `preload="auto"`.** 1.9MB before a single job was
+  visible. Now one loads, and each next is warmed 40% through the previous.
+- **A 1000×1000 logo rendered at 30×30.** Regenerated at 3.2× the largest
+  render — sharp on any display, 2.9KB instead of 37KB.
+
+This matters more here than the numbers suggest: the readers are largely on
+mobile data, which is the reason the board exists.
+
+**Checked and correctly left alone:** uploaded project images are already
+processed server-side to 800×600 and render at 390px — a 2.1× factor, right
+for retina. `favicon.png` is 512×512 and 34KB, which is the standard PWA icon
+size, cached indefinitely, and re-encoding makes it *larger*. Not every big
+file is a defect.
+
+The measurement, in the console:
+
+```js
+performance.getEntriesByType('resource')
+  .map(r => [r.name.split('/').pop(), Math.round((r.transferSize||0)/1024)+'KB'])
+  .sort((a,b) => parseInt(b[1]) - parseInt(a[1]))
+```
+
+and for oversized images, compare `img.naturalWidth` against
+`getBoundingClientRect().width` — anything past ~3× is waste.
+
 ## Scope discipline — what was deliberately not built
 
 Production, as of 20 August 2026: 5 designers, 2 companies, 0 applications,
