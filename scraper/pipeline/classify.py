@@ -67,10 +67,52 @@ def _any(patterns, text) -> bool:
     return any(re.search(p, text) for p in patterns)
 
 
+# Matches any designer at all, which is what makes it the fallback for
+# Product Design — and also why it must not outrank a department. A "Learning
+# Experience Designer" matches this and nothing else; the department is what
+# says Instructional Design, and it is right.
+GENERIC_PATTERNS = {r"\bdesigner\b"}
+
+# Checked against the title only, never the department. Both of these were on
+# the live board: "Senior Product Manager, Design Systems" (owns the design
+# system as a product) and "UX Product Manager" (sat in Commercial HQ). A
+# designer opening either spends an afternoon on a role that was never a design
+# job, which is the exact thing this board exists to prevent.
+#
+# Title-only because Duolingo files "Senior Learning Designer, Indian
+# Languages" under a department called "Product Manager". The department says
+# where a role sits; the title says what it is, and it is a design job.
+#
+# The adjacency matters too: this catches "Product Manager" but not "Product
+# Design Manager" or "Senior Manager, Product Design", which manage designers
+# and belong here.
+TITLE_EXCLUDE = [r"\bproduct\s+manager\b"]
+
+
+def _match(text: str, precise_only: bool = False) -> str | None:
+    for discipline, patterns in DISCIPLINE_RULES:
+        pats = [p for p in patterns if not (precise_only and p in GENERIC_PATTERNS)]
+        if pats and _any(pats, text):
+            return discipline
+    return None
+
+
 def classify_discipline(title: str, department: str = "") -> str | None:
-    """Return a discipline string, or None if this isn't a design role we list."""
+    """Return a discipline string, or None if this isn't a design role we list.
+
+    Title first, department second. Both used to be concatenated and matched in
+    rule order, and Product Design is the last rule — so any other discipline
+    named anywhere outranked it. "Director, Product Design" in a design-systems
+    department came out as Design Systems, and three roles literally titled
+    "Product Designer" were filed under UX, which is a miss for anyone
+    filtering the board by the discipline they actually do.
+
+    Only a *precise* title match wins that way. A title matching nothing but
+    the generic "designer" still defers to the department, because that is the
+    case where the department genuinely knows better.
+    """
     text = f"{title} {department}".lower()
-    if _any(EXCLUDE, text):
+    if _any(EXCLUDE, text) or _any(TITLE_EXCLUDE, title.lower()):
         return None
     # must contain some design signal at all
     if not re.search(
@@ -79,10 +121,7 @@ def classify_discipline(title: str, department: str = "") -> str | None:
         text,
     ):
         return None
-    for discipline, patterns in DISCIPLINE_RULES:
-        if _any(patterns, text):
-            return discipline
-    return None
+    return _match(title.lower(), precise_only=True) or _match(text)
 
 
 def classify_level(title: str) -> str:
