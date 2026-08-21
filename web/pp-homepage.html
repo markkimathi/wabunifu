@@ -115,6 +115,9 @@
   .role-main{grid-area:main;display:grid;grid-template-columns:auto minmax(0,1fr) auto;
     align-items:center;gap:14px;min-width:0}
   @media(min-width:1280px){.role-main{gap:16px}}
+  /* A lead-in above the title, not a third line of copy — matches .jr-elig on
+     the board so the two row components read the same way. */
+  .role-elig{margin:0 0 5px;line-height:1}
   .role-main h3{margin:0 0 3px;font-size:16.5px;font-weight:700;letter-spacing:-0.015em;line-height:1.25;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   @media(min-width:768px){.role-main h3{font-size:17px}}
@@ -470,10 +473,13 @@
     return '<div class="role-row">' +
       '<a class="role-link" href="/jobs/' + encodeURIComponent(j.id) + '" aria-label="' + escapeHtml(j.t) + ' at ' + escapeHtml(j.co) + '"></a>' +
       '<div class="role-main"><span class="pp-card-mark">' + (j.co ? escapeHtml(j.co[0].toUpperCase()) : "?") + '</span>' +
-        '<div style="min-width:0"><h3>' + escapeHtml(j.t) + '</h3><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div>' +
+        // Leads the row, same as the board — eligibility is read before the
+        // role names itself, because it is the question this site answers.
+        '<div style="min-width:0"><div class="role-elig">' + eligBadge(j) + '</div>' +
+          '<h3>' + escapeHtml(j.t) + '</h3><p>' + escapeHtml(j.co) + ' · ' + escapeHtml(j.city || "Remote") + '</p></div>' +
         '<button type="button" class="pp-btn-icon role-save' + (saved ? " -saved" : "") + '" data-save="' + escapeHtml(j.id) + '"' +
           ' aria-pressed="' + (saved ? "true" : "false") + '" aria-label="' + (saved ? "Saved" : "Save role") + '">' + ICONS.save + '</button></div>' +
-      '<div class="role-tags">' + eligBadge(j) + chips + '</div>' +
+      '<div class="role-tags">' + chips + '</div>' +
       '<div class="role-meta"><span class="pay">' + escapeHtml(j.pay || "Not disclosed") + '</span>' +
         '<span class="posted">' + postedLabel(j.days) + '</span></div>' +
     '</div>';
