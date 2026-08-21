@@ -135,6 +135,7 @@
 
   .rail-meta{margin-top:20px;padding-top:18px;border-top:1px solid var(--c-surface-inset);display:flex;flex-direction:column;gap:11px}
   .rail-meta-row{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+  .rail-closes{color:var(--pp-gold-800);font-weight:650}
   .rail-meta-row span:first-child{color:var(--c-text-subtle)}
   .rail-meta-row span:last-child{font-weight:600}
 
@@ -488,6 +489,13 @@
             '<div class="applied-ask" id="appliedAsk" hidden></div>' +
             '<div class="rail-meta">' +
               '<div class="rail-meta-row"><span>Posted</span><span>' + postedLabel(job.days) + '</span></div>' +
+              // The board has said "Closes in 3 days" on the row all along, and
+              // then the page you open to decide said nothing about it. Urgency
+              // matters most at the point of deciding, not while scrolling past.
+              ((window.PPCloses && window.PPCloses(job.closes, true))
+                ? '<div class="rail-meta-row"><span>Closes</span><span class="rail-closes">'
+                    + escapeHtml(window.PPCloses(job.closes, true)) + '</span></div>'
+                : "") +
               (job.src ? '<div class="rail-meta-row"><span>Listed via</span><span>' + escapeHtml(job.src) + '</span></div>' : "") +
             '</div>' +
           '</div>' +

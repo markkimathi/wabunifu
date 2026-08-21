@@ -102,6 +102,26 @@
     "Fashion Design", "Interior Design"
   ];
 
+  // How long is left to apply, in the words a person would use. Lives here
+  // because two pages need the same answer and a second copy is how they drift
+  // apart — the discipline list had already taught that lesson once.
+  //
+  // Only employer-posted roles carry a closing date, so most listings show
+  // nothing. Shown only inside a fortnight: a deadline three months out is not
+  // news, and dressing it as urgency is the manufactured pressure this board
+  // exists to avoid.
+  // `short` is for a row already labelled "Closes" — repeating the word in the
+  // value reads like a stutter. The board's chip stands alone and needs it.
+  window.PPCloses = function(closes, short){
+    if (!closes) return "";
+    var days = Math.ceil((new Date(closes + "T23:59:59") - new Date()) / 86400000);
+    if (days < 0) return "Closed";
+    if (days === 0) return short ? "Today" : "Closes today";
+    if (days === 1) return short ? "Tomorrow" : "Closes tomorrow";
+    if (days <= 14) return (short ? "In " : "Closes in ") + days + " days";
+    return "";
+  };
+
   window.PPScroll = PPScroll;
 
   /* The filter panel that becomes an overlay below 1024px — a bottom sheet on
