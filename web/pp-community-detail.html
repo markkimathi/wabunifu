@@ -442,6 +442,14 @@
         return;
       }
       var res = await fetch("/api/community/sessions/" + currentSession.id, { headers: { "Authorization": "Bearer " + t } });
+      // The booking itself already succeeded. If only the reload failed, say
+      // so accurately — "try again" would be wrong, and rendering the error
+      // body as a session would break the card over a booking that worked.
+      if (!res.ok) {
+        if (window.showPPToast) showPPToast("Booked. Reload to see it on the card.");
+        btn.disabled = false;
+        return;
+      }
       var session = await res.json();
       renderSession(session);
     } catch (e) {
