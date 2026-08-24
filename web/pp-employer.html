@@ -484,12 +484,17 @@
   }
 
   function railHtml(){
+    // title alone is not enough: the label span is display:none at the
+    // icon-only breakpoint (1024-1279px), which drops it from the
+    // accessibility tree, and a title attribute is not reliably announced by
+    // screen readers or reachable on touch. aria-label holds regardless of
+    // which breakpoint's CSS is currently hiding the visible text.
     return SECTIONS.map(function(s){
-      return '<button type="button" class="dash-rail-item' + (section === s.key ? " -active" : "") + '" data-section="' + s.key + '" title="' + s.label + '">' +
+      return '<button type="button" class="dash-rail-item' + (section === s.key ? " -active" : "") + '" data-section="' + s.key + '" title="' + s.label + '" aria-label="' + s.label + '">' +
         railIcon(s.key) + '<span class="dash-rail-label">' + s.label + '</span></button>';
     }).join("") +
     '<div class="dash-rail-spacer"></div>' +
-    '<button type="button" class="dash-rail-item dash-rail-signout" data-rail-signout title="Sign out">' +
+    '<button type="button" class="dash-rail-item dash-rail-signout" data-rail-signout title="Sign out" aria-label="Sign out">' +
       '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>' +
       '<span class="dash-rail-label">Sign out</span></button>';
   }
