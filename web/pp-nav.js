@@ -512,8 +512,8 @@
     + ".pp-menu-signout{display:block;width:calc(100% - 32px);margin:6px 16px 18px;padding:12px 4px;border:none;"
     + "background:none;font:inherit;font-size:14.5px;font-weight:600;color:var(--c-text);text-align:left;cursor:pointer}"
     // ---- focused-flow shell (sign in/up, reset, onboarding) ----
-    + ".pp-header-focused{padding:32px var(--pp-page-margin) 0}"
-    + ".pp-header-focused a{display:inline-flex}"
+    + ".pp-header-focused{position:relative;padding:32px var(--pp-page-margin) 0;display:flex;align-items:center;justify-content:space-between;gap:12px}"
+    + ".pp-header-focused a.pp-mark{display:inline-flex}"
     + ".pp-header-focused img{width:32px;height:32px;display:block}"
     // ---- breadcrumbs ----
     // body is display:flex;flex-direction:column (see base reset in every
@@ -1138,10 +1138,28 @@
   }
 
   function buildFocusedHeader(root){
+    // Painted signed-out first so the header never blocks on a network round
+    // trip, then upgraded once the token check resolves — same reasoning as
+    // the full header just below. Without a bell here, the two pages a
+    // signed-in person actually lives in day to day (their own dashboard)
+    // were the only two places on the whole site where a new message or a
+    // review outcome could never be seen without leaving to a public page
+    // first — the exact case this file's own resolveSignedInUser fix was
+    // written for, just not reached from this branch.
     root.innerHTML =
       '<div class="pp-header-focused">' +
-        '<a href="' + ROUTES.home + '"><img src="/brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
+        '<a class="pp-mark" href="' + ROUTES.home + '"><img src="/brand/pp-icon.png" alt="Path &amp; Pixel"></a>' +
       '</div>';
+    resolveSignedInUser(function(user){
+      if (!user) return;
+      var bar = root.querySelector(".pp-header-focused");
+      if (!bar) return;
+      bar.insertAdjacentHTML("beforeend",
+        '<button type="button" class="pp-bell" data-bell aria-label="Notifications" hidden>' +
+          ICONS.bell(19) + '<span class="pp-bell-dot" data-bell-count hidden></span></button>' +
+        '<div class="pp-notif-panel" data-notif-panel hidden></div>');
+      wireBell(root);
+    });
   }
 
   function wireInteractions(root){
