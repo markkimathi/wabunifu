@@ -2209,6 +2209,20 @@ async def designer_upload_project_gallery_image(project_id: int, file: UploadFil
     return {"ok": True, "id": image_id, "image_path": image_path, "caption": ""}
 
 
+# reorder registered before the {image_id} routes below: Starlette matches
+# in registration order, and {image_id} is a bare path segment that happily
+# swallows the literal string "reorder" and tries to parse it as an int —
+# a 422 on every reorder attempt, forever, with no route ever reachable to
+# fix it after the fact. Same trap, opposite direction, as a catch-all route
+# registered too early; here the specific one has to come first instead.
+@app.put("/api/designers/me/projects/{project_id}/images/reorder")
+def designer_reorder_project_images(project_id: int, payload: ProjectReorder, designer: dict = Depends(require_designer)):
+    ok = reorder_project_images(designer["id"], project_id, payload.ids)
+    if not ok:
+        raise HTTPException(404, "No such project.")
+    return {"ok": True}
+
+
 @app.put("/api/designers/me/projects/{project_id}/images/{image_id}")
 def designer_caption_project_image(project_id: int, image_id: int, payload: ProjectImageCaption,
                                     designer: dict = Depends(require_designer)):
@@ -2231,14 +2245,6 @@ def designer_delete_project_image(project_id: int, image_id: int, designer: dict
     deleted = delete_project_image(designer["id"], project_id, image_id)
     if not deleted:
         raise HTTPException(404, "No such image.")
-    return {"ok": True}
-
-
-@app.put("/api/designers/me/projects/{project_id}/images/reorder")
-def designer_reorder_project_images(project_id: int, payload: ProjectReorder, designer: dict = Depends(require_designer)):
-    ok = reorder_project_images(designer["id"], project_id, payload.ids)
-    if not ok:
-        raise HTTPException(404, "No such project.")
     return {"ok": True}
 
 

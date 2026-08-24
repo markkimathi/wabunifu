@@ -132,6 +132,25 @@
   .cs-result{display:grid;grid-template-columns:140px minmax(0,1fr);gap:10px;margin-bottom:8px}
   @media(max-width:600px){.cs-result{grid-template-columns:1fr}}
 
+  .gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:10px}
+  .gal-item{border:1px solid var(--c-border);border-radius:var(--pp-radius-md);overflow:hidden;background:var(--c-surface)}
+  .gal-item img{width:100%;aspect-ratio:4/3;object-fit:cover;display:block;background:var(--c-surface-inset)}
+  .gal-item .gal-body{padding:8px}
+  .gal-item input{width:100%;box-sizing:border-box;border:1px solid transparent;background:none;
+    font-family:var(--pp-font);font-size:12.5px;color:var(--c-text-subtle);padding:3px 4px;border-radius:6px}
+  .gal-item input:hover,.gal-item input:focus{border-color:var(--c-border);background:var(--c-bg-sunken)}
+  .gal-item .gal-actions{display:flex;gap:4px;padding:0 6px 8px}
+  .gal-item .gal-actions button{flex:1;border:none;background:var(--c-bg-sunken);border-radius:6px;
+    padding:4px 0;cursor:pointer;color:var(--c-text-subtle);font-size:12px;line-height:1}
+  .gal-item .gal-actions button:disabled{opacity:.35;cursor:default}
+  .gal-item .gal-actions button:hover:not(:disabled){background:var(--c-border);color:var(--c-text)}
+  .gal-item .gal-actions .del{color:var(--c-bad-text)}
+  .gal-add{border:1px dashed var(--c-border);border-radius:var(--pp-radius-md);aspect-ratio:4/3;
+    display:flex;align-items:center;justify-content:center;background:none;cursor:pointer;
+    color:var(--c-text-faint);font-family:var(--pp-font);font-size:13px;font-weight:600;text-align:center;padding:10px}
+  .gal-add:hover{border-color:var(--c-text-faint);color:var(--c-text)}
+  .gal-add:disabled{opacity:.5;cursor:default}
+
   .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px}
   .stat-card{padding:20px;border:1px solid var(--c-border);border-radius:var(--pp-radius-md);background:var(--c-surface)}
   .stat-card .n{font-size:26px;font-weight:800;letter-spacing:-0.02em;font-variant-numeric:tabular-nums}
@@ -1237,9 +1256,160 @@
         '<div class="pp-field-input"><input id="csCredits" value="' + escapeHtml(p.credits || "") + '" placeholder="Who else worked on this, and what they did"></div>' +
         '<p class="field-hint">Naming your collaborators is not a formality — it is how people find each other here.</p></div>' +
 
+      renderGalleryBlock(p) +
+
       '<div class="form-actions"><button type="button" class="pp-btn pp-btn-primary" id="csSave">Save case study</button>' +
         '<span class="save-note" id="csNote" hidden>Saved.</span></div>' +
     '</div>';
+  }
+
+  /* Every one of these endpoints existed with nothing to call them: upload,
+     caption, delete, reorder, all built, all reachable from nowhere. The
+     public case-study page has rendered a gallery grid with a lightbox this
+     whole time — for a gallery no designer could ever put anything into.
+     Each action here saves itself immediately, the same as the case-study
+     fields above are the ones batched behind "Save case study" — an upload
+     can't be a JSON field in that payload anyway, and there's no reason a
+     caption edit or a reorder should wait for an unrelated field to be
+     ready to save too. */
+  var MAX_PROJECT_IMAGES = 8;
+  function renderGalleryBlock(p){
+    var gallery = p.gallery || [];
+    var atCap = gallery.length >= MAX_PROJECT_IMAGES;
+    return '<div class="field-block" id="galBlockWrap"><label class="pp-field-label">Gallery images (' + gallery.length + ' / ' + MAX_PROJECT_IMAGES + ')</label>' +
+      '<p class="field-hint" style="margin:0 0 8px">Screens, sketches, whatever tells the story better shown than said. Click any caption to name it.</p>' +
+      '<div class="gal-grid" id="galGrid">' +
+        gallery.map(function(im, i){
+          return '<div class="gal-item" data-gal-id="' + im.id + '">' +
+            '<img src="' + escapeHtml(im.image_path) + '" alt="">' +
+            '<div class="gal-body"><input value="' + escapeHtml(im.caption || "") + '" placeholder="Caption (optional)" data-gal-caption="' + im.id + '"></div>' +
+            '<div class="gal-actions">' +
+              '<button type="button" data-gal-move="-1" data-id="' + im.id + '"' + (i === 0 ? " disabled" : "") + ' aria-label="Move earlier">&larr;</button>' +
+              '<button type="button" data-gal-move="1" data-id="' + im.id + '"' + (i === gallery.length - 1 ? " disabled" : "") + ' aria-label="Move later">&rarr;</button>' +
+              '<button type="button" class="del" data-gal-delete="' + im.id + '" aria-label="Delete image">Delete</button>' +
+            '</div></div>';
+        }).join("") +
+        (atCap ? "" : '<button type="button" class="gal-add" id="galAddBtn">+ Add image</button>') +
+      '</div>' +
+      '<input type="file" id="galFileInput" accept=".jpg,.jpeg,.png,.webp" style="display:none">' +
+      '<p class="fielderr" id="galErr" role="alert" hidden></p>' +
+    '</div>';
+  }
+
+  function wireGallery(p){
+    var galGrid = document.getElementById("galGrid");
+    if (!galGrid) return;
+
+    function currentGallery(){ return p.gallery || []; }
+    function galErr(msg){
+      var el = document.getElementById("galErr");
+      if (el) { el.textContent = msg || ""; el.hidden = !msg; }
+    }
+    // The editor is showing one project's data by reference (p, closed over
+    // from renderStoryEditor) — mutating p.gallery here and re-rendering just
+    // this block keeps it in sync with me.projects without a full re-render,
+    // the same shortcut renderDisciplineChips takes for its own chip grid.
+    function syncBack(){
+      me.projects = (me.projects || []).map(function(proj){
+        return proj.id === p.id ? Object.assign({}, proj, { gallery: p.gallery }) : proj;
+      });
+    }
+    var addBtn = document.getElementById("galAddBtn");
+    var fileInput = document.getElementById("galFileInput");
+    if (addBtn && fileInput) addBtn.addEventListener("click", function(){ fileInput.click(); });
+    if (fileInput) fileInput.addEventListener("change", async function(){
+      var file = fileInput.files[0];
+      fileInput.value = "";
+      if (!file) return;
+      galErr("");
+      if (addBtn) { addBtn.disabled = true; addBtn.textContent = "Uploading…"; }
+      var fd = new FormData();
+      fd.append("file", file);
+      try {
+        var img = await api("/api/designers/me/projects/" + p.id + "/images", { method: "POST", body: fd });
+        p.gallery = currentGallery().concat([{ id: img.id, image_path: img.image_path, caption: img.caption || "" }]);
+        syncBack();
+        rewireStoryGallery();
+      } catch (e) {
+        galErr(e.message || "Couldn't upload that image.");
+        if (addBtn) { addBtn.disabled = false; addBtn.textContent = "+ Add image"; }
+      }
+    });
+
+    galGrid.querySelectorAll("[data-gal-delete]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var id = parseInt(btn.getAttribute("data-gal-delete"), 10);
+        var ok = await window.showPPConfirm({
+          title: "Delete this image?", description: "It comes out of the gallery. This can't be undone.",
+          confirmLabel: "Delete", safeLabel: "Keep it", danger: true
+        });
+        if (!ok) return;
+        btn.disabled = true;
+        try {
+          await api("/api/designers/me/projects/" + p.id + "/images/" + id, { method: "DELETE" });
+          p.gallery = currentGallery().filter(function(im){ return im.id !== id; });
+          syncBack();
+          rewireStoryGallery();
+        } catch (e) {
+          galErr(e.message || "Couldn't delete that image.");
+          btn.disabled = false;
+        }
+      });
+    });
+
+    galGrid.querySelectorAll("[data-gal-move]").forEach(function(btn){
+      btn.addEventListener("click", async function(){
+        var id = parseInt(btn.getAttribute("data-id"), 10);
+        var dir = parseInt(btn.getAttribute("data-gal-move"), 10);
+        var list = currentGallery().slice();
+        var idx = list.findIndex(function(im){ return im.id === id; });
+        var newIdx = idx + dir;
+        if (idx < 0 || newIdx < 0 || newIdx >= list.length) return;
+        var tmp = list[idx]; list[idx] = list[newIdx]; list[newIdx] = tmp;
+        p.gallery = list;
+        syncBack();
+        rewireStoryGallery();
+        try {
+          await api("/api/designers/me/projects/" + p.id + "/images/reorder", {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: list.map(function(im){ return im.id; }) })
+          });
+        } catch (e) { galErr(e.message || "Couldn't save that order."); }
+      });
+    });
+
+    galGrid.querySelectorAll("[data-gal-caption]").forEach(function(input){
+      var original = input.value;
+      input.addEventListener("blur", async function(){
+        var val = input.value.trim();
+        if (val === original) return;
+        var id = parseInt(input.getAttribute("data-gal-caption"), 10);
+        try {
+          await api("/api/designers/me/projects/" + p.id + "/images/" + id, {
+            method: "PUT", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ caption: val })
+          });
+          original = val;
+          p.gallery = currentGallery().map(function(im){ return im.id === id ? Object.assign({}, im, { caption: val }) : im; });
+          syncBack();
+        } catch (e) { galErr(e.message || "Couldn't save that caption."); input.value = original; }
+      });
+    });
+  }
+
+  // Re-render just the gallery block in place, then re-wire it — the rest of
+  // the story editor (problem/results/credits, all still being typed into)
+  // stays untouched.
+  function rewireStoryGallery(){
+    if (storyProjectId == null) return;
+    var p = (me.projects || []).filter(function(x){ return x.id === storyProjectId; })[0];
+    if (!p) return;
+    var wrap = document.getElementById("galBlockWrap");
+    if (!wrap || !wrap.parentElement) return;
+    var holder = document.createElement("div");
+    holder.innerHTML = renderGalleryBlock(p);
+    wrap.replaceWith(holder.firstElementChild);
+    wireGallery(p);
   }
 
   function mountWork(){
@@ -1274,6 +1444,11 @@
     });
     var back = document.getElementById("storyBack");
     if (back) back.addEventListener("click", function(){ storyProjectId = null; render(); });
+
+    if (storyProjectId != null) {
+      var storyProject = (me.projects || []).filter(function(x){ return x.id === storyProjectId; })[0];
+      if (storyProject) wireGallery(storyProject);
+    }
 
     var save = document.getElementById("csSave");
     if (save) save.addEventListener("click", async function(){
