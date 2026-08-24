@@ -2933,7 +2933,12 @@ def companies_directory():
             })
         entry.update({"slug": c["slug"], "registered": True,
                       "logo_path": c.get("logo_path") or "",
-                      "blurb": c.get("blurb") or ""})
+                      "blurb": c.get("blurb") or "",
+                      # Only a registered company has a row a designer can link
+                      # to — the id is how the profile's company picker tells
+                      # "Paystack, who has an account here" from "Google, who
+                      # is just a name on a scraped listing".
+                      "id": c["id"]})
 
     out = sorted(by_name.values(), key=lambda e: (-e["roles"], e["name"].lower()))
     return {"count": len(out), "companies": out}
