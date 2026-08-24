@@ -901,7 +901,7 @@
           // sender's display name and their message text. Rendering them raw
           // meant someone could name themselves a script tag, message you, and
           // have it run in your header.
-          return '<a class="pp-notif-item' + (n.read ? "" : " -unread") + '" href="' + escHtml(n.href || "#") + '">' +
+          return '<a class="pp-notif-item' + (n.read ? "" : " -unread") + '" href="' + escHtml(n.href || "#") + '" data-notif-id="' + n.id + '">' +
             '<span class="t">' + escHtml(n.title) + '</span>' +
             (n.body ? '<span class="b">' + escHtml(n.body) + '</span>' : "") +
           '</a>';
@@ -916,6 +916,22 @@
         } catch (err) {}
         await load();
         paintPanel();
+      });
+      // Clicking the notification itself is the one thing everybody actually
+      // does with it, and it left the item unread forever — the count and the
+      // gold background stayed no matter how many times you opened and read
+      // it, and only the separate "Mark all read" button ever cleared anything.
+      // `keepalive` because the click is about to navigate the tab away, which
+      // would otherwise cancel the request before it left.
+      panel.querySelectorAll("[data-notif-id]").forEach(function(item){
+        item.addEventListener("click", function(){
+          if (!item.classList.contains("-unread")) return;
+          item.classList.remove("-unread");   // a second click before the panel repaints must not fire twice
+          var id = item.getAttribute("data-notif-id");
+          fetch(base + "/read?notification_id=" + encodeURIComponent(id), {
+            method: "POST", headers: { "Authorization": "Bearer " + token }, keepalive: true
+          }).catch(function(){});
+        });
       });
       });
     }
